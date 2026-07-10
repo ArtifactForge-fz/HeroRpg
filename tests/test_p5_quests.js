@@ -102,7 +102,7 @@ function makeCharacter(opts) {
   skillPoints['Swords'] = 3;
   skillPoints['Light Armor'] = 2;
   var c = Game.Character.create({
-    race: 'Human',
+    race: (opts && opts.race) || 'Human',
     name: (opts && opts.name) || 'QuestTester',
     gender: 'Male',
     skillPoints: skillPoints
@@ -129,7 +129,7 @@ function winBattle(monsterId) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: quest/story data sanity ===');
-assert(Game.Data.quests.length === 22, '22 quests defined (Phase 6b\'s 19 + v1.1\'s new first_calling + v1.2 Phase 2\'s masters_calling + vaultbreakers_reckoning), got ' + Game.Data.quests.length);
+assert(Game.Data.quests.length === 25, '25 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers), got ' + Game.Data.quests.length);
 assert(Game.Data.story.length === 3, '3 story chapters, got ' + Game.Data.story.length);
 ['prelude', 'chapter_1', 'chapter_2'].forEach(function (id) {
   var found = Game.Data.story.some(function (ch) { return ch.id === id; });
@@ -158,7 +158,7 @@ assert(badRefs.length === 0, 'all quest data refs resolve' + (badRefs.length ? '
 assert(!!Game.Battle.getMonsterDef('oruk_ravager') && Game.Battle.getMonsterDef('oruk_ravager').level === 7, 'oruk_ravager exists at level 7');
 var kuraan = Game.World.getArea('kuraan_border_woods');
 assert(kuraan.monsters.indexOf('oruk_ravager') !== -1, 'oruk_ravager huntable in Kuraan Border Woods');
-['eldor', 'jumak_village'].forEach(function (aid) {
+['eldor', 'jumak_village', 'laik'].forEach(function (aid) {
   assert(!!Game.World.getFacility(Game.World.getArea(aid), 'tavern'), aid + ' has a tavern');
 });
 // Verbatim spot-checks against the archived prose.
@@ -539,6 +539,80 @@ assert(c14.quests['tutorial_first_blood'].status === 'completed', 'loop: quest c
 // And it no longer shows as available at the tavern.
 var avail14 = Game.Quests.availableAt('eldor');
 assert(!avail14.some(function (rec) { return rec.quest.id === 'tutorial_first_blood'; }), 'loop: completed quest no longer offered');
+
+// =================== Test 15: Professor Flad relocated to Laik (v1.2 Phase 3 Content-A) ===================
+console.log('\n=== Test 15: Professor Flad no longer offered at Ju`Mak, now offered (and level-gated) at Laik ===');
+var c15b = makeCharacter({ name: 'FladRelocTest' });
+c15b.level = 6; // Ju`Mak's own travel gate
+Game.World.travelTo('jumak_village');
+var avail15a = Game.Quests.availableAt('jumak_village');
+assert(!avail15a.some(function (rec) { return rec.quest.id === 'professor_flad'; }), 'professor_flad no longer offered at Ju`Mak Village');
+var resFladJumak = Game.Quests.accept('professor_flad');
+assert(resFladJumak.ok === false, 'accepting professor_flad at Ju`Mak fails (wrong giver area): ' + resFladJumak.message);
+
+assert(Game.Quests.getQuest('professor_flad').levelMin === 8, 'professor_flad levelMin bumped to 8, matching Laik\'s own minLevel');
+c15b.level = 7;
+Game.World.travelTo('jumak_village'); // still below Laik's minLevel 8
+var resFladTooLow = Game.World.travelTo('laik');
+assert(resFladTooLow.ok === false, 'cannot reach Laik below its minLevel 8: ' + resFladTooLow.message);
+
+c15b.level = 8;
+var resFladTravel = Game.World.travelTo('laik');
+assert(resFladTravel.ok === true, 'Laik reachable at level 8: ' + resFladTravel.message);
+var avail15b = Game.Quests.availableAt('laik');
+assert(avail15b.some(function (rec) { return rec.quest.id === 'professor_flad'; }), 'professor_flad now offered at Laik');
+var resFladLaik = Game.Quests.accept('professor_flad');
+assert(resFladLaik.ok === true, 'professor_flad accepted at Laik: ' + resFladLaik.message);
+assert(c15b.quests['professor_flad'] && c15b.quests['professor_flad'].status === 'active', 'professor_flad active for this character');
+
+// =================== Test 16: requiresRace gating — Arkan questline refused for Humans, allowed for Arkan ===================
+console.log('\n=== Test 16: requiresRace gate (v1.2 Phase 3 Content-A) refuses Humans, allows Arkan ===');
+var c16human = makeCharacter({ name: 'RaceGateHuman' });
+Game._debug.goto('saratus'); // bypass the minLevel 14 travel gate — isolate the race check, not the level check
+assert(c16human.currentLocation === 'saratus', 'sanity: Human test character placed in Saratus via debug goto');
+var resHuman16 = Game.Quests.accept('arkan_first_rite');
+assert(resHuman16.ok === false && /Arkan/.test(resHuman16.message), 'Human refused the Arkan questline: ' + resHuman16.message);
+assert(!c16human.quests['arkan_first_rite'], 'no quest entry created for the refused Human');
+// Not offered to Humans in the tavern list either? availableAt does not filter by requiresRace
+// (mirrors the existing level-window behavior — quests can be LISTED and then refused at
+// accept() with a clear reason), so this only asserts the accept()-time gate.
+
+// requiresRace also enforced for the other two Arkan quests (isolate the race check by clearing
+// the level gate too, same as above). Done BEFORE creating any other character below — makeCharacter's
+// Game.Character.create() call reassigns Game.state.character as a side effect, so c16human must
+// stay the active Game.state.character for every accept() call made on its behalf.
+c16human.level = 6; // clears arkan_battlemage_trial's levelMin so the race gate is the only thing left to trip
+var resHumanBattlemage16 = Game.Quests.accept('arkan_battlemage_trial');
+assert(resHumanBattlemage16.ok === false && /Arkan/.test(resHumanBattlemage16.message), 'arkan_battlemage_trial also refused for this Human on the race gate specifically: ' + resHumanBattlemage16.message);
+
+var c16arkan = makeCharacter({ name: 'RaceGateArkan', race: 'Arkan' });
+assert(c16arkan.currentLocation === 'saratus', 'sanity: fresh Arkan already starts in Saratus, the quest giver area');
+var resArkan16 = Game.Quests.accept('arkan_first_rite');
+assert(resArkan16.ok === true, 'Arkan allowed to accept the Arkan questline: ' + resArkan16.message);
+assert(c16arkan.quests['arkan_first_rite'] && c16arkan.quests['arkan_first_rite'].status === 'active', 'quest entry active for the accepting Arkan');
+
+// =================== Test 17: Arkan questline full flow (accept -> kill -> turn-in -> rewards) ===================
+console.log('\n=== Test 17: arkan_first_rite full accept/kill/turn-in flow with multi-reward grant ===');
+var c17 = makeCharacter({ name: 'ArkanFlowTest', race: 'Arkan' });
+assert(c17.currentLocation === 'saratus', 'sanity: fresh Arkan starts in Saratus');
+var resAccept17 = Game.Quests.accept('arkan_first_rite');
+assert(resAccept17.ok === true, 'arkan_first_rite accepted: ' + resAccept17.message);
+assert(Game.Quests.canTurnIn('arkan_first_rite') === false, 'canTurnIn false with 0/3 rats slain');
+for (var k17 = 0; k17 < 3; k17++) winBattle('plains_field_rat');
+assert(c17.quests['arkan_first_rite'].progress.kills['plains_field_rat'] === 3, 'kill progress reached 3/3');
+assert(Game.Quests.canTurnIn('arkan_first_rite') === true, 'canTurnIn true at count');
+assert(c17.currentLocation === 'saratus', 'sanity: still in Saratus (winBattle does not travel), so turn-in needs no extra travel');
+var goldBefore17 = Game.Character.goldTotalAsGold(c17);
+var xpBefore17 = c17.xp;
+var potionsBefore17 = Game.Quests.inventoryCount(c17, 'potion_minor_healing');
+var resTurnIn17 = Game.Quests.turnIn('arkan_first_rite');
+assert(resTurnIn17.ok === true, 'arkan_first_rite turned in: ' + resTurnIn17.message);
+assert(Game.Character.goldTotalAsGold(c17) === goldBefore17 + 25, 'gold reward granted (+25)');
+assert(c17.xp === xpBefore17 + 20, 'xp reward granted (+20)');
+assert(Game.Quests.inventoryCount(c17, 'potion_minor_healing') === potionsBefore17 + 1, 'item reward granted (potion)');
+assert(c17.quests['arkan_first_rite'].status === 'completed', 'quest marked completed');
+// A Human cannot even reach this far (refused at accept, per Test 16) — no further cross-race
+// regression risk to check here.
 
 // =================== Summary ===================
 console.log('\n===================================');

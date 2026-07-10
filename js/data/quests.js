@@ -16,6 +16,11 @@
 //   js/core/quests.js accept() — the hero must have obtained at least one tier-2 class
 //   (Game.Classes.advancedClassIdsObtained) before accepting. Used by masters_calling
 //   ("The Master's Calling"), mirroring requiresBaseClass one tier up.
+//   requiresRace (NEW, v1.2 Phase 3 Content-A, docs/SPEC-V1.2.md Phase 3 Content-A): enforced in
+//   js/core/quests.js accept() — the hero's c.race must equal this string exactly, or acceptance
+//   is refused with a clear message (mirrors requiresBaseClass/requiresAdvancedClass's style of
+//   gate). Used by the Arkan questline (arkan_first_rite / arkan_battlemage_trial /
+//   arkan_red_moon_whispers) so it stays unavailable to Human heroes.
 //   rewards.classChoice: either a fixed array of class ids (first_calling: the base trio;
 //   vaultbreakers_reckoning: a single-entry array) or a sentinel string — 'advanced'
 //   (trials_of_eldor, resolved via Game.Classes.advancedOptionsFor(c)) or 'tier3' (masters_calling,
@@ -131,20 +136,18 @@ Game.Data.quests = [
   },
 
   // =====================================================================
-  // 5) Professor Flad — archived NAME under a DIFFERENT giver in the original (Recent_Updates.md
-  // 2007-08-02: "New town (Laik, Riverside Village)... New quest (Laik: Professor Flad)"). Laik
-  // does not exist in the v1 world (DESIGN.md §2), so Professor Flad is relocated to Ju`Mak
-  // Village per the phase brief — his archived home is preserved as a comment, not invented away.
+  // 5) Professor Flad — archived NAME and HOME (Recent_Updates.md 2007-08-02: "New town (Laik,
+  // Riverside Village)... New quest (Laik: Professor Flad)"). Originally relocated to Ju`Mak
+  // Village as a stand-in because Laik did not yet exist in the v1 world; v1.2 Phase 3 Content-A
+  // adds Laik (js/data/areas.js) as the 4th town, so Flad moves back to his archived home and the
+  // levelMin is bumped to match Laik's own travel gate (minLevel 8) — otherwise a hero could
+  // accept this quest before being able to reach the giver at all.
   // =====================================================================
   {
     id: 'professor_flad',
     name: 'Professor Flad',
-    // archived home: "Laik, Riverside Village" (Recent_Updates.md 2007-08-02) — Laik is not yet
-    // part of the v1 world (DESIGN.md §2 lists only Eldor/Saratus/Ju`Mak/Laik/Gares as archived
-    // settlements, and only Eldor+Ju`Mak are built in Phase 4). Relocated to Ju`Mak Village so
-    // the archived quest name survives; revisit if/when Laik is added to the world.
-    giver: { areaId: 'jumak_village', npc: 'Professor Flad' },
-    levelMin: 1,
+    giver: { areaId: 'laik', npc: 'Professor Flad' }, // archived home: Recent_Updates.md 2007-08-02
+    levelMin: 8, // matches Laik's own minLevel (js/data/areas.js) so the quest is reachable exactly when the giver is
     intro: 'Professor Flad adjusts his spectacles. "The Estari left more than ruins, you know — their ' +
       'constructs still walk, powered by cores of captured Anima. I need one such core for study. ' +
       'The Animate Rubble in the ruins outside Eldor sheds them when destroyed. Bring me one."',
@@ -575,6 +578,75 @@ Game.Data.quests = [
       'so the old stories say. It certainly needed one today. Rest, hero. You have more than earned it — ' +
       'and somewhere above us, for the first time in longer than anyone living can remember, the sky is ' +
       'well and truly quiet."'
+  },
+
+  // =====================================================================
+  // v1.2 Phase 3 Content-A (docs/SPEC-V1.2.md Phase 3 Content-A, review #11): a short Arkan
+  // questline, all given in Saratus (the Arkan's own start location, js/core/character.js
+  // create()) and gated by the NEW requiresRace: 'Arkan' field (enforced in js/core/quests.js
+  // accept(), mirroring requiresBaseClass/requiresAdvancedClass) so it stays unavailable to
+  // Humans. Flavor drawn from Arkan.md ("runic blades or bows and arrows... Battlemages
+  // reinforce the front with white and black magic derived from the study of runes") and the
+  // archived "red moon" lore already told in js/data/story.js chapter_1 (Eidas leading the
+  // Society to a nameless red moon). Content/text invented; monsters/items/areas all reused from
+  // existing data (no new items.js/monsters.js entries, per the phase brief).
+  // =====================================================================
+
+  // ---------- Arkan 1) The First Rite of Saratus — levelMin 1, the doorstep hunting ground ----------
+  {
+    id: 'arkan_first_rite',
+    name: 'The First Rite of Saratus',
+    giver: { areaId: 'saratus', npc: 'Elder Meilin' },
+    levelMin: 1,
+    requiresRace: 'Arkan', // NEW (v1.2 Phase 3 Content-A): enforced at accept() — Humans cannot take this quest
+    intro: 'Elder Meilin studies you the way she studies every young Arkan who first steps out ' +
+      'past the wardplate gates. "Every runic blade is dulled on something small before it is ' +
+      'ever raised against the Majiku, hero. The plains east of the city are thick with rats — ' +
+      'thin them out, three will do, and I\'ll see you carry a proper edge from here on."',
+    steps: [
+      { kind: 'kill', monsterId: 'plains_field_rat', count: 3 }
+    ],
+    rewards: { gold: 25, xp: 20, items: ['potion_minor_healing'] },
+    completionText: 'Elder Meilin nods, satisfied. "A dull blade first, a runic one later. You\'ve made your first cut, hero — Saratus will remember it."'
+  },
+
+  // ---------- Arkan 2) Trial of the Battlemage — levelMin 6, Kuraan Border Woods (ancestral Arkan homeland) ----------
+  {
+    id: 'arkan_battlemage_trial',
+    name: 'Trial of the Battlemage',
+    giver: { areaId: 'saratus', npc: 'Battlemage Instructor Renjiro' },
+    levelMin: 6,
+    requiresRace: 'Arkan', // NEW (v1.2 Phase 3 Content-A): enforced at accept()
+    intro: 'Battlemage Instructor Renjiro traces a rune in the air, and for a moment it holds its ' +
+      'own pale light. "White and black magic, drawn from the study of runes — that is how we ' +
+      'reinforce the front, hero (Arkan.md holds as much). But a battlemage is untested until ' +
+      'they\'ve stood in the Forests of Kuraan itself, the home the Majiku took from us. Put down ' +
+      'four of their forest scouts there, and I\'ll know your runes hold under real pressure."',
+    steps: [
+      { kind: 'kill', monsterId: 'majiku_forest_scout', count: 4 }
+    ],
+    rewards: { gold: 90, xp: 110, trainingPoints: 1 },
+    completionText: 'Renjiro\'s rune flares brighter before fading. "Four Majiku scouts, and your runes never faltered. Kuraan remembers the Arkan who once called it home, hero — and today, it remembered you too."'
+  },
+
+  // ---------- Arkan 3) Whispers of the Red Moon — levelMin 8, Skyspire wisps (red-moon lore) ----------
+  {
+    id: 'arkan_red_moon_whispers',
+    name: 'Whispers of the Red Moon',
+    giver: { areaId: 'saratus', npc: 'Rune-Archivist Kaida' },
+    levelMin: 8,
+    requiresRace: 'Arkan', // NEW (v1.2 Phase 3 Content-A): enforced at accept()
+    intro: 'Rune-Archivist Kaida keeps her voice low, as if the archive itself were listening. ' +
+      '"Our own runic study owes more to the Society of Modern Magic than most Arkan care to admit ' +
+      '— and the stray Anima wisps drifting down from the Skyspire into Kuraan\'s border woods ' +
+      'still carry a whisper of wherever Eidas actually took his people, that nameless red moon no ' +
+      'one living has seen. Bring me three of the wisps intact, and maybe the runes in them will ' +
+      'finally say something plain."',
+    steps: [
+      { kind: 'kill', monsterId: 'skyspire_wisp', count: 3 }
+    ],
+    rewards: { gold: 130, xp: 160, items: ['crystal_energy_shard'] },
+    completionText: 'Kaida turns the last wisp\'s residue over in her hands, frowning at whatever pattern it traces. "Still no name for the moon. But the pattern\'s the same every time now — the Skyspire went somewhere, hero, and it isn\'t finished with Van Arius yet. Thank you for the runes. I\'ll need every one I can get."'
   }
 ];
 

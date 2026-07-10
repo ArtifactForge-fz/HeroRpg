@@ -118,7 +118,9 @@ function makeCharacter(opts) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: areas/monsters/items data sanity ===');
-assert(Game.Data.areas.length === 11, '11 areas defined (6 pre-Phase-6b + Saratus + 4 new hunting areas), got ' + Game.Data.areas.length);
+assert(Game.Data.areas.length === 14, '14 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A), got ' + Game.Data.areas.length);
+var townCount = Game.Data.areas.filter(function (a) { return a.type === 'town'; }).length;
+assert(townCount === 5, '5 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp, the invented level-30+ outpost which is mechanically a town), got ' + townCount);
 assert(Game.Data.monsters.length === 45, '45 monsters (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars), got ' + Game.Data.monsters.length);
 var gares = Game.World.getArea('gares_riverbanks');
 assert(gares && gares.monsters.length === 7, 'Gares Riverbanks lists 7 monsters (4 original + 3 enemy-variety-pass)');
@@ -144,12 +146,53 @@ Game.Data.recipes.forEach(function (r) {
   r.inputs.forEach(function (iid) { assert(!!Game.Inventory.getItem(iid), 'recipe input resolves: ' + iid); });
 });
 
-// =================== Test 1: new character starts in Eldor ===================
-console.log('\n=== Test 1: new character defaults ===');
+// =================== Test 0b: Laik, the 4th town (v1.2 Phase 3 Content-A) ===================
+console.log('\n=== Test 0b: Laik exists with shop/inn/vault/tavern (no synthesis/academy/shrine) ===');
+var laik = Game.World.getArea('laik');
+assert(!!laik && laik.type === 'town', 'Laik exists as a town');
+assert(laik.minLevel === 8, 'Laik gates travel at minLevel 8');
+['shop', 'inn', 'vault', 'tavern'].forEach(function (t) {
+  assert(!!Game.World.getFacility(laik, t), 'Laik has facility: ' + t);
+});
+['synthesis', 'academy', 'shrine'].forEach(function (t) {
+  assert(!Game.World.getFacility(laik, t), 'Laik lacks facility: ' + t);
+});
+var laikShop = Game.World.getFacility(laik, 'shop');
+assert(laikShop.stock.length > 0, 'Laik shop has mid-level stock');
+laikShop.stock.forEach(function (iid) {
+  var it = Game.Inventory.getItem(iid);
+  assert(!!it, 'Laik shop item exists: ' + iid);
+});
+
+// =================== Test 0c: Kastengard Vanguard Camp, the level-30+ outpost (v1.2 Phase 3 Content-A) ===================
+console.log('\n=== Test 0c: Kastengard Vanguard Camp exists with inn/shop/academy and sells Content-B\'s 30+ stock ===');
+var outpost = Game.World.getArea('kastengard_vanguard_camp');
+assert(!!outpost && outpost.type === 'town', 'Kastengard Vanguard Camp exists as a town');
+assert(outpost.minLevel === 26, 'outpost gates travel at minLevel 26 (Kastengard band)');
+['inn', 'shop', 'academy'].forEach(function (t) {
+  assert(!!Game.World.getFacility(outpost, t), 'outpost has facility: ' + t);
+});
+['vault', 'shrine', 'synthesis', 'tavern'].forEach(function (t) {
+  assert(!Game.World.getFacility(outpost, t), 'outpost lacks facility: ' + t);
+});
+var outpostShop = Game.World.getFacility(outpost, 'shop');
+['stone_energy_lesser', 'stone_energy_greater', 'potion_vault_reserve', 'material_refined_anima_dust'].forEach(function (iid) {
+  assert(outpostShop.stock.indexOf(iid) !== -1, 'outpost shop stocks Content-B 30+ item: ' + iid);
+});
+
+// =================== Test 1: new character starts by race (v1.2 Phase 3 Content-A) ===================
+console.log('\n=== Test 1: new character defaults (Human -> Eldor, Arkan -> Saratus) ===');
 var c1 = makeCharacter({ name: 'Fresh' });
-assert(c1.currentLocation === 'eldor', 'new character starts in eldor');
+assert(c1.currentLocation === 'eldor', 'new Human character starts in eldor');
 assert(c1.vault && c1.vault.platinum === 0 && c1.vault.gold === 0 && c1.vault.items.length === 0, 'new character has empty vault');
 assert(Array.isArray(c1.shrineBuffs) && c1.shrineBuffs.length === 0, 'new character has no shrine buffs');
+
+var c1arkan = makeCharacter({ name: 'FreshArkan', race: 'Arkan' });
+assert(c1arkan.currentLocation === 'saratus', 'new Arkan character starts in saratus (Arkan.md: their archived capital)');
+// makeCharacter's Game.Character.create() call sets Game.state.character as a side effect —
+// restore it to c1 so Test 2 below (which drives Game.World.travelTo off Game.state.character)
+// continues to operate on the character it expects.
+Game.state.character = c1;
 
 // =================== Test 2: travelTo gating ===================
 console.log('\n=== Test 2: travelTo level gate ===');
@@ -993,6 +1036,42 @@ assert(Game.Character.goldTotalAsGold(c18) === goldBefore18c - 700, 'gold cost (
 // fails cleanly when inputs are missing (established synthesize() contract).
 var res18d = Game.World.synthesize('synth_bclass_crystal_3');
 assert(res18d.ok === false && /Missing/.test(res18d.message), 'synth_bclass_crystal_3 fails cleanly once inputs are gone again: ' + res18d.message);
+
+// =================== Test 19: Arkan low-level area is huntable + world stays traversable (v1.2 Phase 3 Content-A) ===================
+console.log('\n=== Test 19: a fresh level-1 Arkan can hunt at Plains East of Saratus and travel onward to the rest of the world ===');
+var c19 = makeCharacter({ name: 'ArkanStart', race: 'Arkan' });
+assert(c19.currentLocation === 'saratus', 'sanity: fresh Arkan starts in saratus');
+assert(c19.level === 1, 'sanity: fresh character is level 1');
+
+// Saratus itself has no monsters (it's a town) — the doorstep hunting ground is a separate area,
+// reachable at level 1 since its minLevel is 0.
+var travelToPlains19 = Game.World.travelTo('saratus_plains');
+assert(travelToPlains19.ok === true, 'level-1 Arkan can travel from Saratus to Plains East of Saratus: ' + travelToPlains19.message);
+assert(c19.currentLocation === 'saratus_plains', 'location updated to the doorstep hunting ground');
+
+setRng(seqRng([0.0, 0.0], 0.99)); // encounter roll, monster pick — guaranteed encounter
+var hunt19 = Game.World.hunt();
+assert(hunt19.ok === true && hunt19.encounter === true, 'level-1 Arkan gets a hunt encounter at Plains East of Saratus: ' + JSON.stringify(hunt19));
+var saratusPlainsArea19 = Game.World.getArea('saratus_plains');
+assert(saratusPlainsArea19.monsters.indexOf(hunt19.monsterId) !== -1, 'encounter monster (' + hunt19.monsterId + ') comes from the area\'s own pool');
+assert(Game.Battle.getMonsterDef(hunt19.monsterId).level <= 2, 'encountered monster is low-level, winnable by a fresh level-1 character');
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// World stays traversable: the same level-1 Arkan can reach an existing area of the wider world
+// (Eldor gates at minLevel 0, same as the Human capital) without ever having to level up first —
+// travel is a flat id-list lookup (Game.World.travelTo), not a location-adjacency graph, so no
+// new connectivity plumbing was needed.
+var travelToEldor19 = Game.World.travelTo('eldor');
+assert(travelToEldor19.ok === true, 'level-1 Arkan can travel onward from the doorstep area to Eldor: ' + travelToEldor19.message);
+assert(c19.currentLocation === 'eldor', 'location updated to eldor');
+
+// Human start is unaffected: a fresh Human still starts in Eldor and can travel to the new Arkan
+// doorstep area too (it's ordinary world data, not Arkan-exclusive).
+var c19b = makeCharacter({ name: 'HumanCheck' });
+assert(c19b.currentLocation === 'eldor', 'sanity: fresh Human still starts in eldor');
+var travelHumanToSaratusPlains19 = Game.World.travelTo('saratus_plains');
+assert(travelHumanToSaratusPlains19.ok === true, 'a Human can also travel to Plains East of Saratus (ordinary world data, not race-gated)');
 
 // =================== Summary ===================
 console.log('\n===================================');

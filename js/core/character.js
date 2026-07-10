@@ -85,7 +85,11 @@ Game.Character = (function () {
       fury: 0, // archived: Recent_Updates.md 2007-08-11 "Fury Meter"; ticks, +1% XP each, resets on death/flee
 
       // Phase 4: world/town state (DESIGN.md §2, §6).
-      currentLocation: 'eldor', // invented: new characters start in the Royal City of Eldor
+      // v1.2 Phase 3 Content-A (docs/SPEC-V1.2.md Phase 3 Content-A, review #11): Arkan
+      // characters start in Saratus, their archived capital (Arkan.md: "There they established
+      // the city of Saratus"), instead of Eldor. Creation-time only — NOT a new persisted field
+      // (currentLocation already exists), so no save-version bump is needed.
+      currentLocation: (race === 'Arkan') ? 'saratus' : 'eldor', // invented: Human starts in Eldor per the original default; Arkan starts in Saratus per Arkan.md
       vault: { platinum: 0, gold: 0, items: [] }, // archived: Recent_Updates.md 2007-08-01 "Vault revamped, can now store items and gold (safely)"
       shrineBuffs: [], // archived: Anima_Shards.md/Spirit Shrine buffs; { id, battlesLeft } entries, applied in battle.js
 

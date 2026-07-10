@@ -103,6 +103,17 @@ Game.Quests = (function () {
       };
     }
 
+    // NEW (v1.2 Phase 3 Content-A, docs/SPEC-V1.2.md Phase 3 Content-A): the Arkan questline
+    // (js/data/quests.js arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers) sets
+    // requiresRace: 'Arkan' — mirrors requiresBaseClass/requiresAdvancedClass's gate style, just
+    // checked against c.race instead of obtained classes.
+    if (quest.requiresRace && c.race !== quest.requiresRace) {
+      return {
+        ok: false,
+        message: 'This calling belongs to the ' + quest.requiresRace + ' alone — your people have their own path.'
+      };
+    }
+
     // Delivery-style quests hand over items on accept (quest.acceptItems). All of them must fit
     // or the accept is refused outright — never a partial hand-over.
     var acceptItems = quest.acceptItems || [];

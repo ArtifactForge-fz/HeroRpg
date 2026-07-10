@@ -139,6 +139,51 @@ Game.Data.areas = [
     desc: 'The southern fringe of the Forests of Kuraan, where Majiku raiders range, Oruk tribesmen have been sighted of late, and stray Anima wisps drift down from the distant Skyspire.'
   },
 
+  // =====================================================================
+  // v1.2 Phase 3 Content-A (docs/SPEC-V1.2.md Phase 3 Content-A): Laik, Riverside Village —
+  // archived: Recent_Updates.md 2007-08-02 ("New town (Laik, Riverside Village) - New quest
+  // (Laik: Professor Flad)"). The v1 world previously lacked Laik (Professor Flad's quest was
+  // relocated to Ju`Mak Village as a stand-in, js/data/quests.js professor_flad); Laik now exists
+  // as the world's 4th town and Flad's quest moves back to its archived home.
+  // =====================================================================
+  {
+    id: 'laik',
+    name: 'Laik, Riverside Village',
+    type: 'town',
+    minLevel: 8, // invented: a riverside waypoint between Ju`Mak Village (6) and Gares Riverbanks (9)
+    monsters: [],
+    facilities: [
+      {
+        type: 'shop',
+        // invented: mid-level river-trade stock, leaning on the archived "Riverguard" gear line
+        // (js/data/items.js — sword_riverguard_falchion/medium_body_riverguard_brigandine/
+        // heavy_head_riverguard_greathelm) already introduced for Ju`Mak's pricier stock. It fits
+        // Laik's actual riverside setting even better than Ju`Mak's frontier-woods one, so it is
+        // stocked here too — shared stock ids across towns is an established pattern (e.g.
+        // potion_healing/crystal_energy_shard already appear in multiple town shops).
+        stock: [
+          'sword_soldiers_blade', 'sword_riverguard_falchion',
+          'polearm_militia_halberd', 'knife_thieves_edge',
+          'rod_saratus_conduit', 'hth_monks_wraps',
+          'shield_ironbound_kite',
+          'light_legs_supple_leggings', 'light_feet_soft_boots',
+          'medium_legs_banded_greaves', 'medium_feet_reinforced_boots', 'medium_body_riverguard_brigandine',
+          'heavy_head_riverguard_greathelm',
+          'tent_travelers_tent',
+          'potion_healing', 'potion_greater_healing',
+          'crystal_energy_shard'
+        ]
+      },
+      { type: 'inn' },
+      { type: 'vault' },
+      // archived: New_Player_Guide.md §5.1.5 "Tavern" (quest source) — Laik's Tavern is where
+      // Professor Flad now offers his quest, restoring the archived giver location (see
+      // js/data/quests.js professor_flad).
+      { type: 'tavern' }
+    ],
+    desc: 'A riverside waypoint along the Gares delta trade route (Recent_Updates.md 2007-08-02). Traders favor it for goods too fine for Ju`Mak\'s frontier market and too far upriver for an Eldor merchant to bother hauling. Professor Flad keeps rooms above the tavern, cataloguing whatever the ruins upstream shed into the current.'
+  },
+
   // ---------- Gares Riverbanks: level 9-12 hunting (repurposed archived area name) ----------
   {
     id: 'gares_riverbanks',
@@ -203,6 +248,27 @@ Game.Data.areas = [
     desc: 'The grand circular Arkan capital, a city devoted to the study of magic and technology (Arkan.md). Runic blades and battlemage traditions are traded openly in its high-level markets.'
   },
 
+  // =====================================================================
+  // v1.2 Phase 3 Content-A (docs/SPEC-V1.2.md Phase 3 Content-A): a low-level hunting ground on
+  // Saratus's own doorstep, so a level-1 Arkan (who now starts in Saratus instead of Eldor —
+  // js/core/character.js create(), Arkan.md) has somewhere to hunt from the very first battle,
+  // exactly as a level-1 Human has the Plains of Averast right outside Eldor.
+  // =====================================================================
+  {
+    id: 'saratus_plains',
+    name: 'Plains East of Saratus',
+    type: 'hunting',
+    minLevel: 0,
+    // archived geography: Arkan.md ("they were forced to the Plains of Averast where the Humans
+    // reside. There they established the city of Saratus") — Saratus sits within the same Plains
+    // of Averast region as Eldor (Averast.md), so this doorstep hunting ground reuses the SAME
+    // early fauna already defined for the plains around Eldor (js/data/monsters.js plains_* ids)
+    // rather than inventing new low-level monsters (Content-B already owns monsters.js).
+    monsters: ['plains_field_rat', 'plains_windrunner_kestrel', 'plains_wild_boar'],
+    facilities: [],
+    desc: 'The same windswept plains that shelter Eldor stretch east all the way to Saratus\'s gates (Averast.md) — rats, kestrels, and boar are as common a nuisance on the Arkan side of the region as on the Human one.'
+  },
+
   // ---------- Northern Barrier Foothills: level 13-18 hunting + gate-boss ----------
   {
     id: 'northern_foothills',
@@ -244,6 +310,47 @@ Game.Data.areas = [
     lair: { monsterId: 'kastengard_custodian', minLevel: 32, name: 'The Custodian’s Vault' },
     facilities: [],
     desc: 'Far to the northeast, the abandoned base the Society of Modern Magic called Kastengard (Chapter_I.md). Its outer halls stir with old wardframes and Anima long left untended.'
+  },
+
+  // =====================================================================
+  // v1.2 Phase 3 Content-A (docs/SPEC-V1.2.md Phase 3 Content-A, review #8): a level-30+ outpost
+  // in the Kastengard band so the 26-40 endgame stretch isn't a bare trek between Saratus
+  // (minLevel 14) and the ruins themselves. [invented] name/site, Kastengard-flavored — the
+  // Crown/Academy expedition camp that grew up outside the ruins once heroes started delving
+  // them in earnest (Chapter_I.md: the Society of Modern Magic "established a base of operations
+  // known as Kastengard"). Its Shop stocks Content-B's level-30+ items (js/data/items.js;
+  // Version_2.1_Changes.md "10 levels of new content for players level 30+", "Added energy
+  // stones to level 30+ shop") alongside the level-25/28/30/32/35 gear already named for the
+  // Kastengard/Custodian/Vault lore line.
+  // =====================================================================
+  {
+    id: 'kastengard_vanguard_camp',
+    name: 'Kastengard Vanguard Camp',
+    type: 'town',
+    minLevel: 26, // matches kastengard_ruins's own gate, so the outpost is available as soon as the band opens
+    monsters: [],
+    facilities: [
+      {
+        type: 'shop',
+        stock: [
+          'sword_kastengard_relic_blade', 'polearm_vault_reaver', 'knife_custodian_needle',
+          'rod_eidas_remnant_wand', 'hth_vault_gauntlets',
+          'light_body_kastengard_wardweave', 'medium_body_custodian_plate', 'heavy_body_vault_bulwark',
+          'tent_expedition_pavilion',
+          'potion_greater_healing', 'potion_vault_reserve',
+          'crystal_pure_anima', 'crystal_bclass_3', 'crystal_bclass_4',
+          'sphere_bclass_3', 'sphere_bclass_4',
+          'stone_energy_lesser', 'stone_energy_greater',
+          'material_refined_anima_dust'
+        ]
+      },
+      { type: 'inn' },
+      // archived: Arkan.md battlemage/rune-study tradition already trains at Saratus's own
+      // Academy; this forward camp offers the same Training-Points-for-techs service (New
+      // Vault or Spirit Shrine this far out — those stay Eldor/Saratus-exclusive per DESIGN.md §6).
+      { type: 'academy' }
+    ],
+    desc: 'A fortified camp of Crown surveyors and Academy proctors, thrown up outside Kastengard\'s outer halls once heroes began delving them in earnest. No Vault or Spirit Shrine this far from a real city — just an Inn, a well-stocked Shop selling the frontier\'s toughest gear and energy stores, and Academy proctors willing to train anyone hardy enough to have survived the walk here.'
   },
 
   // ---------- Kastengard: The Deep Vaults: level 33-40 hunting + final boss ----------
