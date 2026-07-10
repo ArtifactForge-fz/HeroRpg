@@ -898,6 +898,102 @@ assert(res15d.ok === false && /battle/i.test(res15d.message), 'hunt: blocked dur
 Game.Battle.flee();
 Game.Battle.endBattle();
 
+// =================== Test 16: Shrine buffs grown to ~20 (v1.2 Phase 3 Content-B item 3) ===================
+console.log('\n=== Test 16: Spirit Shrine buff roster grown from 5 to 20; a new buff\'s shrineBonus applies via the unchanged Game.World.shrineBonus ===');
+assert(Game.Data.shrine.length === 20, '20 shrine buffs defined (5 original + 15 v1.2 Phase 3 additions), got ' + Game.Data.shrine.length);
+['armor', 'damage', 'dodge', 'magicArmor', 'goldPct'].forEach(function (effect) {
+  var count = Game.Data.shrine.filter(function (b) { return b.effect === effect; }).length;
+  assert(count === 4, 'exactly 4 buffs use the existing effect "' + effect + '" (1 original + 3 new), got ' + count);
+});
+
+// A brand-new buff (not one of the original 5) still flows through the UNCHANGED
+// Game.World.shrineBonus/buyBuff — no new effect type, no new consuming code needed.
+var c16 = makeCharacter({ name: 'NewShrineBuffTest' });
+Game.Character.addShards(c16, 100);
+var dodgeBefore16 = Game.Battle.playerDodgeChance(c16);
+var res16 = Game.World.buyBuff('shrine_shadowstep_grace');
+assert(res16.ok === true, 'buyBuff succeeds for a new v1.2 buff: ' + res16.message);
+assert(c16.animaShards === 100 - 35, 'shardCost (35) deducted for Shadowstep Grace');
+var dodgeAfter16 = Game.Battle.playerDodgeChance(c16);
+assert(Math.abs(dodgeAfter16 - dodgeBefore16 - 0.08) < 1e-9, 'Shadowstep Grace adds +8% Dodge via the existing shrineBonus hook: before ' + dodgeBefore16 + ', after ' + dodgeAfter16);
+
+// A new goldPct buff also stacks additively with the original Fortune's Favor via the same hook.
+var c16b = makeCharacter({ name: 'StackedGoldBuffTest' });
+Game.Character.addShards(c16b, 100);
+Game.World.buyBuff('shrine_fortunes_favor'); // +0.10 (original)
+Game.World.buyBuff('shrine_kings_ransom'); // +0.25 (new)
+var goldPctTotal16b = Game.World.shrineBonus(c16b, 'goldPct');
+assert(Math.abs(goldPctTotal16b - 0.35) < 1e-9, 'goldPct shrineBonus sums an original + a new buff: got ' + goldPctTotal16b);
+
+// =================== Test 17: level-30+ shop items — purchasable + consumable (v1.2 Phase 3 Content-B item 2) ===================
+console.log('\n=== Test 17: energy stones are purchasable via the generic shop mechanism and consumable in battle ===');
+// Content-A (a later agent) attaches the real level-30+ outpost shop that stocks these; here we
+// only own/verify the ITEM + the generic Game.World.buy() mechanism works for it — so temporarily
+// list it in Eldor's existing shop stock, exactly like any other purchasable item, then restore.
+var eldorShop = null;
+Game.World.getArea('eldor').facilities.forEach(function (f) { if (f.type === 'shop') eldorShop = f; });
+assert(!!eldorShop, 'sanity: Eldor has a shop facility');
+assert(eldorShop.stock.indexOf('stone_energy_lesser') === -1, 'sanity: Lesser Energy Stone is not (yet) stocked anywhere — Content-A owns that');
+eldorShop.stock.push('stone_energy_lesser');
+
+var c17 = makeCharacter({ name: 'EnergyStoneShopTest' });
+Game.World.travelTo('eldor');
+Game.Character.addGold(c17, 500);
+var stoneItem17 = Game.Inventory.getItem('stone_energy_lesser');
+var goldBefore17 = Game.Character.goldTotalAsGold(c17);
+var resBuy17 = Game.World.buy('stone_energy_lesser');
+assert(resBuy17.ok === true, 'Lesser Energy Stone is purchasable via the generic shop mechanism: ' + resBuy17.message);
+assert(Game.Character.goldTotalAsGold(c17) === goldBefore17 - stoneItem17.value, 'gold deducted by its value');
+assert(c17.inventory.indexOf('stone_energy_lesser') !== -1, 'stone added to inventory');
+eldorShop.stock.pop(); // restore Eldor's stock to its original list
+
+setRng(fixedRng(0.99));
+var b17 = Game.Battle.start('plains_field_rat');
+Game.Battle.useItem('stone_energy_lesser');
+var stoneLine17 = b17.log.filter(function (l) { return l.indexOf('Lesser Energy Stone') !== -1; }).pop();
+assert(!!stoneLine17 && /recover 200 Energy/.test(stoneLine17), 'Lesser Energy Stone is consumable in battle and restores exactly its specified 200 Energy: "' + stoneLine17 + '"');
+Game.Battle.endBattle();
+
+// =================== Test 18: level-30+ synthesis recipes (v1.2 Phase 3 Content-B item 2) ===================
+console.log('\n=== Test 18: new 30+ synthesis recipes produce their output and consume inputs ===');
+var c18 = makeCharacter({ name: 'Synth30Test' });
+Game.Character.addGold(c18, 2000);
+
+// synth_bclass_crystal_3: 2x crystal_bclass_2 + 300g -> crystal_bclass_3
+Game.Inventory.addItem(c18, 'crystal_bclass_2');
+Game.Inventory.addItem(c18, 'crystal_bclass_2');
+var goldBefore18a = Game.Character.goldTotalAsGold(c18);
+var res18a = Game.World.synthesize('synth_bclass_crystal_3');
+assert(res18a.ok === true, 'synth_bclass_crystal_3 succeeds: ' + res18a.message);
+assert(c18.inventory.filter(function (i) { return i === 'crystal_bclass_2'; }).length === 0, 'both crystal_bclass_2 inputs consumed');
+assert(c18.inventory.indexOf('crystal_bclass_3') !== -1, 'crystal_bclass_3 output granted');
+assert(Game.Character.goldTotalAsGold(c18) === goldBefore18a - 300, 'gold cost (300) deducted');
+
+// synth_bclass_sphere_3: 2x sphere_bclass_2 + 250g -> sphere_bclass_3
+Game.Inventory.addItem(c18, 'sphere_bclass_2');
+Game.Inventory.addItem(c18, 'sphere_bclass_2');
+var goldBefore18b = Game.Character.goldTotalAsGold(c18);
+var res18b = Game.World.synthesize('synth_bclass_sphere_3');
+assert(res18b.ok === true, 'synth_bclass_sphere_3 succeeds: ' + res18b.message);
+assert(c18.inventory.filter(function (i) { return i === 'sphere_bclass_2'; }).length === 0, 'both sphere_bclass_2 inputs consumed');
+assert(c18.inventory.indexOf('sphere_bclass_3') !== -1, 'sphere_bclass_3 output granted');
+assert(Game.Character.goldTotalAsGold(c18) === goldBefore18b - 250, 'gold cost (250) deducted');
+
+// synth_light_crystal: crystal_bclass_4 + material_refined_anima_dust + 700g -> crystal_light
+Game.Inventory.addItem(c18, 'crystal_bclass_4');
+Game.Inventory.addItem(c18, 'material_refined_anima_dust');
+var goldBefore18c = Game.Character.goldTotalAsGold(c18);
+var res18c = Game.World.synthesize('synth_light_crystal');
+assert(res18c.ok === true, 'synth_light_crystal succeeds: ' + res18c.message);
+assert(c18.inventory.indexOf('crystal_bclass_4') === -1, 'crystal_bclass_4 input consumed');
+assert(c18.inventory.indexOf('material_refined_anima_dust') === -1, 'material_refined_anima_dust input consumed');
+assert(c18.inventory.indexOf('crystal_light') !== -1, 'crystal_light output granted');
+assert(Game.Character.goldTotalAsGold(c18) === goldBefore18c - 700, 'gold cost (700) deducted');
+
+// fails cleanly when inputs are missing (established synthesize() contract).
+var res18d = Game.World.synthesize('synth_bclass_crystal_3');
+assert(res18d.ok === false && /Missing/.test(res18d.message), 'synth_bclass_crystal_3 fails cleanly once inputs are gone again: ' + res18d.message);
+
 // =================== Summary ===================
 console.log('\n===================================');
 if (failures === 0) {

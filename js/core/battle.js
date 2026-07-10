@@ -515,9 +515,22 @@ Game.Battle = (function () {
       log(battle, 'Not enough Energy to use ' + tech.name + '.');
       return battle;
     }
+    // v1.2 Phase 3 (Content-B item 4): shard-cost enhancement techs. RULE [archived]
+    // (reference/manual/Anima_Shards.md: shards "used when casting certain techniques that
+    // bestow enhancements"); numbers [invented] (js/data/techs.js shardCost fields). Checked
+    // BEFORE the Energy deduction below so a refusal spends neither Energy nor shards and applies
+    // no buff — spends from the same c.animaShards balance Game.World.buyBuff already spends from
+    // (js/core/world.js), no second RNG.
+    if (tech.effect === 'buff' && tech.shardCost && battle.player.animaShards < tech.shardCost) {
+      log(battle, 'You need ' + tech.shardCost + ' Anima Shards to cast ' + tech.name + ' (you have ' + battle.player.animaShards + ').');
+      return battle;
+    }
 
     battle.player.energy = Math.max(0, battle.player.energy - tech.energyCost);
     if (tech.skill) battle.techsUsedThisBattle[tech.skill] = true;
+    if (tech.effect === 'buff' && tech.shardCost) {
+      battle.player.animaShards -= tech.shardCost;
+    }
 
     if (tech.effect === 'heal') {
       // archived: Fear affects spell damage, NOT healing (Recent_Updates.md 2007-04-06).

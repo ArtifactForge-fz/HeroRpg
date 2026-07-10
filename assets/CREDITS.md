@@ -32,3 +32,23 @@ CC0/public-domain tile family at its upstream source, the Dungeon Crawl Stone So
 `earth/shatter.png`, `misc/bolt_of_light.png`. Same license terms apply (CC0 / public domain, no
 attribution required); all five were verified 32x32 and byte-hash-distinct from every icon already
 in this directory (`tests/test_icons.js` covers presence, not this cross-check).
+
+## v1.2 Phase 3 Content-B additions (graded Crystals/Spheres, 30+ shop items, a shard-cost tech)
+
+17 new 32x32 icons for the items introduced in `js/data/items.js` (`crystal_bclass_1..4`,
+`sphere_bclass_1..4`, `crystal_light`, `crystal_dark`, `sphere_light`, `sphere_dark`,
+`stone_energy_lesser`, `stone_energy_greater`, `material_refined_anima_dust`,
+`potion_vault_reserve`) and one for the new `tech_warcry_2` player technique. The Dungeon Crawl
+tileset archive was, again, not available in this working environment and no live web-fetch tool
+was available either this session, so per this file's own fallback precedent (the five Phase 2
+tiles above) these 17 were instead generated programmatically: a small script
+(`tools/`-adjacent one-off, not checked in) hashes each game id (FNV-style) into a deterministic
+32x32 RGBA pixel pattern (one of five simple shapes — ring/stripes/checker/cross/concentric-ring —
+plus a corner tick mark whose length also derives from the hash) and hand-encodes a minimal valid
+PNG (IHDR + a single uncompressed-filter IDAT via Node's `zlib.deflateSync` + IEND, with correct
+CRC32 chunk checksums). Every one of the 17 was verified: (a) a valid 32x32 RGBA PNG by re-reading
+its IHDR width/height, and (b) byte-hash-distinct from all ~199 other files in this directory,
+including the pre-existing ones (a full-file SHA-equivalent exact-byte comparison, not just the
+first-64-bytes spot check `tests/test_icons.js` runs for monsters). These are flat, abstract
+placeholder tiles rather than a real dungeon/crystal/potion likeness — swap in real Dungeon Crawl
+tiles for these 17 ids if the tileset archive becomes available later.

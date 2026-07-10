@@ -87,6 +87,37 @@ Game.Data.recipes = [
     gold: 400,
     output: 'light_body_kastengard_wardweave',
     desc: 'Reweave an Arkan Silkweave Robe with warding thread pulled from a Society ledger page and a drowned settler\'s keepsake.'
+  },
+
+  // =====================================================================
+  // v1.2 Phase 3 (docs/SPEC-V1.2.md Content-B item 2): a few level-30+ synthesis recipes.
+  // Archived: reference/manual/Version_2.1_Changes.md "Added synthesis shop items for levels
+  // 30+" / "Added new predefined transmutation recipes." Two progression recipes (2x a lower
+  // B-Class grade -> the next grade up, same pattern as synth_healing_potion/
+  // synth_greater_healing_potion above) plus one capstone recipe combining a top-grade Crystal
+  // with the new Refined Anima Dust material (js/data/items.js) into a premium Light Crystal.
+  // Gold costs scaled to a fraction of the output item's value, matching the existing precedent.
+  // =====================================================================
+  {
+    id: 'synth_bclass_crystal_3',
+    inputs: ['crystal_bclass_2', 'crystal_bclass_2'],
+    gold: 300,
+    output: 'crystal_bclass_3',
+    desc: 'Fuse two B-Class Crystal IIs into a single, denser B-Class Crystal III.'
+  },
+  {
+    id: 'synth_bclass_sphere_3',
+    inputs: ['sphere_bclass_2', 'sphere_bclass_2'],
+    gold: 250,
+    output: 'sphere_bclass_3',
+    desc: 'Fuse two B-Class Sphere IIs into a single, denser B-Class Sphere III.'
+  },
+  {
+    id: 'synth_light_crystal',
+    inputs: ['crystal_bclass_4', 'material_refined_anima_dust'],
+    gold: 700,
+    output: 'crystal_light',
+    desc: 'Bind a top-grade B-Class Crystal IV with Refined Anima Dust to forge a premium Light Crystal.'
   }
 ];
 

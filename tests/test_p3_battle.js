@@ -1329,6 +1329,119 @@ assert(!b26e.playerStatuses.some(function (s) { return s.type === 'poison'; }), 
 assert(b26e.log.some(function (l) { return /washes away/i.test(l); }), 'distinct cleanse log line');
 Game.Battle.endBattle();
 
+// =================== Test 27: append-only Crystal/Sphere drops (v1.2 Phase 3 Content-B item 1) ===================
+console.log('\n=== Test 27: new Crystal/Sphere drops are append-only — pre-existing drop entries on modified monsters resolve identically under a fixed rng ===');
+
+function killForLoot(monsterId, dropRngSeq) {
+  var c = makeCharacter({ name: 'LootAppendTest' });
+  c.dexterity = 999; // guarantees playerFirst, so no monster opening-strike rng noise
+  setRng(fixedRng(0.99));
+  var b = Game.Battle.start(monsterId);
+  b.monster.hp = 1; // any landed hit kills it (Test 5 precedent)
+  // combat rolls: doubleAttack(miss), monsterDodge(miss->hit lands), glancing(no), variance(neutral);
+  // then onWin: gold, shard, then one rng() per drop entry (top-down, first-hit-wins) per dropRngSeq.
+  setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.99, 0.99].concat(dropRngSeq), 0.99));
+  Game.Battle.attack();
+  var loot = b.pendingLoot;
+  Game.Battle.endBattle();
+  return loot;
+}
+
+// juneros_reefstalker drops = [heavy_head_juneros_scalehelm 0.05, crystal_pure_anima 0.08,
+// crystal_bclass_1 0.06 (v1.2 Phase 3 append, LAST)]
+assert(killForLoot('juneros_reefstalker', [0.03]) === 'heavy_head_juneros_scalehelm',
+  'juneros_reefstalker: pre-existing FIRST drop entry (0.05) still resolves identically under a fixed rng that hits it, unaffected by the appended Crystal entry');
+assert(killForLoot('juneros_reefstalker', [0.07, 0.07]) === 'crystal_pure_anima',
+  'juneros_reefstalker: pre-existing SECOND drop entry (0.08) still resolves identically when the first misses, unaffected by the appended Crystal entry');
+assert(killForLoot('juneros_reefstalker', [0.9, 0.9, 0.03]) === 'crystal_bclass_1',
+  'juneros_reefstalker: the appended B-Class Crystal I entry is reachable once both pre-existing entries miss');
+
+// juneros_riptide_hunter drops = [heavy_head_juneros_scalehelm 0.04, crystal_pure_anima 0.06,
+// sphere_bclass_1 0.06 (v1.2 Phase 3 append, LAST)]
+assert(killForLoot('juneros_riptide_hunter', [0.02]) === 'heavy_head_juneros_scalehelm',
+  'juneros_riptide_hunter: pre-existing FIRST drop entry (0.04) still resolves identically, unaffected by the appended Sphere entry');
+assert(killForLoot('juneros_riptide_hunter', [0.9, 0.9, 0.03]) === 'sphere_bclass_1',
+  'juneros_riptide_hunter: the appended B-Class Sphere I entry is reachable once both pre-existing entries miss');
+
+// =================== Test 28: graded/premium Crystal & Sphere restore amounts (v1.2 Phase 3 Content-B item 1) ===================
+console.log('\n=== Test 28: new Crystal/Sphere consumables restore exactly their specified Energy/HP ===');
+
+var c28 = makeCharacter({ name: 'CrystalSphereRestoreTest' });
+setRng(fixedRng(0.99));
+var b28 = Game.Battle.start('plains_field_rat');
+Game.Inventory.addItem(c28, 'crystal_bclass_3');
+Game.Inventory.addItem(c28, 'sphere_bclass_3');
+Game.Inventory.addItem(c28, 'crystal_light');
+
+Game.Battle.useItem('crystal_bclass_3');
+var energyLine28 = b28.log.filter(function (l) { return l.indexOf('B-Class Crystal III') !== -1; }).pop();
+assert(!!energyLine28 && /recover 170 Energy/.test(energyLine28), 'B-Class Crystal III restores exactly its specified 170 Energy: "' + energyLine28 + '"');
+
+Game.Battle.useItem('sphere_bclass_3');
+var healLine28 = b28.log.filter(function (l) { return l.indexOf('B-Class Sphere III') !== -1; }).pop();
+assert(!!healLine28 && /recover 420 HP/.test(healLine28), 'B-Class Sphere III restores exactly its specified 420 HP: "' + healLine28 + '"');
+
+Game.Battle.useItem('crystal_light');
+var hybridLines28 = b28.log.filter(function (l) { return l.indexOf('Light Crystal') !== -1; });
+assert(hybridLines28.some(function (l) { return /recover 130 HP/.test(l); }), 'Light Crystal ALSO restores its specified 130 HP (hybrid premium): ' + hybridLines28.join(' | '));
+assert(hybridLines28.some(function (l) { return /recover 260 Energy/.test(l); }), 'Light Crystal restores its specified 260 Energy (hybrid premium): ' + hybridLines28.join(' | '));
+Game.Battle.endBattle();
+
+// =================== Test 29: shard-cost enhancement techs (v1.2 Phase 3 Content-B item 4) ===================
+console.log('\n=== Test 29: shard-cost techs spend Anima Shards on cast, refuse cleanly when short ===');
+
+// Refusal: insufficient shards -> no Energy spent, no buff applied, shards untouched, distinct message.
+var c29 = makeCharacter({ name: 'ShardTechPoorTest' });
+c29.techs.push('tech_warcry_1');
+c29.techSets[0][1] = 'tech_warcry_1'; // slot 0 already holds the Swords starter tech (Cleave I)
+c29.animaShards = 4; // tech_warcry_1's shardCost is 5
+setRng(fixedRng(0.99));
+var b29 = Game.Battle.start('plains_field_rat');
+var energyBefore29 = b29.player.energy;
+Game.Battle.useTech('tech_warcry_1');
+assert(b29.player.energy === energyBefore29, 'insufficient shards: no Energy spent');
+assert(c29.animaShards === 4, 'insufficient shards: shards unchanged');
+assert(!b29.playerStatuses.some(function (s) { return s.type === 'buff'; }), 'insufficient shards: no buff applied');
+assert(b29.log.some(function (l) { return /Anima Shards/.test(l); }), 'distinct insufficient-shards message logged: ' + b29.log.join(' | '));
+Game.Battle.endBattle();
+
+// Success: sufficient shards -> shards deducted by shardCost, Energy spent normally, buff applied.
+var c29b = makeCharacter({ name: 'ShardTechRichTest' });
+c29b.techs.push('tech_warcry_1');
+c29b.techSets[0][1] = 'tech_warcry_1';
+Game.Character.addShards(c29b, 20);
+setRng(fixedRng(0.99));
+var b29b = Game.Battle.start('plains_field_rat');
+var tech29b = Game.Battle.getTech('tech_warcry_1');
+var energyBefore29b = b29b.player.energy;
+Game.Battle.useTech('tech_warcry_1');
+assert(c29b.animaShards === 20 - tech29b.shardCost, 'sufficient shards: shardCost (' + tech29b.shardCost + ') deducted');
+assert(b29b.player.energy === energyBefore29b - tech29b.energyCost, 'sufficient shards: Energy still spent normally');
+assert(b29b.playerStatuses.some(function (s) { return s.type === 'buff' && s.power === tech29b.power; }), 'sufficient shards: buff applied');
+Game.Battle.endBattle();
+
+// A second shard-cost tech (rank-2, gated behind rank 1 like the Cleave/Impale chains) also
+// refuses/spends correctly — confirms the wiring is generic (keyed off tech.shardCost), not a
+// tech_warcry_1 special case.
+var c29c = makeCharacter({ name: 'ShardTechRank2Test' });
+c29c.techs.push('tech_warcry_1', 'tech_warcry_2');
+c29c.techSets[0][1] = 'tech_warcry_2';
+c29c.animaShards = 10; // tech_warcry_2's shardCost is 15
+setRng(fixedRng(0.99));
+var b29c = Game.Battle.start('plains_field_rat');
+Game.Battle.useTech('tech_warcry_2');
+assert(c29c.animaShards === 10, 'rank-2 shard tech also refuses cleanly when short (10 < 15)');
+assert(!b29c.playerStatuses.some(function (s) { return s.type === 'buff'; }), 'rank-2 shard tech refusal applies no buff');
+Game.Character.addShards(c29c, 10); // now has 20 >= 15
+var tech29c = Game.Battle.getTech('tech_warcry_2');
+Game.Battle.useTech('tech_warcry_2');
+assert(c29c.animaShards === 20 - tech29c.shardCost, 'rank-2 shard tech spends its shardCost once affordable');
+assert(b29c.playerStatuses.some(function (s) { return s.type === 'buff' && s.power === tech29c.power; }), 'rank-2 shard tech applies its buff once affordable');
+Game.Battle.endBattle();
+
+// Third shard-cost tech (Focus I) is also wired — sanity on the data side.
+assert(Game.Battle.getTech('tech_focus_1').shardCost === 8, 'sanity: Focus I (the third shard-cost tech) carries shardCost 8');
+
 // =================== Summary ===================
 console.log('\n===================================');
 if (failures === 0) {

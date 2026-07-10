@@ -91,9 +91,34 @@ Game.Data.techs = [
     power: 6,
     buffDuration: 3, // invented: turns the +damage buff persists
     effect: 'buff',
+    // v1.2 Phase 3 (Content-B item 4): shard-cost enhancement tech. RULE [archived]
+    // (reference/manual/Anima_Shards.md: shards "used when casting certain techniques that
+    // bestow enhancements"); number [invented]. Consumed in js/core/battle.js useTech before the
+    // Energy deduction — insufficient shards refuses the cast entirely (no Energy spent, no buff
+    // applied), via the character's own animaShards balance (same field Game.World.buyBuff spends
+    // from), no second RNG.
+    shardCost: 5,
     trainingCost: 2,
     skillReq: 0,
-    desc: 'A short battle-chant that hardens the caster\'s resolve, adding to Damage for a few turns.'
+    desc: 'A short battle-chant that hardens the caster\'s resolve, adding to Damage for a few turns. Costs 5 Anima Shards to cast.'
+  },
+  {
+    id: 'tech_warcry_2',
+    name: "Warrior's Edge II",
+    chain: "Warrior's Edge",
+    rank: 2,
+    skill: 'Alteration',
+    grade: null,
+    energyCost: 16,
+    power: 12,
+    buffDuration: 4, // invented: turns the +damage buff persists
+    effect: 'buff',
+    // v1.2 Phase 3 (Content-B item 4): shard-cost enhancement tech, same rule/citation as
+    // tech_warcry_1 above; a stronger buff commands a steeper shard cost.
+    shardCost: 15,
+    trainingCost: 4,
+    skillReq: 6,
+    desc: 'A deeper battle-chant, requiring Warrior\'s Edge I and Alteration 6, adding more to Damage for a few turns. Costs 15 Anima Shards to cast.'
   },
 
   // ---------- Absorption: drain (invented per DESIGN.md §3 "Absorption=drains/shields") ----------
@@ -177,9 +202,12 @@ Game.Data.techs = [
     power: 4,
     buffDuration: 4,
     effect: 'buff',
+    // v1.2 Phase 3 (Content-B item 4): shard-cost enhancement tech, same rule/citation as
+    // tech_warcry_1 (reference/manual/Anima_Shards.md), consumed in js/core/battle.js useTech.
+    shardCost: 8,
     trainingCost: 2,
     skillReq: 0,
-    desc: 'A moment of stillness that sharpens the mind, adding to Damage for several turns.'
+    desc: 'A moment of stillness that sharpens the mind, adding to Damage for several turns. Costs 8 Anima Shards to cast.'
   },
 
   // =====================================================================

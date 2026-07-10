@@ -845,7 +845,10 @@ Game.Data.monsters = [
     shardChance: 0.14,
     drops: [
       { itemId: 'heavy_head_juneros_scalehelm', chance: 0.05 },
-      { itemId: 'crystal_pure_anima', chance: 0.08 }
+      { itemId: 'crystal_pure_anima', chance: 0.08 },
+      // v1.2 Phase 3 (Content-B): graded Crystal (js/data/items.js). Appended last so prior loot
+      // rates are unchanged (drops roll top-down, first hit wins).
+      { itemId: 'crystal_bclass_1', chance: 0.06 }
     ],
     desc: 'A scale-plated reef predator, its hide the model for the armor Juneros militia wear on patrol.'
   },
@@ -869,7 +872,10 @@ Game.Data.monsters = [
     shardChance: 0.14,
     drops: [
       { itemId: 'heavy_head_juneros_scalehelm', chance: 0.04 },
-      { itemId: 'crystal_pure_anima', chance: 0.06 }
+      { itemId: 'crystal_pure_anima', chance: 0.06 },
+      // v1.2 Phase 3 (Content-B): graded Sphere (js/data/items.js). Appended last so prior loot
+      // rates are unchanged (drops roll top-down, first hit wins).
+      { itemId: 'sphere_bclass_1', chance: 0.06 }
     ],
     desc: 'A quicksilver eel-thing that rides the isle\'s riptides, striking fast and hard with none of the Reefstalker\'s armored patience.'
   },
@@ -919,7 +925,11 @@ Game.Data.monsters = [
     shardChance: 0.16,
     drops: [
       { itemId: 'light_head_arkan_silk_hood', chance: 0.05 },
-      { itemId: 'quest_settler_locket', chance: 0.5 }
+      { itemId: 'quest_settler_locket', chance: 0.5 },
+      // v1.2 Phase 3 (Content-B): graded Crystal/Sphere (js/data/items.js). Appended last so
+      // prior loot rates are unchanged (drops roll top-down, first hit wins).
+      { itemId: 'crystal_bclass_1', chance: 0.05 },
+      { itemId: 'sphere_bclass_1', chance: 0.05 }
     ],
     desc: 'A settler lost to the isle\'s waters long ago, still walking the tideline with the sea\'s own restlessness in place of breath.'
   },
@@ -972,7 +982,10 @@ Game.Data.monsters = [
     shardChance: 0.18,
     drops: [
       { itemId: 'medium_body_custodian_plate', chance: 0.04 },
-      { itemId: 'crystal_pure_anima', chance: 0.1 }
+      { itemId: 'crystal_pure_anima', chance: 0.1 },
+      // v1.2 Phase 3 (Content-B): graded Crystal (js/data/items.js). Appended last so prior loot
+      // rates are unchanged (drops roll top-down, first hit wins).
+      { itemId: 'crystal_bclass_2', chance: 0.07 }
     ],
     // archived: Chapter_I.md — "the Society established a base of operations known as Kastengard...
     // discovered many uses for Anima, particularly in magic and technology."
@@ -1004,7 +1017,10 @@ Game.Data.monsters = [
     shardChance: 0.2,
     drops: [
       { itemId: 'rod_arkan_runic_conduit', chance: 0.04 },
-      { itemId: 'light_body_kastengard_wardweave', chance: 0.05 }
+      { itemId: 'light_body_kastengard_wardweave', chance: 0.05 },
+      // v1.2 Phase 3 (Content-B): graded Sphere (js/data/items.js). Appended last so prior loot
+      // rates are unchanged (drops roll top-down, first hit wins).
+      { itemId: 'sphere_bclass_2', chance: 0.07 }
     ],
     desc: 'Raw, ninth-dimensional Anima given a fleeting will of its own, escaped from some cracked seal deep in Kastengard\'s vaults.'
   },
@@ -1054,7 +1070,10 @@ Game.Data.monsters = [
     shardChance: 0.22,
     drops: [
       { itemId: 'knife_juneros_tidefang', chance: 0.04 },
-      { itemId: 'quest_society_ledger_page', chance: 0.5 }
+      { itemId: 'quest_society_ledger_page', chance: 0.5 },
+      // v1.2 Phase 3 (Content-B): graded Crystal (js/data/items.js). Appended last so prior loot
+      // rates are unchanged (drops roll top-down, first hit wins).
+      { itemId: 'crystal_bclass_2', chance: 0.06 }
     ],
     // archived: Chapter_I.md — "the runologist research group dispersed" when the Council
     // condemned the Society; a remnant left behind, still following orders three centuries stale.
@@ -1082,7 +1101,11 @@ Game.Data.monsters = [
     drops: [
       { itemId: 'sword_kastengard_relic_blade', chance: 0.1 },
       { itemId: 'heavy_body_vault_bulwark', chance: 0.08 },
-      { itemId: 'quest_custodian_core_shard', chance: 0.6 }
+      { itemId: 'quest_custodian_core_shard', chance: 0.6 },
+      // v1.2 Phase 3 (Content-B): graded Crystal/Sphere (js/data/items.js). Appended last so
+      // prior loot rates are unchanged (drops roll top-down, first hit wins).
+      { itemId: 'crystal_bclass_3', chance: 0.15 },
+      { itemId: 'sphere_bclass_3', chance: 0.15 }
     ],
     // invented successor to the Estari construct line (estari_construct_sentinel/estari_ruin_warden)
     // — the Society's own attempt at a lasting guardian, built from what it learned excavating
@@ -1109,7 +1132,11 @@ Game.Data.monsters = [
     shardChance: 0.24,
     drops: [
       { itemId: 'polearm_vault_reaver', chance: 0.04 },
-      { itemId: 'medium_body_custodian_plate', chance: 0.05 }
+      { itemId: 'medium_body_custodian_plate', chance: 0.05 },
+      // v1.2 Phase 3 (Content-B): graded Crystal/Sphere (js/data/items.js). Appended last so
+      // prior loot rates are unchanged (drops roll top-down, first hit wins).
+      { itemId: 'crystal_bclass_4', chance: 0.08 },
+      { itemId: 'sphere_bclass_4', chance: 0.08 }
     ],
     desc: 'A hulking construct built from the same Anima-bearing stone the Estari once carved, three centuries idle in the Society\'s deepest vault.'
   },
@@ -1133,7 +1160,11 @@ Game.Data.monsters = [
     shardChance: 0.26,
     drops: [
       { itemId: 'knife_custodian_needle', chance: 0.04 },
-      { itemId: 'crystal_pure_anima', chance: 0.14 }
+      { itemId: 'crystal_pure_anima', chance: 0.14 },
+      // v1.2 Phase 3 (Content-B): premium Crystal/Sphere (js/data/items.js). Appended last so
+      // prior loot rates are unchanged (drops roll top-down, first hit wins).
+      { itemId: 'crystal_light', chance: 0.03 },
+      { itemId: 'sphere_dark', chance: 0.03 }
     ],
     desc: 'A tangle of failed warding runes given monstrous, malicious shape — the Society\'s own experiments turned against whoever disturbs their rest.'
   },
@@ -1158,7 +1189,11 @@ Game.Data.monsters = [
     drops: [
       { itemId: 'rod_eidas_remnant_wand', chance: 0.04 },
       { itemId: 'heavy_body_vault_bulwark', chance: 0.05 },
-      { itemId: 'quest_archivist_key', chance: 0.5 }
+      { itemId: 'quest_archivist_key', chance: 0.5 },
+      // v1.2 Phase 3 (Content-B): premium Crystal/Sphere (js/data/items.js). Appended last so
+      // prior loot rates are unchanged (drops roll top-down, first hit wins).
+      { itemId: 'crystal_dark', chance: 0.03 },
+      { itemId: 'sphere_light', chance: 0.03 }
     ],
     desc: 'The last preserved record-keeper of the Society of Modern Magic, still guarding the vault\'s deepest archive from researchers who left for the red moon three centuries ago.'
   },

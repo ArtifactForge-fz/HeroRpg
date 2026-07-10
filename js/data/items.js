@@ -1339,6 +1339,251 @@ Game.Data.items = [
     // boss signature: eidas_echo (js/data/monsters.js), the 32-40 band's final boss — the true
     // capstone of the roster, closing out the story alongside lore_eidas_final_journal above.
     desc: "A blade that fell burning from the Skyspire's old ground anchor when Eidas' Echo was finally laid to rest, its edge still warm with red-moon ember-light."
+  },
+
+  // =====================================================================
+  // v1.2 Phase 3 (docs/SPEC-V1.2.md Content-B item 1): graded Crystals & Spheres. Names
+  // [archived] (reference/manual/Recent_Updates.md 2007-05-14 "Added B Class Crystals and
+  // Spheres to areas level 20+"; 2007-04-20 "Added Light & Dark Crystals as well as Light & Dark
+  // Spheres"). Numbers [invented], anchored to the one archived hard number: 2007-04-06 "All
+  // Crystals restore 70% charge" — Grade III below sits at 70% of a level-30 character's
+  // energyMax (BALANCE.START_ENERGY + (level-1)*BALANCE.ENERGY_PER_LEVEL, no stat dependency),
+  // with the other three grades scaled around it per the spec's own example ladder
+  // (40/55/70/85%): energyMax(20)=195*0.40=78->80, (25)=220*0.55=121->120,
+  // (30)=245*0.70=171.5->170 (the 70% anchor), (35)=270*0.85=229.5->230. Crystal restores Energy
+  // only; Sphere restores HP only. Max HP has no clean level-only formula (vitality-driven, per
+  // character.js HP_PER_VITALITY) so the Sphere line instead extrapolates the existing potion
+  // heal curve (potion_minor_healing/potion_healing/potion_greater_healing/potion_riverbank_elixir
+  // = 25/60/120/190 at levelReq 1/5/10/14) forward at the same four-grade cadence — invented, no
+  // archived HP% exists. The Light & Dark premium variants sit above BOTH graded ceilings (a
+  // "restore both, and more" premium per the spec): Light/Dark Crystal beats Crystal IV's Energy
+  // number (260 > 230) plus a smaller HP bonus; Light/Dark Sphere beats Sphere IV's HP number
+  // (560 > 500) plus a smaller Energy bonus. Light and Dark are mechanically identical (flavor-
+  // only pair, matching how several other Light/Dark entries in this data set mirror each other).
+  // Placement: appended (never inserted before) to the drops of 10 of the 14 level-20-to-40
+  // hunting monsters in js/data/monsters.js — the other 4 (juneros_coral_warden, juneros_leviathan,
+  // kastengard_earthbound_sentinel, eidas_echo) already end their drops array with a pinned
+  // 'unique'-tagged or guaranteed (chance:1) entry that test_p6b_content.js requires stay LAST, so
+  // those four are left untouched rather than displacing that entry.
+  // =====================================================================
+  {
+    id: 'crystal_bclass_1',
+    name: 'B-Class Crystal I',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 20,
+    value: 200,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 80,
+    desc: 'The weakest of the B-Class Crystals mined from the deeper Gares/Juneros seams — restores a modest measure of spent Energy.'
+  },
+  {
+    id: 'crystal_bclass_2',
+    name: 'B-Class Crystal II',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 25,
+    value: 300,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 120,
+    desc: 'A denser B-Class Crystal, humming with more Anima than its lesser kin.'
+  },
+  {
+    id: 'crystal_bclass_3',
+    name: 'B-Class Crystal III',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 30,
+    value: 420,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 170,
+    desc: 'A B-Class Crystal cut to the standard grade sold across every level-20-and-up outpost — restores roughly seven-tenths of a hero\'s Energy in one draught.'
+  },
+  {
+    id: 'crystal_bclass_4',
+    name: 'B-Class Crystal IV',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 35,
+    value: 560,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 230,
+    desc: 'The finest B-Class Crystal grade, nearly saturated with raw, undirected Anima.'
+  },
+  {
+    id: 'sphere_bclass_1',
+    name: 'B-Class Sphere I',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 20,
+    value: 210,
+    tags: [],
+    combatUsable: true,
+    heal: 260,
+    desc: 'The weakest of the B-Class Spheres, a smooth Anima-touched orb that mends flesh rather than restoring Energy.'
+  },
+  {
+    id: 'sphere_bclass_2',
+    name: 'B-Class Sphere II',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 25,
+    value: 280,
+    tags: [],
+    combatUsable: true,
+    heal: 340,
+    desc: 'A denser B-Class Sphere, warm to the touch and quicker to close a wound.'
+  },
+  {
+    id: 'sphere_bclass_3',
+    name: 'B-Class Sphere III',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 30,
+    value: 350,
+    tags: [],
+    combatUsable: true,
+    heal: 420,
+    desc: 'A B-Class Sphere cut to the standard grade sold across every level-20-and-up outpost.'
+  },
+  {
+    id: 'sphere_bclass_4',
+    name: 'B-Class Sphere IV',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 35,
+    value: 430,
+    tags: [],
+    combatUsable: true,
+    heal: 500,
+    desc: 'The finest B-Class Sphere grade, closing even grievous wounds in a single use.'
+  },
+  {
+    id: 'crystal_light',
+    name: 'Light Crystal',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 38,
+    value: 750,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 260,
+    heal: 130,
+    desc: 'A Crystal cut through with Light-grade Anima — restores more Energy than any B-Class grade, and a measure of HP besides.'
+  },
+  {
+    id: 'crystal_dark',
+    name: 'Dark Crystal',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 38,
+    value: 750,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 260,
+    heal: 130,
+    desc: 'A Crystal shot through with Dark-grade Anima — mechanically identical to its Light-grade twin, restoring the same Energy and HP.'
+  },
+  {
+    id: 'sphere_light',
+    name: 'Light Sphere',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 38,
+    value: 800,
+    tags: [],
+    combatUsable: true,
+    heal: 560,
+    energyRestore: 90,
+    desc: 'A Sphere cut through with Light-grade Anima — mends more than any B-Class grade, and restores a measure of Energy besides.'
+  },
+  {
+    id: 'sphere_dark',
+    name: 'Dark Sphere',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 38,
+    value: 800,
+    tags: [],
+    combatUsable: true,
+    heal: 560,
+    energyRestore: 90,
+    desc: 'A Sphere shot through with Dark-grade Anima — mechanically identical to its Light-grade twin, restoring the same HP and Energy.'
+  },
+
+  // =====================================================================
+  // v1.2 Phase 3 (docs/SPEC-V1.2.md Content-B item 2): level-30+ shop stock. Concept [archived]
+  // (reference/manual/Version_2.1_Changes.md: "10 levels of new content for players level 30+",
+  // "Added energy stones to level 30+ shop", "Added synthesis shop items for levels 30+"). Item
+  // definitions only — Content-A's later agent attaches the level-30+ outpost shop that stocks
+  // these (js/data/areas.js); "energy stones" are archived as their own distinct item family from
+  // the Crystal line above, so kept as a separate id/name here. Numbers [invented].
+  // =====================================================================
+  {
+    id: 'stone_energy_lesser',
+    name: 'Lesser Energy Stone',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 30,
+    value: 240,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 200,
+    desc: 'A smooth, palm-sized stone sold at the level-30+ outposts for its dependable Energy restoration — cheaper and more common than a mined Crystal.'
+  },
+  {
+    id: 'stone_energy_greater',
+    name: 'Greater Energy Stone',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 35,
+    value: 320,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 260,
+    desc: 'A larger, more tightly-bound Energy Stone, favored by heroes who range the level-30+ frontier for long stretches between towns.'
+  },
+  {
+    id: 'material_refined_anima_dust',
+    name: 'Refined Anima Dust',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 30,
+    value: 40,
+    tags: [],
+    desc: 'A pouch of finely-ground, stabilized Anima dust — a level-30+ Synthesis Shop staple, too diffuse to restore anything on its own but a common transmutation-recipe component.'
+  },
+  {
+    id: 'potion_vault_reserve',
+    name: 'Vault Reserve Tonic',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 33,
+    value: 480,
+    tags: [],
+    combatUsable: true,
+    heal: 620,
+    desc: 'A dense, bitter tonic stocked by the level-30+ outposts, distilled from reserves the Society of Modern Magic left sealed in Kastengard\'s vaults.'
   }
 ];
 
