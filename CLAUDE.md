@@ -2,7 +2,8 @@
 
 Single-player browser remake of **herorpg.net** (2004–2008, dead), reconstructed from Wayback
 Machine scrapes. Static HTML/CSS/JS, no build step, no dependencies — open `index.html` via
-`file://`. Currently **v1.2, save version 9** (branch `v1.2-skills-classes-content`).
+`file://`. **v1.2 (save version 9) is complete on `main`.** A level-100 content arc is IN PROGRESS
+on branch `level-arc` (F1 + Band A done) — **to resume, read `docs/CONTINUE-LEVEL-ARC.md` first.**
 
 ## Cardinal rules
 
