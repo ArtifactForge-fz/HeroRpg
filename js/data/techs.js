@@ -872,6 +872,73 @@ Game.Data.techs = [
     trainingCost: 3,
     skillReq: 6,
     desc: 'A stronger Flurry, requiring the first rank be learned and a proven Hand to Hand skill. Requires Flurry I and Hand to Hand 6.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band A (docs/SPEC-ARC-BANDS.md, F2/F3): one step further into two magic-school
+  // chains and two weapon-tech chains, gated by skill level per the existing Academy chain model
+  // (js/core/world.js previousRankId/canLearn — rank>1 requires the previous rank known AND the
+  // governing skill >= skillReq). skillReq 20 is comfortably inside a level 41+ character's skill
+  // cap (BALANCE.SKILL_CAP(41) = 83) for anyone who has actually trained the skill.
+  // =====================================================================
+  {
+    id: 'tech_firebolt_4',
+    name: 'Firebolt IV',
+    chain: 'Firebolt',
+    rank: 4,
+    skill: 'Evocation',
+    grade: 'Fire',
+    energyCost: 30,
+    power: 56,
+    effect: 'damage',
+    trainingCost: 6,
+    skillReq: 20,
+    desc: 'The Kuraan-era form of Firebolt, taught only to Evocation adepts who have proven the first three ranks. Requires Firebolt III and Evocation 20.'
+  },
+  {
+    id: 'tech_mend_wounds_4',
+    name: 'Mend Wounds IV',
+    chain: 'Mend Wounds',
+    rank: 4,
+    skill: 'Abjuration',
+    grade: 'Light',
+    energyCost: 28,
+    power: 84,
+    effect: 'heal',
+    trainingCost: 6,
+    skillReq: 20,
+    desc: 'A Kuraan-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds III and Abjuration 20. Unaffected by Fear (Fear.md).'
+  },
+  {
+    id: 'tech_cleave_4',
+    name: 'Cleave IV',
+    chain: 'Cleave',
+    rank: 4,
+    skill: 'Swords',
+    grade: null,
+    weaponTech: true,
+    powerMult: 2.6, // invented (user-directed)
+    energyCost: 26,
+    effect: 'damage',
+    trainingCost: 6,
+    skillReq: 20,
+    desc: 'The Kuraan-era form of Cleave, taught only once a swordsman has proven the first three ranks. Requires Cleave III and Swords 20.'
+  },
+  {
+    id: 'tech_impale_4',
+    name: 'Impale IV',
+    chain: 'Impale',
+    rank: 4,
+    skill: 'Polearms',
+    grade: null,
+    weaponTech: true,
+    powerMult: 2.5, // invented (user-directed)
+    armorPierce: 0.35, // invented (user-directed)
+    energyCost: 26,
+    effect: 'damage',
+    trainingCost: 6,
+    skillReq: 20,
+    desc: 'The Kuraan-era form of Impale, taught only once a polearm-wielder has proven the first three ranks. Requires Impale III and Polearms 20.'
   }
 ];
 

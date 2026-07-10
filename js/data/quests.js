@@ -647,6 +647,57 @@ Game.Data.quests = [
     ],
     rewards: { gold: 130, xp: 160, items: ['crystal_energy_shard'] },
     completionText: 'Kaida turns the last wisp\'s residue over in her hands, frowning at whatever pattern it traces. "Still no name for the moon. But the pattern\'s the same every time now — the Skyspire went somewhere, hero, and it isn\'t finished with Van Arius yet. Thank you for the runes. I\'ll need every one I can get."'
+  },
+
+  // =====================================================================
+  // Level-Arc Band A (docs/SPEC-ARC-BANDS.md, F2/F3): Forests of Kuraan, levels 41-50 — the story
+  // beat "Reclaim the Kuraan fringe from the Majiku," the first band past the L36-40 Skyspire/
+  // Eidas act-break. Main-spine quest + two side quests, all given at the new settlement, Kuraan
+  // Reclamation Camp (js/data/areas.js).
+  // =====================================================================
+
+  // ---------- Band A main-spine quest ----------
+  {
+    id: 'reclaim_the_fringe',
+    name: 'Reclaim the Fringe',
+    giver: { areaId: 'kuraan_reclamation_camp', npc: 'Camp Marshal Serath' },
+    levelMin: 41,
+    intro: 'Camp Marshal Serath doesn\'t look up from the trench-line map pinned to her table. "The Forests of Kuraan were Arkan ground before the Majiku ever set foot in them, hero — Arkan.md says as much, if you care to read the old surveys. I mean to have the fringe woods back under Crown patrol by season\'s end. Break their reclaimer knights, recover their warband sigils so I know how many banners are left standing, and get eyes on Deep Kuraan itself. That\'s where whoever\'s actually commanding this occupation is hiding."',
+    steps: [
+      { kind: 'kill', monsterId: 'majiku_reclaimer_knight', count: 5 },
+      { kind: 'collect', itemId: 'quest_majiku_warband_sigil', count: 3 },
+      { kind: 'visit', areaId: 'deep_kuraan' }
+    ],
+    rewards: { gold: 900, xp: 1400, items: ['sword_kuraan_reclaimers_blade'], trainingPoints: 3 },
+    completionText: 'Serath spreads the sigils across her map, counting under her breath. "Three fewer warbands, five fewer knights, and you\'ve seen Deep Kuraan with your own eyes. Good. Now we know exactly how deep this occupation runs — and exactly how far you\'ll have to go to end it. Take the blade; you\'ve more than earned it."'
+  },
+
+  // ---------- Band A side quest 1: Deep Kuraan hunt ----------
+  {
+    id: 'wraiths_of_the_deepwood',
+    name: 'What the Anima Left Behind',
+    giver: { areaId: 'kuraan_reclamation_camp', npc: 'Anima-Warden Yulei' },
+    levelMin: 46,
+    intro: 'Anima-Warden Yulei keeps a careful distance from the camp\'s own supply of raw Anima. "Deep Kuraan is shedding hollow wraiths again — Majiku ritual-work gone wrong, more likely than not, the Anima taking more than it gave back. They\'re dangerous to leave wandering near the fringe line. Put down four of them before one drifts far enough south to find the camp itself."',
+    steps: [
+      { kind: 'kill', monsterId: 'kuraan_hollow_wraith', count: 4 }
+    ],
+    rewards: { gold: 700, xp: 1100, items: ['sphere_cclass_2'] },
+    completionText: 'Yulei exhales, some of the tension leaving her shoulders. "Four less hollow things drifting the deep woods. Whatever the Majiku were trying to bind out there, I\'d rather we never find out firsthand what it was supposed to become."'
+  },
+
+  // ---------- Band A side quest 2: Majiku Warlord boss kill ----------
+  {
+    id: 'the_warlords_end',
+    name: "The Warlord's End",
+    giver: { areaId: 'kuraan_reclamation_camp', npc: 'Camp Marshal Serath' },
+    levelMin: 50,
+    intro: 'Serath finally looks up from the map. "You\'ve seen his deep camp with your own eyes by now, hero. The Majiku Warlord has held Kuraan for a generation — every knight, every witch, every ironclad vanguard we\'ve broken answers to him first. End him, and the fringe doesn\'t just get quieter. It gets ours again."',
+    steps: [
+      { kind: 'kill', monsterId: 'majiku_warlord', count: 1 }
+    ],
+    rewards: { gold: 1800, xp: 2600, items: ['heavy_head_kuraan_warhelm'], trainingPoints: 4 },
+    completionText: 'Serath turns the Warlord\'s own broken oath over in her hands, and for a long moment says nothing at all. "A generation, hero. He held these woods for a generation, and you ended it in one season. The Forests of Kuraan are Arkan ground again — for the first time since before either of us was born. Whatever comes next out of the Majiku Highlands, we\'ll meet it from here, not from behind a fringe-line trench."'
   }
 ];
 

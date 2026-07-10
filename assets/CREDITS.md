@@ -62,3 +62,30 @@ Source-tile mapping (game id ← `rltiles` path), chosen by closest visual/thema
 
 All were verified as valid 32x32 PNGs and byte-hash-distinct from every other icon in this
 directory. (This supersedes an earlier session note that these tiles were procedural placeholders.)
+
+## Level-Arc Band A icons — procedural placeholders (pending the lead's real-tile pass)
+
+The 35 new ids introduced by Level-Arc Band A (Forests of Kuraan, levels 41-50 —
+`docs/SPEC-ARC-BANDS.md`) use hand-generated procedural placeholder tiles, not real Dungeon Crawl
+art: 7 new monsters (`majiku_reclaimer_knight`, `kuraan_bramble_stalker`, `anima_scarred_revenant`,
+`majiku_deepwood_witch`, `kuraan_hollow_wraith`, `majiku_ironclad_vanguard`, `majiku_warlord`),
+6 weapons/shield (`sword_kuraan_reclaimers_blade`, `polearm_arkan_vanguard_lance`,
+`knife_fringewood_fang`, `rod_majiku_wardbreaker`, `hth_reclaimers_gauntlets`,
+`shield_kuraan_wardbulwark`), 9 armor pieces (`light_body_kuraan_windweave`,
+`light_head_kuraan_windveil`, `medium_body_reclaimers_hauberk`, `medium_legs_reclaimers_greaves`,
+`heavy_body_kuraan_bulwark_plate`, `heavy_head_kuraan_warhelm`, `light_legs_kuraan_ward_leggings`,
+`medium_feet_reclaimers_boots`, `heavy_legs_kuraan_greatplate_legguards`), 5 consumables
+(`crystal_cclass_1`, `crystal_cclass_2`, `sphere_cclass_1`, `sphere_cclass_2`,
+`stone_energy_kuraan`), 1 quest material (`quest_majiku_warband_sigil`), 3 unique items
+(`light_body_kuraan_ashcloak`, `rod_ashenbrand_conduit`, `sword_warlords_broken_oath`), and 4
+techs (`tech_firebolt_4`, `tech_mend_wounds_4`, `tech_cleave_4`, `tech_impale_4`).
+
+Per `docs/SPEC-ARC-BANDS.md`'s Icons convention, band agents' environments cannot reach the
+`crawl-ref/source/rltiles` repo, so these were generated with the same hand-rolled PNG encoder as
+the pre-P5 placeholder pass (deterministic per-id hash -> fill/accent colors + one of 5 simple
+patterns — border ring, diagonal stripes, checker quadrants, cross, or concentric ring — plus a
+small corner mark), guaranteeing every tile is a valid 32x32 RGBA PNG and byte-hash-distinct from
+every other icon in this directory (verified programmatically against the full `assets/icons/`
+set, not just against each other). The lead's real-DCSS-tile pass at the end of the Level-Arc work
+(`docs/SPEC-ARC-BANDS.md` "Phasing" section) should replace these 35 placeholders the same way the
+P5 pass replaced the v1.2 ones above.

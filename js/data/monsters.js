@@ -1234,6 +1234,200 @@ Game.Data.monsters = [
       { itemId: 'sword_skyspire_ember_blade', chance: 0.05 }
     ],
     desc: 'Not Eidas himself — no living thing could have lasted three centuries — but something of him all the same: an Anima-projection anchored to the old Skyspire ground works, still murmuring about a "divine race" that never came to pass. The last guardian of Kastengard\'s deepest vault, and, perhaps, the answer to what the twinkling light in the night sky has truly been all this time.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band A (docs/SPEC-ARC-BANDS.md, F2/F3): Forests of Kuraan, levels 41-50 — Kuraan
+  // Fringe Woods / Deep Kuraan (js/data/areas.js). Same header formulas, unchanged past level 40:
+  // hp = 20+12*level, damage = 3+2*level, energy = 40+10*level, xp = BALANCE.MONSTER_XP(level);
+  // armor ~= level (varied per archetype, capped well under a same-level warrior's expected hit,
+  // per the estari_loose_rubble milestone-gate retune). Two thematic undead/anima monsters carry
+  // curseChance (v1.2 Curse mechanic, BALANCE.CURSE_APPLY_CHANCE) per the phase brief.
+  // =====================================================================
+
+  // ---------- Kuraan Fringe Woods (level 41-44) ----------
+  {
+    id: 'majiku_reclaimer_knight',
+    name: 'Majiku Reclaimer Knight',
+    level: 41,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 41,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 41,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 41,
+    armor: 46, // tank profile: level+5, a Majiku officer dug in to hold the fringe
+    magicArmor: 14,
+    element: null,
+    resistances: {},
+    techs: ['mon_hunters_mark'],
+    xp: BALANCE.MONSTER_XP(41),
+    goldMin: 50,
+    goldMax: 100,
+    shardChance: 0.32,
+    drops: [
+      { itemId: 'sword_kuraan_reclaimers_blade', chance: 0.03 },
+      { itemId: 'crystal_cclass_1', chance: 0.08 },
+      { itemId: 'quest_majiku_warband_sigil', chance: 0.5 }
+    ],
+    desc: 'A Majiku officer dug into the fringe woods with the remnant of his warband, fighting to hold ground the reclamation column means to take back tree by tree.'
+  },
+
+  // ---------- Level 42 ----------
+  {
+    id: 'kuraan_bramble_stalker',
+    name: 'Kuraan Bramble Stalker',
+    level: 42,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 42,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 42,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 42,
+    armor: 28, // glass cannon: thorn-hide over speed, well under level
+    magicArmor: 6,
+    element: 'Earth',
+    resistances: { Earth: 0.5, Fire: -0.25 },
+    techs: ['mon_gnawing_bite'],
+    xp: BALANCE.MONSTER_XP(42),
+    goldMin: 52,
+    goldMax: 104,
+    shardChance: 0.34,
+    drops: [
+      { itemId: 'knife_fringewood_fang', chance: 0.03 },
+      { itemId: 'sphere_cclass_1', chance: 0.08 }
+    ],
+    desc: 'A bramble-hided predator that has learned to nest in the fringe\'s tangled undergrowth, striking from cover before the reclamation column can form a line.'
+  },
+
+  // ---------- Level 44 (curse-flavored anima/undead) ----------
+  {
+    id: 'anima_scarred_revenant',
+    name: 'Anima-Scarred Revenant',
+    level: 44,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 44,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 44,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 44,
+    armor: 32, // spell-wall profile: thin hide, magicArmor well above armor
+    magicArmor: 50,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.3 },
+    // v1.2 Curse mechanic (BALANCE.CURSE_APPLY_CHANCE), same convention as kastengard_anima_wraith
+    // — a thematic undead/anima monster for Band A's curse coverage (phase brief).
+    curseChance: BALANCE.CURSE_APPLY_CHANCE,
+    techs: ['mon_dark_hex', 'mon_anima_lance'],
+    xp: BALANCE.MONSTER_XP(44),
+    goldMin: 56,
+    goldMax: 112,
+    shardChance: 0.38,
+    drops: [
+      { itemId: 'sphere_cclass_1', chance: 0.08 },
+      // Band A unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'light_body_kuraan_ashcloak', chance: 0.02 }
+    ],
+    desc: 'A Majiku dead left to rot in the fringe long enough for stray Anima to scar itself into the corpse, walking still and hungrier than anything that lives.'
+  },
+
+  // ---------- Deep Kuraan (level 46-49) ----------
+  {
+    id: 'majiku_deepwood_witch',
+    name: 'Majiku Deepwood Witch',
+    level: 46,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 46,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 46,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 46,
+    armor: 34, // spell-wall profile: magicArmor well above armor
+    magicArmor: 60,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.25 },
+    techs: ['mon_dark_hex', 'mon_static_arc'],
+    xp: BALANCE.MONSTER_XP(46),
+    goldMin: 60,
+    goldMax: 120,
+    shardChance: 0.42,
+    drops: [
+      { itemId: 'rod_majiku_wardbreaker', chance: 0.03 },
+      { itemId: 'crystal_cclass_2', chance: 0.08 }
+    ],
+    desc: 'A Majiku war-shaman grown stronger in the deep woods, drawing on ancestral spirits far older and angrier than any the fringe scouts answer to.'
+  },
+
+  // ---------- Level 48 (curse-flavored anima/undead) ----------
+  {
+    id: 'kuraan_hollow_wraith',
+    name: 'Kuraan Hollow Wraith',
+    level: 48,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 48,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 48,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 48,
+    armor: 36,
+    magicArmor: 64,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Star: -0.3 },
+    // v1.2 Curse mechanic (BALANCE.CURSE_APPLY_CHANCE) — Band A's second thematic curse carrier.
+    curseChance: BALANCE.CURSE_APPLY_CHANCE,
+    techs: ['mon_anima_lance', 'mon_dark_hex'],
+    xp: BALANCE.MONSTER_XP(48),
+    goldMin: 64,
+    goldMax: 128,
+    shardChance: 0.46,
+    drops: [
+      { itemId: 'sphere_cclass_2', chance: 0.08 },
+      // Band A unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'rod_ashenbrand_conduit', chance: 0.02 }
+    ],
+    desc: 'A Majiku Deepwood Witch\'s own failed ritual, hollowed out by the Anima it tried to bind rather than empowered by it — what is left drifts through Deep Kuraan looking for whatever it lost.'
+  },
+
+  // ---------- Level 49 ----------
+  {
+    id: 'majiku_ironclad_vanguard',
+    name: 'Majiku Ironclad Vanguard',
+    level: 49,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 49,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 49,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 49,
+    armor: 56, // tank profile: level+7, the Warlord's own heavy vanguard
+    magicArmor: 18,
+    element: null,
+    resistances: {},
+    techs: ['mon_hunters_mark', 'mon_earthen_crush'],
+    xp: BALANCE.MONSTER_XP(49),
+    goldMin: 66,
+    goldMax: 132,
+    shardChance: 0.48,
+    drops: [
+      { itemId: 'stone_energy_kuraan', chance: 0.08 },
+      { itemId: 'quest_majiku_warband_sigil', chance: 0.5 }
+    ],
+    desc: 'One of the Majiku Warlord\'s own ironclad vanguard, held in reserve at the deep camp to answer for anything the fringe scouts and shamans fail to turn back.'
+  },
+
+  // ---------- Lair boss: Majiku Warlord (level 50) ----------
+  // invented Band A capstone (docs/SPEC-ARC-BANDS.md): flat hp/damage premiums per the F1
+  // CONVENTION NOTES block (js/balance.js) — hp premium +12*level (matches the estari_ruin_warden/
+  // foothills_matriarch/juneros_leviathan/kastengard_custodian/eidas_echo pattern), damage premium
+  // round(1.5*level+10) = round(85) = 85 (F1's sim-tuned starting ballpark for a real level-50
+  // boss), xp premium x3. "Winnable but costly" per the difficulty contract, CLAUDE.md.
+  {
+    id: 'majiku_warlord',
+    name: 'The Majiku Warlord',
+    level: 50,
+    boss: true,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 50 + 12 * 50, // 620 + 600 = 1220
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 50,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 50 + Math.round(1.5 * 50 + 10), // 103 + 85 = 188
+    armor: 46,
+    magicArmor: 44,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.25 },
+    techs: ['mon_dark_hex', 'mon_hunters_mark', 'mon_earthen_crush', 'mon_anima_lance'],
+    xp: BALANCE.MONSTER_XP(50) * 3, // invented: boss XP premium
+    goldMin: 220,
+    goldMax: 380,
+    shardChance: 0.55,
+    drops: [
+      { itemId: 'heavy_head_kuraan_warhelm', chance: 0.1 },
+      { itemId: 'quest_majiku_warband_sigil', chance: 0.6 },
+      // Band A unique equipment (js/data/items.js) — boss signature. Appended last so prior loot
+      // rates (including the guaranteed-ish sigil above) are unchanged.
+      { itemId: 'sword_warlords_broken_oath', chance: 0.05 }
+    ],
+    desc: 'The Majiku commander who has held the Forests of Kuraan for a generation, dug into a deep camp behind wardframes and ironclad vanguard alike. Breaking him is the whole reason the Reclamation Camp exists — costly, but not, at last, impossible.'
   }
 ];
 

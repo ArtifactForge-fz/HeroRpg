@@ -118,6 +118,26 @@ Game.Data.recipes = [
     gold: 700,
     output: 'crystal_light',
     desc: 'Bind a top-grade B-Class Crystal IV with Refined Anima Dust to forge a premium Light Crystal.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band A (docs/SPEC-ARC-BANDS.md, F2/F3): two synthesis recipes for the Forests of
+  // Kuraan band — a gear-tier reforge using a Band A quest material, and a graded-consumable
+  // progression recipe matching the synth_bclass_crystal_3 precedent above.
+  // =====================================================================
+  {
+    id: 'synth_kuraan_reclaimers_blade',
+    inputs: ['sword_kastengard_relic_blade', 'quest_majiku_warband_sigil'],
+    gold: 700,
+    output: 'sword_kuraan_reclaimers_blade',
+    desc: "Reforge a Kastengard Relic Blade around a captured Majiku Warband Sigil to strike a fresh Reclaimer's Blade."
+  },
+  {
+    id: 'synth_cclass_crystal_2',
+    inputs: ['crystal_cclass_1', 'crystal_cclass_1'],
+    gold: 400,
+    output: 'crystal_cclass_2',
+    desc: 'Fuse two C-Class Crystal Is into a single, denser C-Class Crystal II.'
   }
 ];
 

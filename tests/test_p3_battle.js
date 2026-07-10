@@ -122,9 +122,9 @@ function makeCharacter(opts) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: data sanity (monsters reference real items/techs) ===');
-assert(Game.Data.monsters.length === 45, '45 monsters defined (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars), got ' + Game.Data.monsters.length);
+assert(Game.Data.monsters.length === 52, '52 monsters defined (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss), got ' + Game.Data.monsters.length);
 var bosses = Game.Data.monsters.filter(function (m) { return m.boss; });
-assert(bosses.length === 5, 'exactly 5 bosses defined (Phase 6b adds 4 to the original estari_ruin_warden), got ' + bosses.length);
+assert(bosses.length === 6, 'exactly 6 bosses defined (Phase 6b adds 4 to the original estari_ruin_warden, Level-Arc Band A adds majiku_warlord), got ' + bosses.length);
 var badRefs = [];
 Game.Data.monsters.forEach(function (m) {
   (m.drops || []).forEach(function (d) {
@@ -1441,6 +1441,170 @@ Game.Battle.endBattle();
 
 // Third shard-cost tech (Focus I) is also wired — sanity on the data side.
 assert(Game.Battle.getTech('tech_focus_1').shardCost === 8, 'sanity: Focus I (the third shard-cost tech) carries shardCost 8');
+
+// =================== Test 30: Level-Arc Band A (Forests of Kuraan) monster formulas + boss premiums ===================
+console.log('\n=== Test 30: Band A regulars match the header formulas; majiku_warlord carries the F1 boss premiums ===');
+var bandARegularIds = [
+  'majiku_reclaimer_knight', 'kuraan_bramble_stalker', 'anima_scarred_revenant',
+  'majiku_deepwood_witch', 'kuraan_hollow_wraith', 'majiku_ironclad_vanguard'
+];
+assert(bandARegularIds.length === 6, 'sanity: 6 Band A regular monster ids listed in this test');
+bandARegularIds.forEach(function (id) {
+  var m = Game.Battle.getMonsterDef(id);
+  assert(!!m, 'Band A regular monster exists: ' + id);
+  if (!m) return;
+  assert(m.hp === BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * m.level, id + ' hp matches the header formula exactly');
+  assert(m.damage === BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * m.level, id + ' damage matches the header formula exactly');
+  assert(m.energy === BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * m.level, id + ' energy matches the header formula exactly');
+  assert(m.xp === BALANCE.MONSTER_XP(m.level), id + ' xp matches BALANCE.MONSTER_XP(level)');
+});
+// Two thematic undead/anima monsters carry the v1.2 Curse mechanic (phase brief).
+['anima_scarred_revenant', 'kuraan_hollow_wraith'].forEach(function (id) {
+  var m = Game.Battle.getMonsterDef(id);
+  assert(m.curseChance === BALANCE.CURSE_APPLY_CHANCE, id + ' carries curseChance BALANCE.CURSE_APPLY_CHANCE');
+});
+
+var warlord = Game.Battle.getMonsterDef('majiku_warlord');
+assert(!!warlord && warlord.boss === true, 'majiku_warlord exists and is a boss');
+assert(warlord.level === 50, 'majiku_warlord is level 50');
+var wlBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 50;
+var wlBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 50;
+assert(warlord.hp === wlBaseHp + 12 * 50, 'majiku_warlord hp carries the +12*level boss premium (' + wlBaseHp + ' + 600 = ' + (wlBaseHp + 600) + '), got ' + warlord.hp);
+assert(warlord.damage === wlBaseDmg + Math.round(1.5 * 50 + 10), 'majiku_warlord damage carries the F1 round(1.5*level+10) boss premium (' + wlBaseDmg + ' + 85 = ' + (wlBaseDmg + 85) + '), got ' + warlord.damage);
+assert(warlord.xp === BALANCE.MONSTER_XP(50) * 3, 'majiku_warlord xp carries the x3 boss premium');
+
+// =================== Test 31: Level-Arc Band A weapon damage is TAPERED, not literal ===================
+console.log('\n=== Test 31: Band A levelReq-45/48 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
+function taperedEffectiveLevelReq(levelReq) {
+  return levelReq <= 35 ? levelReq : 35 + 0.7 * (levelReq - 35);
+}
+var band45WeaponIds = [
+  'sword_kuraan_reclaimers_blade', 'polearm_arkan_vanguard_lance', 'knife_fringewood_fang',
+  'rod_majiku_wardbreaker', 'hth_reclaimers_gauntlets'
+];
+var literalDamage45 = 3 + 2 * 45; // 93 -- what a NON-tapered literal read would give
+var taperedDamage45 = 3 + 2 * taperedEffectiveLevelReq(45); // 87
+band45WeaponIds.forEach(function (id) {
+  var it = Game.Inventory.getItem(id);
+  assert(!!it, 'Band A tier-45 weapon exists: ' + id);
+  if (!it) return;
+  assert(it.damage === taperedDamage45, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage45);
+  assert(it.damage !== literalDamage45, id + ' damage is NOT the literal-formula value ' + literalDamage45 + ' (the F1 taper must be applied)');
+});
+// Armor tapers the same way (1 + effectiveLevelReq).
+var literalArmor45 = 1 + 45; // 46 -- literal read
+var taperedArmor45 = Math.round(1 + taperedEffectiveLevelReq(45)); // 43
+['light_body_kuraan_windweave', 'medium_body_reclaimers_hauberk', 'heavy_body_kuraan_bulwark_plate', 'shield_kuraan_wardbulwark'].forEach(function (id) {
+  var it = Game.Inventory.getItem(id);
+  assert(!!it, 'Band A tier-45 armor/shield exists: ' + id);
+  if (!it) return;
+  assert(it.armor === taperedArmor45, id + ' armor (' + it.armor + ') equals the TAPERED value ' + taperedArmor45);
+  assert(it.armor !== literalArmor45, id + ' armor is NOT the literal-formula value ' + literalArmor45);
+});
+
+// =================== Test 32: majiku_warlord lair fight — winnable but costly (real RNG sim) ===================
+console.log('\n=== Test 32: majiku_warlord (Band A lair boss) is winnable-but-costly for a geared level-50 warrior ===');
+function buildLevel50KuraanWarrior() {
+  var skillPoints = {};
+  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
+  skillPoints['Swords'] = 3;
+  skillPoints['Heavy Armor'] = 2;
+  var c = Game.Character.create({
+    race: 'Human',
+    name: 'WarlordTester',
+    gender: 'Male',
+    skillPoints: skillPoints
+  });
+  c.level = 50;
+  c.xp = BALANCE.XP_TO_LEVEL(50);
+  // 49 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
+  // (same split style as the eidas_echo debug-warrior build, test_p6b_content.js).
+  c.statPoints = 49 * BALANCE.LEVELUP_STAT_POINTS;
+  var totalPoints = c.statPoints;
+  for (var i = 0; i < totalPoints; i++) {
+    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
+    Game.Character.spendStatPoint(c, stat);
+  }
+  var gearIds = ['sword_kuraan_reclaimers_blade', 'heavy_body_kuraan_bulwark_plate', 'shield_kuraan_wardbulwark'];
+  gearIds.forEach(function (id) {
+    Game.Inventory.addItem(c, id);
+    var res = Game.Inventory.equip(c, id);
+    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
+  });
+  for (i = 0; i < 6; i++) {
+    Game.Inventory.addItem(c, 'sphere_cclass_1');
+    Game.Inventory.addItem(c, 'crystal_cclass_1');
+  }
+  Game.Character.recalcDerived(c);
+  c.hitPoints = c.hitPointsMax;
+  c.energy = c.energyMax;
+  return c;
+}
+
+function countBandAConsumables(c) {
+  var n = 0;
+  for (var i = 0; i < c.inventory.length; i++) {
+    if (c.inventory[i] === 'sphere_cclass_1' || c.inventory[i] === 'crystal_cclass_1') n++;
+  }
+  return n;
+}
+
+function simulateWarlordBattle() {
+  var c = buildLevel50KuraanWarrior();
+  Game.state.character = c;
+  Game.state.battle = null;
+  Game.Battle._rng = Math.random; // real RNG for this sim
+
+  var consumablesBefore = countBandAConsumables(c);
+  var battle = Game.Battle.start('majiku_warlord');
+  var rounds = 0;
+  var MAX_ROUNDS = 500;
+  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
+    rounds++;
+    if (!Game.Battle.canAct(battle)) {
+      var crystalIdx = c.inventory.indexOf('crystal_cclass_1');
+      if (crystalIdx !== -1) {
+        Game.Battle.useItem('crystal_cclass_1');
+        continue;
+      }
+    }
+    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_cclass_1') !== -1) {
+      Game.Battle.useItem('sphere_cclass_1');
+      continue;
+    }
+    Game.Battle.attack();
+  }
+  var consumablesAfter = countBandAConsumables(c);
+  return {
+    phase: battle.phase,
+    hpLeftFrac: c.hitPoints / c.hitPointsMax,
+    consumablesConsumed: consumablesBefore - consumablesAfter
+  };
+}
+
+var WARLORD_SIM_COUNT = 30;
+var wlWins = 0;
+var wlOutcomes = {};
+var wlHpLeftSum = 0;
+var wlConsumedSum = 0;
+for (var wlRun = 0; wlRun < WARLORD_SIM_COUNT; wlRun++) {
+  var wlResult = simulateWarlordBattle();
+  wlOutcomes[wlResult.phase] = (wlOutcomes[wlResult.phase] || 0) + 1;
+  if (wlResult.phase === 'won') {
+    wlWins++;
+    wlHpLeftSum += wlResult.hpLeftFrac;
+    wlConsumedSum += wlResult.consumablesConsumed;
+  }
+}
+var wlWinRate = wlWins / WARLORD_SIM_COUNT;
+var wlAvgHpLeft = wlWins ? wlHpLeftSum / wlWins : 0;
+var wlAvgConsumed = wlWins ? wlConsumedSum / wlWins : 0;
+console.log('majiku_warlord sim results over ' + WARLORD_SIM_COUNT + ' battles: ' + JSON.stringify(wlOutcomes) +
+  ' — win rate ' + (wlWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (wlAvgHpLeft * 100).toFixed(0) +
+  '%, avg consumables spent ' + wlAvgConsumed.toFixed(1));
+// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
+assert(wlWinRate >= 0.6, 'majiku_warlord is reliably beatable by a geared level-50 warrior (win rate ' + (wlWinRate * 100).toFixed(1) + '%, want >= 60%)');
+assert(wlAvgHpLeft <= 0.85 || wlAvgConsumed >= 1, 'majiku_warlord extracts a real cost on wins (avg HP left ' + (wlAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + wlAvgConsumed.toFixed(1) + ')');
 
 // =================== Summary ===================
 console.log('\n===================================');

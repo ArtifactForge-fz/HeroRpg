@@ -129,7 +129,7 @@ function winBattle(monsterId) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: quest/story data sanity ===');
-assert(Game.Data.quests.length === 25, '25 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers), got ' + Game.Data.quests.length);
+assert(Game.Data.quests.length === 28, '28 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end), got ' + Game.Data.quests.length);
 assert(Game.Data.story.length === 3, '3 story chapters, got ' + Game.Data.story.length);
 ['prelude', 'chapter_1', 'chapter_2'].forEach(function (id) {
   var found = Game.Data.story.some(function (ch) { return ch.id === id; });
@@ -613,6 +613,79 @@ assert(Game.Quests.inventoryCount(c17, 'potion_minor_healing') === potionsBefore
 assert(c17.quests['arkan_first_rite'].status === 'completed', 'quest marked completed');
 // A Human cannot even reach this far (refused at accept, per Test 16) — no further cross-race
 // regression risk to check here.
+
+// =================== Test 18: Level-Arc Band A quests (accept -> progress -> turn-in) ===================
+console.log('\n=== Test 18: Band A quests — reclaim_the_fringe / wraiths_of_the_deepwood / the_warlords_end ===');
+
+// 18a) main-spine quest: accept at the camp, force-satisfy its kill/collect/visit steps, turn in
+// for the full multi-reward (mirrors Test 2's the_oruk use of Game._debug.completeQuestStep).
+var c18 = makeCharacter({ name: 'BandAMainTest' });
+c18.level = 44;
+Game.World.travelTo('kuraan_reclamation_camp');
+var res18a = Game.Quests.accept('reclaim_the_fringe');
+assert(res18a.ok === true, 'reclaim_the_fringe accepted at Kuraan Reclamation Camp: ' + res18a.message);
+assert(Game.Quests.canTurnIn('reclaim_the_fringe') === false, 'reclaim_the_fringe not yet turn-in-able (steps unsatisfied)');
+Game._debug.completeQuestStep('reclaim_the_fringe');
+assert(Game.Quests.canTurnIn('reclaim_the_fringe') === true, 'reclaim_the_fringe steps force-satisfied (5x kill + 3x collect + visit deep_kuraan)');
+var gold18a = Game.Character.goldTotalAsGold(c18);
+var xp18a = c18.xp;
+var tp18a = c18.trainingPoints;
+var res18b = Game.Quests.turnIn('reclaim_the_fringe');
+assert(res18b.ok === true, 'reclaim_the_fringe turn-in succeeds: ' + res18b.message);
+assert(Game.Character.goldTotalAsGold(c18) === gold18a + 900, 'reclaim_the_fringe grants +900 gold');
+assert(c18.xp === xp18a + 1400, 'reclaim_the_fringe grants +1400 xp');
+assert(c18.trainingPoints === tp18a + 3, 'reclaim_the_fringe grants +3 Training Points');
+assert(Game.Quests.inventoryCount(c18, 'sword_kuraan_reclaimers_blade') >= 1, "reclaim_the_fringe grants a Reclaimer's Blade");
+assert(c18.quests['reclaim_the_fringe'].status === 'completed', 'reclaim_the_fringe marked completed');
+
+// Band A monsters hit far harder than the 1-40 roster (damage ~3+2*level); a level-46+ test
+// character still carries level-1 base HP unless stat points are spent into Vitality (Vitality
+// only drives hitPointsMax via HP_PER_VITALITY, js/core/character.js — level alone does not), so
+// winBattle's opening "monster strikes first" exchange (js/core/battle.js start(), playerFirst
+// compares Dexterity to monster.level) would otherwise one-shot a bare level-1-HP test character
+// before the helper ever gets to zero the monster's own hp. Grant this era's worth of stat points
+// into Vitality first, mirroring test_p6b_content.js's buildLevel40Warrior pattern.
+function grantVitalityForLevel(c, level) {
+  c.level = level;
+  c.xp = BALANCE.XP_TO_LEVEL(level);
+  c.statPoints += (level - 1) * BALANCE.LEVELUP_STAT_POINTS - c.statPoints;
+  var pts = c.statPoints;
+  for (var i = 0; i < pts; i++) Game.Character.spendStatPoint(c, 'vitality');
+  Game.Character.recalcDerived(c);
+  c.hitPoints = c.hitPointsMax;
+  c.energy = c.energyMax;
+}
+
+// 18b) side quest: REAL kill progress (not force-satisfied) via winBattle against the new Deep
+// Kuraan regulars, same pattern as Test 3's veteran_of_averast loop.
+var c19 = makeCharacter({ name: 'BandASideTest' });
+grantVitalityForLevel(c19, 46);
+Game.World.travelTo('kuraan_reclamation_camp');
+var res19a = Game.Quests.accept('wraiths_of_the_deepwood');
+assert(res19a.ok === true, 'wraiths_of_the_deepwood accepted: ' + res19a.message);
+Game.World.travelTo('deep_kuraan');
+for (var w18 = 0; w18 < 4; w18++) winBattle('kuraan_hollow_wraith');
+assert(c19.quests['wraiths_of_the_deepwood'].progress.kills['kuraan_hollow_wraith'] === 4, 'real kill progress reached 4/4 via winBattle against kuraan_hollow_wraith');
+assert(Game.Quests.canTurnIn('wraiths_of_the_deepwood') === true, 'wraiths_of_the_deepwood turn-in-able after 4 real kills');
+Game.World.travelTo('kuraan_reclamation_camp');
+var res19b = Game.Quests.turnIn('wraiths_of_the_deepwood');
+assert(res19b.ok === true, 'wraiths_of_the_deepwood turn-in succeeds: ' + res19b.message);
+assert(Game.Quests.inventoryCount(c19, 'sphere_cclass_2') >= 1, 'wraiths_of_the_deepwood grants a C-Class Sphere II');
+
+// 18c) boss-kill side quest: REAL kill via winBattle against the Band A lair boss itself.
+var c20 = makeCharacter({ name: 'BandABossTest' });
+grantVitalityForLevel(c20, 50);
+Game.World.travelTo('kuraan_reclamation_camp');
+var res20a = Game.Quests.accept('the_warlords_end');
+assert(res20a.ok === true, 'the_warlords_end accepted: ' + res20a.message);
+Game.World.travelTo('deep_kuraan');
+winBattle('majiku_warlord');
+assert(c20.quests['the_warlords_end'].progress.kills['majiku_warlord'] === 1, 'majiku_warlord kill recorded via winBattle (lair fight, same Game.Battle.start call as the Explore screen\'s lair button)');
+Game.World.travelTo('kuraan_reclamation_camp');
+var res20b = Game.Quests.turnIn('the_warlords_end');
+assert(res20b.ok === true, 'the_warlords_end turn-in succeeds: ' + res20b.message);
+assert(c20.quests['the_warlords_end'].status === 'completed', 'the_warlords_end marked completed');
+assert(Game.Quests.inventoryCount(c20, 'heavy_head_kuraan_warhelm') >= 1, 'the_warlords_end grants the Kuraan Warhelm');
 
 // =================== Summary ===================
 console.log('\n===================================');

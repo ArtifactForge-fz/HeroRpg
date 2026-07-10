@@ -365,6 +365,84 @@ Game.Data.areas = [
     lair: { monsterId: 'eidas_echo', minLevel: 40, name: 'The Skyspire Anchor' },
     facilities: [],
     desc: 'The deepest vaults beneath Kastengard, sealed since the Skyspire\'s departure. Something of Eidas himself still answers here — an echo cast down from the red moon, and the last thing standing between Van Arius and its oldest, quietest wound.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band A (docs/SPEC-ARC-BANDS.md, F2/F3): Forests of Kuraan, levels 41-50 — the first
+  // band past the L36-40 Skyspire/Eidas act-break, pushing the story north to reclaim the archived
+  // Arkan homeland (Arkan.md: "they were forced to the Plains of Averast... they established the
+  // city of Saratus") from the Majiku who displaced them (DESIGN.md §2). Two overlapping hunting
+  // bands (Kuraan Fringe Woods 41-44, Deep Kuraan 46-49; no gap wider than the archived ±5 XP/loot
+  // cutoff, BALANCE.XP_LOOT_CUTOFF_LEVELS) plus a new settlement, Kuraan Reclamation Camp.
+  // Destinations are travel-reachable from anywhere once minLevel is met (js/ui/screens.js
+  // renderExplore lists ALL of Game.Data.areas as destinations, gated only by
+  // Game.World.travelTo's level check) — a fresh level-41 character can reach Kuraan Fringe Woods
+  // immediately, no separate adjacency graph to satisfy.
+  // =====================================================================
+
+  // ---------- Kuraan Fringe Woods: level 41-44 hunting ----------
+  {
+    id: 'kuraan_fringe_woods',
+    name: 'Kuraan Fringe Woods',
+    type: 'hunting',
+    minLevel: 41,
+    // archived region name: Forests of Kuraan (DESIGN.md §2 — Arkan homeland, overrun by the
+    // Majiku); this is the SAME forest as the level 6-8 kuraan_border_woods further south, revisited
+    // at the story's next act — the fringe the reclamation push is fighting to hold.
+    monsters: ['majiku_reclaimer_knight', 'kuraan_bramble_stalker', 'anima_scarred_revenant'],
+    facilities: [],
+    desc: 'The southern fringe of the Forests of Kuraan, where the first heroes mustered at the Reclamation Camp are pushing the Majiku back tree by tree. The deeper woods — Deep Kuraan — still answer to a Majiku Warlord who has not yet been made to answer for it.'
+  },
+
+  // ---------- Deep Kuraan: level 46-49 hunting + lair boss ----------
+  {
+    id: 'deep_kuraan',
+    name: 'Deep Kuraan',
+    type: 'hunting',
+    minLevel: 46,
+    monsters: ['majiku_deepwood_witch', 'kuraan_hollow_wraith', 'majiku_ironclad_vanguard'],
+    // The boss is a separate "Lair" entry, fightable only once the party is closer to its own
+    // level (invented gate, matches the estari_ruin_warden/foothills_matriarch precedent).
+    lair: { monsterId: 'majiku_warlord', minLevel: 50, name: "The Warlord's Deep Camp" },
+    facilities: [],
+    desc: 'The old-growth heart of Kuraan, where the Arkan homeland\'s oldest trees still stand — and where the Majiku Warlord who has commanded the occupation for a generation has made his deep camp. Nothing the reclamation has fielded so far has been strong enough to reach him.'
+  },
+
+  // ---------- Kuraan Reclamation Camp: level 44 settlement ----------
+  {
+    id: 'kuraan_reclamation_camp',
+    name: 'Kuraan Reclamation Camp',
+    type: 'town',
+    minLevel: 44, // invented: opens partway through the Fringe Woods band, before Deep Kuraan (46)
+    monsters: [],
+    facilities: [
+      {
+        type: 'shop',
+        // Band A's tapered levelReq-45/48 gear (js/data/items.js) plus its own C-Class Crystal/
+        // Sphere/Energy Stone consumables, alongside a couple of the prior band's top items for a
+        // smooth handoff (established pattern — every town shop mixes in at least one older item).
+        stock: [
+          'sword_kuraan_reclaimers_blade', 'polearm_arkan_vanguard_lance', 'knife_fringewood_fang',
+          'rod_majiku_wardbreaker', 'hth_reclaimers_gauntlets',
+          'shield_kuraan_wardbulwark',
+          'light_body_kuraan_windweave', 'light_head_kuraan_windveil',
+          'medium_body_reclaimers_hauberk', 'medium_legs_reclaimers_greaves',
+          'heavy_body_kuraan_bulwark_plate', 'heavy_head_kuraan_warhelm',
+          'light_legs_kuraan_ward_leggings', 'medium_feet_reclaimers_boots', 'heavy_legs_kuraan_greatplate_legguards',
+          'tent_expedition_pavilion',
+          'potion_vault_reserve',
+          'crystal_cclass_1', 'crystal_cclass_2', 'sphere_cclass_1', 'sphere_cclass_2',
+          'stone_energy_kuraan', 'stone_energy_greater'
+        ]
+      },
+      { type: 'inn' },
+      { type: 'vault' },
+      { type: 'academy' },
+      // archived: New_Player_Guide.md §5.1.5 "Tavern" (quest source) — the camp's own quest-giver
+      // location, mirroring every other quest-giving settlement (Eldor/Ju`Mak/Saratus/Laik).
+      { type: 'tavern' }
+    ],
+    desc: 'A fortified muster point on the Kuraan fringe, thrown up by the Crown and Academy once the reclamation push began in earnest. Camp Marshal Serath commands the column from here — Inn, Vault, Academy, and a well-stocked Shop selling the reclamation\'s own reforged gear.'
   }
 ];
 

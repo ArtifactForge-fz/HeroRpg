@@ -1584,6 +1584,346 @@ Game.Data.items = [
     combatUsable: true,
     heal: 620,
     desc: 'A dense, bitter tonic stocked by the level-30+ outposts, distilled from reserves the Society of Modern Magic left sealed in Kastengard\'s vaults.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band A (docs/SPEC-ARC-BANDS.md, F2/F3): Forests of Kuraan, levels 41-50. First band
+  // past the L36-40 Skyspire/Eidas act-break. Weapon/armor damage and armor values below are
+  // TAPERED per the F1 CONVENTION NOTES block in js/balance.js (F1 finding, mandatory past band
+  // 35): effectiveLevelReq = 35 + 0.7*(levelReq-35). Main tier at levelReq 45 (effectiveLevelReq
+  // 42 -> damage 3+2*42=87, armor 1+42=43 — NOT the literal 3+2*45=93 / 1+45=46); a levelReq-48
+  // sub-tier (effectiveLevelReq 44.1 -> damage ~91, armor ~45). Bands <=35 are unchanged (kept
+  // literal, per the F1 note). statReqs continue the existing levelReq+9-ish trend (e.g.
+  // sword_kastengard_relic_blade levelReq35/statReq44); value is an invented economy continuation
+  // of the existing per-tier growth curve (no archived value formula survived — see this file's
+  // header comment).
+  // =====================================================================
+
+  // ---------- Weapons: tier (levelReq 45), one per weapon skill ----------
+  {
+    id: 'sword_kuraan_reclaimers_blade',
+    name: "Reclaimer's Blade",
+    slot: 'weapon',
+    skill: 'Swords',
+    damage: 87, // TAPERED: effectiveLevelReq 35+0.7*10=42 -> 3+2*42=87 (F1 finding; NOT the literal 3+2*45=93)
+    weight: 7,
+    levelReq: 45,
+    statReqs: { strength: 54 },
+    value: 1750,
+    tags: [],
+    desc: 'A reforged blade carried by the first heroes to push back into the Forests of Kuraan, its edge marked with a reclamation-band sigil.'
+  },
+  {
+    id: 'polearm_arkan_vanguard_lance',
+    name: 'Arkan Vanguard Lance',
+    slot: 'weapon',
+    skill: 'Polearms',
+    damage: 87, // TAPERED, see header comment above
+    weight: 9,
+    levelReq: 45,
+    statReqs: { strength: 54 },
+    value: 1750,
+    tags: [],
+    desc: 'A long Arkan lance carried at the front of the reclamation column, its runework updated for the fight to take Kuraan back.'
+  },
+  {
+    id: 'knife_fringewood_fang',
+    name: 'Fringewood Fang',
+    slot: 'weapon',
+    skill: 'Knives',
+    damage: 87, // TAPERED, see header comment above
+    weight: 3,
+    levelReq: 45,
+    statReqs: { dexterity: 54 },
+    value: 1750,
+    tags: [],
+    desc: "A curved knife shaped from Kuraan fringewood and a Majiku scout's own fang, favored by scouts retaking the border."
+  },
+  {
+    id: 'rod_majiku_wardbreaker',
+    name: 'Majiku Wardbreaker Rod',
+    slot: 'weapon',
+    skill: 'Rods',
+    damage: 87, // TAPERED, see header comment above
+    weight: 4,
+    levelReq: 45,
+    statReqs: { intelligence: 54 },
+    value: 1750,
+    tags: [],
+    desc: "A captured Majiku ward-rod, its bindings unpicked and reforged by Arkan battlemages into a conduit that turns the enemy's own wards against them."
+  },
+  {
+    id: 'hth_reclaimers_gauntlets',
+    name: "Reclaimer's Gauntlets",
+    slot: 'weapon',
+    skill: 'Hand to Hand',
+    damage: 87, // TAPERED, see header comment above
+    weight: 4,
+    levelReq: 45,
+    statReqs: { strength: 54 },
+    value: 1750,
+    tags: [],
+    desc: "Banded gauntlets issued to the reclamation camp's front-line brawlers, heavy enough to break a Majiku shield-wall."
+  },
+
+  // ---------- Offhand: Shield (levelReq 45) ----------
+  {
+    id: 'shield_kuraan_wardbulwark',
+    name: 'Kuraan Wardbulwark',
+    slot: 'offhand',
+    skill: 'Shields',
+    armor: 43, // TAPERED: 1+42=43
+    magicArmor: 14,
+    weight: 8,
+    levelReq: 45,
+    statReqs: { strength: 54 },
+    value: 1840,
+    tags: [],
+    desc: 'A broad shield banded with reclaimed Arkan wardplate, warded against both Majiku steel and Majiku hexcraft alike.'
+  },
+
+  // ---------- Armor: tier (levelReq 45) — light/medium/heavy ----------
+  {
+    id: 'light_body_kuraan_windweave',
+    name: 'Kuraan Windweave Robe',
+    slot: 'body',
+    skill: 'Light Armor',
+    armor: 43, // TAPERED, see header comment above
+    magicArmor: 14,
+    weight: 3,
+    levelReq: 45,
+    value: 1850,
+    tags: [],
+    desc: 'A silk-and-ward weave cut for scouts moving quietly through the reclaimed fringe woods.'
+  },
+  {
+    id: 'light_head_kuraan_windveil',
+    name: 'Kuraan Windveil Hood',
+    slot: 'head',
+    skill: 'Light Armor',
+    armor: 43,
+    magicArmor: 14,
+    weight: 2,
+    levelReq: 45,
+    value: 1820,
+    tags: [],
+    desc: "A matching hood to the Windweave Robe, its warding thread tuned against the Majiku's own war-shaman curses."
+  },
+  {
+    id: 'medium_body_reclaimers_hauberk',
+    name: "Reclaimer's Hauberk",
+    slot: 'body',
+    skill: 'Medium Armor',
+    armor: 43,
+    weight: 6,
+    levelReq: 45,
+    value: 1850,
+    tags: [],
+    desc: 'Boiled leather and iron rivets, standard issue to every hero mustered at the Kuraan Reclamation Camp.'
+  },
+  {
+    id: 'medium_legs_reclaimers_greaves',
+    name: "Reclaimer's Greaves",
+    slot: 'legs',
+    skill: 'Medium Armor',
+    armor: 43,
+    weight: 6,
+    levelReq: 45,
+    value: 1830,
+    tags: [],
+    desc: "Greaves fitted for long marches through Kuraan's reclaimed undergrowth."
+  },
+  {
+    id: 'heavy_body_kuraan_bulwark_plate',
+    name: 'Kuraan Bulwark Plate',
+    slot: 'body',
+    skill: 'Heavy Armor',
+    armor: 43,
+    weight: 10,
+    levelReq: 45,
+    statReqs: { strength: 48 },
+    value: 1900,
+    tags: [],
+    desc: "Heavy plate hammered at the reclamation camp's own forge, thick enough to stand a Majiku Warlord's charge."
+  },
+  {
+    id: 'heavy_head_kuraan_warhelm',
+    name: 'Kuraan Warhelm',
+    slot: 'head',
+    skill: 'Heavy Armor',
+    armor: 43,
+    weight: 10,
+    levelReq: 45,
+    statReqs: { strength: 48 },
+    value: 1880,
+    tags: [],
+    desc: 'A war-helm forged for the officers leading the push back into the fringe woods.'
+  },
+
+  // ---------- Armor: sub-tier (levelReq 48) ----------
+  {
+    id: 'light_legs_kuraan_ward_leggings',
+    name: 'Kuraan Ward-Leggings',
+    slot: 'legs',
+    skill: 'Light Armor',
+    armor: 45, // TAPERED: effectiveLevelReq 35+0.7*13=44.1 -> 1+44.1=45.1
+    magicArmor: 15,
+    weight: 3,
+    levelReq: 48,
+    value: 1950,
+    tags: [],
+    desc: 'Warded leggings woven for the deeper reaches of Kuraan, where the fringe gives way to older, stranger wood.'
+  },
+  {
+    id: 'medium_feet_reclaimers_boots',
+    name: "Reclaimer's Boots",
+    slot: 'feet',
+    skill: 'Medium Armor',
+    armor: 45,
+    weight: 6,
+    levelReq: 48,
+    value: 1930,
+    tags: [],
+    desc: 'Sturdy boots re-soled at the reclamation camp for heroes ranging into the deep woods.'
+  },
+  {
+    id: 'heavy_legs_kuraan_greatplate_legguards',
+    name: 'Kuraan Greatplate Legguards',
+    slot: 'legs',
+    skill: 'Heavy Armor',
+    armor: 45,
+    weight: 10,
+    levelReq: 48,
+    statReqs: { strength: 50 },
+    value: 2000,
+    tags: [],
+    desc: "Massive plate legguards salvaged and reforged from a fallen Majiku vanguard's own armor."
+  },
+
+  // ---------- Consumables: C-Class Crystal/Sphere + Energy Stone, extending the graded line
+  // (B-Class I-IV / Light-Dark, levelReq 20-38) into Band A ----------
+  {
+    id: 'crystal_cclass_1',
+    name: 'C-Class Crystal I',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 41,
+    value: 650,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 300,
+    desc: 'A denser grade of Anima crystal mined from the reclaimed Kuraan fringe, restoring more Energy than any B-Class grade.'
+  },
+  {
+    id: 'crystal_cclass_2',
+    name: 'C-Class Crystal II',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 46,
+    value: 780,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 340,
+    desc: 'The deeper-grade C-Class Crystal, cut from seams found only past the fringe, in Deep Kuraan itself.'
+  },
+  {
+    id: 'sphere_cclass_1',
+    name: 'C-Class Sphere I',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 41,
+    value: 680,
+    tags: [],
+    combatUsable: true,
+    heal: 600,
+    desc: 'A denser grade of Anima sphere, closing wounds faster than any B-Class grade.'
+  },
+  {
+    id: 'sphere_cclass_2',
+    name: 'C-Class Sphere II',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 46,
+    value: 760,
+    tags: [],
+    combatUsable: true,
+    heal: 660,
+    desc: 'The deeper-grade C-Class Sphere, mended from Anima found only in Deep Kuraan.'
+  },
+  {
+    id: 'stone_energy_kuraan',
+    name: 'Kuraan Energy Stone',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 45,
+    value: 420,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 320,
+    desc: 'A dependable Energy Stone sold at the Kuraan Reclamation Camp for heroes pushing deeper into the fringe.'
+  },
+
+  // ---------- Band A quest material ----------
+  {
+    id: 'quest_majiku_warband_sigil',
+    name: 'Majiku Warband Sigil',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 1,
+    value: 12,
+    tags: ['no-trade'],
+    desc: 'A banner-sigil torn from a Majiku warband retreating deeper into Kuraan. Camp Marshal Serath wants a tally of how many warbands remain.'
+  },
+
+  // ---------- Band A unique equipment (monster-drop only; tag 'unique', +15-25% over the
+  // tapered tier per CLAUDE.md / SPEC-ARC-BANDS.md — never sold, never a synthesis input/output) ----------
+  {
+    id: 'light_body_kuraan_ashcloak',
+    name: 'Kuraan Ashcloak',
+    slot: 'body',
+    skill: 'Light Armor',
+    armor: 52, // +21% over the tapered tier-45 body armor (43)
+    damage: 5, // hybrid: armor granting a weapon-like Damage bonus, matching the ashroot_ward_cloak precedent
+    weight: 3,
+    levelReq: 45,
+    value: 2200,
+    tags: ['unique'],
+    desc: "A cloak burned grey by whatever anima-scarred the Revenant that wore it, its ash-dark weave sharp enough to cut on contact."
+  },
+  {
+    id: 'rod_ashenbrand_conduit',
+    name: 'Ashenbrand Conduit',
+    slot: 'weapon',
+    skill: 'Rods',
+    damage: 109, // +20% over the tapered levelReq-48 damage (~91)
+    armor: 6, // hybrid: a weapon carrying +Armor, a stat shop rods never have
+    weight: 4,
+    levelReq: 48,
+    statReqs: { intelligence: 60 },
+    value: 2500,
+    tags: ['unique'],
+    desc: "A rod grown from the Hollow Wraith's own ash-brand core, warding its wielder even as it channels the same Anima that hollowed the wraith out."
+  },
+  {
+    id: 'sword_warlords_broken_oath',
+    name: "Warlord's Broken Oath",
+    slot: 'weapon',
+    skill: 'Swords',
+    damage: 108, // +24% over the tapered levelReq-45 damage (87)
+    magicArmor: 12, // hybrid: a weapon carrying +Magic Armor
+    weight: 7,
+    levelReq: 45,
+    statReqs: { strength: 58 },
+    value: 2600,
+    tags: ['unique'],
+    // boss signature: majiku_warlord (js/data/monsters.js), the Band A lair boss.
+    desc: "The Majiku Warlord's own blade, snapped from its haft and reforged whole — the oath it was sworn on broken along with its wielder."
   }
 ];
 

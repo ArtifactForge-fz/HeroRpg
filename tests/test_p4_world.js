@@ -118,10 +118,10 @@ function makeCharacter(opts) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: areas/monsters/items data sanity ===');
-assert(Game.Data.areas.length === 14, '14 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A), got ' + Game.Data.areas.length);
+assert(Game.Data.areas.length === 17, '17 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A + Level-Arc Band A\'s kuraan_fringe_woods/deep_kuraan/kuraan_reclamation_camp), got ' + Game.Data.areas.length);
 var townCount = Game.Data.areas.filter(function (a) { return a.type === 'town'; }).length;
-assert(townCount === 5, '5 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp, the invented level-30+ outpost which is mechanically a town), got ' + townCount);
-assert(Game.Data.monsters.length === 45, '45 monsters (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars), got ' + Game.Data.monsters.length);
+assert(townCount === 6, '6 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp + Kuraan Reclamation Camp), got ' + townCount);
+assert(Game.Data.monsters.length === 52, '52 monsters (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss), got ' + Game.Data.monsters.length);
 var gares = Game.World.getArea('gares_riverbanks');
 assert(gares && gares.monsters.length === 7, 'Gares Riverbanks lists 7 monsters (4 original + 3 enemy-variety-pass)');
 gares.monsters.forEach(function (mid) {
@@ -179,6 +179,52 @@ var outpostShop = Game.World.getFacility(outpost, 'shop');
 ['stone_energy_lesser', 'stone_energy_greater', 'potion_vault_reserve', 'material_refined_anima_dust'].forEach(function (iid) {
   assert(outpostShop.stock.indexOf(iid) !== -1, 'outpost shop stocks Content-B 30+ item: ' + iid);
 });
+
+// =================== Test 0d: Level-Arc Band A — Forests of Kuraan (docs/SPEC-ARC-BANDS.md) ===================
+console.log('\n=== Test 0d: Kuraan Fringe Woods / Deep Kuraan / Kuraan Reclamation Camp exist, level-gated, huntable, travel-reachable ===');
+var fringeWoods = Game.World.getArea('kuraan_fringe_woods');
+var deepKuraan = Game.World.getArea('deep_kuraan');
+var reclamationCamp = Game.World.getArea('kuraan_reclamation_camp');
+assert(!!fringeWoods && fringeWoods.type === 'hunting', 'Kuraan Fringe Woods exists as a hunting area');
+assert(fringeWoods.minLevel === 41, 'Kuraan Fringe Woods gates travel at minLevel 41');
+assert(!!deepKuraan && deepKuraan.type === 'hunting', 'Deep Kuraan exists as a hunting area');
+assert(deepKuraan.minLevel === 46, 'Deep Kuraan gates travel at minLevel 46');
+assert(!!deepKuraan.lair && deepKuraan.lair.monsterId === 'majiku_warlord' && deepKuraan.lair.minLevel === 50, 'Deep Kuraan carries the majiku_warlord lair gated at minLevel 50');
+assert(!!reclamationCamp && reclamationCamp.type === 'town', 'Kuraan Reclamation Camp exists as a town');
+assert(reclamationCamp.minLevel === 44, 'Kuraan Reclamation Camp gates travel at minLevel 44');
+['shop', 'inn', 'vault', 'academy', 'tavern'].forEach(function (t) {
+  assert(!!Game.World.getFacility(reclamationCamp, t), 'Kuraan Reclamation Camp has facility: ' + t);
+});
+// No gap wider than the archived ±5 XP/loot cutoff between the two hunting bands' monster levels.
+var fringeLevels = fringeWoods.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var deepLevels = deepKuraan.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var maxFringeLevel = Math.max.apply(null, fringeLevels);
+var minDeepLevel = Math.min.apply(null, deepLevels);
+assert(minDeepLevel - maxFringeLevel < BALANCE.XP_LOOT_CUTOFF_LEVELS, 'no gap wider than the ±5 XP/loot cutoff between Kuraan Fringe Woods (max lvl ' + maxFringeLevel + ') and Deep Kuraan (min lvl ' + minDeepLevel + ')');
+var campShop = Game.World.getFacility(reclamationCamp, 'shop');
+['sword_kuraan_reclaimers_blade', 'shield_kuraan_wardbulwark', 'crystal_cclass_1', 'sphere_cclass_1', 'stone_energy_kuraan'].forEach(function (iid) {
+  assert(campShop.stock.indexOf(iid) !== -1, 'Kuraan Reclamation Camp shop stocks Band A gear/consumable: ' + iid);
+  assert(!!Game.Inventory.getItem(iid), 'Band A shop stock item resolves: ' + iid);
+});
+// Travel connectivity: destinations are drawn from ALL of Game.Data.areas regardless of current
+// location (js/ui/screens.js renderExplore), gated only by Game.World.travelTo's level check — a
+// fresh level-41 character standing anywhere must be able to reach Kuraan Fringe Woods directly.
+var connCheck = makeCharacter({ name: 'ConnectivityTest' });
+connCheck.level = 40;
+var connBlocked = Game.World.travelTo('kuraan_fringe_woods');
+assert(connBlocked.ok === false, 'a level-40 character cannot yet reach Kuraan Fringe Woods');
+connCheck.level = 41;
+var connAllowed = Game.World.travelTo('kuraan_fringe_woods');
+assert(connAllowed.ok === true, 'a fresh level-41 character reaches Kuraan Fringe Woods directly from Eldor (no adjacency graph — travel lists every area, js/ui/screens.js): ' + connAllowed.message);
+assert(connCheck.currentLocation === 'kuraan_fringe_woods', 'currentLocation updated to Kuraan Fringe Woods');
+var connToCamp = Game.World.travelTo('kuraan_reclamation_camp');
+assert(connToCamp.ok === false, 'level 41 cannot yet reach Kuraan Reclamation Camp (minLevel 44)');
+connCheck.level = 44;
+var connToCamp2 = Game.World.travelTo('kuraan_reclamation_camp');
+assert(connToCamp2.ok === true, 'level 44 reaches Kuraan Reclamation Camp directly from Kuraan Fringe Woods');
+connCheck.level = 46;
+var connToDeep = Game.World.travelTo('deep_kuraan');
+assert(connToDeep.ok === true, 'level 46 reaches Deep Kuraan directly from the camp');
 
 // =================== Test 1: new character starts by race (v1.2 Phase 3 Content-A) ===================
 console.log('\n=== Test 1: new character defaults (Human -> Eldor, Arkan -> Saratus) ===');
