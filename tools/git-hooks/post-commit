@@ -1,0 +1,5 @@
+#!/bin/sh
+# Rebuild the online-artifact bundle so tools/herorpg_artifact.html always matches HEAD.
+# Publishing to claude.ai is a separate Claude-in-session step (see CLAUDE.md "Deployment").
+# Runs after the commit; its exit status never blocks the commit.
+node tools/build_artifact.js || echo "post-commit: artifact build failed (see output above)"

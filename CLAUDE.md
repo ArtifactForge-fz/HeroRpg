@@ -91,9 +91,9 @@ Local git repo on branch `main` (no remote). `.gitignore`/`.gitattributes` are c
   done`). Keep unrelated, separately-motivated work in separate commits.
 - **Never commit with red suites.** A failing suite means the work isn't done; fix it first.
   (Exception: an explicitly-labeled WIP checkpoint the user asked for.)
-- **First real baseline** = the commit where the in-flight v8 migration lands green (this
-  session's completion), not the initial import. The initial commit is an honest snapshot that
-  still has red suites; treat the green v8 commit as the point to branch from.
+- **Baseline** = commit `6fd327e` "Baseline v1: HeroRPG remake, save version 8, all suites
+  green" — a single clean root commit (throwaway dev-scaffolding history was collapsed into it).
+  All ten suites pass at the baseline; branch new work from there.
 - **Commit message format** — imperative subject ≤72 chars, then a body explaining *what changed
   and why*, and citing the DESIGN.md tag (`[archived]`/`[invented]`/`[revised]`) or spec that
   motivated it. Note any save-version bump and its migration. For a multi-feature session commit,
@@ -102,13 +102,24 @@ Local git repo on branch `main` (no remote). `.gitignore`/`.gitattributes` are c
 - **Still user-gated:** commit when a feature is done or when the user asks; do not push (no
   remote) and do not amend published history. For multi-feature work, branch off `main` first.
 
-## Deployment (online artifact)
+## Deployment
 
-`node tools/build_artifact.js` bundles everything (JS in order, CSS inline, icons as data URIs,
-localStorage in-memory fallback) into a single HTML fragment in the session scratchpad; verify
-its 3 script blocks parse and smoke-test via fakedom, then publish with the Artifact tool
-**to the same URL**: https://claude.ai/code/artifact/1c21f461-a113-44e3-a681-ff938a8ffc4a
-(favicon ⚔️, title HeroRPG). Do NOT redeploy while suites are red.
+**Target (planned, user-led):** a self-hosted domain + static web server (setup pending as of
+2026-07-10). The game is a pure static site — serving the repo root as-is (`index.html` + `js/`
++ `css/` + `assets/`) is the primary deploy; on a real origin `localStorage` works natively, so
+no bundling step is needed there.
+
+**claude.ai Artifact publishing is ON HOLD.** The previously-used URL
+(`1c21f461-a113-44e3-a681-ff938a8ffc4a`, favicon ⚔️) is owned by a different org and cannot be
+updated from the fizor account — do not attempt to publish there.
+
+**Single-file build.** `node tools/build_artifact.js` still produces a self-contained
+`tools/herorpg_artifact.html` (git-ignored) — CSS inlined, icons as data URIs, in-memory
+localStorage fallback — and syntax-checks its 3 script blocks as it writes. A tracked
+`post-commit` hook (`tools/git-hooks/`, wired via `git config core.hooksPath tools/git-hooks`)
+rebuilds it after every commit so a deployable single-file build always matches HEAD. The hooks
+path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
+re-enable it. Never build/ship from a tree with red suites.
 
 ## Recently completed (2026-07-10) — combat-depth batch A/B/C
 

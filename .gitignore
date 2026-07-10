@@ -21,3 +21,6 @@ build/
 
 # Local save data / scratch
 *.local
+
+# Generated online-artifact bundle (rebuilt by tools/git-hooks/post-commit)
+tools/herorpg_artifact.html
