@@ -2,7 +2,7 @@
 
 Single-player browser remake of **herorpg.net** (2004–2008, dead), reconstructed from Wayback
 Machine scrapes. Static HTML/CSS/JS, no build step, no dependencies — open `index.html` via
-`file://`. Currently **v1.1+, save version 8**.
+`file://`. Currently **v1.2, save version 9** (branch `v1.2-skills-classes-content`).
 
 ## Cardinal rules
 
@@ -121,15 +121,24 @@ rebuilds it after every commit so a deployable single-file build always matches 
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
 re-enable it. Never build/ship from a tree with red suites.
 
-## Recently completed (2026-07-10) — combat-depth batch A/B/C
+## Recently completed (2026-07-10) — v1.2 (branch `v1.2-skills-classes-content`)
 
-Features A (escape can fail), B (death gold loss + Haunting/item-loss mishaps, save v7→v8),
-and C (weapon techniques + Defend) are **done and green** (all 10 suites pass). Spec retained
-for reference at docs/FEATURE-SPEC-ABC.md. Notable: fixed a latent starter-kit bug —
-`polearm_ashwood_spear`/`hth_iron_knuckles` were levelReq 2, leaving those creation builds
-weaponless at level 1; now levelReq 1 like the other starter weapons. Balance contract verified
-by simulation: every weapon tech beats plain Attack on damage-per-turn but loses on
-damage-per-energy (no retunes needed). Artifact was NOT redeployed — do that as a separate step.
+Spec: `docs/SPEC-V1.2.md`. Four phases, each committed green:
+- **P1 combat engine:** use-based skills now play (weapon→damage, armor→armor, Dodge/Double
+  Attack XP, Thievery, Dual Wield offhand), Int spell hit/miss, non-elemental defense fix, Curse
+  status. Save v8→v9 (`equipment.offhand`). Caps retuned DOWN after a difficulty-contract sim
+  (weapon 0.10 / armor 0.15) — the original 0.30/0.40 broke "5-down = death via Fear".
+- **P2 classes:** three-tier progression (base L5 / advanced L30 / tier-3 L38 "The Master's
+  Calling"); tier-3 Shadowknight/Magus/Gambit; Runeblade moved to tier-4 legendary; +2 invented
+  Legendaries (Vaultbreaker, Heir of the Echo). 15 classes.
+- **P3 content:** graded Crystals/Spheres, 30+ economy (energy stones, synthesis), ~20 shrine
+  buffs, shard-cost techs (Content-B); Laik town, Kastengard outpost, Arkan questline + Saratus
+  start (Content-A).
+- **P4 docs:** README/DESIGN updated; review #12/#13/#14 resolved.
+
+Earlier combat-depth batch A/B/C (save v7→v8) is documented in `docs/FEATURE-SPEC-ABC.md`.
+KNOWN DEBT: many v1.2 icons are procedural placeholders (Dungeon Crawl tileset unavailable in the
+agent env) — see "Recently completed" note; a real-icon pass is pending. Artifact not redeployed.
 
 ## Backlog (user-approved ideas, not started)
 
@@ -141,7 +150,9 @@ damage-per-energy (no retunes needed). Artifact was NOT redeployed — do that a
   ladder (recommend BaaS, e.g. Supabase); phased O1–O5, with O1 (a localStorage-preserving
   persistence-adapter seam) the offline-safe prerequisite that keeps the `file://` build + suites
   intact. Orthogonal to the level arc; [revised] reopens the chat feature cut in DESIGN.md §9.
+- **Real-icon pass** — replace the v1.2 procedural placeholder icons (and 6 pre-existing duplicate
+  tech-icon pairs an agent flagged) with real Dungeon Crawl 32×32 CC0 tiles once the tileset is
+  available in the working env. `test_icons.js` enforces presence + hash-distinctness but not art.
 - Unique champion abilities (beyond stat multipliers); Eidolon system (`manual/Version_3.0.md`);
-  archived tier-class names still unused: Shadowknight, Magus, Gambit (rare third branches — now
-  folded into the full-arc spec's third class tier, §5); Curse as the third implemented affliction;
-  pets (`heropet.php` existed, no data survived).
+  pets (`heropet.php` existed, no data survived). (Tier-3 classes Shadowknight/Magus/Gambit and the
+  Curse affliction — formerly backlog — shipped in v1.2.)

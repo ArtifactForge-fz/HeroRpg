@@ -42,9 +42,14 @@ delivery model as the original ("text-based, web 2.0", AJAX-era) and as the Avat
   Modern Magic at **Kastengard**, built the **Skyspire**, and departed for the red moon to found a
   "divine race." Chapter II existed but was not captured — **[invented]** continuation needed.
 - Known settlements/areas: **Royal City of Eldor** (human capital, has Spirit Shrine + Synthesis),
-  **Saratus** (Arkan capital), **Ju`Mak Village**, **Laik, Riverside Village**, **Gares Riverbanks**
-  (level 20 area) (`Recent_Updates.md`). All other hunting areas **[invented]** (the 2004-era names —
-  Lochhollow Forest, Lost Dungeon, Springwyn Island, Mt. Tenyra — may be reused as homage).
+  **Saratus** (Arkan capital), **Ju`Mak Village**, **Laik, Riverside Village** (implemented as the
+  4th town in v1.2), **Gares Riverbanks** (archived as "the level 20 area", `Recent_Updates.md`).
+  All other hunting areas **[invented]** (the 2004-era names — Lochhollow Forest, Lost Dungeon,
+  Springwyn Island, Mt. Tenyra — may be reused as homage).
+- **[revised] level compression:** the remake condenses the arc to ~1–40, so Gares Riverbanks is
+  placed at minLevel 9 rather than its archived level-20 band (see `js/data/areas.js`). The archived
+  level bands are the reference; their remake placements are a `[revised]` pacing decision. (The
+  future 100-level arc, `docs/SPEC-FULL-LEVEL-ARC.md`, restores the fuller spread.)
 
 ## 3. Character system
 
@@ -88,20 +93,36 @@ Archived balance rules (`Recent_Updates.md`):
   **[invented]** — assign: Evocation=direct damage, Conjuration=summoned/DoT effects, Alteration=
   buffs/debuffs, Absorption=drains/shields, Abjuration=healing/cleansing (consistent with
   "Alteration is affected by Spell Powers" and "Healing spells use the Light grade").
+- **v1.2 — skill *level* now has combat effect [invented numbers], honoring the archived rule that a
+  skill is "the level at which your Character performs a certain action" (`Skills.md`):** weapon
+  skill scales weapon Damage (capped); each armor skill scales its worn piece's armor (Shields for
+  the offhand shield); Dodge and Double Attack gain XP on a successful dodge / proc (previously
+  frozen); Thievery grants bonus win-gold + an item-steal chance and trains on wins; Dual Wield
+  enables an offhand weapon (shares the shield slot) for a skill-scaled extra Attack swing. Caps
+  live in `js/balance.js` (tuned down after a difficulty-contract sim). This closes the review gap
+  where weapon/armor/Thievery/Dual-Wield/Dodge/Double-Attack skills were cosmetic.
 
-### Classes — [archived design] (`Classes.md`), revised v1.1 to two tiers
+### Classes — [archived design] (`Classes.md`), revised to three tiers (v1.1 → v1.2)
 
-**v1.1 revision (user-directed):** two-tier structure, using the archived 2005–06 tier-era
-class names (`homepage_2006.md` Tier 4 news):
-- **Base class at level 5** via the "First Calling" tavern quest: **Warrior, Magician, or Thief**
-  [archived trio]. 3 modest abilities each.
-- **Advanced class at level 30** via "Trials of Ascension", branching 2 ways from the base:
+**Three-tier structure (user-directed), using the archived 2005–06 tier-era class names
+(`homepage_2006.md` Tier 4 news):**
+- **Base class at level 5** via the "The First Calling" tavern quest: **Warrior, Magician, or
+  Thief** [archived trio]. 3 modest abilities each.
+- **Advanced class at level 30** via "The Trials of Ascension", branching 2 ways from the base:
   Warrior → **Gladiator** (offense) / **Crusader** (defense); Magician → **Wizard** (damage) /
   **Sage** (healing/support); Thief → **Rogue** (crits/dodge) / **Mercenary** (versatility)
   [all six names archived]. 4 stronger abilities each. Base class remains obtained and slottable.
-- The hidden Legendary class (Runeblade of Kuraan) is unchanged, above both tiers.
+- **Tier-3 class at level 38 (v1.2)** via "The Master's Calling", converging one-per-line:
+  Warrior line → **Shadowknight** (abilities Shadow Blade / Inner Fire / Dragon's Fire), Magician
+  line → **Magus**, Thief line → **Gambit** (Lucky Coin / Dice Throw). Class names + the
+  Shadowknight/Gambit ability names are **[archived]** (`homepage_2006.md`, `forum/t-787.md`);
+  effects/numbers **[invented]**. (This realizes `docs/SPEC-FULL-LEVEL-ARC.md` §5 early; the future
+  arc re-gates tier-3 from L38 toward ~L60.)
+- **Three hidden Legendary classes (tier 4):** Runeblade of Kuraan (boss kill), Vaultbreaker
+  (boss-combination quest), Heir of the Echo (relic route) — each obtained independently, one per
+  save. **[invented]** beyond the archived "Legendary, one per server" concept.
 - The v2.1-era rule that the first classes arrive at level 30 (`Classes.md`) is intentionally
-  overridden here — marked **[revised]** rather than [archived].
+  overridden (base tier at L5) — marked **[revised]** rather than [archived].
 
 Original v2.1 archived design below (still governs XP rates, Primary/Secondary, Academy
 purchases, deactivation wipe):
@@ -127,12 +148,19 @@ purchases, deactivation wipe):
 - Monsters: have levels, elements/resistances by Anima grade, can use techniques (v2.1 added 24
   monster techs), bosses are harder. XP/loot cutoff: enemy more than 5 levels below you yields
   nothing.
-- Status effects: **Poison, Haunting, Curse** (v2.1 set; Blind/Silence were removed).
+- Status effects: **Poison, Haunting, Curse** (v2.1 set; Blind/Silence were removed) — **all three
+  now implemented**: Poison (battle DoT) and Curse (battle-scoped −25% player damage, v1.2) as
+  battle statuses; Haunting as a persistent affliction (halves magical/consumable healing until
+  cleansed at the Spirit Shrine). Curse is applied by monster `curseChance`, cleansed by an
+  Abjuration `clearsStatus` tech; effect numbers **[invented]**.
 - Win yields: combat XP, skill XP, gold, Anima Shards, and a possible item drop claimed via an
   explicit **Loot** click.
-- Damage formulas: **[invented]**, constrained by archived facts (Str ratio 2.5:1, Int decides
-  spell hit, glancing blows exist, Keen-style defense ignore existed for monsters, non-elemental
-  damage ignores defense — 2005 note, adopt).
+- Damage formulas: **[invented]**, constrained by archived facts (Str ratio 2.5:1, glancing blows
+  exist, Keen-style defense ignore existed for monsters). Two of these are **implemented as of
+  v1.2**: **Intelligence decides spell hit/miss** for offensive magic techs (`Recent_Updates.md`
+  2007-04-21; heals/buffs always land, weapon techs roll monster dodge), and **non-elemental
+  (grade:null) damage ignores defense** (2005 note — a grade:null tech's mitigation is 0; elemental
+  techs still subtract Magic Armor). This resolves the prior code-vs-DESIGN contradiction.
 
 ## 5. Techniques (Techs) — [archived structure] (`Techniques.md`, `Techs.md`)
 
@@ -144,8 +172,12 @@ purchases, deactivation wipe):
   factors Intelligence.
 - **Anima grades**: elemental system — Fire, Water, Wind, Earth + **Star** (lightning) + **Light**
   (healing) + **Dark** (`Recent_Updates.md` 2007-04-20). Monsters have per-grade resistances.
-  Crystals/Spheres by grade exist as items (B-class at 20+); crystals restore 70% tech charge —
-  simplify to an Energy/charge economy **[adapted]**: techs cost Energy, crystals restore it.
+- **Crystals & Spheres (implemented v1.2):** graded **B-class Crystals** (restore Energy) and
+  **Spheres** (restore HP) across the 20–40 bands, plus premium **Light & Dark** variants, as
+  append-only drops (`Recent_Updates.md` Apr–May 2007; names **[archived]**, values **[invented]**).
+  The mid-grade Crystal is anchored at ~70% of max Energy ("All Crystals restore 70% charge",
+  2007-04-06). Techs cost Energy; crystals restore it, spheres restore HP. Shard-cost enhancement
+  techs (`shardCost`) spend Anima Shards on cast (`Anima_Shards.md`).
 - Concrete tech list: **[invented]** (~5 chains per magic school + weapon techs).
 
 ## 6. Economy & towns — [archived] 
@@ -155,8 +187,9 @@ purchases, deactivation wipe):
 - Town facilities (`New_Player_Guide.md` §5.1): **Shop** (buy/sell; per-town stock), **Synthesis
   Shop** (combine items + gold into better items, Eldor; recipes **[invented]**), **Inn** (paid full
   heal), **Vault** (store gold/items safely), **Tavern** (quests), **Academy** (techs, class
-  skills), **Spirit Shrine** (20+ temporary buffs for Anima Shards; removes **Cursed** items for a
-  value-based fee — `Cursed.md`, `Version_2.1_Changes.md`).
+  skills), **Spirit Shrine** (temporary buffs for Anima Shards — expanded to ~20 in v1.2 toward the
+  archived "over 20", `Version_2.1_Changes.md`; removes **Cursed** items for a value-based fee and
+  cleanses **Haunting** — `Cursed.md`).
 - Camping in hunting areas: partial HP restore, scaled by tent quality; tents sold in shops.
 - Items: weight/encumbrance vs Strength-based capacity; skill affinity; level/stat requirements
   (red = unusable); slots incl. foot armor; tags (lore, no-trade); cursed items equip-lock.
@@ -193,5 +226,9 @@ Eidolons/v3.0 systems, arcade. Pets (`heropet.php` existed) — deferred, no des
 2. **Save**: localStorage, versioned JSON, export/import string for backup.
 3. **Content volume v1**: levels 1–40 playable; 2 towns (Eldor, Ju`Mak) + 5 hunting areas; ~60
    items; ~35 monsters + 4 bosses; ~30 techs; ~12 quests; 3 classes.
+   - **v1.2 actual (exceeds v1 targets):** 5 settlements (Eldor, Ju`Mak, Laik, Saratus, Kastengard
+     Vanguard Camp outpost) + more hunting areas incl. a low-level Arkan start zone; ~120 items
+     (graded Crystals/Spheres, 30+ economy); ~20 Spirit Shrine buffs; 25 quests (incl. the Arkan
+     race line + tier-3 class capstone); **15 classes across 3 tiers + 3 Legendaries.**
 4. **Balance oracle**: encode every archived number as a named constant in one `balance.js` file
    with a comment citing its reference file, so archived vs invented stays auditable in code.
