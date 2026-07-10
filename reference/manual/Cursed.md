@@ -1,0 +1,4 @@
+# Cursed
+Source: http://web.archive.org/web/20071107053952/http://www.herorpg.net/manual/Cursed
+---
+Cursed - HeroRPG Manual Cursed From HeroRPG Manual Jump to: navigation , search Cursed items are items that cannot be removed from the character conventionally. One must visit a Spirit Shrine in a town in order for these items to be removed, at the cost of a fee depending on the value of the items being removed. Retrieved from " http://www.herorpg.net/manual/Cursed " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page Project Genesis Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 03:46, 9 May 2007. This page has been accessed 57 times. Privacy policy About HeroRPG Manual Disclaimers

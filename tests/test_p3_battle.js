@@ -1,0 +1,909 @@
+// Phase 3 exit tests — battle engine + battle/techs/explore screens, driven through the
+// fakedom shim. Randomness stubbed via Game.Battle._rng.
+
+var vm = require('vm');
+var fs = require('fs');
+var path = require('path');
+var FakeDom = require('./fakedom.js');
+
+var base = "D:/Claude - collection folder/HeroRPG/js";
+
+function freshDom() {
+  var document = new FakeDom.FakeDocument();
+  var maincontent = document.createElement('div');
+  document.registerId('maincontent', maincontent);
+  var navlist = document.createElement('ul');
+  document.registerId('navlist', navlist);
+  var statusbars = document.createElement('div');
+  statusbars.style = {};
+  document.registerId('statusbars', statusbars);
+  var savepanel = document.createElement('div');
+  document.registerId('savepanel', savepanel);
+  document.body = document.createElement('body');
+  return document;
+}
+
+var localStorageStore = {};
+var document = freshDom();
+
+global.document = document;
+global.window = {
+  localStorage: {
+    getItem: function (k) { return Object.prototype.hasOwnProperty.call(localStorageStore, k) ? localStorageStore[k] : null; },
+    setItem: function (k, v) { localStorageStore[k] = String(v); },
+    removeItem: function (k) { delete localStorageStore[k]; }
+  },
+  btoa: function (str) { return Buffer.from(str, 'binary').toString('base64'); },
+  atob: function (str) { return Buffer.from(str, 'base64').toString('binary'); }
+};
+global.window.document = document;
+
+var lastAlert = null;
+global.alert = function (m) { lastAlert = m; console.log('[alert]', m); };
+global.window.alert = global.alert;
+global.confirm = function () { return true; };
+global.window.confirm = global.confirm;
+global.window.prompt = function () { return null; };
+
+function loadScript(relPath) {
+  var code = fs.readFileSync(path.join(base, relPath), 'utf8');
+  vm.runInThisContext(code, { filename: relPath });
+}
+
+loadScript('balance.js');
+loadScript('data/items.js');
+loadScript('data/monsters.js');
+loadScript('data/techs.js');
+loadScript('data/areas.js');
+loadScript('data/shrine.js');
+loadScript('data/recipes.js');
+loadScript('data/classes.js');
+loadScript('core/character.js');
+loadScript('core/inventory.js');
+loadScript('core/battle.js');
+loadScript('core/world.js');
+loadScript('core/save.js');
+loadScript('core/classes.js');
+loadScript('ui/icons.js');
+loadScript('ui/screens.js');
+loadScript('ui/dragdrop.js');
+loadScript('ui/infobox.js');
+loadScript('debug.js');
+
+var Game = global.window.Game;
+
+Game.state = { character: null };
+Game.persist = function () { Game.Save.save(Game.state); };
+Game.refreshCurrentScreen = function () { Game.Screens.navigate(Game.Screens.getCurrentScreen()); };
+Game.renderNav = function () {};
+Game.renderStatusBars = function () {};
+Game.renderActions = function () {};
+
+var failures = 0;
+function assert(cond, msg) {
+  if (!cond) {
+    failures++;
+    console.error('FAIL: ' + msg);
+  } else {
+    console.log('PASS: ' + msg);
+  }
+}
+
+// RNG stubbing helpers -------------------------------------------------------
+// fixedRng(0.99) -> no dodge / no glancing / no double attack / no shard / no drop,
+// monster never picks a tech (tech pick requires rng < 0.5).
+function setRng(fn) { Game.Battle._rng = fn; }
+function fixedRng(v) { return function () { return v; }; }
+// Sequence rng: consume values in order, then fall back to a default.
+function seqRng(values, fallback) {
+  var i = 0;
+  return function () { return i < values.length ? values[i++] : fallback; };
+}
+
+function makeCharacter(opts) {
+  var skillPoints = {};
+  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
+  if (opts && opts.skills) {
+    for (var k in opts.skills) skillPoints[k] = opts.skills[k];
+  } else {
+    skillPoints['Swords'] = 3;
+    skillPoints['Light Armor'] = 2;
+  }
+  var c = Game.Character.create({
+    race: (opts && opts.race) || 'Human',
+    name: (opts && opts.name) || 'Tester',
+    gender: 'Male',
+    skillPoints: skillPoints
+  });
+  Game.state.character = c;
+  Game.state.battle = null;
+  return c;
+}
+
+// =================== Test 0: data sanity ===================
+console.log('\n=== Test 0: data sanity (monsters reference real items/techs) ===');
+assert(Game.Data.monsters.length === 45, '45 monsters defined (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars), got ' + Game.Data.monsters.length);
+var bosses = Game.Data.monsters.filter(function (m) { return m.boss; });
+assert(bosses.length === 5, 'exactly 5 bosses defined (Phase 6b adds 4 to the original estari_ruin_warden), got ' + bosses.length);
+var badRefs = [];
+Game.Data.monsters.forEach(function (m) {
+  (m.drops || []).forEach(function (d) {
+    if (!Game.Inventory.getItem(d.itemId)) badRefs.push(m.id + ' -> ' + d.itemId);
+  });
+  (m.techs || []).forEach(function (tid) {
+    if (!Game.Battle.getTech(tid)) badRefs.push(m.id + ' -> tech ' + tid);
+  });
+});
+assert(badRefs.length === 0, 'all monster drops/techs reference real ids' + (badRefs.length ? ': ' + badRefs.join(', ') : ''));
+var playerTechs = Game.Data.techs.filter(function (t) { return !t.monsterOnly; });
+assert(playerTechs.length >= 8, 'at least 8 player techniques, got ' + playerTechs.length);
+['Fire', 'Star', 'Dark'].forEach(function (grade) {
+  assert(playerTechs.some(function (t) { return t.grade === grade && (t.effect === 'damage' || t.effect === 'drain'); }),
+    'damage tech exists for grade ' + grade);
+});
+assert(playerTechs.some(function (t) { return t.grade === 'Light' && t.effect === 'heal'; }), 'Light healing tech exists');
+assert(playerTechs.some(function (t) { return t.skill === 'Alteration' && t.effect === 'buff'; }), 'Alteration buff tech exists');
+assert(playerTechs.some(function (t) { return t.skill === 'Absorption' && t.effect === 'drain'; }), 'Absorption drain tech exists');
+
+// =================== Test 1: starter tech on creation ===================
+console.log('\n=== Test 1: starter tech granted for magic-school OR weapon creation skill ===');
+var cMage = makeCharacter({ skills: { 'Abjuration': 3, 'Rods': 2 }, name: 'Mage' });
+assert(cMage.techs.indexOf('tech_mend_wounds_1') !== -1, 'Abjuration creation skill grants Mend Wounds I');
+assert(cMage.techSets[0][0] === 'tech_mend_wounds_1', 'starter tech is slotted in Set 1 slot 1');
+// Feature C (user-directed): weapon creation builds now grant a starter weapon tech too (the
+// "Attack-spam" problem the phase brief calls out) — Swords creation build gets Cleave I.
+var cWarrior = makeCharacter({ skills: { 'Swords': 3, 'Heavy Armor': 2 }, name: 'Warrior' });
+assert(cWarrior.techs.indexOf('tech_cleave_1') !== -1, 'Swords creation skill grants Cleave I');
+assert(cWarrior.techSets[0][0] === 'tech_cleave_1', 'Cleave I is slotted in Set 1 slot 1');
+assert(cWarrior.fury === 0 && Array.isArray(cWarrior.techSets) && cWarrior.techSets.length === 3, 'new character has fury=0 and 3 tech sets');
+// A build with neither a magic-school nor a weapon-skill creation investment still gets nothing.
+var cNoStarter = makeCharacter({ skills: { 'Heavy Armor': 3, 'Shields': 2 }, name: 'Blank' });
+assert(cNoStarter.techs.length === 0, 'no starter tech without a magic-school or weapon creation skill');
+// Tie between a magic school and a weapon skill goes to magic (invented tie-break, phase brief).
+var cTie = makeCharacter({ skills: { 'Evocation': 2, 'Swords': 2 }, name: 'TieBuild' });
+assert(cTie.techs.indexOf('tech_firebolt_1') !== -1 && cTie.techs.indexOf('tech_cleave_1') === -1, 'tied magic/weapon creation investment goes to magic (Firebolt I, not Cleave I)');
+
+// =================== Test 2: dex order ===================
+console.log('\n=== Test 2: higher-dex monster strikes first ===');
+var c2 = makeCharacter({ name: 'DexTest' });
+c2.dexterity = 3; // below Field Rat's effective dex? rat level 1 -> player 3 >= 1: player first.
+setRng(fixedRng(0.99));
+var b2 = Game.Battle.start('plains_field_rat');
+assert(b2.playerFirst === true, 'player (dex 3) strikes first vs level-1 rat');
+assert(b2.player.hitPoints === c2.hitPointsMax, 'no first-strike damage taken when player is faster');
+Game.Battle.endBattle();
+
+c2.dexterity = 3;
+var hpBefore = c2.hitPoints = c2.hitPointsMax;
+var b2b = Game.Battle.start('majiku_forest_scout'); // level 6 monster, effective dex 6 > 3
+assert(b2b.playerFirst === false, 'level-6 monster (effective dex 6) strikes first vs dex-3 player');
+assert(c2.hitPoints < hpBefore, 'monster first strike dealt damage before any player action (' + c2.hitPoints + ' < ' + hpBefore + ')');
+Game.Battle.endBattle();
+
+// tie -> player first
+var c2c = makeCharacter({ name: 'TieTest' });
+c2c.dexterity = 1;
+var b2c = Game.Battle.start('plains_field_rat'); // level 1 == dex 1
+assert(b2c.playerFirst === true, 'dexterity tie goes to the player');
+Game.Battle.endBattle();
+
+// =================== Test 3: Fear ===================
+console.log('\n=== Test 3: Fear reduces player damage ~20% vs +2-level monster; healing unaffected ===');
+var c3 = makeCharacter({ skills: { 'Abjuration': 3 }, name: 'FearTest' });
+c3.level = 1;
+// rng = 0.5 -> variance factor exactly 1.0, no dodge (0.5 > caps), no glancing, no double attack.
+setRng(fixedRng(0.5));
+var b3 = Game.Battle.start('plains_vermin_swarm'); // level 3 vs level 1 => fear 2 levels => x0.8
+assert(Game.Battle.fearLevels(b3) === 2, 'fear levels = 2');
+assert(Math.abs(Game.Battle.fearMultiplier(b3) - 0.8) < 1e-9, 'fear multiplier = 0.8');
+
+var weaponDamage = Game.Character.getDamage(c3);
+var expectedFearDmg = Math.max(1, Math.round(weaponDamage * 0.8 - b3.monster.armor));
+var mHpBefore = b3.monster.hp;
+Game.Battle.attack();
+var actualDmg = mHpBefore - b3.monster.hp;
+assert(actualDmg === expectedFearDmg, 'feared attack dealt ' + actualDmg + ', expected ' + expectedFearDmg + ' (=' + weaponDamage + ' dmg x0.8 - ' + b3.monster.armor + ' armor)');
+
+// healing unaffected by fear: expected = round(power * (1 + int*0.01)) regardless of fear
+c3.hitPoints = 10;
+var healTech = Game.Battle.getTech('tech_mend_wounds_1');
+var expectedHeal = Math.round(healTech.power * (1 + c3.intelligence * 0.01));
+var hpBeforeHeal = c3.hitPoints;
+Game.Battle.useTech('tech_mend_wounds_1');
+// monster counter also hits us after the heal — count only the heal delta via log inspection:
+var healLine = b3.log.filter(function (l) { return l.indexOf('Mend Wounds') !== -1 && l.indexOf('recover') !== -1; }).pop();
+assert(!!healLine, 'heal log line present: ' + healLine);
+var healed = healLine ? parseInt(healLine.match(/recover (\d+) HP/)[1], 10) : -1;
+assert(healed === expectedHeal, 'healing (' + healed + ') matches un-feared formula (' + expectedHeal + ') — Fear did not reduce it');
+Game.Battle.endBattle();
+
+// =================== Test 4: energy rules ===================
+console.log('\n=== Test 4: player at 0 energy can only flee; monster at 0 energy flees ===');
+var c4 = makeCharacter({ name: 'EnergyTest' });
+setRng(fixedRng(0.99));
+var b4 = Game.Battle.start('plains_field_rat');
+c4.energy = 0;
+assert(Game.Battle.canAct(b4) === false, 'canAct=false at 0 energy');
+var logLenBefore = b4.log.length;
+Game.Battle.attack();
+assert(b4.monster.hp === b4.monster.hpMax, 'attack at 0 energy does nothing');
+assert(b4.log.length > logLenBefore && /out of Energy/.test(b4.log[b4.log.length - 1]), 'out-of-energy message logged');
+// UI check: render battle screen, Attack/Item/Defend disabled at 0 energy, Escape enabled
+// (Feature A/C: flee is always attemptable regardless of Energy — Energy.md; Defend costs Energy
+// like any other action and is disabled here).
+Game.Screens.navigate('battle');
+var mc = document.getElementById('maincontent');
+var actionButtons = mc.queryAllByClass('battle-action');
+assert(actionButtons.length === 4, 'four action buttons rendered (Attack/Item/Defend/Escape)');
+assert(actionButtons[0].disabled === true, 'Attack disabled at 0 energy');
+assert(actionButtons[1].disabled === true, 'Item disabled at 0 energy');
+assert(actionButtons[2].disabled === true, 'Defend disabled at 0 energy');
+assert(actionButtons[3].disabled === false, 'Escape still enabled at 0 energy');
+assert(/Escape \(\d+%\)/.test(actionButtons[3].title), 'Escape title shows the live flee percentage: ' + actionButtons[3].title);
+
+// Feature A (user-directed): escape can now fail. Level 1 player vs level-1 full-HP rat, not a
+// boss -> fleeChance = FLEE_BASE (0.65) exactly (no level diff, no wounded bonus, no boss penalty).
+assert(Math.abs(Game.Battle.fleeChance(b4) - BALANCE.FLEE_BASE) < 1e-9, 'sanity: fleeChance = FLEE_BASE for an even, full-HP, non-boss fight');
+var furyBeforeFleeFail = c4.fury = 5;
+setRng(fixedRng(0.99)); // 0.99 >= 0.65 -> flee fails
+Game.Battle.flee();
+assert(b4.phase === 'active', 'failed flee (roll >= fleeChance) leaves the battle active');
+assert(c4.fury === furyBeforeFleeFail, 'failed flee does NOT reset Fury');
+assert(b4.log.some(function (l) { return /fail to escape/.test(l); }), 'failed-flee log line present');
+setRng(fixedRng(0.01)); // 0.01 < 0.65 -> flee succeeds
+Game.Battle.flee();
+assert(b4.phase === 'fled', 'successful flee (roll < fleeChance) -> phase fled');
+assert(c4.fury === 0, 'successful flee resets Fury');
+Game.Battle.endBattle();
+
+// monster energy drain -> monsterFled with no rewards
+var c4b = makeCharacter({ name: 'DrainTest' });
+c4b.level = 5; // strong enough not to die
+Game.Character.recalcDerived(c4b);
+c4b.hitPoints = c4b.hitPointsMax = 500; // survive long fight
+c4b.energy = c4b.energyMax = 10000;
+setRng(fixedRng(0.99)); // monster never uses techs, always basic attack (cost 5)
+var b4b = Game.Battle.start('plains_field_rat'); // rat energy 30 -> 6 counters until 0
+// Make sure we can't accidentally kill it first: give it huge hp and the player tiny damage.
+b4b.monster.hp = b4b.monster.hpMax = 100000;
+var xpBefore = c4b.xp, goldBefore = c4b.gold, killsBefore = c4b.monsterKills;
+var guard = 0;
+while (b4b.phase === 'active' && guard++ < 50) {
+  Game.Battle.attack();
+}
+assert(b4b.phase === 'monsterFled', 'monster at 0 energy flees -> phase monsterFled (got ' + b4b.phase + ' after ' + guard + ' rounds)');
+assert(c4b.xp === xpBefore && c4b.gold === goldBefore, 'no XP/gold rewards when the monster escapes');
+assert(c4b.monsterKills === killsBefore, 'no monster-kill credit when the monster escapes');
+assert(b4b.pendingLoot === null, 'no loot when the monster escapes');
+Game.Battle.endBattle();
+
+// =================== Test 4b: fleeChance formula (Feature A) ===================
+console.log('\n=== Test 4b: fleeChance — monster-hp monotonicity, boss penalty, clamps ===');
+var c4b1 = makeCharacter({ name: 'FleeFormulaTest' });
+setRng(fixedRng(0.99));
+var b4b1 = Game.Battle.start('plains_field_rat');
+var chanceFullHp = Game.Battle.fleeChance(b4b1);
+b4b1.monster.hp = Math.round(b4b1.monster.hpMax * 0.5);
+var chanceHalfHp = Game.Battle.fleeChance(b4b1);
+b4b1.monster.hp = 1;
+var chanceNearDeadHp = Game.Battle.fleeChance(b4b1);
+assert(chanceHalfHp > chanceFullHp, 'fleeChance rises as the monster is wounded (half HP > full HP): ' + chanceHalfHp + ' > ' + chanceFullHp);
+assert(chanceNearDeadHp > chanceHalfHp, 'fleeChance keeps rising the more wounded the monster is: ' + chanceNearDeadHp + ' > ' + chanceHalfHp);
+var expectedNearDead = BALANCE.FLEE_BASE + BALANCE.FLEE_WOUNDED_BONUS * (1 - 1 / b4b1.monster.hpMax);
+assert(Math.abs(chanceNearDeadHp - Math.max(BALANCE.FLEE_MIN, Math.min(BALANCE.FLEE_MAX, expectedNearDead))) < 1e-9, 'fleeChance formula matches BASE + WOUNDED*(1-hp/hpMax): got ' + chanceNearDeadHp);
+Game.Battle.endBattle();
+
+// boss penalty: same setup but flagged boss -> lower chance than an identical non-boss fight
+var c4b2 = makeCharacter({ name: 'FleeBossTest' });
+setRng(fixedRng(0.99));
+var b4b2 = Game.Battle.start('plains_field_rat');
+var chanceNonBoss = Game.Battle.fleeChance(b4b2);
+b4b2.monster.boss = true;
+var chanceBoss = Game.Battle.fleeChance(b4b2);
+assert(Math.abs((chanceNonBoss - chanceBoss) - BALANCE.FLEE_BOSS_PENALTY) < 1e-9, 'boss penalty subtracts FLEE_BOSS_PENALTY exactly: non-boss ' + chanceNonBoss + ', boss ' + chanceBoss);
+Game.Battle.endBattle();
+
+// clamps: an extreme level gap or wound bonus never exceeds FLEE_MAX, and a boss fresh fight
+// against a much-higher-level monster never drops below FLEE_MIN.
+var c4b3 = makeCharacter({ name: 'FleeClampTest' });
+c4b3.level = 50;
+setRng(fixedRng(0.99));
+var b4b3 = Game.Battle.start('plains_field_rat');
+b4b3.monster.hp = 1; // near-dead on top of a huge level advantage
+assert(Game.Battle.fleeChance(b4b3) === BALANCE.FLEE_MAX, 'fleeChance clamps at FLEE_MAX: got ' + Game.Battle.fleeChance(b4b3));
+Game.Battle.endBattle();
+
+var c4b4 = makeCharacter({ name: 'FleeClampMinTest' });
+c4b4.level = 1;
+setRng(fixedRng(0.99));
+var b4b4 = Game.Battle.start('estari_ruin_warden'); // boss, far above level 1
+assert(Game.Battle.fleeChance(b4b4) === BALANCE.FLEE_MIN, 'fleeChance clamps at FLEE_MIN vs a fresh, far-higher-level boss: got ' + Game.Battle.fleeChance(b4b4));
+// still attemptable at 0 Energy against that same boss (archived: Energy.md escape hatch).
+b4b4.player.energy = 0;
+setRng(fixedRng(0.01)); // 0.01 < FLEE_MIN -> succeeds
+Game.Battle.flee();
+assert(b4b4.phase === 'fled', 'flee remains attemptable (and can succeed) at 0 Energy even vs a boss: got phase ' + b4b4.phase);
+Game.Battle.endBattle();
+
+// =================== Test 5: win path ===================
+console.log('\n=== Test 5: win rewards, skill xp cap, loot claim, over-capacity ===');
+var c5 = makeCharacter({ name: 'WinTest' });
+c5.level = 1;
+// Set Swords skill at cap to verify no growth past cap: cap = 2*1+1 = 3; creation gave 3 already.
+assert(c5.skills['Swords'].level === 3, 'sanity: Swords at creation level 3 (== cap at level 1)');
+c5.strength = 40; // hit hard so the rat dies before its energy runs out
+Game.Character.recalcDerived(c5);
+// rng sequence: attack rolls use [dodge, doubleAttack?, ...]. Simplest: rng that returns 0.99
+// for combat rolls, then 0.0 for the drop roll. We stub per-phase instead: fight with 0.99,
+// then before the killing blow switch to a sequence that makes gold=min, shard=yes, drop=yes.
+setRng(fixedRng(0.99));
+var b5 = Game.Battle.start('plains_field_rat');
+// Reduce rat to 1 hp so next attack kills, then control the reward rolls exactly:
+b5.monster.hp = 1;
+// attack() rolls: doubleAttack, monsterDodge, glancing, variance -> then onWin rolls: gold, shard, drop
+setRng(seqRng([0.99, 0.99, 0.99, 0.5, /* gold */ 0.0, /* shard */ 0.0, /* drop */ 0.0], 0.99));
+var furyBefore = c5.fury;
+Game.Battle.attack();
+assert(b5.phase === 'won', 'battle won');
+assert(c5.monsterKills === 1, 'monsterKills incremented');
+var r5 = b5.rewards;
+assert(r5 && r5.xp === b5.monster.xp, 'combat XP = monster xp (' + r5.xp + '), fury 0 -> no bonus');
+assert(r5.gold === b5.monster.goldMin, 'gold roll 0.0 -> goldMin (' + r5.gold + ')');
+assert(r5.shards === 1, 'shard roll 0.0 < shardChance -> 1 shard');
+assert(b5.pendingLoot === 'potion_minor_healing', 'drop roll 0.0 -> first drop pending (potion)');
+assert(c5.fury === furyBefore + 1, 'fury +1 tick for killing an at-or-above-level monster');
+// skill xp: Swords was at cap 3 -> addSkillXp must not raise it
+assert(c5.skills['Swords'].level === 3, 'weapon skill did not exceed cap 2L+1=3');
+assert(r5.skillXp['Swords'] === BALANCE.SKILL_XP_PER_USE, 'weapon skill XP granted at full rate (monster not below player)');
+
+// loot claim success
+var potions = c5.inventory.filter(function (i) { return i === 'potion_minor_healing'; }).length;
+var res5 = Game.Battle.claimLoot();
+assert(res5.ok, 'claimLoot succeeds with capacity');
+assert(c5.inventory.filter(function (i) { return i === 'potion_minor_healing'; }).length === potions + 1, 'loot added to inventory');
+assert(b5.pendingLoot === null, 'pendingLoot cleared after claim');
+Game.Battle.endBattle();
+
+// over-capacity loot claim
+var c5b = makeCharacter({ name: 'HeavyTest' });
+c5b.strength = 40;
+Game.Character.recalcDerived(c5b);
+setRng(fixedRng(0.99));
+var b5b = Game.Battle.start('plains_field_rat');
+b5b.monster.hp = 1;
+setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.0, 0.0, 0.0], 0.99));
+Game.Battle.attack();
+assert(b5b.pendingLoot === 'potion_minor_healing', 'loot pending for over-capacity test');
+c5b.strength = 1; // capacity 10, starter kit alone outweighs it
+var res5b = Game.Battle.claimLoot();
+assert(res5b.ok === false && /weight/i.test(res5b.message), 'over-capacity claim fails with a message: "' + res5b.message + '"');
+assert(b5b.pendingLoot === 'potion_minor_healing', 'pendingLoot remains after failed claim');
+Game.Battle.endBattle();
+
+// =================== Test 6: loss path ===================
+console.log('\n=== Test 6: loss -> deaths+1, restored to 1 HP, nothing lost ===');
+var c6 = makeCharacter({ name: 'LossTest' });
+c6.hitPoints = 1;
+var goldBefore6 = c6.gold, invBefore6 = c6.inventory.length, deathsBefore6 = c6.deaths;
+c6.fury = 5;
+setRng(fixedRng(0.5)); // guaranteed monster hit (no player dodge at 0.5)
+var b6 = Game.Battle.start('skyspire_wisp'); // level 8, hits hard, strikes first (dex 5 < 8)
+assert(b6.phase === 'lost', 'player at 1 HP dies to the first strike -> phase lost (got ' + b6.phase + ')');
+assert(c6.deaths === deathsBefore6 + 1, 'deaths incremented');
+assert(c6.fury === 0, 'fury reset on death');
+assert(c6.gold === goldBefore6 && c6.inventory.length === invBefore6, 'nothing lost on death');
+assert(c6.hitPoints === 0, 'HP is 0 while the defeat screen is showing');
+Game.Battle.endBattle();
+assert(c6.hitPoints === 1, 'player restored to 1 HP outside battle');
+assert(Game.state.battle === null, 'battle cleared');
+
+// =================== Test 7: 5-level cutoff ===================
+console.log('\n=== Test 7: level-10 player vs level-1 monster -> zero rewards ===');
+var c7 = makeCharacter({ name: 'CutoffTest' });
+c7.level = 10;
+c7.xp = BALANCE.XP_TO_LEVEL(10);
+c7.strength = 60;
+Game.Character.recalcDerived(c7);
+c7.hitPoints = c7.hitPointsMax;
+setRng(fixedRng(0.99));
+var b7 = Game.Battle.start('plains_field_rat');
+b7.monster.hp = 1;
+var xpBefore7 = c7.xp, goldBefore7 = c7.gold, shardsBefore7 = c7.animaShards;
+var swordsXpBefore7 = c7.skills['Swords'].xp, swordsLvBefore7 = c7.skills['Swords'].level;
+setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.0, 0.0, 0.0], 0.99)); // even "lucky" rolls must yield nothing
+Game.Battle.attack();
+assert(b7.phase === 'won', 'battle won');
+assert(b7.rewards.cutoff === true, 'rewards flagged as cutoff');
+assert(c7.xp === xpBefore7, 'zero combat XP');
+assert(c7.gold === goldBefore7 && c7.animaShards === shardsBefore7, 'zero gold/shards');
+assert(b7.pendingLoot === null, 'zero loot');
+assert(c7.skills['Swords'].xp === swordsXpBefore7 && c7.skills['Swords'].level === swordsLvBefore7, 'zero skill XP');
+assert(c7.monsterKills === 1, 'kill still counted');
+Game.Battle.endBattle();
+
+// =================== Test 8: skill xp decline between 1 and 4 levels above ===================
+console.log('\n=== Test 8: skill XP declines when outleveling the monster ===');
+var c8 = makeCharacter({ name: 'DeclineTest' });
+c8.level = 4; // 3 levels above the rat -> decline factor 1 - 3/5 = 0.4 -> round(8*0.4)=3
+c8.xp = BALANCE.XP_TO_LEVEL(4);
+c8.strength = 60;
+Game.Character.recalcDerived(c8);
+c8.hitPoints = c8.hitPointsMax;
+setRng(fixedRng(0.99));
+var b8 = Game.Battle.start('plains_field_rat');
+b8.monster.hp = 1;
+setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.99, 0.99, 0.99], 0.99));
+Game.Battle.attack();
+var expectedPerUse = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(BALANCE.SKILL_XP_PER_USE * (1 - 3 / BALANCE.XP_LOOT_CUTOFF_LEVELS)));
+assert(b8.rewards.skillXp['Swords'] === expectedPerUse, 'declined skill XP: got ' + b8.rewards.skillXp['Swords'] + ', expected ' + expectedPerUse);
+Game.Battle.endBattle();
+
+// =================== Test 9: tech gating + resistance ===================
+console.log('\n=== Test 9: tech must be equipped; grade resistance applies ===');
+var c9 = makeCharacter({ skills: { 'Evocation': 3 }, name: 'CasterTest' });
+assert(c9.techs.indexOf('tech_firebolt_1') !== -1 && c9.techSets[0][0] === 'tech_firebolt_1', 'Evocation starter tech known+slotted');
+c9.techs.push('tech_starspark_1'); // known but NOT slotted
+setRng(fixedRng(0.5));
+var b9 = Game.Battle.start('plains_field_rat');
+var mHp9 = b9.monster.hp;
+var e9 = c9.energy;
+Game.Battle.useTech('tech_starspark_1');
+assert(b9.monster.hp === mHp9 && c9.energy === e9, 'unequipped tech refuses to cast (no damage, no energy)');
+assert(/not equipped/.test(b9.log[b9.log.length - 1]), 'log explains the tech is not equipped');
+
+// Firebolt vs Animate Rubble (Fire: -0.25 -> takes 25% MORE fire damage)
+Game.Battle.endBattle();
+c9.hitPoints = c9.hitPointsMax = 500; // survive
+var b9b = Game.Battle.start('estari_loose_rubble');
+var tech9 = Game.Battle.getTech('tech_firebolt_1');
+var effPower = Game.Battle.techEffectivePower(c9, tech9); // int factor
+var fear9 = Game.Battle.fearMultiplier(b9b); // level 1 vs 4 -> 0.7
+var expected9 = Math.max(1, Math.round(effPower * fear9 * 1.25 - b9b.monster.magicArmor));
+var mHp9b = b9b.monster.hp;
+Game.Battle.useTech('tech_firebolt_1');
+var dealt9 = mHp9b - b9b.monster.hp;
+assert(dealt9 === expected9, 'Fire vulnerability (-0.25) applied: dealt ' + dealt9 + ', expected ' + expected9);
+assert(b9b.techsUsedThisBattle['Evocation'] === true, 'Evocation recorded for post-battle skill XP');
+Game.Battle.endBattle();
+
+// =================== Test 10: save v2 -> v3 migration ===================
+console.log('\n=== Test 10: v2 save migrates to v3 (techs/techSets/fury added) ===');
+var v2Character = {
+  race: 'Arkan', name: 'OldTimer', gender: 'Female',
+  strength: 6, vitality: 7, dexterity: 5, intelligence: 9, endurance: 5,
+  hitPointsMax: 60, hitPoints: 60, energyMax: 100, energy: 100,
+  level: 3, xp: 120, statPoints: 2, trainingPoints: 1,
+  gold: 40, platinum: 0, animaShards: 5,
+  monsterKills: 4, deaths: 1,
+  skills: (function () {
+    var t = {};
+    BALANCE.SKILLS.forEach(function (s) { t[s] = { level: 0, xp: 0 }; });
+    t['Rods'].level = 2;
+    return t;
+  })(),
+  weaponDamageBonus: 0,
+  equippedWeaponSkill: null,
+  inventory: ['potion_minor_healing'],
+  equipment: { weapon: null, offhand: null, head: null, body: null, legs: null, feet: null }
+  // NOTE: no techs / techSets / fury — a real Phase 2 (v2) save.
+};
+localStorageStore['herorpg_save'] = JSON.stringify({ version: 2, state: { character: v2Character } });
+var loaded = Game.Save.load();
+assert(loaded !== null, 'v2 save loads');
+assert(loaded.character.name === 'OldTimer' && loaded.character.level === 3, 'character identity preserved');
+assert(loaded.character.skills['Rods'].level === 2, 'skills preserved');
+assert(loaded.character.inventory.length === 1, 'inventory preserved');
+assert(Array.isArray(loaded.character.techs) && loaded.character.techs.length === 0, 'migration adds empty techs list');
+assert(Array.isArray(loaded.character.techSets) && loaded.character.techSets.length === 3 &&
+  loaded.character.techSets.every(function (s) { return s.length === 8; }), 'migration adds 3x8 techSets');
+assert(loaded.character.fury === 0, 'migration adds fury=0');
+Game.state = loaded;
+Game.persist();
+var resaved = JSON.parse(localStorageStore['herorpg_save']);
+assert(resaved.version === 8, 'resave stamps current version 8 (Feature B afflictions migration on top)');
+
+// v1 chain still works end-to-end (v1 -> v2 -> v3 -> v4)
+var v1c = JSON.parse(JSON.stringify(v2Character));
+delete v1c.inventory; delete v1c.equipment; delete v1c.equippedWeaponSkill;
+localStorageStore['herorpg_save'] = JSON.stringify({ version: 1, state: { character: v1c } });
+var loaded1 = Game.Save.load();
+assert(loaded1 !== null && Array.isArray(loaded1.character.inventory) && Array.isArray(loaded1.character.techSets),
+  'v1 save chains through v2 to v3');
+
+// battle excluded from persistence
+Game.state = { character: makeCharacter({ name: 'PersistTest' }) };
+setRng(fixedRng(0.99));
+Game.Battle.start('plains_field_rat');
+Game.persist();
+var savedMid = JSON.parse(localStorageStore['herorpg_save']);
+assert(savedMid.state.battle === undefined, 'mid-battle save does not persist the battle object');
+Game.Battle.endBattle();
+
+// =================== Test 11: full screen renders ===================
+// Phase 4 note: Explore is now area-scoped (js/data/areas.js) rather than a flat list of every
+// monster in the game — travel to a hunting area first to exercise the Hunt list, matching the
+// real player flow (Eldor -> Plains of Averast).
+console.log('\n=== Test 11: techs / explore / battle screens render without throwing ===');
+var c11 = makeCharacter({ skills: { 'Evocation': 3 }, name: 'RenderTest' });
+Game.state.character = c11;
+Game.state.battle = null;
+Game.World.travelTo('plains_of_averast');
+try {
+  Game.Screens.navigate('techs');
+  console.log('PASS: techs screen rendered');
+} catch (e) { failures++; console.error('FAIL: techs screen threw: ' + e.stack); }
+try {
+  Game.Screens.navigate('explore');
+  console.log('PASS: explore screen rendered');
+} catch (e) { failures++; console.error('FAIL: explore screen threw: ' + e.stack); }
+
+// Explore shows a single Hunt button (Phase 8: random encounter replaces the old per-monster
+// pick list — regular monsters are only reachable through Hunt now).
+var huntButtons = document.getElementById('maincontent').queryAllByTag('button')
+  .filter(function (b) { return b.textContent === 'Hunt'; });
+assert(huntButtons.length === 1, 'explore shows a single Hunt button (' + huntButtons.length + ')');
+
+// Click Hunt -> guarantee an encounter (roll under the 95% threshold) and a deterministic
+// monster pick (first entry in the area's pool) -> battle starts and battle screen renders.
+setRng(seqRng([0.0, 0.0], 0.99));
+try {
+  huntButtons[0].click();
+  console.log('PASS: Hunt click started a battle and rendered the battle screen');
+} catch (e) { failures++; console.error('FAIL: battle screen threw: ' + e.stack); }
+assert(Game.state.battle !== null && Game.state.battle.phase === 'active', 'battle active after Hunt click');
+assert(Game.Screens.getCurrentScreen() === 'battle', 'router is on the battle screen');
+
+// battle lock: navigating away is refused while battle exists
+Game.Screens.navigate('inventory');
+assert(Game.Screens.getCurrentScreen() === 'battle', 'navigation locked to battle screen during battle');
+
+// cast the slotted starter tech via the tech-slot click
+var slots = document.getElementById('maincontent').queryAllByClass('tech-slot');
+assert(slots.length === 8, '8 tech slots rendered in battle (got ' + slots.length + ')');
+var mHp11 = Game.state.battle.monster.hp;
+setRng(fixedRng(0.5));
+slots[0].click();
+assert(Game.state.battle.monster.hp < mHp11 || Game.state.battle.phase !== 'active', 'clicking a filled tech slot cast the tech');
+
+// battle log panel exists and has lines
+var logPanels = document.getElementById('maincontent').queryAllByClass('battle-log');
+assert(logPanels.length === 1 && logPanels[0].children.length > 0, 'battle log panel rendered with entries');
+
+// Fear bar only when feared: rat is level 1 vs player 1 -> no fear bar
+var fearBars = [];
+document.getElementById('maincontent').queryAllByClass('statbar-fill').forEach(function (n) {
+  if ((n.className || '').indexOf('fear') !== -1) fearBars.push(n);
+});
+assert(fearBars.length === 0, 'no Fear bar vs same-level monster');
+// force-fear: start a fight vs a higher-level monster
+Game.Battle.endBattle();
+Game.Screens.navigate('explore');
+setRng(fixedRng(0.99));
+Game._debug.fight('estari_ruin_warden'); // level 10 boss vs level 1 player
+fearBars = [];
+document.getElementById('maincontent').queryAllByClass('statbar-fill').forEach(function (n) {
+  if ((n.className || '').indexOf('fear') !== -1) fearBars.push(n);
+});
+assert(fearBars.length === 1, 'yellow Fear bar rendered vs higher-level monster');
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// Techs screen: select + assign to a slot, then remove
+Game.Screens.navigate('techs');
+var techRows = document.getElementById('maincontent').queryAllByClass('tech-row');
+assert(techRows.length === 1, 'known tech listed on Techs screen');
+techRows[0].click(); // select
+var techSlots = document.getElementById('maincontent').queryAllByClass('tech-slot');
+techSlots[3].click(); // assign to set 1 slot 4
+assert(c11.techSets[0][3] === 'tech_firebolt_1', 'click-to-assign placed the tech in slot 4');
+techSlots = document.getElementById('maincontent').queryAllByClass('tech-slot');
+techSlots[3].click(); // click filled slot without selection -> remove
+assert(c11.techSets[0][3] === null, 'click-to-remove cleared the slot');
+
+// Tech infobox (double-click info)
+try {
+  Game.Infobox.openTech(Game.Battle.getTech('tech_firebolt_1'), c11);
+  Game.Infobox.close();
+  console.log('PASS: tech infobox open/close did not throw');
+} catch (e) { failures++; console.error('FAIL: tech infobox threw: ' + e.stack); }
+
+// =================== Test 12: debug helpers ===================
+console.log('\n=== Test 12: debug fight/learnTech/restoreAll ===');
+var c12 = makeCharacter({ name: 'DebugTest' });
+Game.state.character = c12;
+Game._debug.learnTech('tech_focus_1');
+assert(c12.techs.indexOf('tech_focus_1') !== -1, 'learnTech adds the tech');
+Game._debug.learnTech('mon_dark_hex');
+assert(c12.techs.indexOf('mon_dark_hex') === -1, 'learnTech refuses monster-only techs');
+c12.hitPoints = 3; c12.energy = 2;
+Game._debug.restoreAll();
+assert(c12.hitPoints === c12.hitPointsMax && c12.energy === c12.energyMax, 'restoreAll refills HP and Energy');
+setRng(fixedRng(0.99));
+Game._debug.fight('plains_wild_boar');
+assert(Game.state.battle && Game.state.battle.monster.id === 'plains_wild_boar', 'debug fight starts the named battle');
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// =================== Test 13: poison status ===================
+console.log('\n=== Test 13: poison applies and ticks ===');
+var c13 = makeCharacter({ name: 'PoisonTest' });
+c13.hitPoints = c13.hitPointsMax = 500;
+c13.endurance = 0; // ensure hits land visibly
+// Force the swarm to use its poison tech and land poison:
+// monsterAct rolls: techPick(<0.5), techIndex, playerDodge(>=dodge), glancing(>=0.1 to skip), variance, poison(<0.35)
+setRng(fixedRng(0.99));
+var b13 = Game.Battle.start('plains_vermin_swarm');
+setRng(seqRng([
+  0.99, 0.99, 0.99, 0.5, // player attack: doubleAtk, monDodge, glancing, variance
+  0.3, 0.0,              // monster: tech pick (0.3<0.5), tech index 0 -> gnawing bite
+  0.99, 0.99, 0.5,       // player dodge fail, glancing no, variance
+  0.1                    // poison roll 0.1 < 0.35 -> poisoned
+], 0.99));
+Game.Battle.attack();
+assert(b13.playerStatuses.some(function (s) { return s.type === 'poison'; }), 'poison status applied by Gnawing Bite');
+var hp13 = c13.hitPoints;
+setRng(fixedRng(0.99));
+Game.Battle.attack(); // next round: poison ticks
+var poisonLines = b13.log.filter(function (l) { return /Poison sears/.test(l); });
+assert(poisonLines.length >= 1, 'poison ticked for damage (' + poisonLines.length + ' tick lines)');
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// =================== Test 14: weapon techniques (Feature C) ===================
+console.log('\n=== Test 14: weapon techniques — damage from weapon, armorPierce, Flurry double-hit, energy costs ===');
+
+// Cleave I: damage derives from Game.Character.getDamage (physical), not the Intelligence spell
+// factor; no armorPierce, so the monster's full Armor mitigates.
+var c14w = makeCharacter({ name: 'WeaponTechTest' }); // default skills: Swords 3 -> starter Cleave I known+slotted
+assert(c14w.techs.indexOf('tech_cleave_1') !== -1, 'sanity: Cleave I known via starter grant');
+setRng(fixedRng(0.5)); // variance factor exactly 1.0, no dodge/glancing (both thresholds < 0.5)
+var b14w = Game.Battle.start('plains_field_rat');
+var cleave1 = Game.Battle.getTech('tech_cleave_1');
+var weaponDmg14 = Game.Character.getDamage(c14w);
+var expectedCleave = Math.max(1, Math.round(weaponDmg14 * cleave1.powerMult - b14w.monster.armor));
+var mHpBefore14 = b14w.monster.hp;
+var energyBefore14 = c14w.energy;
+Game.Battle.useTech('tech_cleave_1');
+var dealt14 = mHpBefore14 - b14w.monster.hp;
+assert(dealt14 === expectedCleave, 'Cleave I damage = round(getDamage()*powerMult - armor): dealt ' + dealt14 + ', expected ' + expectedCleave);
+assert(energyBefore14 - c14w.energy === cleave1.energyCost, 'Cleave I costs exactly its listed energyCost (' + cleave1.energyCost + ')');
+Game.Battle.endBattle();
+
+// Impale I: armorPierce (0.35) reduces the armor term before it's subtracted. Use a monster with
+// nonzero armor (majiku_forest_scout, armor 6) so the pierce is visible; level 1 player vs level 6
+// monster also feeds Fear into the same formula (fear affects weaponTech damage too — already-
+// implemented pipeline, not something this batch changes).
+var c14p = makeCharacter({ skills: { 'Polearms': 3 }, name: 'ImpaleTest' });
+assert(c14p.techs.indexOf('tech_impale_1') !== -1, 'sanity: Impale I known via starter grant');
+c14p.hitPoints = c14p.hitPointsMax = 500; // survive the level-6 monster's first strike
+setRng(fixedRng(0.5));
+var b14p = Game.Battle.start('majiku_forest_scout');
+var impale1 = Game.Battle.getTech('tech_impale_1');
+var weaponDmg14p = Game.Character.getDamage(c14p);
+var fear14p = Game.Battle.fearMultiplier(b14p);
+var expectedImpale = Math.max(1, Math.round(weaponDmg14p * impale1.powerMult * fear14p - b14p.monster.armor * (1 - impale1.armorPierce)));
+var mHpBefore14p = b14p.monster.hp;
+Game.Battle.useTech('tech_impale_1');
+var dealt14p = mHpBefore14p - b14p.monster.hp;
+assert(dealt14p === expectedImpale, 'Impale I armorPierce (0.35) reduces the armor term: dealt ' + dealt14p + ', expected ' + expectedImpale);
+Game.Battle.endBattle();
+
+// Vital Strike I: armorPierce 0.5, energy cost 10.
+var c14v = makeCharacter({ skills: { 'Knives': 3 }, name: 'VitalStrikeTest' });
+assert(c14v.techs.indexOf('tech_vital_strike_1') !== -1, 'sanity: Vital Strike I known via starter grant');
+setRng(fixedRng(0.5));
+var b14v = Game.Battle.start('plains_field_rat');
+var vital1 = Game.Battle.getTech('tech_vital_strike_1');
+var weaponDmg14v = Game.Character.getDamage(c14v);
+var expectedVital = Math.max(1, Math.round(weaponDmg14v * vital1.powerMult - b14v.monster.armor * (1 - vital1.armorPierce)));
+var mHpBefore14v = b14v.monster.hp;
+var energyBefore14v = c14v.energy;
+Game.Battle.useTech('tech_vital_strike_1');
+var dealt14v = mHpBefore14v - b14v.monster.hp;
+assert(dealt14v === expectedVital, 'Vital Strike I armorPierce (0.5) math: dealt ' + dealt14v + ', expected ' + expectedVital);
+assert(energyBefore14v - c14v.energy === vital1.energyCost, 'Vital Strike I costs exactly its listed energyCost (' + vital1.energyCost + ')');
+Game.Battle.endBattle();
+
+// Flurry I: hits:2 resolves as two successive strikes, each independently mitigated.
+var c14f = makeCharacter({ skills: { 'Hand to Hand': 3 }, name: 'FlurryTest' });
+assert(c14f.techs.indexOf('tech_flurry_1') !== -1, 'sanity: Flurry I known via starter grant');
+setRng(fixedRng(0.5));
+var b14f = Game.Battle.start('plains_field_rat');
+var flurry1 = Game.Battle.getTech('tech_flurry_1');
+assert(flurry1.hits === 2, 'sanity: Flurry I is a 2-hit tech');
+var weaponDmg14f = Game.Character.getDamage(c14f);
+var perHitExpected14f = Math.max(1, Math.round(weaponDmg14f * flurry1.powerMult - b14f.monster.armor));
+var mHpBefore14f = b14f.monster.hp;
+var energyBefore14f = c14f.energy;
+Game.Battle.useTech('tech_flurry_1');
+var dealt14f = mHpBefore14f - b14f.monster.hp;
+assert(dealt14f === perHitExpected14f * 2, 'Flurry I deals 2 independently-mitigated hits: dealt ' + dealt14f + ', expected ' + (perHitExpected14f * 2));
+assert(energyBefore14f - c14f.energy === flurry1.energyCost, 'Flurry I costs exactly its listed energyCost (' + flurry1.energyCost + ')');
+Game.Battle.endBattle();
+
+// =================== Test 14b: balance contract (Feature C spec) — every weapon tech beats
+// Attack on damage-per-TURN but loses on damage-per-ENERGY (Attack costs 5 energy) ===================
+// Checked at a representative mid-game level (10), matching the balance sim reported to the lead
+// (scratchpad balance_sim_weapon_techs.js) — a level-1-vs-level-6-monster-armor comparison would
+// be a false negative here: at level 1 a plain Attack's damage is nearly fully canceled by that
+// monster's armor (floored at the Math.max(1,...) minimum), making Attack's own damage-per-energy
+// look artificially tiny rather than reflecting the intended mid-game balance.
+console.log('\n=== Test 14b: balance contract — weapon techs beat Attack on DPT, lose on DPE (representative level 10) ===');
+var BAL_LEVEL = 10;
+var balChars = {};
+['Swords', 'Polearms', 'Knives', 'Hand to Hand'].forEach(function (skillName) {
+  var c = makeCharacter({ skills: (function () { var sp = {}; sp[skillName] = 3; return sp; })(), name: 'Bal' + skillName.replace(/\s/g, '') });
+  c.level = BAL_LEVEL;
+  var statName = (skillName === 'Knives') ? 'dexterity' : 'strength';
+  c[statName] = 5 + (BAL_LEVEL - 1) * 3; // representative mid-game stat spread, matches the scratchpad sim
+  Game.Character.recalcDerived(c);
+  balChars[skillName] = c;
+});
+var balMonster = Game.Battle.getMonsterDef('majiku_forest_scout'); // level 6 regular, armor 6 — below the level-10 reference build, matching the sim
+Game.Data.techs.filter(function (t) { return t.weaponTech; }).forEach(function (tech) {
+  var c = balChars[tech.skill];
+  var weaponDamage = Game.Character.getDamage(c);
+  var armorTerm = balMonster.armor * (1 - (tech.armorPierce || 0));
+  var perHit = Math.max(1, Math.round(weaponDamage * tech.powerMult - armorTerm));
+  var techDpt = perHit * (tech.hits || 1);
+  var techDpe = techDpt / tech.energyCost;
+  var attackPerHit = Math.max(1, Math.round(weaponDamage - balMonster.armor));
+  var attackDpe = attackPerHit / BALANCE.ATTACK_ENERGY_COST;
+  assert(techDpt > attackPerHit, tech.name + ': damage/turn (' + techDpt + ') beats a plain Attack (' + attackPerHit + ')');
+  assert(techDpe < attackDpe, tech.name + ': damage/energy (' + techDpe.toFixed(2) + ') loses to a plain Attack (' + attackDpe.toFixed(2) + ')');
+});
+
+// =================== Test 15: Defend (Feature C) ===================
+console.log('\n=== Test 15: Defend halves the monster\'s next hit, costs 2 Energy, poison unaffected ===');
+
+function monsterCounterDamage(useDefend) {
+  var c = makeCharacter({ name: useDefend ? 'DefendYes' : 'DefendNo' });
+  c.endurance = 0; // minimize mitigation noise so the halving is unambiguous
+  Game.Character.recalcDerived(c);
+  setRng(fixedRng(0.99)); // no monster tech pick, no player dodge, no glancing; identical, deterministic variance factor for both runs
+  var b = Game.Battle.start('plains_field_rat');
+  var hpBefore = c.hitPoints;
+  if (useDefend) {
+    Game.Battle.defend();
+  } else {
+    Game.Battle.attack(); // deals damage to the monster too, but we only compare the resulting counter-hit on the player
+  }
+  var dmgTaken = hpBefore - c.hitPoints;
+  Game.Battle.endBattle();
+  return dmgTaken;
+}
+var dmgNoDefend = monsterCounterDamage(false);
+var dmgWithDefend = monsterCounterDamage(true);
+assert(dmgWithDefend === Math.max(1, Math.round(dmgNoDefend * BALANCE.DEFEND_DAMAGE_MULT)),
+  "Defend halves the monster's next hit: no-defend " + dmgNoDefend + ', with-defend ' + dmgWithDefend);
+
+var c15e = makeCharacter({ name: 'DefendEnergyTest' });
+setRng(fixedRng(0.99));
+var b15e = Game.Battle.start('plains_field_rat');
+var energyBefore15e = c15e.energy;
+Game.Battle.defend();
+assert(energyBefore15e - c15e.energy === BALANCE.DEFEND_ENERGY_COST, 'Defend costs exactly DEFEND_ENERGY_COST (' + BALANCE.DEFEND_ENERGY_COST + ') energy');
+Game.Battle.endBattle();
+
+// Poison ticks unaffected by Defend (tickPlayerStatuses is untouched by the playerDefending flag).
+var c15p = makeCharacter({ name: 'DefendPoisonTest' });
+c15p.hitPoints = c15p.hitPointsMax = 500;
+setRng(fixedRng(0.99));
+var b15p = Game.Battle.start('plains_field_rat');
+b15p.playerStatuses.push({ type: 'poison', name: 'Poison', turnsLeft: 3 });
+Game.Battle.defend();
+var poisonLine15p = b15p.log.filter(function (l) { return /Poison sears/.test(l); });
+assert(poisonLine15p.length === 1, 'poison ticked once during a Defend round');
+var poisonDmgMatch15p = poisonLine15p[0] && poisonLine15p[0].match(/for (\d+) damage/);
+assert(!!poisonDmgMatch15p && parseInt(poisonDmgMatch15p[1], 10) === BALANCE.POISON_DAMAGE_PER_TURN,
+  'poison damage is the full, unhalved BALANCE.POISON_DAMAGE_PER_TURN while Defending: got ' + (poisonDmgMatch15p && poisonDmgMatch15p[1]));
+Game.Battle.endBattle();
+
+// =================== Test 16: death penalties (Feature B) ===================
+console.log('\n=== Test 16: death penalties — gold loss, both mishaps, item-loss exclusions, empty-pool no-fallback ===');
+
+// (a) Gold loss: ceil(10% of CARRIED gold), vault untouched; high mishap roll -> no mishap.
+var c16a = makeCharacter({ name: 'DeathGoldTest' });
+Game.Character.addGold(c16a, 137);
+c16a.vault.gold = 40; // stashed — must stay untouched by the death
+c16a.hitPoints = 1;
+var carriedBefore16a = Game.Character.goldTotalAsGold(c16a);
+setRng(fixedRng(0.99)); // guaranteed hit (kills at 1 HP); mishap roll 0.99 >= DEATH_MISHAP_CHANCE -> no mishap
+var b16a = Game.Battle.start('skyspire_wisp'); // level 8, strikes first, hits hard
+assert(b16a.phase === 'lost', 'sanity: dies to the boss\'s first strike');
+var expectedGoldLost16a = Math.ceil(carriedBefore16a * BALANCE.DEATH_GOLD_FRACTION);
+assert(Game.Character.goldTotalAsGold(c16a) === carriedBefore16a - expectedGoldLost16a,
+  'death loses ceil(10% of carried gold): lost ' + (carriedBefore16a - Game.Character.goldTotalAsGold(c16a)) + ', expected ' + expectedGoldLost16a);
+assert(c16a.vault.gold === 40, 'vault gold untouched by death');
+assert(!Game.Character.hasAffliction(c16a, 'haunting'), 'no mishap on a high roll (>= DEATH_MISHAP_CHANCE)');
+Game.Battle.endBattle();
+
+// (b) Haunting mishap: 4 rng calls resolve the boss's lethal first strike (tech-pick/dodge/
+// glancing/variance, all miss/skip at 0.99), then the mishap roll hits (0.0 < 0.12) and the
+// 50/50 type roll picks Haunting (0.0 < 0.5).
+var c16b = makeCharacter({ name: 'DeathHauntTest' });
+c16b.hitPoints = 1;
+assert(!Game.Character.hasAffliction(c16b, 'haunting'), 'sanity: not haunted before death');
+setRng(seqRng([0.99, 0.99, 0.99, 0.99, 0.0, 0.0], 0.99));
+var b16b = Game.Battle.start('skyspire_wisp');
+assert(b16b.phase === 'lost', 'sanity: dies to the first strike');
+assert(Game.Character.hasAffliction(c16b, 'haunting'), 'Haunting mishap applied the affliction');
+assert(/Haunted/.test(b16b.log.join(' ')), 'defeat log states the Haunting mishap');
+Game.Battle.endBattle();
+
+// (c) Item-loss mishap with exclusions: tags 'unique'/'lore' and ids prefixed 'quest_' all survive;
+// exactly one eligible (untagged) item is lost, chosen uniformly at random from the eligible pool.
+var c16c = makeCharacter({ name: 'DeathItemLossTest' });
+c16c.hitPoints = 1;
+Game.Inventory.addItem(c16c, 'knife_vermin_kings_fang'); // tag 'unique'
+Game.Inventory.addItem(c16c, 'lore_eidas_final_journal'); // tag 'lore'
+Game.Inventory.addItem(c16c, 'quest_majiku_venom_gland'); // id prefix quest_
+Game.Inventory.addItem(c16c, 'potion_minor_healing'); // eligible (starter kit already carries 2 + this = 3)
+var potionsBefore16c = c16c.inventory.filter(function (i) { return i === 'potion_minor_healing'; }).length;
+var invLenBefore16c = c16c.inventory.length;
+setRng(seqRng([0.99, 0.99, 0.99, 0.99, 0.0, 0.99, 0.0], 0.99)); // 4 pre-death rolls, mishap hit, type roll -> item-loss (>= 0.5), pool-pick index 0
+var b16c = Game.Battle.start('skyspire_wisp');
+assert(b16c.phase === 'lost', 'sanity: dies to the first strike');
+assert(c16c.inventory.indexOf('knife_vermin_kings_fang') !== -1, 'unique-tagged item survives the item-loss mishap');
+assert(c16c.inventory.indexOf('lore_eidas_final_journal') !== -1, 'lore-tagged item survives the item-loss mishap');
+assert(c16c.inventory.indexOf('quest_majiku_venom_gland') !== -1, 'quest_-prefixed item survives the item-loss mishap');
+assert(c16c.inventory.length === invLenBefore16c - 1, 'exactly one eligible item was lost');
+assert(c16c.inventory.filter(function (i) { return i === 'potion_minor_healing'; }).length === potionsBefore16c - 1,
+  'the lost item came from the eligible (untagged, non-quest_) pool');
+assert(/lose your/.test(b16c.log.join(' ')), 'defeat log states exactly what was lost');
+Game.Battle.endBattle();
+
+// (d) Empty eligible pool -> NO mishap at all (does NOT fall back to Haunting).
+var c16d = makeCharacter({ name: 'DeathEmptyPoolTest' });
+c16d.hitPoints = 1;
+c16d.inventory = []; // wipe the starter kit's carried potions/tent — equipped gear is unaffected (lives in c.equipment)
+Game.Inventory.addItem(c16d, 'quest_majiku_venom_gland'); // only an excluded item remains
+setRng(seqRng([0.99, 0.99, 0.99, 0.99, 0.0, 0.99], 0.99)); // mishap hits, type roll picks item-loss, but the pool is empty
+var b16d = Game.Battle.start('skyspire_wisp');
+assert(b16d.phase === 'lost', 'sanity: dies to the first strike');
+assert(!Game.Character.hasAffliction(c16d, 'haunting'), 'empty item-loss pool does NOT fall back to Haunting');
+assert(c16d.inventory.length === 1 && c16d.inventory[0] === 'quest_majiku_venom_gland', 'the only (excluded) item survives; nothing was lost');
+Game.Battle.endBattle();
+
+// =================== Test 17: Haunting halves potion/tech healing in battle (Feature B) ===================
+console.log('\n=== Test 17: Haunting halves potion and tech healing (battle-side; camp/inn covered in test_p4_world.js) ===');
+// Note (mirrors Test 3's Fear/healing pattern above): the monster's counter-attack also lands
+// after the heal within the same useTech()/useItem() call (finishRound), so the healed amount is
+// read from the battle log rather than the net HP delta.
+var c17 = makeCharacter({ skills: { 'Abjuration': 3 }, name: 'HauntedHealTest' });
+Game.Character.addAffliction(c17, 'haunting');
+c17.hitPoints = c17.hitPointsMax; // full HP so the monster's counter can't obscure the heal via a HP-cap clamp
+setRng(fixedRng(0.5));
+var b17 = Game.Battle.start('plains_field_rat');
+var healTech17 = Game.Battle.getTech('tech_mend_wounds_1');
+var rawHeal17 = Game.Battle.techEffectivePower(c17, healTech17);
+var expectedHalvedHeal17 = Math.max(1, Math.round(rawHeal17 * BALANCE.HAUNTING_HEAL_MULT));
+Game.Battle.useTech('tech_mend_wounds_1');
+var healLine17 = b17.log.filter(function (l) { return l.indexOf('Mend Wounds') !== -1 && l.indexOf('recover') !== -1; }).pop();
+assert(!!healLine17, 'heal log line present: ' + healLine17);
+var healed17 = healLine17 ? parseInt(healLine17.match(/recover (\d+) HP/)[1], 10) : -1;
+assert(healed17 === expectedHalvedHeal17, 'Haunting halves tech healing: healed ' + healed17 + ', expected ' + expectedHalvedHeal17);
+Game.Battle.endBattle();
+
+var c17b = makeCharacter({ name: 'HauntedPotionTest' });
+Game.Character.addAffliction(c17b, 'haunting');
+c17b.hitPoints = c17b.hitPointsMax; // full HP, same reasoning as above
+setRng(fixedRng(0.5));
+var b17b = Game.Battle.start('plains_field_rat');
+var potionItem17b = Game.Inventory.getItem('potion_minor_healing');
+var expectedHalvedPotion17b = Math.max(1, Math.round(potionItem17b.heal * BALANCE.HAUNTING_HEAL_MULT));
+Game.Battle.useItem('potion_minor_healing');
+var potionLine17b = b17b.log.filter(function (l) { return l.indexOf(potionItem17b.name) !== -1 && l.indexOf('recover') !== -1; }).pop();
+assert(!!potionLine17b, 'potion heal log line present: ' + potionLine17b);
+var healed17b = potionLine17b ? parseInt(potionLine17b.match(/recover (\d+) HP/)[1], 10) : -1;
+assert(healed17b === expectedHalvedPotion17b, 'Haunting halves potion healing: healed ' + healed17b + ', expected ' + expectedHalvedPotion17b);
+Game.Battle.endBattle();
+
+// =================== Summary ===================
+console.log('\n===================================');
+if (failures === 0) {
+  console.log('ALL TESTS PASSED');
+} else {
+  console.log(failures + ' TEST(S) FAILED');
+  process.exitCode = 1;
+}

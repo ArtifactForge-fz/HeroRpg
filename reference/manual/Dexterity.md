@@ -1,0 +1,4 @@
+# Dexterity
+Source: http://web.archive.org/web/20080105164819/http://www.herorpg.net/manual/Dexterity
+---
+Dexterity - HeroRPG Manual Dexterity From HeroRPG Manual Jump to: navigation , search Increases the possibility to Dodge and Double Attack . Increases the Experience gained in the following Skills Knives Dodge Thievery Dual Wield Double Attack Hand to Hand Retrieved from " http://www.herorpg.net/manual/Dexterity " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 17:51, 23 March 2007. This page has been accessed 114 times. Privacy policy About HeroRPG Manual Disclaimers

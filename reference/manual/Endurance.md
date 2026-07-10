@@ -1,0 +1,4 @@
+# Endurance
+Source: http://web.archive.org/web/20080105164825/http://www.herorpg.net/manual/Endurance
+---
+Endurance - HeroRPG Manual Endurance From HeroRPG Manual Jump to: navigation , search Increases the damage reduction ability of your armor. Increases the Experience gained in the following Skills Light Armor Medium Armor Heavy Armor Retrieved from " http://www.herorpg.net/manual/Endurance " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 17:54, 23 March 2007. This page has been accessed 114 times. Privacy policy About HeroRPG Manual Disclaimers

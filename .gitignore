@@ -1,0 +1,23 @@
+# OS cruft
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor / IDE
+*.swp
+*~
+.idea/
+
+# Node (tests run under node; no deps are committed)
+node_modules/
+npm-debug.log*
+
+# Build output — the online artifact is bundled into the session scratchpad,
+# never into the repo (see CLAUDE.md "Deployment"). Ignore any stray local build.
+dist/
+build/
+*.bundle.html
+
+# Local save data / scratch
+*.local

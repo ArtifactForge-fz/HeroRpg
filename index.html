@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HeroRPG</title>
+<link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<div id="app">
+  <div id="titlebar">HeroRPG</div>
+
+  <div id="statusbars" class="panelsurround" style="padding:5px; margin-bottom:6px;">
+  </div>
+
+  <div id="layout">
+    <div id="leftcol">
+      <div>
+        <div class="tcat">.: Navigation</div>
+        <div class="panel" style="padding:0;">
+          <ul class="navlist" id="navlist"></ul>
+        </div>
+      </div>
+      <div id="actionswrap">
+        <div class="tcat">.: Actions</div>
+        <div class="panel" id="actionspanel">
+          <span class="smallfont">&nbsp;</span>
+        </div>
+      </div>
+      <div>
+        <div class="tcat">.: Save</div>
+        <div class="panel" id="savepanel"></div>
+      </div>
+    </div>
+
+    <div id="maincol">
+      <div id="maincontent"></div>
+    </div>
+  </div>
+
+  <div id="footer" class="smallfont" title="So long, and thanks for all the fish.">
+    Powered by RadiantWeb and RadiantRPG &mdash; in memory of HeroRPG (herorpg.net, 2004&ndash;2008)
+  </div>
+</div>
+
+<script src="js/balance.js"></script>
+<script src="js/data/items.js"></script>
+<script src="js/data/monsters.js"></script>
+<script src="js/data/techs.js"></script>
+<script src="js/data/areas.js"></script>
+<script src="js/data/shrine.js"></script>
+<script src="js/data/recipes.js"></script>
+<script src="js/data/quests.js"></script>
+<script src="js/data/story.js"></script>
+<script src="js/data/classes.js"></script>
+<script src="js/core/character.js"></script>
+<script src="js/core/inventory.js"></script>
+<script src="js/core/battle.js"></script>
+<script src="js/core/world.js"></script>
+<script src="js/core/quests.js"></script>
+<script src="js/core/classes.js"></script>
+<script src="js/core/save.js"></script>
+<script src="js/ui/icons.js"></script>
+<script src="js/ui/screens.js"></script>
+<script src="js/ui/dragdrop.js"></script>
+<script src="js/ui/infobox.js"></script>
+<script src="js/debug.js"></script>
+<script>
+(function () {
+  var Game = window.Game;
+
+  Game.state = {
+    character: null
+  };
+
+  Game.persist = function () {
+    Game.Save.save(Game.state);
+  };
+
+  Game.refreshCurrentScreen = function () {
+    Game.Screens.navigate(Game.Screens.getCurrentScreen());
+  };
+
+  var NAV_ITEMS = [
+    { key: 'status', label: 'Status' },
+    { key: 'inventory', label: 'Inventory' },
+    { key: 'techs', label: 'Techs' },
+    { key: 'explore', label: 'Explore' },
+    { key: 'town', label: 'Town' },
+    { key: 'journal', label: 'Journal' }
+  ];
+
+  Game.renderNav = function () {
+    var list = document.getElementById('navlist');
+    list.innerHTML = '';
+    if (!Game.state.character) return;
+    // Phase 3: nav is disabled during battle (New_Player_Guide.md: "once you've started a
+    // battle, you cannot access your inventory or techniques").
+    if (Game.state.battle) {
+      var li = document.createElement('li');
+      var span = document.createElement('span');
+      span.className = 'smallfont';
+      span.style.display = 'block';
+      span.style.padding = '3px 8px';
+      span.textContent = 'In battle...';
+      li.appendChild(span);
+      list.appendChild(li);
+      return;
+    }
+    var current = Game.Screens.getCurrentScreen();
+    NAV_ITEMS.forEach(function (item) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = '#';
+      a.textContent = item.label;
+      if (item.key === current) a.className = 'active';
+      a.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        Game.Screens.navigate(item.key);
+      });
+      li.appendChild(a);
+      list.appendChild(li);
+    });
+  };
+
+  function barRow(label, cls, value, max) {
+    var pct = max > 0 ? Math.max(0, Math.min(100, Math.round((value / max) * 100))) : 0;
+    var row = document.createElement('div');
+    row.className = 'statbar-row';
+    row.innerHTML =
+      '<span class="statbar-label">' + label + '</span>' +
+      '<span class="statbar-track"><span class="statbar-fill ' + cls + '" style="width:' + pct + '%;"></span>' +
+      '<span class="statbar-text">' + value + ' / ' + max + '</span></span>';
+    return row;
+  }
+
+  Game.renderStatusBars = function () {
+    var wrap = document.getElementById('statusbars');
+    wrap.innerHTML = '';
+    var c = Game.state.character;
+    if (!c) {
+      wrap.style.display = 'none';
+      return;
+    }
+    wrap.style.display = '';
+    wrap.appendChild(barRow('HP', 'hp', c.hitPoints, c.hitPointsMax));
+    wrap.appendChild(barRow('Energy', 'energy', c.energy, c.energyMax));
+    var xpNeeded = Game.Character.xpNeededForNext(c);
+    var xpInto = Game.Character.xpIntoCurrentLevel(c);
+    wrap.appendChild(barRow('XP', 'xp', xpInto, xpNeeded));
+
+    var weight = document.createElement('div');
+    weight.className = 'weight-readout smallfont';
+    var currentWeight = Game.Inventory.currentWeight(c);
+    var capacity = Game.Inventory.carryCapacity(c);
+    weight.textContent = 'Weight: ' + currentWeight + ' / ' + capacity;
+    if (currentWeight > capacity) weight.className += ' req-bad';
+    wrap.appendChild(weight);
+  };
+
+  // ---------- Actions panel (Phase 8) ----------
+  // archived layout (New_Player_Guide.md §5.1-5.2): the original had Explore/Hunt/Camp as LINKS
+  // UNDER THE ACTIONS PANEL ("click the Explore link under the Actions panel", "Click the 'Hunt'
+  // link under the Actions panel", "you must click the 'Camp' link under the 'Hunt' link").
+  // Mirrors that: Explore always shown; Hunt+Camp (+ active quest touch tokens) in a hunting
+  // area; one quick-link per present facility in a town. Hidden during battle/creation (nav
+  // itself locks during battle — New_Player_Guide.md "once you've started a battle, you cannot
+  // access your inventory or techniques").
+  var ACTIONS_FACILITY_LABELS = {
+    shop: 'Shop', synthesis: 'Synthesis', inn: 'Inn',
+    vault: 'Vault', academy: 'Academy', shrine: 'Spirit Shrine', tavern: 'Tavern'
+  };
+  var ACTIONS_FACILITY_ORDER = ['shop', 'synthesis', 'inn', 'vault', 'academy', 'shrine', 'tavern'];
+
+  Game.renderActions = function () {
+    var wrap = document.getElementById('actionswrap');
+    var panel = document.getElementById('actionspanel');
+    if (!wrap || !panel) return;
+    panel.innerHTML = '';
+
+    var c = Game.state.character;
+    var screen = Game.Screens.getCurrentScreen();
+    if (!c || Game.state.battle || screen === 'creation') {
+      wrap.style.display = 'none';
+      return;
+    }
+    wrap.style.display = '';
+
+    var list = document.createElement('ul');
+    list.className = 'actions-list';
+
+    function addLink(label, onClick, sub) {
+      var li = document.createElement('li');
+      if (sub) li.className = 'actions-sub';
+      var a = document.createElement('a');
+      a.href = '#';
+      a.textContent = label;
+      a.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        onClick();
+      });
+      li.appendChild(a);
+      list.appendChild(li);
+    }
+
+    addLink('Explore', function () { Game.Screens.navigate('explore'); });
+
+    var area = Game.World.currentArea();
+    if (area && area.type === 'hunting') {
+      addLink('Hunt', function () { Game.Screens.performHunt(); }, true);
+      addLink('Camp', function () {
+        var res = Game.World.camp();
+        alert(res.message);
+        Game.persist();
+        Game.refreshCurrentScreen();
+      }, true);
+
+      // Phase 5 quest touch-tokens (Standing Stones): same visibility rule as the Explore
+      // screen's copy (DESIGN.md §7) — shown here too, per the phase brief ("show in both").
+      if (Game.Quests) {
+        (Game.Data.quests || []).forEach(function (quest) {
+          var qEntry = Game.Quests.entry(c, quest.id);
+          if (!qEntry || qEntry.status !== 'active') return;
+          quest.steps.forEach(function (step) {
+            if (step.kind !== 'touch') return;
+            step.tokens.forEach(function (token, tokenIdx) {
+              if (token.areaId !== area.id) return;
+              if (qEntry.progress.touched && qEntry.progress.touched[token.areaId]) return;
+              addLink(token.label, function () {
+                var res = Game.Quests.touch(quest.id, tokenIdx);
+                alert(res.message);
+                Game.refreshCurrentScreen();
+              }, true);
+            });
+          });
+        });
+      }
+    } else if (area && area.type === 'town') {
+      var present = {};
+      (area.facilities || []).forEach(function (f) { present[f.type] = true; });
+      ACTIONS_FACILITY_ORDER.forEach(function (type) {
+        if (!present[type]) return;
+        addLink(ACTIONS_FACILITY_LABELS[type], function () { Game.Screens.openTownFacility(type); }, true);
+      });
+    }
+
+    panel.appendChild(list);
+  };
+
+  function renderSavePanel() {
+    var panel = document.getElementById('savepanel');
+    panel.innerHTML = '';
+
+    var exportBtn = document.createElement('button');
+    exportBtn.className = 'button';
+    exportBtn.textContent = 'Export Save';
+    exportBtn.style.marginRight = '4px';
+    exportBtn.addEventListener('click', function () {
+      if (!Game.state.character) { alert('No character to export.'); return; }
+      var str = Game.Save.exportString(Game.state);
+      window.prompt('Copy your save string:', str);
+    });
+
+    var importBtn = document.createElement('button');
+    importBtn.className = 'button';
+    importBtn.textContent = 'Import Save';
+    importBtn.style.marginRight = '4px';
+    importBtn.addEventListener('click', function () {
+      var str = window.prompt('Paste your save string:', '');
+      if (!str) return;
+      var state = Game.Save.importString(str);
+      if (!state) { alert('Import failed: invalid save string.'); return; }
+      Game.state = state;
+      Game.persist();
+      boot();
+    });
+
+    var newGameBtn = document.createElement('button');
+    newGameBtn.className = 'button';
+    newGameBtn.textContent = 'New Game';
+    newGameBtn.addEventListener('click', function () {
+      if (!window.confirm('This will permanently delete your current character. Continue?')) return;
+      Game.Save.wipe();
+      Game.state.character = null;
+      Game.Screens.resetWizard();
+      Game.Screens.navigate('creation');
+    });
+
+    panel.appendChild(exportBtn);
+    panel.appendChild(document.createElement('br'));
+    panel.appendChild(importBtn);
+    panel.appendChild(document.createElement('br'));
+    panel.appendChild(newGameBtn);
+  }
+
+  function boot() {
+    var loaded = Game.Save.load();
+    if (loaded && loaded.character) {
+      Game.state = loaded;
+      Game.Screens.navigate('status');
+    } else {
+      Game.state = { character: null };
+      Game.Screens.navigate('creation');
+    }
+    renderSavePanel();
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+# heroauction
+Source: http://web.archive.org/web/2008/http://www.herorpg.net/heroauction.php
+---
+Hero RPG Network vBulletin Message You are not logged in or you do not have permission to access this page. This could be due to one of several reasons: You are not logged in. Fill in the form at the bottom of this page and try again. You may not have sufficient privileges to access this page. Are you trying to edit someone else's post, access administrative features or some other privileged system? If you are trying to post, the administrator may have disabled your account, or it may be awaiting activation. Log in User Name: Password: Forgotten Your Password? Remember Me? The administrator may have required you to register before you can view this page.

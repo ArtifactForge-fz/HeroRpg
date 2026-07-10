@@ -1,0 +1,4 @@
+# Medium_Armor
+Source: http://web.archive.org/web/20071107054021/http://www.herorpg.net/manual/Medium_Armor
+---
+Medium Armor - HeroRPG Manual Medium Armor From HeroRPG Manual Jump to: navigation , search "Affects the efficiency of your medium armor." Retrieved from " http://www.herorpg.net/manual/Medium_Armor " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page Project Genesis Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 17:33, 23 March 2007. This page has been accessed 63 times. Privacy policy About HeroRPG Manual Disclaimers

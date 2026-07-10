@@ -1,0 +1,1199 @@
+// HeroRPG remake — monster database (DESIGN.md §4 combat, §2 world/lore).
+// All entries invented (no monster archive survived — see reference/SOURCES.md), original-
+// flavored around the Averast/Van Arius setting (plains around Eldor, Estari ruins, Majiku
+// raiders/scouts threatening the Arkan). No copyrighted names/creatures.
+//
+// Balance ballpark (Phase 3 spec): hp ~= 20 + 12*level, damage ~= 3 + 2*level, armor ~= level.
+// xp uses BALANCE.MONSTER_XP(level). gold/shard/drops are invented flavoring within that budget.
+
+var Game = window.Game || {};
+
+Game.Data = Game.Data || {};
+
+Game.Data.monsters = [
+
+  // ---------- Level 1 ----------
+  {
+    id: 'plains_field_rat',
+    name: 'Field Rat',
+    level: 1,
+    hp: 32,
+    energy: 50, // invented: 40 + 10*level (retuned at Phase 3 milestone gate; see BALANCE.MONSTER_ATTACK_ENERGY_COST)
+    damage: 5,
+    armor: 1,
+    magicArmor: 0,
+    element: null,
+    resistances: {},
+    techs: [],
+    xp: BALANCE.MONSTER_XP(1),
+    goldMin: 1,
+    goldMax: 4,
+    shardChance: 0.02,
+    drops: [
+      { itemId: 'potion_minor_healing', chance: 0.1 }
+    ],
+    desc: 'A mangy rat grown fat on scraps from the Eldor grain wagons. Common as dirt on the Averast plains.'
+  },
+
+  // =====================================================================
+  // Enemy-variety pass: 15 new regulars across existing areas (js/data/areas.js monster lists),
+  // filling out level bands with lore-consistent invented flavor (DESIGN.md §2 Averast plains,
+  // Estari ruins, Majiku, Anima). Same balance ballpark as the header comment: hp = 20+12*level,
+  // damage = 3+2*level, armor ~= level (deliberately varied per archetype — see each entry's
+  // comment), energy = 40+10*level, xp = BALANCE.MONSTER_XP(level). No copyrighted creatures.
+  // =====================================================================
+
+  // ---------- Level 2 ----------
+  {
+    id: 'plains_windrunner_kestrel',
+    name: 'Windrunner Kestrel',
+    level: 2,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 2,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 2,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 2,
+    armor: 2, // balanced profile: armor ~= level
+    magicArmor: 1,
+    element: 'Wind',
+    resistances: { Wind: 0.5 }, // no vulnerability entry (variation lever: "some with none")
+    techs: [],
+    xp: BALANCE.MONSTER_XP(2),
+    goldMin: 2,
+    goldMax: 6,
+    shardChance: 0.02,
+    drops: [
+      { itemId: 'potion_minor_healing', chance: 0.1 }
+    ],
+    desc: 'A hawk-swift bird that rides the wind currents over the Averast plains, diving on anything smaller than itself.'
+  },
+
+  // ---------- Level 3 ----------
+  {
+    id: 'plains_cutpurse_vole',
+    name: 'Cutpurse Vole',
+    level: 3,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 3,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 3,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 3,
+    armor: 1, // glass cannon: thin-skinned, relies on speed rather than hide
+    magicArmor: 0,
+    element: null,
+    resistances: {},
+    techs: ['mon_gnawing_bite'],
+    xp: BALANCE.MONSTER_XP(3),
+    goldMin: 3,
+    goldMax: 8,
+    shardChance: 0.03,
+    drops: [
+      { itemId: 'knife_worn_dagger', chance: 0.02 },
+      { itemId: 'potion_minor_healing', chance: 0.12 }
+    ],
+    desc: 'A quick, needle-toothed vole that darts in to nip and steal shiny scraps before a hunter can react.'
+  },
+
+  // ---------- Level 2 ----------
+  {
+    id: 'plains_wild_boar',
+    name: 'Wild Boar',
+    level: 2,
+    hp: 44,
+    energy: 60, // invented: 40 + 10*level (retuned at Phase 3 milestone gate; see BALANCE.MONSTER_ATTACK_ENERGY_COST)
+    damage: 7,
+    armor: 2,
+    magicArmor: 0,
+    element: 'Earth',
+    resistances: { Earth: 0.5 },
+    techs: [],
+    xp: BALANCE.MONSTER_XP(2),
+    goldMin: 2,
+    goldMax: 6,
+    shardChance: 0.02,
+    drops: [
+      { itemId: 'potion_minor_healing', chance: 0.12 }
+    ],
+    desc: 'A tusked boar that roots through the plains grass, quick to charge anything that startles it.'
+  },
+
+  // ---------- Level 3 ----------
+  {
+    id: 'plains_vermin_swarm',
+    name: 'Vermin Swarm',
+    level: 3,
+    hp: 56,
+    energy: 70, // invented: 40 + 10*level (retuned at Phase 3 milestone gate; see BALANCE.MONSTER_ATTACK_ENERGY_COST)
+    damage: 9,
+    armor: 2,
+    magicArmor: 1,
+    element: null,
+    resistances: {},
+    techs: ['mon_gnawing_bite'],
+    xp: BALANCE.MONSTER_XP(3),
+    goldMin: 3,
+    goldMax: 8,
+    shardChance: 0.03,
+    drops: [
+      { itemId: 'sword_rusty_shortblade', chance: 0.03 },
+      { itemId: 'potion_minor_healing', chance: 0.1 },
+      // Phase 9: unique equipment (js/data/items.js). Appended last so prior loot rates are
+      // unchanged (drops roll top-down, first hit wins).
+      { itemId: 'knife_vermin_kings_fang', chance: 0.02 }
+    ],
+    desc: 'A writhing knot of rats and stinging insects that moves as one hungry creature.'
+  },
+
+  // ---------- Level 4 ----------
+  {
+    id: 'estari_loose_rubble',
+    name: 'Animate Rubble',
+    level: 4,
+    hp: 60, // retuned at milestone gate: 68/armor-5 stalled 38% of melee fights (player energy exhausted)
+    energy: 80, // invented: 40 + 10*level (retuned at Phase 3 milestone gate; see BALANCE.MONSTER_ATTACK_ENERGY_COST)
+    damage: 11,
+    armor: 3, // retuned at milestone gate (was 5); Earth resistance + Fire weakness stays the magic-counter flavor
+    magicArmor: 2,
+    element: 'Earth',
+    resistances: { Earth: 0.5, Fire: -0.25 },
+    techs: [],
+    xp: BALANCE.MONSTER_XP(4),
+    goldMin: 3,
+    goldMax: 9,
+    shardChance: 0.04,
+    drops: [
+      { itemId: 'shield_wooden_buckler', chance: 0.05 },
+      // Phase 5: quest material for "Professor Flad" (js/data/quests.js). Appended after the
+      // existing entry so prior loot rates are unchanged (drops roll top-down, first hit wins).
+      { itemId: 'quest_animate_rubble_core', chance: 0.5 }
+    ],
+    desc: 'Loose stone from a collapsed Estari wall, stirred into shambling motion by lingering Anima residue.'
+  },
+
+  // ---------- Level 5 ----------
+  {
+    id: 'estari_construct_sentinel',
+    name: 'Estari Construct',
+    level: 5,
+    hp: 80,
+    energy: 90, // invented: 40 + 10*level (retuned at Phase 3 milestone gate; see BALANCE.MONSTER_ATTACK_ENERGY_COST)
+    damage: 13,
+    armor: 7,
+    magicArmor: 4,
+    element: 'Earth',
+    resistances: { Earth: 0.5, Water: -0.25 },
+    techs: ['mon_stone_slam'],
+    xp: BALANCE.MONSTER_XP(5),
+    goldMin: 4,
+    goldMax: 10,
+    shardChance: 0.05,
+    drops: [
+      { itemId: 'sword_soldiers_blade', chance: 0.04 },
+      { itemId: 'medium_body_studded_jerkin', chance: 0.04 }
+    ],
+    desc: 'A squat guardian of carved Estari stone, still standing watch over ruins long since buried in the plains.'
+  },
+
+  // ---------- Level 4 ----------
+  {
+    id: 'estari_clay_husk',
+    name: 'Estari Clay Husk',
+    level: 4,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 4,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 4,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 4,
+    armor: 6, // tank profile: above the level ~= armor baseline, but not so high it stalls a level-4 warrior's thin early weapons (Phase-3-milestone-gate-style retune after a sim check)
+    magicArmor: 2,
+    element: 'Earth',
+    resistances: { Earth: 0.5, Water: -0.35 }, // fired clay slumps and cracks under running water
+    techs: [],
+    xp: BALANCE.MONSTER_XP(4),
+    goldMin: 3,
+    goldMax: 9,
+    shardChance: 0.04,
+    drops: [
+      { itemId: 'shield_wooden_buckler', chance: 0.04 },
+      { itemId: 'potion_minor_healing', chance: 0.1 }
+    ],
+    desc: 'A cruder cousin of the Estari\'s animate rubble, fired-clay shards fused into a lumbering husk by centuries of leaking Anima. Water seams its cracks and, given enough of it, brings the whole thing down.'
+  },
+
+  // ---------- Level 5 ----------
+  {
+    id: 'estari_anima_scavenger',
+    name: 'Anima-Touched Scavenger',
+    level: 5,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 5,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 5,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 5,
+    armor: 3, // spell-wall profile: thin hide, but magicArmor well above armor
+    magicArmor: 8,
+    element: 'Star',
+    resistances: { Star: 0.4, Earth: -0.25 },
+    techs: ['mon_static_arc'],
+    xp: BALANCE.MONSTER_XP(5),
+    goldMin: 4,
+    goldMax: 10,
+    shardChance: 0.06,
+    drops: [
+      { itemId: 'crystal_energy_shard', chance: 0.06 },
+      { itemId: 'potion_healing', chance: 0.08 }
+    ],
+    desc: 'A carrion-feeder grown strange from years scavenging near a leaking Anima seam in the ruins, its raw Star-grade discharges as much a threat as its bite.'
+  },
+
+  // ---------- Level 6 ----------
+  {
+    id: 'majiku_forest_scout',
+    name: 'Majiku Scout',
+    level: 6,
+    hp: 92,
+    energy: 100, // invented: 40 + 10*level (retuned at Phase 3 milestone gate; see BALANCE.MONSTER_ATTACK_ENERGY_COST)
+    damage: 15,
+    armor: 6,
+    magicArmor: 3,
+    element: 'Wind',
+    resistances: { Wind: 0.5 },
+    techs: ['mon_hunters_mark'],
+    xp: BALANCE.MONSTER_XP(6),
+    goldMin: 5,
+    goldMax: 12,
+    shardChance: 0.05,
+    drops: [
+      { itemId: 'knife_thieves_edge', chance: 0.05 },
+      { itemId: 'potion_healing', chance: 0.08 },
+      // Phase 5: quest material for "Eldor: Dr. Ferrier" (js/data/quests.js); appended last so
+      // prior loot rates are unchanged.
+      { itemId: 'quest_majiku_venom_gland', chance: 0.5 },
+      // Phase 9: unique equipment (js/data/items.js). Appended last so prior loot rates (incl.
+      // the quest-material roll above) are unchanged.
+      { itemId: 'light_body_ashroot_ward_cloak', chance: 0.015 }
+    ],
+    desc: 'A Majiku raider ranging far south from the Forests of Kuraan, quick and quiet as the wind.'
+  },
+
+  // ---------- Level 7 ----------
+  {
+    id: 'majiku_war_shaman',
+    name: 'Majiku War-Shaman',
+    level: 7,
+    hp: 104,
+    energy: 110, // invented: 40 + 10*level (retuned at Phase 3 milestone gate; see BALANCE.MONSTER_ATTACK_ENERGY_COST)
+    damage: 17,
+    armor: 6,
+    magicArmor: 9,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.25 },
+    techs: ['mon_dark_hex', 'mon_hunters_mark'],
+    xp: BALANCE.MONSTER_XP(7),
+    goldMin: 6,
+    goldMax: 14,
+    shardChance: 0.06,
+    drops: [
+      { itemId: 'rod_saratus_conduit', chance: 0.03 },
+      { itemId: 'crystal_energy_shard', chance: 0.1 },
+      // Phase 5: quest material for "Eldor: Dr. Ferrier" (js/data/quests.js); appended last.
+      { itemId: 'quest_majiku_venom_gland', chance: 0.5 }
+    ],
+    desc: 'A tribal spellcaster who channels the Majiku ancestral spirits into curses of creeping dark.'
+  },
+
+  // ---------- Level 8 ----------
+  {
+    id: 'skyspire_wisp',
+    name: 'Skyspire Wisp',
+    level: 8,
+    hp: 116,
+    energy: 120, // invented: 40 + 10*level (retuned at Phase 3 milestone gate; see BALANCE.MONSTER_ATTACK_ENERGY_COST)
+    damage: 19,
+    armor: 4,
+    magicArmor: 12,
+    element: 'Star',
+    resistances: { Star: 0.5, Earth: -0.25 },
+    techs: ['mon_static_arc'],
+    xp: BALANCE.MONSTER_XP(8),
+    goldMin: 7,
+    goldMax: 16,
+    shardChance: 0.08,
+    drops: [
+      { itemId: 'light_legs_supple_leggings', chance: 0.05 },
+      { itemId: 'potion_healing', chance: 0.1 }
+    ],
+    desc: 'A crackling mote of stray Anima said to have drifted down from Eidas’ abandoned Skyspire.'
+  },
+
+  // ---------- Level 6 (Kuraan Border Woods variety) ----------
+  {
+    id: 'kuraan_prowler',
+    name: 'Kuraan Prowler',
+    level: 6,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 6,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 6,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 6,
+    armor: 6, // balanced physical profile: armor ~= level
+    magicArmor: 2,
+    element: null, // no grade, no vulnerability: pure physical predator
+    resistances: {},
+    techs: ['mon_gnawing_bite'],
+    xp: BALANCE.MONSTER_XP(6),
+    goldMin: 5,
+    goldMax: 12,
+    shardChance: 0.05,
+    drops: [
+      { itemId: 'potion_healing', chance: 0.08 },
+      { itemId: 'crystal_energy_shard', chance: 0.04 }
+    ],
+    desc: 'A lean forest predator that has learned to trail the Majiku raiding parties south, picking off whatever they leave behind.'
+  },
+
+  // ---------- Level 7 (Kuraan Border Woods variety) ----------
+  {
+    id: 'kuraan_wind_spirit',
+    name: 'Whispering Wind Spirit',
+    level: 7,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 7,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 7,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 7,
+    armor: 3, // spell-wall profile: near-formless, but magicArmor well above armor
+    magicArmor: 10,
+    element: 'Wind',
+    resistances: { Wind: 0.6, Earth: -0.3 }, // an air spirit grounded and battered by Earth-grade force
+    techs: [],
+    xp: BALANCE.MONSTER_XP(7),
+    goldMin: 6,
+    goldMax: 14,
+    shardChance: 0.06,
+    drops: [
+      { itemId: 'crystal_energy_shard', chance: 0.08 },
+      { itemId: 'potion_healing', chance: 0.08 }
+    ],
+    desc: 'A near-formless eddy of wind given fitful will by stray Anima, said by Kuraan hunters to murmur half-words in no language they know.'
+  },
+
+  // ---------- Level 8 (Kuraan Border Woods variety) ----------
+  {
+    id: 'majiku_beastmaster',
+    name: 'Majiku Beastmaster',
+    level: 8,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 8,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 8,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 8,
+    armor: 9, // tank profile: armor above level, backed by two techs
+    magicArmor: 5,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.25 }, // matches the established Majiku Dark/Light profile
+    techs: ['mon_hunters_mark', 'mon_dark_hex'],
+    xp: BALANCE.MONSTER_XP(8),
+    goldMin: 7,
+    goldMax: 16,
+    shardChance: 0.06,
+    drops: [
+      { itemId: 'hth_monks_wraps', chance: 0.03 },
+      { itemId: 'potion_healing', chance: 0.1 }
+    ],
+    desc: 'A Majiku tribesman who fights alongside a pack of trained forest beasts, directing their attacks with sharp whistles and old ancestor-curses.'
+  },
+
+  // ---------- Boss (level 10) ----------
+  {
+    id: 'estari_ruin_warden',
+    name: 'Ruin Warden of the Estari',
+    level: 10,
+    boss: true,
+    hp: 20 + 12 * 10 + 120, // invented: boss gets a flat HP premium over the regular-monster ballpark
+    energy: 140, // invented: 40 + 10*level (retuned at Phase 3 milestone gate; see BALANCE.MONSTER_ATTACK_ENERGY_COST)
+    damage: 3 + 2 * 10 + 10, // invented: boss gets a flat damage premium
+    armor: 12,
+    magicArmor: 12,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Earth: 0.25, Light: -0.5 },
+    techs: ['mon_stone_slam', 'mon_dark_hex', 'mon_static_arc'],
+    xp: BALANCE.MONSTER_XP(10) * 3, // invented: boss XP premium
+    goldMin: 30,
+    goldMax: 60,
+    shardChance: 0.5,
+    drops: [
+      { itemId: 'sword_arkan_runeblade', chance: 0.1 },
+      { itemId: 'heavy_legs_warplate_legguards', chance: 0.08 },
+      { itemId: 'lore_estari_shard_tablet', chance: 0.25 },
+      // Phase 6a: class quest materials for "The Trials of Eldor" (js/data/quests.js).
+      // Appended last so prior loot rates are unchanged (drops roll top-down, first hit wins).
+      { itemId: 'quest_condensed_anima_core', chance: 0.6 },
+      { itemId: 'quest_estari_ward_fragment', chance: 0.6 },
+      // Phase 9: unique equipment (js/data/items.js) — boss signature. Appended last so prior
+      // loot rates are unchanged.
+      { itemId: 'rod_wardens_anima_core', chance: 0.04 }
+    ],
+    desc: 'The last active guardian of a buried Estari excavation site, its stone core corrupted by centuries of restless Anima.'
+  },
+
+  // =====================================================================
+  // Phase 4: Gares Riverbanks (level 9-12) — river/wetland flavored, invented, lore-consistent
+  // with the Majiku raids and Anima-touched wildlife described in DESIGN.md §2/§7. Same balance
+  // ballpark as the header comment: hp ~= 20 + 12*level, damage ~= 3 + 2*level, armor ~= level
+  // (capped well under a same-level warrior's damage output per the milestone-gate retune),
+  // energy = 40 + 10*level (reviewer patch, BALANCE.MONSTER_ATTACK_ENERGY_COST comment).
+  // =====================================================================
+
+  // ---------- Level 7: Oruk (Phase 5 quest monster) ----------
+  // archived: Recent_Updates.md 2007-04-06 "The Oruk quest can only be completed by heroes
+  // greater than level 5 but less than 10" — that level-5-to-10 band is the only archived fact
+  // about the Oruk; the monster itself, its stats, and its lair are invented. Placed in Kuraan
+  // Border Woods alongside the Majiku (Oruk reinterpreted as a savage, tribal raider distinct
+  // from the Majiku scouts/shamans already hunted there).
+  {
+    id: 'oruk_ravager',
+    name: 'Oruk Ravager',
+    level: 7,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 7,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 7,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 7,
+    armor: 7,
+    magicArmor: 2,
+    element: null,
+    resistances: {},
+    techs: ['mon_gnawing_bite'],
+    xp: BALANCE.MONSTER_XP(7),
+    goldMin: 6,
+    goldMax: 14,
+    shardChance: 0.05,
+    drops: [
+      { itemId: 'potion_healing', chance: 0.08 }
+    ],
+    desc: 'A hulking raider of the Oruk tribes, driven south into the Kuraan borderlands by hunger or by worse.'
+  },
+
+  // ---------- Level 9 ----------
+  {
+    id: 'gares_river_stalker',
+    name: 'River Stalker',
+    level: 9,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 9,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 9,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 9,
+    armor: 9, // invented: armor ~= level (capped well under a same-level warrior's damage — milestone-gate retune)
+    magicArmor: 3,
+    element: 'Water',
+    resistances: { Water: 0.5 },
+    techs: ['mon_gnawing_bite'],
+    xp: BALANCE.MONSTER_XP(9),
+    goldMin: 8,
+    goldMax: 18,
+    shardChance: 0.08,
+    drops: [
+      { itemId: 'knife_gares_fang', chance: 0.05 },
+      { itemId: 'potion_healing', chance: 0.1 },
+      // Phase 5: quest material for "Riverweed for the Synthesis Shop" (js/data/quests.js).
+      { itemId: 'quest_riverweed_bundle', chance: 0.5 }
+    ],
+    desc: 'A sinewy amphibious predator that lurks in the reeds of the Gares delta, dragging prey under with a crushing bite.'
+  },
+
+  // ---------- Level 10 ----------
+  {
+    id: 'gares_majiku_raider',
+    name: 'Majiku River Raider',
+    level: 10,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 10,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 10,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 10,
+    armor: 10,
+    magicArmor: 5,
+    element: 'Wind',
+    resistances: { Wind: 0.5 },
+    techs: ['mon_hunters_mark'],
+    xp: BALANCE.MONSTER_XP(10),
+    goldMin: 9,
+    goldMax: 20,
+    shardChance: 0.08,
+    drops: [
+      { itemId: 'sword_riverguard_falchion', chance: 0.05 },
+      { itemId: 'medium_body_riverguard_brigandine', chance: 0.05 },
+      // Phase 5: quest material for "Eldor: Dr. Ferrier" (js/data/quests.js) — Majiku raiders
+      // this far south carry the same blade-tip venom glands.
+      { itemId: 'quest_majiku_venom_gland', chance: 0.5 },
+      // Phase 9: unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'sword_raiders_ironclaw_blade', chance: 0.01 }
+    ],
+    desc: 'A Majiku raiding party has pushed this far south along the river, striking Eldor trade barges before melting back into the reeds.'
+  },
+
+  // ---------- Level 11 ----------
+  {
+    id: 'gares_anima_touched_heron',
+    name: 'Anima-Touched Heron',
+    level: 11,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 11,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 11,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 11,
+    armor: 8,
+    magicArmor: 14,
+    element: 'Light',
+    resistances: { Light: 0.5, Dark: -0.25 },
+    techs: ['mon_static_arc'],
+    xp: BALANCE.MONSTER_XP(11),
+    goldMin: 10,
+    goldMax: 22,
+    shardChance: 0.1,
+    drops: [
+      { itemId: 'rod_anima_touched_branch', chance: 0.05 },
+      { itemId: 'light_head_wetland_cowl', chance: 0.06 },
+      // Phase 5: quest material for "Riverweed for the Synthesis Shop" (js/data/quests.js) —
+      // the heron nests in the same riverweed beds the alchemist wants harvested.
+      { itemId: 'quest_riverweed_bundle', chance: 0.5 }
+    ],
+    desc: 'A wading bird grown unnaturally large and luminous from decades near a leaking Anima seam beneath the riverbed.'
+  },
+
+  // ---------- Level 12 ----------
+  {
+    id: 'gares_current_wraith',
+    name: 'Current Wraith',
+    level: 12,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 12,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 12,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 12,
+    armor: 9,
+    magicArmor: 16,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Fire: -0.25 },
+    techs: ['mon_dark_hex', 'mon_gnawing_bite'],
+    xp: BALANCE.MONSTER_XP(12),
+    goldMin: 12,
+    goldMax: 26,
+    shardChance: 0.12,
+    drops: [
+      { itemId: 'potion_greater_healing', chance: 0.1 },
+      { itemId: 'medium_feet_reinforced_boots', chance: 0.05 }
+    ],
+    desc: 'A drowned soul bound to the river’s current, said to be a Majiku raider who drank too deep of unrefined Anima runoff.'
+  },
+
+  // ---------- Level 9 (Gares Riverbanks variety) ----------
+  {
+    id: 'gares_bog_adder',
+    name: 'Gares Bog Adder',
+    level: 9,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 9,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 9,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 9,
+    armor: 5, // glass cannon: thin scales, relies on venom over hide
+    magicArmor: 2,
+    element: null,
+    resistances: {},
+    techs: ['mon_venomous_bite'],
+    xp: BALANCE.MONSTER_XP(9),
+    goldMin: 8,
+    goldMax: 18,
+    shardChance: 0.08,
+    drops: [
+      { itemId: 'potion_healing', chance: 0.1 },
+      { itemId: 'knife_gares_fang', chance: 0.02 }
+    ],
+    desc: 'A fat-bodied adder that suns itself on the Gares mudflats, striking with a venom far deadlier than its size suggests.'
+  },
+
+  // ---------- Level 11 (Gares Riverbanks variety) ----------
+  {
+    id: 'gares_shellback',
+    name: 'Riverbank Shellback',
+    level: 11,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 11,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 11,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 11,
+    armor: 16, // tank profile: armored shellback, well above the level ~= armor baseline
+    magicArmor: 3,
+    element: 'Water',
+    resistances: { Water: 0.5 }, // thick shell resists broadly; no vulnerability entry
+    techs: [],
+    xp: BALANCE.MONSTER_XP(11),
+    goldMin: 10,
+    goldMax: 22,
+    shardChance: 0.09,
+    drops: [
+      { itemId: 'medium_body_riverguard_brigandine', chance: 0.03 },
+      { itemId: 'potion_healing', chance: 0.1 }
+    ],
+    desc: 'A broad-shelled river turtle grown to the size of a rowboat, content to let hunters batter themselves against its hide.'
+  },
+
+  // ---------- Level 12 (Gares Riverbanks variety) ----------
+  {
+    id: 'gares_torrent_naga',
+    name: 'Gares Torrent Naga',
+    level: 12,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 12,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 12,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 12,
+    armor: 6, // spell-wall profile: magicArmor well above armor
+    magicArmor: 15,
+    element: 'Water',
+    resistances: { Water: 0.5, Fire: -0.3 },
+    techs: ['mon_water_torrent'],
+    xp: BALANCE.MONSTER_XP(12),
+    goldMin: 12,
+    goldMax: 26,
+    shardChance: 0.12,
+    drops: [
+      { itemId: 'rod_anima_touched_branch', chance: 0.03 },
+      { itemId: 'potion_greater_healing', chance: 0.08 },
+      // Phase 9: unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'rod_tideglass_conduit', chance: 0.01 }
+    ],
+    desc: 'A serpentine naga that hunts the deeper Gares channels, hurling driving torrents of Water-grade Anima at anything that strays too close.'
+  },
+
+  // =====================================================================
+  // Phase 6b: Endgame World Expansion (DESIGN.md §2/§10) — Northern Barrier Foothills, Isle of
+  // Juneros, Ruins of Kastengard, Kastengard: The Deep Vaults (js/data/areas.js). Same balance
+  // ballpark as the header comment: hp = 20+12*level, damage = 3+2*level, armor ~= level (capped
+  // well under a same-level warrior's expected total damage — weapon + stat — per the
+  // estari_loose_rubble milestone-gate retune comment), energy = 40+10*level
+  // (BALANCE.MONSTER_ATTACK_ENERGY_COST), xp = BALANCE.MONSTER_XP(level).
+  // =====================================================================
+
+  // ---------- Northern Barrier Foothills (level 13-15) ----------
+  {
+    id: 'foothills_frost_ram',
+    name: 'Frost Ram',
+    level: 13,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 13,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 13,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 13,
+    armor: 13,
+    magicArmor: 4,
+    element: 'Earth',
+    resistances: { Earth: 0.5, Fire: -0.25 },
+    techs: ['mon_stone_slam'],
+    xp: BALANCE.MONSTER_XP(13),
+    goldMin: 12,
+    goldMax: 28,
+    shardChance: 0.1,
+    drops: [
+      { itemId: 'medium_legs_foothills_greaves', chance: 0.05 },
+      { itemId: 'potion_greater_healing', chance: 0.1 }
+    ],
+    desc: 'A shaggy, thick-horned ram that charges downslope from the mountain wall no Human or Arkan has ever crossed (Averast.md).'
+  },
+
+  // ---------- Level 14 ----------
+  {
+    id: 'foothills_barrier_wolf',
+    name: 'Barrier Wolf',
+    level: 14,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 14,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 14,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 14,
+    armor: 10,
+    magicArmor: 6,
+    element: 'Wind',
+    resistances: { Wind: 0.5 },
+    techs: ['mon_hunters_mark', 'mon_gnawing_bite'],
+    xp: BALANCE.MONSTER_XP(14),
+    goldMin: 13,
+    goldMax: 30,
+    shardChance: 0.1,
+    drops: [
+      { itemId: 'knife_juneros_tidefang', chance: 0.03 },
+      { itemId: 'potion_greater_healing', chance: 0.1 }
+    ],
+    desc: 'A lean, pale-furred wolf that runs the foothills in tireless packs, said to howl at the mountain wind for hours.'
+  },
+
+  // ---------- Level 15 ----------
+  {
+    id: 'foothills_stoneback_giant',
+    name: 'Stoneback Giant',
+    level: 15,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 15,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 15,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 15,
+    armor: 15,
+    magicArmor: 5,
+    element: 'Earth',
+    resistances: { Earth: 0.5, Water: -0.25 },
+    techs: ['mon_stone_slam'],
+    xp: BALANCE.MONSTER_XP(15),
+    goldMin: 14,
+    goldMax: 32,
+    shardChance: 0.12,
+    drops: [
+      { itemId: 'sword_saratus_battlemage_blade', chance: 0.03 },
+      { itemId: 'heavy_body_juneros_scaleplate', chance: 0.04 },
+      { itemId: 'quest_frostram_hide', chance: 0.5 },
+      // Phase 9: unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'heavy_body_stoneback_warplate', chance: 0.01 }
+    ],
+    desc: 'A hulking, lichen-crusted giant said to be part of the mountain wall itself, roused only when something disturbs its slope.'
+  },
+
+  // ---------- Level 14 (Northern Barrier Foothills variety) ----------
+  {
+    id: 'foothills_gale_harrier',
+    name: 'Gale Harrier',
+    level: 14,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 14,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 14,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 14,
+    armor: 8, // balanced flier: armor a little under level, mobility over hide
+    magicArmor: 5,
+    element: 'Wind',
+    resistances: { Wind: 0.5 },
+    techs: ['mon_wind_buffet'],
+    xp: BALANCE.MONSTER_XP(14),
+    goldMin: 13,
+    goldMax: 30,
+    shardChance: 0.1,
+    drops: [
+      { itemId: 'knife_juneros_tidefang', chance: 0.02 },
+      { itemId: 'potion_greater_healing', chance: 0.1 }
+    ],
+    desc: 'A great taloned raptor that rides the gale off the mountain wall, buffeting hunters off their footing before it strikes.'
+  },
+
+  // ---------- Level 15 (Northern Barrier Foothills variety) ----------
+  {
+    id: 'foothills_ridge_hound',
+    name: 'Foothills Ridge Hound',
+    level: 15,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 15,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 15,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 15,
+    armor: 9, // glass cannon: below the Stoneback Giant's tank armor at the same level
+    magicArmor: 2,
+    element: null,
+    resistances: {},
+    techs: [],
+    xp: BALANCE.MONSTER_XP(15),
+    goldMin: 14,
+    goldMax: 32,
+    shardChance: 0.11,
+    drops: [
+      { itemId: 'medium_legs_foothills_greaves', chance: 0.03 },
+      { itemId: 'potion_greater_healing', chance: 0.1 }
+    ],
+    desc: 'A rangy, pack-hunting hound that runs the high ridgelines in tireless bursts, trading hide for raw speed.'
+  },
+
+  // ---------- Boss: Foothills Matriarch (level 18, gate-boss) ----------
+  {
+    id: 'foothills_matriarch',
+    name: 'Matriarch of the High Camp',
+    level: 18,
+    boss: true,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 18 + 12 * 18, // invented: boss flat HP premium, ~12*level pattern
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 18,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 18 + 12, // invented: boss flat damage premium
+    armor: 16,
+    magicArmor: 10,
+    element: 'Wind',
+    resistances: { Wind: 0.5, Earth: 0.25, Fire: -0.5 },
+    techs: ['mon_hunters_mark', 'mon_stone_slam', 'mon_gnawing_bite'],
+    xp: BALANCE.MONSTER_XP(18) * 3, // invented: boss XP premium
+    goldMin: 45,
+    goldMax: 85,
+    shardChance: 0.5,
+    drops: [
+      { itemId: 'polearm_foothills_pike', chance: 0.12 },
+      { itemId: 'medium_body_foothills_hauberk', chance: 0.1 },
+      { itemId: 'quest_matriarch_horn', chance: 0.6 },
+      // Phase 9: unique equipment (js/data/items.js) — boss signature. Appended last so prior
+      // loot rates are unchanged.
+      { itemId: 'hth_matriarchs_fang_wraps', chance: 0.04 }
+    ],
+    desc: 'The eldest and largest of the Barrier Wolves\' pack-mothers, who has driven every hunting party back from the western passes for a generation. The Isle of Juneros lies beyond her camp — nothing crosses without her leave.'
+  },
+
+  // ---------- Isle of Juneros (level 19-22) ----------
+  {
+    id: 'juneros_tidewalker',
+    name: 'Tidewalker',
+    level: 19,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 19,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 19,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 19,
+    armor: 14,
+    magicArmor: 10,
+    element: 'Water',
+    resistances: { Water: 0.5, Fire: -0.25 },
+    techs: ['mon_tidal_crush'],
+    xp: BALANCE.MONSTER_XP(19),
+    goldMin: 16,
+    goldMax: 36,
+    shardChance: 0.12,
+    drops: [
+      { itemId: 'knife_juneros_tidefang', chance: 0.05 },
+      { itemId: 'potion_greater_healing', chance: 0.12 },
+      // Phase 9: unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'polearm_tidewalkers_harpoon', chance: 0.008 }
+    ],
+    desc: 'A brine-slick predator that stalks the tideline of the isle\'s small human settlements (Averast.md), never straying far from the surf.'
+  },
+
+  // ---------- Level 20 ----------
+  {
+    id: 'juneros_reefstalker',
+    name: 'Reefstalker',
+    level: 20,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 20,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 20,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 20,
+    armor: 20,
+    magicArmor: 8,
+    element: 'Water',
+    resistances: { Water: 0.5 },
+    techs: ['mon_tidal_crush', 'mon_gnawing_bite'],
+    xp: BALANCE.MONSTER_XP(20),
+    goldMin: 18,
+    goldMax: 40,
+    shardChance: 0.14,
+    drops: [
+      { itemId: 'heavy_head_juneros_scalehelm', chance: 0.05 },
+      { itemId: 'crystal_pure_anima', chance: 0.08 }
+    ],
+    desc: 'A scale-plated reef predator, its hide the model for the armor Juneros militia wear on patrol.'
+  },
+
+  // ---------- Level 20 (Isle of Juneros variety) ----------
+  {
+    id: 'juneros_riptide_hunter',
+    name: 'Riptide Hunter',
+    level: 20,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 20,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 20,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 20,
+    armor: 14, // glass cannon: below the Reefstalker's tank armor at the same level
+    magicArmor: 6,
+    element: 'Water',
+    resistances: { Water: 0.5, Wind: -0.25 },
+    techs: [],
+    xp: BALANCE.MONSTER_XP(20),
+    goldMin: 18,
+    goldMax: 40,
+    shardChance: 0.14,
+    drops: [
+      { itemId: 'heavy_head_juneros_scalehelm', chance: 0.04 },
+      { itemId: 'crystal_pure_anima', chance: 0.06 }
+    ],
+    desc: 'A quicksilver eel-thing that rides the isle\'s riptides, striking fast and hard with none of the Reefstalker\'s armored patience.'
+  },
+
+  // ---------- Level 21 (Isle of Juneros variety) ----------
+  {
+    id: 'juneros_coral_warden',
+    name: 'Coral Warden',
+    level: 21,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 21,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 21,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 21,
+    armor: 10, // spell-wall profile: magicArmor well above armor
+    magicArmor: 22,
+    element: 'Water',
+    resistances: { Water: 0.6, Fire: -0.3 },
+    techs: ['mon_water_torrent'],
+    xp: BALANCE.MONSTER_XP(21),
+    goldMin: 19,
+    goldMax: 42,
+    shardChance: 0.14,
+    drops: [
+      { itemId: 'light_head_arkan_silk_hood', chance: 0.04 },
+      { itemId: 'crystal_pure_anima', chance: 0.08 },
+      // Phase 9: unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'shield_coral_wardens_bulwark', chance: 0.008 }
+    ],
+    desc: 'A merfolk adept who has made a shrine of a sunken reef, wreathed in coral wards that shrug off blades far better than spells.'
+  },
+
+  // ---------- Level 22 ----------
+  {
+    id: 'juneros_drowned_settler',
+    name: 'Drowned Settler',
+    level: 22,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 22,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 22,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 22,
+    armor: 16,
+    magicArmor: 18,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.25 },
+    techs: ['mon_dark_hex', 'mon_tidal_crush'],
+    xp: BALANCE.MONSTER_XP(22),
+    goldMin: 20,
+    goldMax: 44,
+    shardChance: 0.16,
+    drops: [
+      { itemId: 'light_head_arkan_silk_hood', chance: 0.05 },
+      { itemId: 'quest_settler_locket', chance: 0.5 }
+    ],
+    desc: 'A settler lost to the isle\'s waters long ago, still walking the tideline with the sea\'s own restlessness in place of breath.'
+  },
+
+  // ---------- Boss: Juneros Leviathan (level 25, gate-boss) ----------
+  {
+    id: 'juneros_leviathan',
+    name: 'The Juneros Leviathan',
+    level: 25,
+    boss: true,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 25 + 12 * 25,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 25,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 25 + 14,
+    armor: 22,
+    magicArmor: 16,
+    element: 'Water',
+    resistances: { Water: 0.6, Fire: -0.4 },
+    techs: ['mon_tidal_crush', 'mon_dark_hex'],
+    xp: BALANCE.MONSTER_XP(25) * 3,
+    goldMin: 60,
+    goldMax: 110,
+    shardChance: 0.55,
+    drops: [
+      { itemId: 'polearm_foothills_pike', chance: 0.08 },
+      { itemId: 'heavy_body_juneros_scaleplate', chance: 0.12 },
+      { itemId: 'quest_leviathan_scale', chance: 0.6 },
+      // Phase 9: unique equipment (js/data/items.js) — boss signature. Appended last so prior
+      // loot rates are unchanged.
+      { itemId: 'heavy_body_leviathanhide_bulwark', chance: 0.04 }
+    ],
+    desc: 'A vast, water-graded shape that surfaces only for the settlements\' oldest fishing grounds, guarding the deep shoal the way the Matriarch once guarded the western passes.'
+  },
+
+  // ---------- Ruins of Kastengard (level 26-29) ----------
+  {
+    id: 'kastengard_wardframe',
+    name: 'Kastengard Wardframe',
+    level: 26,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 26,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 26,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 26,
+    armor: 24,
+    magicArmor: 14,
+    element: 'Star',
+    resistances: { Star: 0.5, Earth: -0.25 },
+    techs: ['mon_static_arc'],
+    xp: BALANCE.MONSTER_XP(26),
+    goldMin: 24,
+    goldMax: 50,
+    shardChance: 0.18,
+    drops: [
+      { itemId: 'medium_body_custodian_plate', chance: 0.04 },
+      { itemId: 'crystal_pure_anima', chance: 0.1 }
+    ],
+    // archived: Chapter_I.md — "the Society established a base of operations known as Kastengard...
+    // discovered many uses for Anima, particularly in magic and technology."
+    desc: 'An old Society of Modern Magic sentry-construct, reactivated by whatever has been re-arming Kastengard\'s halls after three centuries of silence (js/data/story.js chapter_2).'
+  },
+
+  // ---------- Level 27 ----------
+  {
+    id: 'kastengard_anima_wraith',
+    name: 'Anima Wraith',
+    level: 27,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 27,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 27,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 27,
+    armor: 18,
+    magicArmor: 26,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.25 },
+    techs: ['mon_dark_hex', 'mon_anima_lance'],
+    xp: BALANCE.MONSTER_XP(27),
+    goldMin: 26,
+    goldMax: 54,
+    shardChance: 0.2,
+    drops: [
+      { itemId: 'rod_arkan_runic_conduit', chance: 0.04 },
+      { itemId: 'light_body_kastengard_wardweave', chance: 0.05 }
+    ],
+    desc: 'Raw, ninth-dimensional Anima given a fleeting will of its own, escaped from some cracked seal deep in Kastengard\'s vaults.'
+  },
+
+  // ---------- Level 28 (Ruins of Kastengard variety) ----------
+  {
+    id: 'kastengard_earthbound_sentinel',
+    name: 'Earthbound Sentinel',
+    level: 28,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 28,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 28,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 28,
+    armor: 30, // tank profile: heaviest of the Kastengard trio, well above the level ~= armor baseline
+    magicArmor: 10,
+    element: 'Earth',
+    resistances: { Earth: 0.5, Water: -0.3 },
+    techs: ['mon_earthen_crush'],
+    xp: BALANCE.MONSTER_XP(28),
+    goldMin: 27,
+    goldMax: 56,
+    shardChance: 0.19,
+    drops: [
+      { itemId: 'medium_body_custodian_plate', chance: 0.04 },
+      { itemId: 'crystal_pure_anima', chance: 0.1 },
+      // Phase 9: unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'hth_custodian_wrought_gauntlets', chance: 0.006 }
+    ],
+    desc: 'The oldest and heaviest of the Society\'s sentry-constructs, built from Estari-quarried stone long before the Wardframes ever walked Kastengard\'s halls.'
+  },
+
+  // ---------- Level 29 ----------
+  {
+    id: 'kastengard_society_remnant',
+    name: 'Society Remnant',
+    level: 29,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 29,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 29,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 29,
+    armor: 22,
+    magicArmor: 22,
+    element: 'Light',
+    resistances: { Light: 0.4, Dark: 0.4, Earth: -0.25 },
+    techs: ['mon_anima_lance', 'mon_static_arc'],
+    xp: BALANCE.MONSTER_XP(29),
+    goldMin: 30,
+    goldMax: 60,
+    shardChance: 0.22,
+    drops: [
+      { itemId: 'knife_juneros_tidefang', chance: 0.04 },
+      { itemId: 'quest_society_ledger_page', chance: 0.5 }
+    ],
+    // archived: Chapter_I.md — "the runologist research group dispersed" when the Council
+    // condemned the Society; a remnant left behind, still following orders three centuries stale.
+    desc: 'A preserved runologist of the old underground Society, sustained past death by the same Anima it once studied, still cataloguing a research group that dispersed three hundred years ago.'
+  },
+
+  // ---------- Boss: Kastengard Custodian (level 32, gate-boss) ----------
+  {
+    id: 'kastengard_custodian',
+    name: 'The Kastengard Custodian',
+    level: 32,
+    boss: true,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 32 + 12 * 32,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 32,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 32 + 16,
+    armor: 30,
+    magicArmor: 24,
+    element: 'Star',
+    resistances: { Star: 0.5, Dark: 0.25, Earth: -0.5 },
+    techs: ['mon_static_arc', 'mon_anima_lance', 'mon_stone_slam'],
+    xp: BALANCE.MONSTER_XP(32) * 3,
+    goldMin: 80,
+    goldMax: 140,
+    shardChance: 0.6,
+    drops: [
+      { itemId: 'sword_kastengard_relic_blade', chance: 0.1 },
+      { itemId: 'heavy_body_vault_bulwark', chance: 0.08 },
+      { itemId: 'quest_custodian_core_shard', chance: 0.6 }
+    ],
+    // invented successor to the Estari construct line (estari_construct_sentinel/estari_ruin_warden)
+    // — the Society's own attempt at a lasting guardian, built from what it learned excavating
+    // the Estari ruins before departing for Kastengard (Chapter_I.md).
+    desc: 'The largest and last-functioning construct the Society of Modern Magic ever built, an Estari-inspired successor left to guard the vault below while its makers climbed aboard the Skyspire.'
+  },
+
+  // ---------- Kastengard: The Deep Vaults (level 33-35, final zone) ----------
+  {
+    id: 'vault_anima_construct',
+    name: 'Vault Anima Construct',
+    level: 33,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 33,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 33,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 33,
+    armor: 30,
+    magicArmor: 20,
+    element: 'Earth',
+    resistances: { Earth: 0.5, Water: -0.25 },
+    techs: ['mon_stone_slam', 'mon_anima_lance'],
+    xp: BALANCE.MONSTER_XP(33),
+    goldMin: 34,
+    goldMax: 68,
+    shardChance: 0.24,
+    drops: [
+      { itemId: 'polearm_vault_reaver', chance: 0.04 },
+      { itemId: 'medium_body_custodian_plate', chance: 0.05 }
+    ],
+    desc: 'A hulking construct built from the same Anima-bearing stone the Estari once carved, three centuries idle in the Society\'s deepest vault.'
+  },
+
+  // ---------- Level 34 ----------
+  {
+    id: 'vault_runic_horror',
+    name: 'Runic Horror',
+    level: 34,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 34,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 34,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 34,
+    armor: 24,
+    magicArmor: 30,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.3 },
+    techs: ['mon_dark_hex', 'mon_anima_lance'],
+    xp: BALANCE.MONSTER_XP(34),
+    goldMin: 36,
+    goldMax: 72,
+    shardChance: 0.26,
+    drops: [
+      { itemId: 'knife_custodian_needle', chance: 0.04 },
+      { itemId: 'crystal_pure_anima', chance: 0.14 }
+    ],
+    desc: 'A tangle of failed warding runes given monstrous, malicious shape — the Society\'s own experiments turned against whoever disturbs their rest.'
+  },
+
+  // ---------- Level 35 ----------
+  {
+    id: 'vault_forsaken_archivist',
+    name: 'Forsaken Archivist',
+    level: 35,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 35,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 35,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 35,
+    armor: 28,
+    magicArmor: 32,
+    element: 'Light',
+    resistances: { Light: 0.4, Dark: 0.4, Star: -0.25 },
+    techs: ['mon_anima_lance', 'mon_static_arc'],
+    xp: BALANCE.MONSTER_XP(35),
+    goldMin: 38,
+    goldMax: 76,
+    shardChance: 0.28,
+    drops: [
+      { itemId: 'rod_eidas_remnant_wand', chance: 0.04 },
+      { itemId: 'heavy_body_vault_bulwark', chance: 0.05 },
+      { itemId: 'quest_archivist_key', chance: 0.5 }
+    ],
+    desc: 'The last preserved record-keeper of the Society of Modern Magic, still guarding the vault\'s deepest archive from researchers who left for the red moon three centuries ago.'
+  },
+
+  // ---------- FINAL BOSS: Eidas' Echo (level 40) ----------
+  // invented Chapter II payoff (js/data/story.js chapter_2: "somewhere above Van Arius, past the
+  // clouds, a twinkling light still crosses the night sky on quiet evenings, exactly where the
+  // old stories say the Skyspire vanished"). An Anima-projection remnant of Eidas himself, cast
+  // down (or reaching down) from the red moon into the Skyspire's old ground anchor. Light+Dark
+  // resist profile (a "divine race" founder who commanded both healing and cursing Anima grades),
+  // vulnerable to nothing (final-boss floor), big HP/damage premiums matching the
+  // estari_ruin_warden pattern scaled to level 40.
+  {
+    id: 'eidas_echo',
+    name: "Eidas' Echo",
+    level: 40,
+    boss: true,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 40 + 12 * 40, // invented: boss flat HP premium, ~12*level pattern (matches estari_ruin_warden's +120 at level 10)
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 40,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 40 + 45, // invented: boss flat damage premium — raised at the Phase 7 balance pass (was +20): after the monster-dodge and weapon-tier fixes, a rested level-40 warrior won 100% barely scratched; the final boss must land meaningful hits through ~90 endgame Armor
+    armor: 34,
+    magicArmor: 34,
+    element: 'Dark',
+    resistances: { Light: 0.4, Dark: 0.4 }, // vulnerable to nothing: no negative (weakness) entries
+    techs: ['mon_dark_hex', 'mon_anima_lance', 'mon_static_arc', 'mon_stone_slam'],
+    xp: BALANCE.MONSTER_XP(40) * 3, // invented: boss XP premium
+    goldMin: 150,
+    goldMax: 260,
+    shardChance: 0.75,
+    drops: [
+      { itemId: 'sword_kastengard_relic_blade', chance: 0.1 },
+      { itemId: 'rod_eidas_remnant_wand', chance: 0.1 },
+      { itemId: 'heavy_body_vault_bulwark', chance: 0.1 },
+      { itemId: 'lore_eidas_final_journal', chance: 1 },
+      { itemId: 'quest_eidas_echo_seal', chance: 0.7 },
+      // Phase 9: unique equipment (js/data/items.js) — boss signature, the roster's capstone.
+      // Appended last so prior loot rates (including the guaranteed journal above) are unchanged.
+      { itemId: 'sword_skyspire_ember_blade', chance: 0.05 }
+    ],
+    desc: 'Not Eidas himself — no living thing could have lasted three centuries — but something of him all the same: an Anima-projection anchored to the old Skyspire ground works, still murmuring about a "divine race" that never came to pass. The last guardian of Kastengard\'s deepest vault, and, perhaps, the answer to what the twinkling light in the night sky has truly been all this time.'
+  }
+];
+
+window.Game = Game;

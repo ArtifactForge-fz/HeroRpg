@@ -1,0 +1,4 @@
+# Deaths
+Source: http://web.archive.org/web/20080105164814/http://www.herorpg.net/manual/Deaths
+---
+Deaths - HeroRPG Manual Deaths From HeroRPG Manual Jump to: navigation , search A numeric representation of how many times monsters have killed you. Retrieved from " http://www.herorpg.net/manual/Deaths " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 18:18, 11 November 2007. This page has been accessed 7 times. Privacy policy About HeroRPG Manual Disclaimers

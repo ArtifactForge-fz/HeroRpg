@@ -1,0 +1,4 @@
+# Royal_City_of_Eldor
+Source: http://web.archive.org/web/20071107054040/http://www.herorpg.net/manual/Royal_City_of_Eldor
+---
+Royal City of Eldor - HeroRPG Manual Royal City of Eldor From HeroRPG Manual Jump to: navigation , search The Royal City of Eldor is the home city to the Human race. It is a trading city, abundant with products available for purchase and barter. It is located in the region of Averast along with the Arkan city of Saratus . Retrieved from " http://www.herorpg.net/manual/Royal_City_of_Eldor " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page Project Genesis Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 19:01, 23 March 2007. This page has been accessed 73 times. Privacy policy About HeroRPG Manual Disclaimers

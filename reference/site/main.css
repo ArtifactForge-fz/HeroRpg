@@ -1,0 +1,45 @@
+h1,h2,h3,h4,h5{padding:0px;margin:0px;color:#EEEEEE;}
+body{background-color:#668164;background-image:url(/web/20131225033207im_/http://www.herorpg.net/img/debut_light_green.png);font:14px Arial,sans-serif;color:#333;}
+h1,h2,h3,h4{padding:10px;font-family:Georgia, serif;font-variant:small-caps;}
+h1{font-size:32px;}
+h2{font-size:28px;}
+h3{font-size:24px;}
+h4{font-size:16px;}
+p{padding:10px 15px 10px 15px;line-height:160%;}
+.align-right{text-align:right;}
+.pull-right{float:right;}
+.align-left{text-align:left;}
+.pull-left{float:left;}
+form.centered{margin:0 auto;width:75%;}
+form div.form-row{padding:10px 30px 10px 30px;height:30px;line-height:30px;}form div.form-row label{display:inline-block;width:120px;text-align:right;padding-right:10px;}
+form div.form-row input{display:inline-block;}
+form div.button-row{text-align:right;}
+input{background-color:#cedecd !important;border:2px solid #6b9168 !important;}
+button{background-color:#557453;font-size:14px;color:#DDD;text-shadow:none !important;border:2px solid #91b68f;border-radius:3px;}button:hover{background-color:#4a6548;font-size:14px;color:#323232;text-shadow:none !important;border:2px solid #8bb289;border-bottom-color:#9abc99;border-left-color:#9abc99;}
+header{background-color:#e9f1f4;padding:6px;border-bottom:1px solid rgba(50, 50, 50, 0.3);box-shadow:0px 3px 10px rgba(50, 50, 50, 0.1);}header h3{color:#333 !important;}
+header h3:first-letter{font-size:32px;}
+nav{background-color:#323232;height:44px;position:relative;margin-top:-1px;border:1px solid transparent;}
+aside#leftnav{background-color:#323232;}
+section#gameport{min-height:300px;background-color:#6b9168;border:1px solid rgba(50, 50, 50, 0.2);border-radius:2px;margin-top:-1px;}section#gameport div.centerblock{padding:10px;width:700px;min-height:500px;margin:0 auto;background-color:#82ac80;margin:50px auto;border:1px solid #91b68f;border-width:0px 0px 1px 1px;border-radius:2px;}
+div.error{color:#DEDEDE;background-color:#323232;border-radius:4px;padding:20px;width:90%;height:100px;margin:0 auto;position:relative;}div.error:before{content:' ';height:0;position:absolute;width:0;top:-20px;border:10px solid transparent;border-bottom-color:#323232;}
+
+/*
+     FILE ARCHIVED ON 03:32:07 Dec 25, 2013 AND RETRIEVED FROM THE
+     INTERNET ARCHIVE ON 12:36:33 Jul 05, 2026.
+     JAVASCRIPT APPENDED BY WAYBACK MACHINE, COPYRIGHT INTERNET ARCHIVE.
+
+     ALL OTHER CONTENT MAY ALSO BE PROTECTED BY COPYRIGHT (17 U.S.C.
+     SECTION 108(a)(3)).
+*/
+/*
+playback timings (ms):
+  captures_list: 0.367
+  exclusion.robots: 0.036
+  exclusion.robots.policy: 0.027
+  esindex: 0.005
+  cdx.remote: 11.657
+  LoadShardBlock: 66.194 (3)
+  PetaboxLoader3.datanode: 54.607 (4)
+  load_resource: 115.321
+  PetaboxLoader3.resolve: 80.278
+*/

@@ -1,0 +1,4 @@
+# Damage
+Source: http://web.archive.org/web/20080105164812/http://www.herorpg.net/manual/Damage
+---
+Damage - HeroRPG Manual Damage From HeroRPG Manual Jump to: navigation , search Damage is the resulting calculation of all Damage bonuses from your weapon as well as bonuses derived from either Strength, Dexterity, or Intelligence, depending on which weapon type you are using. Swords, Blunt Weapons, and Polearms receive bonuses from Strength. Knives receive bonuses from Dexterity. Rods receive bonuses from Intelligence. Retrieved from " http://www.herorpg.net/manual/Damage " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 18:20, 11 November 2007. This page has been accessed 12 times. Privacy policy About HeroRPG Manual Disclaimers

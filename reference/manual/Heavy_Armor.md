@@ -1,0 +1,4 @@
+# Heavy_Armor
+Source: http://web.archive.org/web/20080105164836/http://www.herorpg.net/manual/Heavy_Armor
+---
+Heavy Armor - HeroRPG Manual Heavy Armor From HeroRPG Manual Jump to: navigation , search "Affects the efficiency of your heavy armor." Retrieved from " http://www.herorpg.net/manual/Heavy_Armor " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 17:33, 23 March 2007. This page has been accessed 39 times. Privacy policy About HeroRPG Manual Disclaimers

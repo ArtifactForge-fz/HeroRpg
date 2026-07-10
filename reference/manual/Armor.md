@@ -1,0 +1,4 @@
+# Armor
+Source: http://web.archive.org/web/20080105164800/http://www.herorpg.net/manual/Armor
+---
+Armor - HeroRPG Manual Armor From HeroRPG Manual Jump to: navigation , search Armor is the resulting calculation of all Armor bonuses provided from your equipment, as well as bonuses derived from your Endurance. Retrieved from " http://www.herorpg.net/manual/Armor " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 18:19, 11 November 2007. This page has been accessed 6 times. Privacy policy About HeroRPG Manual Disclaimers

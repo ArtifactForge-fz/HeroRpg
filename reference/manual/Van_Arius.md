@@ -1,0 +1,4 @@
+# Van_Arius
+Source: http://web.archive.org/web/20080101105749/http://www.herorpg.net/manual/Van_Arius
+---
+Van Arius - HeroRPG Manual Van Arius From HeroRPG Manual Jump to: navigation , search Van Arius is the only inhabited continent of Exos . It contains four races: Humans , Arkan , Majiku , and Ukai . It is divided into 6 regions . This continent serves as the current playable landmass. [ edit ] Map of Van Arius Retrieved from " http://www.herorpg.net/manual/Van_Arius " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 17:20, 2 May 2007. This page has been accessed 86 times. Privacy policy About HeroRPG Manual Disclaimers

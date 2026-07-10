@@ -1,0 +1,4 @@
+# Hit_Points
+Source: http://web.archive.org/web/20080105164840/http://www.herorpg.net/manual/Hit_Points
+---
+Hit Points - HeroRPG Manual Hit Points From HeroRPG Manual Jump to: navigation , search Hit Points are equal to the life of your character. If your Hit Points are at 0 in a Battle , you lose. Retrieved from " http://www.herorpg.net/manual/Hit_Points " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 01:29, 23 March 2007. This page has been accessed 66 times. Privacy policy About HeroRPG Manual Disclaimers

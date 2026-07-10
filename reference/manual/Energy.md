@@ -1,0 +1,4 @@
+# Energy
+Source: http://web.archive.org/web/20080104234204/http://www.herorpg.net/manual/Energy
+---
+Energy - HeroRPG Manual Energy From HeroRPG Manual Jump to: navigation , search Energy is the green bar beneath your Hit Points bar. Energy is expended every time you perform an action in battle. When you have insufficient energy to attack or perform another action, you may only end the battle by dying or by fleeing . Retrieved from " http://www.herorpg.net/manual/Energy " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 21:31, 27 November 2007. This page has been accessed 40 times. Privacy policy About HeroRPG Manual Disclaimers

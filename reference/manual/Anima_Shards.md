@@ -1,0 +1,4 @@
+# Anima_Shards
+Source: http://web.archive.org/web/20080105164753/http://www.herorpg.net/manual/Anima_Shards
+---
+Anima Shards - HeroRPG Manual Anima Shards From HeroRPG Manual Jump to: navigation , search Anima Shards are another form of currency in HeroRPG. They are used when purchasing temporary enhancements from the Spirit Shrine, as well as when casting certain techniques that bestow enhancements. You can have a maximum of 999 Anima Shards at any time. Retrieved from " http://www.herorpg.net/manual/Anima_Shards " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 19:04, 11 November 2007. This page has been accessed 34 times. Privacy policy About HeroRPG Manual Disclaimers

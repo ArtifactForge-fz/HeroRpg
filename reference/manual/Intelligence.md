@@ -1,0 +1,4 @@
+# Intelligence
+Source: http://web.archive.org/web/20071107054011/http://www.herorpg.net/manual/Intelligence
+---
+Intelligence - HeroRPG Manual Intelligence From HeroRPG Manual Jump to: navigation , search Increases the Expereince gained in the following Skills Rods Evocation Conjuration Alteration Absorption Abjuration Retrieved from " http://www.herorpg.net/manual/Intelligence " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page Project Genesis Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 17:50, 23 March 2007. This page has been accessed 79 times. Privacy policy About HeroRPG Manual Disclaimers

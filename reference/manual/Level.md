@@ -1,0 +1,4 @@
+# Level
+Source: http://web.archive.org/web/20080105164844/http://www.herorpg.net/manual/Level
+---
+Level - HeroRPG Manual Level From HeroRPG Manual Jump to: navigation , search Character level is a numeric representation of your character's power. Some items require that you are a certain level before using them. All areas have minimum level requirements as well. Retrieved from " http://www.herorpg.net/manual/Level " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 18:16, 11 November 2007. This page has been accessed 8 times. Privacy policy About HeroRPG Manual Disclaimers

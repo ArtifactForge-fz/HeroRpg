@@ -1,0 +1,4 @@
+# Player_Kills
+Source: http://web.archive.org/web/20080105164859/http://www.herorpg.net/manual/Player_Kills
+---
+Player Kills - HeroRPG Manual Player Kills From HeroRPG Manual Jump to: navigation , search This feature is currently unimplemented. See PvP . Retrieved from " http://www.herorpg.net/manual/Player_Kills " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 18:17, 11 November 2007. This page has been accessed 14 times. Privacy policy About HeroRPG Manual Disclaimers

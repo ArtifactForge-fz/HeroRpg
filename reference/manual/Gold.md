@@ -1,0 +1,4 @@
+# Gold
+Source: http://web.archive.org/web/20080104163800/http://www.herorpg.net/manual/Gold
+---
+Gold - HeroRPG Manual Gold From HeroRPG Manual Jump to: navigation , search Gold is the main form of currency in HeroRPG. It is split into two coins: Platinum pieces and Gold pieces. 100 Gold pieces equals 1 Platinum piece. Once you obtain 100 gold, you will automatically receive 1 platinum. Retrieved from " http://www.herorpg.net/manual/Gold " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 19:03, 11 November 2007. This page has been accessed 24 times. Privacy policy About HeroRPG Manual Disclaimers

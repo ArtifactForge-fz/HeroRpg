@@ -1,0 +1,4 @@
+# Vitality
+Source: http://web.archive.org/web/20080105164940/http://www.herorpg.net/manual/Vitality
+---
+Vitality - HeroRPG Manual Vitality From HeroRPG Manual Jump to: navigation , search Increases your Hit Points . Retrieved from " http://www.herorpg.net/manual/Vitality " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 17:45, 23 March 2007. This page has been accessed 100 times. Privacy policy About HeroRPG Manual Disclaimers

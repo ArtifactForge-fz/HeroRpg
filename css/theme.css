@@ -1,0 +1,637 @@
+/* HeroRPG remake — theme ported from reference/site/theme_inline.css (authentic 2008 palette). */
+
+body {
+  background: #1b2127;
+  color: #bec7cc;
+  font: 10px verdana, geneva, lucida, 'lucida grande', arial, helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+table {
+  font: 10px verdana, geneva, lucida, 'lucida grande', arial, helvetica, sans-serif;
+  border-collapse: collapse;
+}
+
+td {
+  font: 10px verdana, geneva, lucida, 'lucida grande', arial, helvetica, sans-serif;
+}
+
+a:link, a:visited {
+  color: #c4bb4b;
+  text-decoration: none;
+}
+
+a:hover, a:active {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+/* .page = outer body panel */
+.page {
+  background-color: #3d5056;
+  color: #1b2129;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* category header bar — gold bold text on dark blue-grey */
+.tcat {
+  color: #c4bb4b;
+  font-weight: bold;
+  background: #34404b;
+  border-bottom: 1px solid #313131;
+  padding: 3px 6px;
+}
+
+.tcat2, .tcatdet {
+  color: #c4bb4b;
+  font-weight: bold;
+  background: #34404b;
+  padding: 3px;
+  border: 1px solid #313131;
+}
+
+.tcatdet {
+  border-bottom: none;
+}
+
+/* sub-header row */
+.thead {
+  background: #3c4a56;
+  color: #c4bb4b;
+  font-weight: bold;
+  font-family: tahoma, verdana, sans-serif;
+  padding: 2px 4px;
+  border-bottom: 1px solid #313131;
+}
+
+.alt0 { background-color: #72838b; }
+.alt1 { background: #192229; color: #bec7cc; }
+
+/* light content panel */
+.panel, .smallpanel {
+  background: #bec7cc;
+  color: #1b2129;
+  padding: 5px;
+  border: 1px solid #313131;
+}
+
+.smallestpanel {
+  background: #bec7cc;
+  color: #1b2129;
+  padding: 2px;
+  border: 1px solid #313131;
+}
+
+.panelsurround {
+  background-color: #72838b;
+}
+
+.panelborder { border: 1px solid #313131; }
+.darkborder, .lightborder { border: 1px solid #313131; }
+.contentpage { border: 1px solid #313131; }
+
+.battlefield {
+  background: #0B0F15;
+  color: #bec7cc;
+  padding: 6px;
+}
+
+.nav { border: 1px solid #313131; }
+
+.button, button.hrpg {
+  color: #c4bb4b;
+  background: #3c4a56;
+  font: 9px verdana, geneva, lucida, 'lucida grande', arial, helvetica, sans-serif;
+  border: 1px solid #313131;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.button:hover, button.hrpg:hover {
+  background: #4a5a68;
+}
+
+.button:disabled, button.hrpg:disabled {
+  color: #777;
+  cursor: default;
+  background: #333;
+}
+
+select, input[type="text"], textarea, .bginput {
+  color: #c4bb4b;
+  font: 10px verdana, geneva, lucida, 'lucida grande', arial, helvetica, sans-serif;
+  background: #3c4a56;
+  border: 1px solid #313131;
+}
+
+.smallfont { font: 10px verdana, geneva, lucida, 'lucida grande', arial, helvetica, sans-serif; }
+.tinyfont { font: 9px verdana, geneva, lucida, 'lucida grande', arial, helvetica, sans-serif; }
+
+.whitetext { color: #bec7cc; }
+.greentext { color: darkgreen; font-weight: 600; }
+.orangetext { color: #de9700; }
+.time { color: #c4bb4b; }
+.line { color: #313131; border-top: 1px solid #313131; height: 1px; }
+
+/* ===== App shell layout (Phase 1 invention on top of ported classes; Phase 8: reworked to a
+   centered fixed-width page — the original 2008 site's ".page" look — instead of hugging the
+   top-left corner) ===== */
+
+body {
+  background: #1b2127;
+}
+
+#app {
+  min-height: 100vh;
+  background: #3d5056; /* .page background (reference/site theme_inline.css) so the app reads as
+                           the classic site page floating on the dark #1b2127 body */
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 10px 12px;
+  box-sizing: border-box;
+}
+
+#titlebar {
+  color: #c4bb4b;
+  font-weight: bold;
+  font-size: 16px;
+  font-family: tahoma, verdana, sans-serif;
+  padding: 4px 8px;
+  margin-bottom: 6px;
+}
+
+#layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+  max-width: none;
+}
+
+#leftcol {
+  width: 200px;
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#maincol {
+  flex: 1 1 480px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Narrow windows: stack the left column above the main column instead of squeezing both. */
+@media (max-width: 800px) {
+  #leftcol {
+    width: 100%;
+    flex: 1 1 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  #leftcol > div {
+    flex: 1 1 200px;
+  }
+  #maincol {
+    flex: 1 1 100%;
+  }
+}
+
+.navlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navlist li {
+  border-bottom: 1px solid #313131;
+}
+
+.navlist li:last-child {
+  border-bottom: none;
+}
+
+.navlist a {
+  display: block;
+  padding: 3px 8px;
+  color: #1b2129;
+}
+
+.navlist a:hover {
+  background: #a9b4bb;
+}
+
+.navlist a.active {
+  background: #9aa6ad;
+  font-weight: bold;
+}
+
+/* status bar cluster (HP/Energy/XP + weight) */
+#statusbars {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statbar-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statbar-label {
+  width: 42px;
+  flex: 0 0 42px;
+  color: #c4bb4b;
+  font-weight: bold;
+  text-align: right;
+}
+
+.statbar-track {
+  flex: 1 1 auto;
+  height: 12px;
+  background: #0B0F15;
+  border: 1px solid #313131;
+  position: relative;
+}
+
+.statbar-fill {
+  height: 100%;
+}
+
+.statbar-fill.hp { background: #a02020; }
+.statbar-fill.energy { background: #2c9c3a; }
+.statbar-fill.xp { background: #6a3d9a; }
+
+.statbar-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  text-align: center;
+  line-height: 12px;
+  color: #ffffff;
+  font-size: 9px;
+  text-shadow: 1px 1px 1px #000;
+}
+
+.weight-readout {
+  color: #bec7cc;
+  padding: 2px 4px 0 46px;
+}
+
+/* generic content table */
+.hrpg-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.hrpg-table td, .hrpg-table th {
+  padding: 3px 5px;
+  border-bottom: 1px solid #313131;
+}
+
+.skill-xp-track {
+  width: 80px;
+  height: 8px;
+  background: #72838b;
+  border: 1px solid #313131;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.skill-xp-fill {
+  height: 100%;
+  background: #6a3d9a;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.stat-row .stat-name {
+  width: 90px;
+  flex: 0 0 90px;
+  font-weight: bold;
+}
+
+.stat-row .stat-value {
+  width: 40px;
+  flex: 0 0 40px;
+  text-align: right;
+}
+
+.race-choice {
+  border: 1px solid #313131;
+  padding: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  background: #a9b4bb;
+}
+
+.race-choice.selected {
+  background: #9aa6ad;
+  border: 1px solid #34404b;
+}
+
+.race-choice h3 {
+  margin: 0 0 4px 0;
+  color: #34404b;
+}
+
+.skillpoint-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.skillpoint-row .sp-name {
+  width: 110px;
+  flex: 0 0 110px;
+}
+
+.wizard-footer {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.center { text-align: center; }
+.right { text-align: right; }
+.mt4 { margin-top: 4px; }
+.mt8 { margin-top: 8px; }
+.mb8 { margin-bottom: 8px; }
+
+/* ===== Phase 2: Inventory & items ===== */
+
+/* unmet item requirements (New_Player_Guide.md: "If there are any listed in red, you cannot
+   use the item.") */
+.req-bad {
+  color: #cc3333 !important;
+  font-weight: bold;
+}
+
+/* Phase 9: unique (monster-only) equipment — gold-colored line in the item infobox, reusing the
+   theme's category-header gold (#c4bb4b, see the .tcat rules above). */
+.item-unique {
+  color: #c4bb4b;
+  font-weight: bold;
+}
+
+.equip-slot-label {
+  flex: 1 1 auto;
+}
+
+.dropbox-row {
+  display: flex;
+  gap: 6px;
+}
+
+.dropbox {
+  flex: 1 1 0;
+  min-height: 40px;
+  border: 2px dashed #313131;
+  background: #a9b4bb;
+  color: #1b2129;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px;
+}
+
+.dropbox.drop-hover {
+  background: #9aa6ad;
+  border-color: #34404b;
+}
+
+.stat-row.dragging {
+  opacity: 0.5;
+}
+
+.infobox-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.infobox {
+  width: 320px;
+  max-width: 90vw;
+}
+
+.infobox-close {
+  float: right;
+  cursor: pointer;
+}
+
+.infobox-tabs {
+  display: flex;
+  background: #3c4a56;
+  border-bottom: 1px solid #313131;
+}
+
+.infobox-tab {
+  padding: 3px 10px;
+  cursor: pointer;
+  color: #c4bb4b;
+  font-weight: bold;
+}
+
+.infobox-tab.active {
+  background: #bec7cc;
+  color: #1b2129;
+}
+
+.infobox-body {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* ===== Phase 3: Battle & Techs ===== */
+
+.statbar-fill.fear { background: #d4c832; } /* yellow Fear bar (New_Player_Guide.md, Fear.md) */
+
+/* Feature B (user-directed): persistent afflictions (Haunting) shown in dark red on Status and
+   the battle "Your Vitality" panel — deliberately darker/less saturated than .req-bad (#cc3333,
+   which flags unmet item requirements) so the two read as distinct signals. */
+.affliction-red {
+  color: #8b1a1a;
+  font-weight: bold;
+}
+
+.battle-layout {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.battle-left {
+  width: 240px;
+  flex: 0 0 240px;
+}
+
+.battle-right {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.battle-right .battlefield {
+  border: 1px solid #313131;
+  min-height: 120px;
+}
+
+.battle-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.battle-action {
+  flex: 1 1 0;
+  padding: 4px 2px;
+}
+
+.battle-log {
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.techset-tabs {
+  display: flex;
+  background: #3c4a56;
+  border: 1px solid #313131;
+}
+
+.techset-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.tech-slot {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #313131;
+  background: #72838b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tech-slot.filled {
+  background: #3c4a56;
+}
+
+.tech-slot.castable:hover {
+  border-color: #c4bb4b;
+}
+
+.tech-glyph {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.grade-Fire { color: #d06030; }
+.grade-Water { color: #4090d0; }
+.grade-Wind { color: #70c0a0; }
+.grade-Earth { color: #a08040; }
+.grade-Star { color: #d0c040; }
+.grade-Light { color: #f0ead0; }
+.grade-Dark { color: #8050a0; }
+.grade-none { color: #bec7cc; }
+
+.tech-row {
+  cursor: pointer;
+}
+
+.tech-row.selected {
+  background: #9aa6ad;
+  outline: 1px solid #34404b;
+}
+
+.loot-icon {
+  font-weight: bold;
+}
+
+/* ===== Phase 4: World & towns ===== */
+
+/* Already-known Academy techs render greyed out (spec: "learned greyed"). */
+.greyed {
+  opacity: 0.55;
+}
+
+/* Footer homage — the original's "Powered by RadiantWeb and RadiantRPG" credit line
+   (archived: homepage_2007.md / homepage_2008a.md); tooltip quotes the 2008-03-11 farewell. */
+#footer {
+  color: #72838b;
+  text-align: center;
+  padding: 10px 0 14px 0;
+}
+
+/* ===== Phase 8: pixel-art icons (Dungeon Crawl 32x32 tiles, CC0 — assets/CREDITS.md) ===== */
+
+.icon32 {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  vertical-align: middle;
+}
+
+.icon64 {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  vertical-align: middle;
+}
+
+/* Statusbars row spans the top at full app width (Phase 8: previously capped at 960px). */
+#statusbars {
+  max-width: none !important;
+}
+
+/* ===== Phase 8: Actions panel links (Explore/Hunt/Camp/facility quick links) ===== */
+
+.actions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.actions-list li {
+  border-bottom: 1px solid #313131;
+}
+
+.actions-list li:last-child {
+  border-bottom: none;
+}
+
+.actions-list a {
+  display: block;
+  padding: 3px 8px;
+  color: #1b2129;
+}
+
+.actions-list a:hover {
+  background: #a9b4bb;
+}
+
+.actions-sub {
+  padding-left: 16px;
+  font-size: 9px;
+}

@@ -1,0 +1,4 @@
+# HeroRPG_Manual:Privacy_policy
+Source: http://web.archive.org/web/20071107054006/http://www.herorpg.net/manual/HeroRPG_Manual:Privacy_policy
+---
+HeroRPG Manual:Privacy policy - HeroRPG Manual HeroRPG Manual:Privacy policy From HeroRPG Manual Jump to: navigation , search There is currently no text in this page, you can search for this page title in other pages or edit this page . Retrieved from " http://www.herorpg.net/manual/HeroRPG_Manual:Privacy_policy " Views Project page Discussion Edit Personal tools Log in / create account Navigation Main Page Project Genesis Recent changes Storyline Article List Search Toolbox What links here Upload file Special pages Privacy policy About HeroRPG Manual Disclaimers

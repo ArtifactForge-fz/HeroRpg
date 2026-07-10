@@ -1,0 +1,4 @@
+# Swords
+Source: http://web.archive.org/web/20080105164926/http://www.herorpg.net/manual/Swords
+---
+Swords - HeroRPG Manual Swords From HeroRPG Manual Jump to: navigation , search "Affects your damage with sword weapons." Retrieved from " http://www.herorpg.net/manual/Swords " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 17:31, 23 March 2007. This page has been accessed 72 times. Privacy policy About HeroRPG Manual Disclaimers

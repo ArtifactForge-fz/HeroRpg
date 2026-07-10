@@ -1,0 +1,4 @@
+# Fear
+Source: http://web.archive.org/web/20080105164829/http://www.herorpg.net/manual/Fear
+---
+Fear - HeroRPG Manual Fear From HeroRPG Manual Jump to: navigation , search Fear is a yellow bar that appears in battle whenever you are battling an enemy above your current level. As of this writing, fear is set to lower your stats by 10% for each level you are under an enemy's level. For example, if you are level 8, and battling a level 10 enemy, fear will cause your stats to be 20% less effective. Retrieved from " http://www.herorpg.net/manual/Fear " Views Article Discussion Edit History Personal tools Log in / create account Navigation Main Page HeroRPG Recent changes Storyline Article List Search Toolbox What links here Related changes Upload file Special pages Printable version Permanent link This page was last modified 00:10, 31 May 2007. This page has been accessed 36 times. Privacy policy About HeroRPG Manual Disclaimers
