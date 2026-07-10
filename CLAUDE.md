@@ -133,6 +133,15 @@ damage-per-energy (no retunes needed). Artifact was NOT redeployed — do that a
 
 ## Backlog (user-approved ideas, not started)
 
-Unique champion abilities (beyond stat multipliers); Eidolon system (`manual/Version_3.0.md`);
-archived tier-class names still unused: Shadowknight, Magus, Gambit (rare third branches);
-Curse as the third implemented affliction; pets (`heropet.php` existed, no data survived).
+- **Full 100+ level arc** — spec at `docs/SPEC-FULL-LEVEL-ARC.md` (backlogged 2026-07-10). Extends
+  the condensed ~1–40 arc to the archived level-100 cap (`homepage_2006/2007`); phased F1–F5, with
+  F1 (balance-to-100 simulation) the gating de-risk step. Do after the current in-flight build.
+- **Online / web-hosted mode** — spec at `docs/SPEC-ONLINE-HOSTING.md` (backlogged 2026-07-10).
+  Persistent global chat + cross-device character retention, "similar to the original." Options 0–3
+  ladder (recommend BaaS, e.g. Supabase); phased O1–O5, with O1 (a localStorage-preserving
+  persistence-adapter seam) the offline-safe prerequisite that keeps the `file://` build + suites
+  intact. Orthogonal to the level arc; [revised] reopens the chat feature cut in DESIGN.md §9.
+- Unique champion abilities (beyond stat multipliers); Eidolon system (`manual/Version_3.0.md`);
+  archived tier-class names still unused: Shadowknight, Magus, Gambit (rare third branches — now
+  folded into the full-arc spec's third class tier, §5); Curse as the third implemented affliction;
+  pets (`heropet.php` existed, no data survived).
