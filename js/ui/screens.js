@@ -372,10 +372,13 @@ Game.Screens = (function () {
   // your newly-obtained class. Drag this icon to the box labeled 'Primary.'" Our UI substitutes
   // click-to-assign buttons for drag-and-drop (phase brief), and a Deactivate button carries the
   // archived permanent-wipe warning text verbatim in its confirm dialog.
-  // v1.1 revision (DESIGN.md §3): 'Base' / 'Advanced' / 'Legendary', keyed off classDef.tier
-  // (1 / 2 / 3 respectively — js/data/classes.js).
+  // v1.1 revision (DESIGN.md §3): 'Base' / 'Advanced' / 'Legendary', keyed off classDef.tier.
+  // v1.2 Phase 2 (docs/SPEC-V1.2.md Phase 2) adds 'Third Tier' for tier 3 (Shadowknight/Magus/
+  // Gambit) and moves Legendary to tier 4 (Runeblade/Vaultbreaker/Heir of the Echo) — checked via
+  // classDef.legendary first so the label is robust to the exact tier number.
   function tierLabel(classDef) {
-    if (classDef.tier === 3 || classDef.legendary) return 'Legendary';
+    if (classDef.legendary) return 'Legendary';
+    if (classDef.tier === 3) return 'Third Tier';
     if (classDef.tier === 2) return 'Advanced';
     return 'Base';
   }
@@ -446,9 +449,9 @@ Game.Screens = (function () {
     });
     root.appendChild(activePanel);
 
-    // Sorts class ids by tier (Base 1 -> Advanced 2 -> Legendary 3, DESIGN.md §3 v1.1 revision),
-    // dropping any id with no resolvable definition. Used by both the Inactive Classes list and
-    // the Class Abilities roster below so each groups Base / Advanced / Legendary consistently.
+    // Sorts class ids by tier (Base 1 -> Advanced 2 -> Third Tier 3 -> Legendary 4, DESIGN.md §3
+    // v1.1 revision + v1.2 Phase 2), dropping any id with no resolvable definition. Used by both
+    // the Inactive Classes list and the Class Abilities roster below so each groups consistently.
     function sortByTier(ids) {
       return ids
         .map(function (id) { return { id: id, def: Game.Classes.getClass(id) }; })
@@ -1628,6 +1631,10 @@ Game.Screens = (function () {
       // (js/core/quests.js turnIn() resolves the same sentinel server-side for validation).
       if (classChoices === 'advanced') {
         classChoices = Game.Classes ? Game.Classes.advancedOptionsFor(c) : [];
+      } else if (classChoices === 'tier3') {
+        // NEW sentinel (v1.2 Phase 2): masters_calling's classChoice is the string 'tier3' —
+        // resolve via Game.Classes.thirdTierOptionsFor(c), mirroring 'advanced' above.
+        classChoices = Game.Classes ? Game.Classes.thirdTierOptionsFor(c) : [];
       }
       if (ready && atGiver && classChoices && classChoices.length) {
         // "The First Calling" (archived TRIO, homepage_2006.md) offers 3 buttons; "The Trials of

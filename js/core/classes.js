@@ -3,9 +3,13 @@
 //
 // Character class state (js/core/character.js, save v6): c.classes = { [classId]: entry }
 //   entry = { classXp: 0, classLevelsEarned: 0, classLevelsSpent: 0, abilities: [abilityId] }
-// c.primaryClass / c.secondaryClass hold a classId or null. c.legendaryUnlocked is a one-per-
-// save latch for the Legendary class (Classes.md: "may only be obtained by one player" —
-// single-player reinterpretation, DESIGN.md §3).
+// c.primaryClass / c.secondaryClass hold a classId or null. c.legendaryUnlocked is a "you have
+// obtained at least one Legendary class" flag (Classes.md: "may only be obtained by one player" —
+// single-player reinterpretation, DESIGN.md §3); it is NOT a cross-Legendary exclusivity gate —
+// v1.2 Phase 2 clarifies (roster grew from 1 to 3 Legendaries) that each Legendary class latches
+// independently via isObtained(c, classId): obtaining one does not block obtaining another. See
+// js/core/battle.js onWin (boss_kill route) and checkRelicUnlock below (relic route); the third
+// Legendary route (boss-combination kill) is a hidden quest and needs no core-code latch at all.
 
 var Game = window.Game || {};
 
@@ -51,6 +55,8 @@ Game.Classes = (function () {
   // The tier-2 (advanced) classes whose baseClass the character has obtained — normally exactly
   // 2 (one base obtained via "First Calling"), but generic over however many base classes are
   // obtained (e.g. via debug helpers), so it never silently drops a legitimately-earned branch.
+  // Strictly tier === 2, so Runeblade/Vaultbreaker/Heir of the Echo (tier 4) and the tier-3
+  // Shadowknight/Magus/Gambit roster (v1.2 Phase 2) never appear here.
   function advancedOptionsFor(c) {
     var bases = baseClassIdsObtained(c);
     if (!bases.length) return [];
@@ -59,6 +65,36 @@ Game.Classes = (function () {
     for (var i = 0; i < list.length; i++) {
       var cd = list[i];
       if (cd.tier === 2 && bases.indexOf(cd.baseClass) !== -1) out.push(cd.id);
+    }
+    return out;
+  }
+
+  // Ids of every tier-2 (advanced) class the character has OBTAINED — used by the "Master's
+  // Calling" tier-3 capstone quest's acceptance gate (requiresAdvancedClass, js/core/quests.js
+  // accept()), mirroring baseClassIdsObtained above for requiresBaseClass.
+  function advancedClassIdsObtained(c) {
+    if (!c || !c.classes) return [];
+    return Object.keys(c.classes).filter(function (id) {
+      var cd = getClass(id);
+      return cd && cd.tier === 2;
+    });
+  }
+
+  // v1.2 Phase 2 (docs/SPEC-V1.2.md Phase 2): the tier-3 class whose baseClass matches the
+  // player's obtained tier-1 base class — mirrors advancedOptionsFor exactly, but keyed off
+  // baseClassIdsObtained (the TIER-1 line, not the tier-2 branch) per the "branch convergence"
+  // rule: Shadowknight/Magus/Gambit's baseClass is 'warrior'/'magician'/'thief', not a tier-2 id,
+  // so this naturally resolves to exactly ONE option per obtained base line (not two, unlike
+  // advancedOptionsFor) — Runeblade/Vaultbreaker/Heir of the Echo (tier 4) are excluded by the
+  // strict tier === 3 check, same as advancedOptionsFor excludes them via tier === 2.
+  function thirdTierOptionsFor(c) {
+    var bases = baseClassIdsObtained(c);
+    if (!bases.length) return [];
+    var list = Game.Data.classes || [];
+    var out = [];
+    for (var i = 0; i < list.length; i++) {
+      var cd = list[i];
+      if (cd.tier === 3 && bases.indexOf(cd.baseClass) !== -1) out.push(cd.id);
     }
     return out;
   }
@@ -78,6 +114,29 @@ Game.Classes = (function () {
     if (c.classes[classId]) return { ok: false, message: 'You have already obtained ' + classDef.name + '.' };
     c.classes[classId] = freshEntry();
     return { ok: true, message: 'You have obtained the ' + classDef.name + ' class!' };
+  }
+
+  // ---------------- Legendary "relic" unlock (v1.2 Phase 2; docs/SPEC-V1.2.md Phase 2) ----------
+
+  // Guarded hook called from js/core/inventory.js addItem() every time an item successfully
+  // enters the player's inventory (loot pickup, quest reward, or synthesis output alike — addItem
+  // is the single funnel for all three). Grants any Legendary class whose obtain.kind is 'relic'
+  // and whose itemId just arrived, provided the level gate is met and the class is not already
+  // obtained — mirroring the boss_kill latch in js/core/battle.js onWin, but item-triggered rather
+  // than kill-triggered, and per-class (obtaining Heir of the Echo does not block or get blocked
+  // by Runeblade/Vaultbreaker — see the header comment's "mutually-independent" note).
+  function checkRelicUnlock(c, itemId) {
+    if (!c) return;
+    var list = Game.Data.classes || [];
+    for (var i = 0; i < list.length; i++) {
+      var classDef = list[i];
+      if (!classDef.legendary || !classDef.obtain || classDef.obtain.kind !== 'relic') continue;
+      if (classDef.obtain.itemId !== itemId) continue;
+      if (c.level < classDef.obtain.minLevel) continue;
+      if (isObtained(c, classDef.id)) continue;
+      c.legendaryUnlocked = true; // one-per-save "you have a Legendary" latch, kept for back-compat (see classes.js header)
+      obtainClass(c, classDef.id);
+    }
   }
 
   // ---------------- Activate / Deactivate ----------------
@@ -262,8 +321,11 @@ Game.Classes = (function () {
     getAbility: getAbility,
     isObtained: isObtained,
     baseClassIdsObtained: baseClassIdsObtained,
+    advancedClassIdsObtained: advancedClassIdsObtained,
     advancedOptionsFor: advancedOptionsFor,
+    thirdTierOptionsFor: thirdTierOptionsFor,
     obtainClass: obtainClass,
+    checkRelicUnlock: checkRelicUnlock,
     activate: activate,
     deactivate: deactivate,
     classXpForLevel: classXpForLevel,

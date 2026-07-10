@@ -1,11 +1,14 @@
-// Phase 6a/v1.1 exit tests — two-tier class system (DESIGN.md §3 v1.1 revision):
-// Base tier (Warrior/Magician/Thief, level 5, "First Calling") -> Advanced tier (Gladiator/
-// Crusader/Wizard/Sage/Rogue/Mercenary, level 30, "Trials of Ascension") -> Legendary
-// (Runeblade of Kuraan, unchanged). Covers obtain/activate/deactivate, class XP/levels, ability
-// purchase incl. passive + tech hooks, class-only tech battle gating, advancedOptionsFor,
-// classChoice quest turn-ins (fixed array + 'advanced' sentinel), save v6->v7 migration
-// (rogue->thief re-basing), and Legendary boss unlock. Via the fakedom shim; randomness stubbed
-// via Game.Battle._rng.
+// Phase 6a/v1.1 + v1.2 Phase 2 exit tests — four-tier class system (DESIGN.md §3 v1.1 revision;
+// docs/SPEC-V1.2.md Phase 2): Base tier (Warrior/Magician/Thief, level 5, "First Calling") ->
+// Advanced tier (Gladiator/Crusader/Wizard/Sage/Rogue/Mercenary, level 30, "Trials of Ascension")
+// -> Third tier (Shadowknight/Magus/Gambit, level 38, "The Master's Calling", ONE per base line
+// via branch convergence) -> Legendary (Runeblade of Kuraan/Vaultbreaker/Heir of the Echo, each
+// with its own mutually-independent special unlock route). Covers obtain/activate/deactivate,
+// class XP/levels, ability purchase incl. passive + tech hooks, class-only tech battle gating,
+// advancedOptionsFor/thirdTierOptionsFor, classChoice quest turn-ins (fixed array + 'advanced'/
+// 'tier3' sentinels), save v6->v7 migration (rogue->thief re-basing), and all 3 Legendary unlock
+// routes (boss-kill, boss-combination quest, item-triggered relic). Via the fakedom shim;
+// randomness stubbed via Game.Battle._rng.
 
 var vm = require('vm');
 var fs = require('fs');
@@ -144,15 +147,24 @@ var ADVANCED_PAIRS = {
   magician: ['wizard', 'sage'],
   thief: ['rogue', 'mercenary']
 };
+// v1.2 Phase 2 (docs/SPEC-V1.2.md Phase 2): ONE tier-3 class per base line (branch convergence —
+// baseClass is the tier-1 line id, not a tier-2 id).
+var THIRD_TIER = {
+  warrior: 'shadowknight',
+  magician: 'magus',
+  thief: 'gambit'
+};
+var LEGENDARY_IDS = ['runeblade_of_kuraan', 'vaultbreaker', 'heir_of_the_echo'];
 var CLASS_TECH_IDS = [
   'tech_crushing_blow', 'tech_anima_surge', 'tech_quick_stab', 'tech_shadowstep_strike',
   'tech_execution_blow', 'tech_radiant_smite', 'tech_arcane_cataclysm', 'tech_greater_mending',
-  'tech_efficient_strike', 'tech_runic_severance'
+  'tech_efficient_strike', 'tech_runic_severance',
+  'tech_shadow_blade', 'tech_anima_reckoning', 'tech_dice_throw', 'tech_vault_reckoning', 'tech_echoing_judgment'
 ];
 
 // =================== Test 0: data sanity ===================
-console.log('\n=== Test 0: two-tier class/tech/quest data sanity ===');
-assert(Game.Data.classes.length === 10, '10 classes defined (3 base + 6 advanced + 1 legendary), got ' + Game.Data.classes.length);
+console.log('\n=== Test 0: four-tier class/tech/quest data sanity (v1.2 Phase 2) ===');
+assert(Game.Data.classes.length === 15, '15 classes defined (3 base + 6 advanced + 3 third-tier + 3 legendary), got ' + Game.Data.classes.length);
 
 BASE_IDS.forEach(function (id) {
   var cd = Game.Classes.getClass(id);
@@ -169,11 +181,36 @@ Object.keys(ADVANCED_PAIRS).forEach(function (baseId) {
   });
 });
 
+// v1.2 Phase 2: tier-3 roster — baseClass is the TIER-1 line id (branch convergence), 3 abilities
+// each (2 passive + 1 signature classOnly tech).
+Object.keys(THIRD_TIER).forEach(function (baseId) {
+  var tierId = THIRD_TIER[baseId];
+  var cd = Game.Classes.getClass(tierId);
+  assert(cd && cd.tier === 3 && !cd.legendary && cd.baseClass === baseId,
+    tierId + ' is a tier-3 class with baseClass ' + baseId + ' (the TIER-1 line id), got baseClass=' + (cd && cd.baseClass));
+  assert(cd.abilities.length === 3, tierId + ' has 3 abilities, got ' + (cd ? cd.abilities.length : 'undefined'));
+});
+
 var legendary = Game.Classes.getClass('runeblade_of_kuraan');
-assert(legendary && legendary.legendary === true && legendary.tier === 3, 'runeblade_of_kuraan exists, legendary, tier 3');
+assert(legendary && legendary.legendary === true && legendary.tier === 4, 'runeblade_of_kuraan exists, legendary, tier 4 (v1.2 Phase 2 renumber off tier 3)');
 assert(legendary.obtain.kind === 'boss_kill' && legendary.obtain.monsterId === 'estari_ruin_warden' && legendary.obtain.minLevel === 30,
   'legendary obtain rule unchanged: boss_kill estari_ruin_warden at minLevel 30');
 assert(legendary.abilities.length === 4, 'legendary keeps its 4 abilities');
+
+// v1.2 Phase 2: the 2 NEW invented Legendaries, each with a distinct special unlock route.
+var vaultbreaker0 = Game.Classes.getClass('vaultbreaker');
+assert(vaultbreaker0 && vaultbreaker0.legendary === true && vaultbreaker0.tier === 4 && !vaultbreaker0.baseClass,
+  'vaultbreaker exists, legendary, tier 4, no baseClass');
+assert(vaultbreaker0.obtain.kind === 'boss_combo_quest' && vaultbreaker0.obtain.questId === 'vaultbreakers_reckoning',
+  'vaultbreaker obtain route: boss_combo_quest vaultbreakers_reckoning');
+assert(vaultbreaker0.abilities.length === 4, 'vaultbreaker has 4 abilities, got ' + vaultbreaker0.abilities.length);
+
+var heirOfEcho0 = Game.Classes.getClass('heir_of_the_echo');
+assert(heirOfEcho0 && heirOfEcho0.legendary === true && heirOfEcho0.tier === 4 && !heirOfEcho0.baseClass,
+  'heir_of_the_echo exists, legendary, tier 4, no baseClass');
+assert(heirOfEcho0.obtain.kind === 'relic' && heirOfEcho0.obtain.itemId === 'quest_eidas_echo_seal',
+  'heir_of_the_echo obtain route: relic quest_eidas_echo_seal');
+assert(heirOfEcho0.abilities.length === 4, 'heir_of_the_echo has 4 abilities, got ' + heirOfEcho0.abilities.length);
 
 Game.Data.classes.forEach(function (cd) {
   cd.abilities.forEach(function (a) {
@@ -655,6 +692,136 @@ try {
   failures++;
   console.error('FAIL: UI smoke test threw: ' + e.stack);
 }
+
+// =================== Test 17: thirdTierOptionsFor — correct single option per base; ===================
+// =================== Runeblade/legendaries excluded from BOTH advancedOptionsFor and ===========
+// =================== thirdTierOptionsFor, for every base line (v1.2 Phase 2) ====================
+console.log('\n=== Test 17: thirdTierOptionsFor(c) resolves the correct single tier-3 option per base; Runeblade/legendaries excluded from advancement options ===');
+var c17 = makeCharacter({ name: 'ThirdTierOptionsTester' });
+assert(Game.Classes.thirdTierOptionsFor(c17).length === 0, 'no base class obtained -> no tier-3 options');
+Game.Classes.obtainClass(c17, 'warrior');
+assert(Game.Classes.thirdTierOptionsFor(c17).join(',') === 'shadowknight', 'warrior base -> [shadowknight], got ' + JSON.stringify(Game.Classes.thirdTierOptionsFor(c17)));
+var c17b = makeCharacter({ name: 'ThirdTierOptionsTester2' });
+Game.Classes.obtainClass(c17b, 'magician');
+assert(Game.Classes.thirdTierOptionsFor(c17b).join(',') === 'magus', 'magician base -> [magus], got ' + JSON.stringify(Game.Classes.thirdTierOptionsFor(c17b)));
+var c17c = makeCharacter({ name: 'ThirdTierOptionsTester3' });
+Game.Classes.obtainClass(c17c, 'thief');
+assert(Game.Classes.thirdTierOptionsFor(c17c).join(',') === 'gambit', 'thief base -> [gambit], got ' + JSON.stringify(Game.Classes.thirdTierOptionsFor(c17c)));
+
+BASE_IDS.forEach(function (baseId) {
+  var probe = makeCharacter({ name: 'ExcludeProbe_' + baseId });
+  Game.Classes.obtainClass(probe, baseId);
+  var advOpts = Game.Classes.advancedOptionsFor(probe);
+  var tierOpts = Game.Classes.thirdTierOptionsFor(probe);
+  LEGENDARY_IDS.forEach(function (legId) {
+    assert(advOpts.indexOf(legId) === -1, legId + ' excluded from advancedOptionsFor (' + baseId + ' base)');
+    assert(tierOpts.indexOf(legId) === -1, legId + ' excluded from thirdTierOptionsFor (' + baseId + ' base)');
+  });
+  // Cross-tier exclusion: tier-3 ids never leak into advancedOptionsFor, tier-2 ids never leak
+  // into thirdTierOptionsFor (both share the exact same baseClass values under branch convergence).
+  Object.keys(THIRD_TIER).forEach(function (b) {
+    assert(advOpts.indexOf(THIRD_TIER[b]) === -1, THIRD_TIER[b] + ' excluded from advancedOptionsFor');
+  });
+  Object.keys(ADVANCED_PAIRS).forEach(function (b) {
+    ADVANCED_PAIRS[b].forEach(function (advId) {
+      assert(tierOpts.indexOf(advId) === -1, advId + ' excluded from thirdTierOptionsFor');
+    });
+  });
+});
+
+// =================== Test 18: masters_calling gating + full tier-3 loop ===================
+console.log('\n=== Test 18: masters_calling accept blocked without an advanced class; full tier-3 loop (obtain -> activate -> buyAbility -> class-tech usable in battle) ===');
+var c18 = makeCharacter({ name: 'MastersCallingTester' });
+setLevel(c18, 38);
+var acceptNoAdv18 = Game.Quests.accept('masters_calling');
+assert(acceptNoAdv18.ok === false, 'accept refused with no advanced class obtained: ' + acceptNoAdv18.message);
+assert(/advanced/i.test(acceptNoAdv18.message), 'refusal message explains the advanced-class requirement');
+Game.Classes.obtainClass(c18, 'warrior'); // simulate having answered First Calling
+Game.Classes.obtainClass(c18, 'gladiator'); // simulate having completed the Trials of Ascension
+var acceptWithAdv18 = Game.Quests.accept('masters_calling');
+assert(acceptWithAdv18.ok === true, 'accept succeeds once an advanced (tier-2) class is obtained: ' + acceptWithAdv18.message);
+// eidas_echo (level 40) outpaces this bare test character's Dexterity, so without help the
+// monster would strike first (js/core/battle.js start() playerFirst) before our forced 1-hp kill
+// lands — bump Dexterity so the player acts first; the quest step only needs kill credit, not a
+// realistic fight (see js/data/quests.js/tests/test_p6b_content.js for the actual difficulty sim).
+c18.dexterity = 999;
+winBattle('eidas_echo');
+assert(Game.Quests.canTurnIn('masters_calling') === true, 'masters_calling ready to turn in after the eidas_echo kill');
+assert(Game.Classes.thirdTierOptionsFor(c18).join(',') === 'shadowknight', 'thirdTierOptionsFor resolves to [shadowknight] for a warrior base');
+var wrongBranch18 = Game.Quests.turnIn('masters_calling', 'magus'); // wrong base line (magician branch, warrior base)
+assert(wrongBranch18.ok === false, 'turnIn rejects magus for a warrior-base hero: ' + wrongBranch18.message);
+assert(Game.Classes.isObtained(c18, 'magus') === false, 'magus NOT obtained after the rejected attempt');
+var rightBranch18 = Game.Quests.turnIn('masters_calling', 'shadowknight');
+assert(rightBranch18.ok === true, 'turnIn accepts shadowknight for a warrior-base hero: ' + rightBranch18.message);
+assert(Game.Classes.isObtained(c18, 'shadowknight') === true, 'shadowknight obtained');
+assert(c18.quests['masters_calling'].status === 'completed', 'masters_calling marked completed');
+
+// Full loop: activate(primary) -> buyAbility -> class-tech usable in battle.
+c18.currentLocation = 'eldor';
+var activateSk18 = Game.Classes.activate(c18, 'shadowknight', 'primary');
+assert(activateSk18.ok === true, 'shadowknight activated as primary: ' + activateSk18.message);
+Game.Classes.addClassXp(c18, Game.Classes.classXpForLevel(20)); // plenty of class levels
+var buySk18 = Game.Classes.buyAbility(c18, 'shadowknight', 'shadowknight_shadow_blade');
+assert(buySk18.ok === true, 'Shadow Blade purchased: ' + buySk18.message);
+assert(c18.techs.indexOf('tech_shadow_blade') !== -1, 'tech_shadow_blade added to c.techs');
+c18.techSets[0][0] = 'tech_shadow_blade';
+c18.hitPoints = c18.hitPointsMax; c18.energy = c18.energyMax;
+setRng(fixedRng(0.99));
+var battle18 = Game.Battle.start('plains_field_rat');
+battle18.monster.hp = 999;
+var beforeHp18 = battle18.monster.hp;
+// v1.2 Phase 1 item 6: drop to 0.5 (well under this build's Int-based hit chance) just for the cast.
+setRng(fixedRng(0.5));
+Game.Battle.useTech('tech_shadow_blade');
+assert(battle18.monster.hp < beforeHp18, 'Shadow Blade lands damage while Shadowknight is active (hp ' + beforeHp18 + ' -> ' + battle18.monster.hp + ')');
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// =================== Test 19: Vaultbreaker unlock — boss-combination kill quest ===================
+console.log('\n=== Test 19: Vaultbreaker unlock — a genuine boss-COMBINATION kill via a hidden quest (distinct from Runeblade\'s silent single boss-kill latch) ===');
+var c19 = makeCharacter({ name: 'VaultbreakerHunter' });
+setLevel(c19, 33);
+var acceptVb19 = Game.Quests.accept('vaultbreakers_reckoning');
+assert(acceptVb19.ok === true, 'vaultbreakers_reckoning accepted: ' + acceptVb19.message);
+assert(Game.Quests.canTurnIn('vaultbreakers_reckoning') === false, 'not ready before either boss is killed');
+// Both gate-bosses (level 25/32) outpace this bare test character's Dexterity — see the identical
+// eidas_echo comment in Test 18 above.
+c19.dexterity = 999;
+winBattle('juneros_leviathan');
+assert(Game.Quests.canTurnIn('vaultbreakers_reckoning') === false, 'not ready after only ONE of the two required bosses is killed');
+winBattle('kastengard_custodian');
+Game.Inventory.addItem(c19, 'quest_leviathan_scale');
+Game.Inventory.addItem(c19, 'quest_custodian_core_shard');
+assert(Game.Quests.canTurnIn('vaultbreakers_reckoning') === true, 'ready to turn in once BOTH bosses are dead and both materials are held');
+assert(Game.Classes.isObtained(c19, 'vaultbreaker') === false, 'vaultbreaker NOT obtained before turn-in (quest route, not a silent battle.js latch)');
+var turnInVb19 = Game.Quests.turnIn('vaultbreakers_reckoning', 'vaultbreaker');
+assert(turnInVb19.ok === true, 'turnIn grants vaultbreaker: ' + turnInVb19.message);
+assert(Game.Classes.isObtained(c19, 'vaultbreaker') === true, 'vaultbreaker obtained after turn-in');
+
+// =================== Test 20: Heir of the Echo unlock — relic route ===================
+console.log('\n=== Test 20: Heir of the Echo unlock — item-triggered relic route (Game.Inventory.addItem), not a kill or a quest ===');
+var c20 = makeCharacter({ name: 'RelicHunter' });
+setLevel(c20, 34);
+Game.Inventory.addItem(c20, 'quest_eidas_echo_seal');
+assert(Game.Classes.isObtained(c20, 'heir_of_the_echo') === false, 'relic below minLevel (35) grants nothing at level 34');
+setLevel(c20, 35);
+Game.Inventory.addItem(c20, 'quest_eidas_echo_seal');
+assert(Game.Classes.isObtained(c20, 'heir_of_the_echo') === true, 'relic at level 35 grants Heir of the Echo');
+assert(c20.legendaryUnlocked === true, 'legendaryUnlocked latch set true by the relic route too');
+var classesCountBefore20 = Object.keys(c20.classes).length;
+Game.Inventory.addItem(c20, 'quest_eidas_echo_seal'); // a second copy must not re-obtain
+var classesCountAfter20 = Object.keys(c20.classes).length;
+assert(classesCountAfter20 === classesCountBefore20, 'a second seal does not obtain a duplicate legendary class entry');
+
+// =================== Test 21: Legendary independence — obtaining one does not block another =====
+console.log('\n=== Test 21: Legendary independence — the 3 Legendaries unlock via mutually-independent routes (v1.2 Phase 2 roster growth from 1 to 3) ===');
+var c21 = makeCharacter({ name: 'MultiLegendary' });
+setLevel(c21, 35);
+winBattle('estari_ruin_warden'); // level 10 boss, well beneath level 35 -> XP/loot cutoff, but the Legendary check runs BEFORE that cutoff (a kill is a kill)
+assert(Game.Classes.isObtained(c21, 'runeblade_of_kuraan') === true, 'Runeblade obtained via its boss-kill route');
+Game.Inventory.addItem(c21, 'quest_eidas_echo_seal');
+assert(Game.Classes.isObtained(c21, 'heir_of_the_echo') === true, 'Heir of the Echo ALSO obtained — Runeblade did not block it');
+assert(Game.Classes.isObtained(c21, 'vaultbreaker') === false, 'vaultbreaker still NOT obtained (its own route was never triggered here)');
 
 // =================== Summary ===================
 console.log('\n===================================');

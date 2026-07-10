@@ -155,8 +155,10 @@ Game.Save = (function () {
     // simply re-buys `thief`'s actual abilities with those same already-spent Class Levels...
     // effectively: none are refunded, matching the archived deactivation-wipe spirit of "spent
     // levels are spent." warrior/magician entries are untouched (ids unchanged, now tier 1);
-    // runeblade_of_kuraan is untouched (tier 3, unaffected by the revision). New characters (and
-    // pre-existing ones with no `rogue` entry) are unaffected beyond the version bump.
+    // runeblade_of_kuraan is untouched here (tier 3 at the time of this v6->v7 step; later moved
+    // to tier 4 in a v1.2 Phase 2 DATA-only change with no save-shape impact — js/data/classes.js).
+    // New characters (and pre-existing ones with no `rogue` entry) are unaffected beyond the
+    // version bump.
     if (version === 6) {
       if (state && state.character) {
         var c7 = state.character;

@@ -4,17 +4,23 @@
 // excavation taboo, Majiku raids, Skyspire mythology — DESIGN.md §2) and, where a quest name or
 // mechanical fact IS archived, that fact is cited and implemented exactly (see per-quest notes).
 //
-// Shape: { id, name, giver: { areaId, npc }, levelMin?, levelMax?, requiresBaseClass?, intro,
-//          steps: [step],
+// Shape: { id, name, giver: { areaId, npc }, levelMin?, levelMax?, requiresBaseClass?,
+//          requiresAdvancedClass?, intro, steps: [step],
 //          rewards: { gold?, xp?, items?: [ids], trainingPoints?, classChoice? }, completionText,
 //          acceptItems?: [ids] } — acceptItems are handed over by the giver on accept (delivery
 //          quests); they are reclaimed on cancel and consumed by their collect step at turn-in.
 //   requiresBaseClass (NEW, v1.1 revision, DESIGN.md §3): enforced in js/core/quests.js accept() —
 //   the hero must have obtained at least one tier-1 class (Game.Classes.baseClassIdsObtained)
 //   before accepting. Used by trials_of_eldor ("Trials of Ascension").
-//   rewards.classChoice: either a fixed array of class ids (first_calling: the base trio) or the
-//   sentinel string 'advanced' (trials_of_eldor), resolved at turn-in via
-//   Game.Classes.advancedOptionsFor(c) — see js/core/quests.js turnIn().
+//   requiresAdvancedClass (NEW, v1.2 Phase 2, docs/SPEC-V1.2.md Phase 2): enforced in
+//   js/core/quests.js accept() — the hero must have obtained at least one tier-2 class
+//   (Game.Classes.advancedClassIdsObtained) before accepting. Used by masters_calling
+//   ("The Master's Calling"), mirroring requiresBaseClass one tier up.
+//   rewards.classChoice: either a fixed array of class ids (first_calling: the base trio;
+//   vaultbreakers_reckoning: a single-entry array) or a sentinel string — 'advanced'
+//   (trials_of_eldor, resolved via Game.Classes.advancedOptionsFor(c)) or 'tier3' (masters_calling,
+//   NEW v1.2 Phase 2, resolved via Game.Classes.thirdTierOptionsFor(c)) — see js/core/quests.js
+//   turnIn().
 // Step kinds:
 //   { kind: 'kill', monsterId, count }
 //   { kind: 'collect', itemId, count }             — checked live against inventory at turn-in,
@@ -355,6 +361,75 @@ Game.Data.quests = [
     // (js/core/quests.js turnIn), NOT a fixed array; see header comment above.
     rewards: { classChoice: 'advanced' },
     completionText: 'Eldor claps a firm hand on your shoulder. "Welcome to your advancement, hero. Make it count."'
+  },
+
+  // =====================================================================
+  // v1.2 Phase 2 (docs/SPEC-V1.2.md Phase 2): "The Master's Calling" — the NEW tier-3 capstone
+  // class quest, converging one tier-3 class per base line from whichever tier-2 branch the hero
+  // took (Shadowknight/Magus/Gambit — archived homepage_2006.md names, see js/data/classes.js).
+  // requiresAdvancedClass: true is a NEW quest field enforced at accept() (js/core/quests.js),
+  // mirroring trials_of_eldor's requiresBaseClass: a hero who never advanced past their base
+  // class has nothing to converge from. classChoice: 'tier3' is a NEW sentinel resolved at
+  // turn-in via Game.Classes.thirdTierOptionsFor(c) (js/core/quests.js turnIn), mirroring the
+  // 'advanced' sentinel exactly. Gated on the final story boss (eidas_echo, js/data/monsters.js)
+  // dead at level 38+ — the Academy's highest calling is only proven at the same threshold that
+  // closes the current story arc (js/data/quests.js echo_of_eidas); the two quests can be active
+  // and satisfied by the very same kill (recordKill increments every active matching kill-step).
+  // =====================================================================
+  {
+    id: 'masters_calling',
+    name: "The Master's Calling",
+    giver: { areaId: 'eldor', npc: 'Eldor' },
+    levelMin: 38,
+    requiresAdvancedClass: true, // NEW (v1.2 Phase 2): must have obtained a tier-2 (advanced) class
+    intro: 'Eldor sets down the same maps he pored over when you first stood before him at level ' +
+      '30. "There\'s one calling higher than advancement, hero — the Academy only ever grants it to ' +
+      'those who\'ve already proven an advanced calling AND faced down whatever it is that still ' +
+      'answers to Eidas\' name in Kastengard\'s deepest vault. Finish that fight, and come back. I\'ll ' +
+      'know by the look of you whether the Academy has anything left to teach."',
+    steps: [
+      { kind: 'kill', monsterId: 'eidas_echo', count: 1 }
+    ],
+    // classChoice: 'tier3' — resolved at turn-in via Game.Classes.thirdTierOptionsFor(c)
+    // (js/core/quests.js turnIn), NOT a fixed array; mirrors the 'advanced' sentinel above.
+    rewards: { classChoice: 'tier3' },
+    completionText: 'Eldor studies you for a long moment before he finally nods. "The Academy has ' +
+      'exactly one calling left to give you, hero. Wear it well — you\'ve more than earned it."'
+  },
+
+  // =====================================================================
+  // v1.2 Phase 2 (docs/SPEC-V1.2.md Phase 2): "Vaultbreaker's Reckoning" — a HIDDEN capstone quest
+  // (not tied to any class-tier progression) whose entire purpose is to grant the Legendary
+  // Vaultbreaker class via a genuine "boss combination kill": both the Juneros Leviathan (level
+  // 25 gate-boss, js/data/monsters.js juneros_leviathan) and the Kastengard Custodian (level 32
+  // gate-boss, kastengard_custodian) dead, proven by materials both already drop
+  // (quest_leviathan_scale, quest_custodian_core_shard — neither required by any other quest, so
+  // no collect-step conflict). rewards.classChoice is a FIXED single-entry array (same mechanism
+  // as first_calling's fixed trio, just with one option) rather than a sentinel, since there is
+  // only ever one class to grant here — Game.Classes.obtainClass does the rest via the existing
+  // turnIn classChoice path, so this route needed NO new battle.js/core code at all.
+  // =====================================================================
+  {
+    id: 'vaultbreakers_reckoning',
+    name: "Vaultbreaker's Reckoning",
+    giver: { areaId: 'eldor', npc: 'Eldor' },
+    levelMin: 33,
+    intro: 'Eldor lowers his voice, the way he only does for the stories he doesn\'t quite believe ' +
+      'himself. "There\'s an old rumor among the Academy\'s oldest instructors — that a hero who ' +
+      'breaks BOTH the Juneros Leviathan and the Kastengard Custodian, the deep shoal\'s guardian ' +
+      'and the vault\'s, awakens something in themselves that no ordinary calling can teach. I\'ve ' +
+      'never seen it happen. Prove the rumor true, and bring me proof of both kills, and we\'ll find ' +
+      'out together what the Academy has never had to name."',
+    steps: [
+      { kind: 'kill', monsterId: 'juneros_leviathan', count: 1 },
+      { kind: 'kill', monsterId: 'kastengard_custodian', count: 1 },
+      { kind: 'collect', itemId: 'quest_leviathan_scale', count: 1 },
+      { kind: 'collect', itemId: 'quest_custodian_core_shard', count: 1 }
+    ],
+    rewards: { classChoice: ['vaultbreaker'] },
+    completionText: 'Eldor turns the scale and the core shard over in his hands, and for once he has ' +
+      'nothing dry to say. "Two guardians, one hero. Whatever this makes you, hero, the Academy has ' +
+      'no lesson plan for it — you\'ll have to write your own from here."'
   },
 
   // =====================================================================

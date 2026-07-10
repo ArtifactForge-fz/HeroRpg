@@ -575,6 +575,87 @@ Game.Data.techs = [
   },
 
   // =====================================================================
+  // v1.2 Phase 2 (docs/SPEC-V1.2.md Phase 2): tier-3 + Legendary class-only techs. All five are
+  // non-weapon classOnly techs (weaponTech omitted/false), following the SAME shape/mitigation
+  // precedent as the tier-1/tier-2 techs above (Phase 1 items 6/7): a non-graded (grade: null)
+  // tech's damage ignores the monster's Magic Armor entirely and is rolled against the
+  // Intelligence hit/miss check like every other non-weapon offensive tech, while a graded
+  // (elemental) tech is mitigated by Magic Armor and resistances as normal. Power/energyCost are
+  // tuned per each ability's own comment in js/data/classes.js (tier 3 ~+20% over the stronger
+  // tier-2 sibling tech, Legendaries a further "touch above" that).
+  // =====================================================================
+  {
+    id: 'tech_shadow_blade',
+    name: 'Shadow Blade',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null, // invented: non-elemental, matches the Warrior-line precedent (tech_crushing_blow/tech_execution_blow) — ignores Magic Armor per Phase 1 item 7
+    energyCost: 30,
+    power: 66, // invented: +20% over Gladiator's Execution Blow (55)
+    effect: 'damage',
+    classOnly: true,
+    classId: 'shadowknight',
+    desc: 'A blade wreathed in living shadow, driven home with the full weight of the Shadowknight\'s dark training. Shadowknight class technique.'
+  },
+  {
+    id: 'tech_anima_reckoning',
+    name: 'Anima Reckoning',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: 'Star', // invented: elemental, matches the Magician-line precedent (tech_arcane_cataclysm) — mitigated by Magic Armor/resistances
+    energyCost: 40,
+    power: 84, // invented: +20% over Wizard's Arcane Cataclysm (70)
+    effect: 'damage',
+    classOnly: true,
+    classId: 'magus',
+    desc: 'A single, world-shaking verdict of pure Anima far beyond even a Wizard\'s Arcane Cataclysm. Magus class technique.'
+  },
+  {
+    id: 'tech_dice_throw',
+    name: 'Dice Throw',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null, // invented: non-elemental, matches the Thief-line precedent (tech_quick_stab/tech_efficient_strike) — ignores Magic Armor per Phase 1 item 7
+    energyCost: 18,
+    power: 45, // invented: +50% over Mercenary's Efficient Strike (30) — a bigger single gamble at a higher Energy cost (economy-tech niche, not a pure nuke; see js/data/classes.js gambit_dice_throw comment for the "high-variance" flavor reasoning)
+    effect: 'damage',
+    classOnly: true,
+    classId: 'gambit',
+    desc: 'A thrown blade gambled on a roll of the dice — no finesse, just a bigger swing than a careful strike would risk. Gambit class technique.'
+  },
+  {
+    id: 'tech_vault_reckoning',
+    name: "Vaultbreaker's Reckoning",
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null, // invented: non-elemental — Vaultbreaker's lineage is physical (two constructs/guardians broken by force), ignores Magic Armor per Phase 1 item 7
+    energyCost: 33,
+    power: 73, // invented: a touch (+~10%) above Shadow Blade (66), the tier-3 band's non-elemental ceiling
+    effect: 'damage',
+    classOnly: true,
+    classId: 'vaultbreaker',
+    desc: 'A single blow that carries the full weight of two fallen guardians at once. Vaultbreaker class technique.'
+  },
+  {
+    id: 'tech_echoing_judgment',
+    name: 'Echoing Judgment',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: 'Light', // invented: hybrid Light+Dark flavor (matches tech_runic_severance's convention — single grade field, Light used for the resistance lookup, Dark is flavor only)
+    energyCost: 44,
+    power: 92, // invented: a touch (+~10%) above Anima Reckoning (84), the tier-3 band's elemental ceiling
+    effect: 'damage',
+    classOnly: true,
+    classId: 'heir_of_the_echo',
+    desc: 'A judgment cast in Eidas\' own hybrid Light-and-Dark Anima, echoing a founder\'s long-silent verdict onto the battlefield. Heir of the Echo class technique.'
+  },
+
+  // =====================================================================
   // Feature C (user-directed): weapon techniques. Early melee play was Attack-spam while magic
   // builds got a starter tech (see character.js grantStarterTech); these give the four weapon
   // skills their own Academy-learnable chains. Shape: `weaponTech: true` + `powerMult` (a

@@ -27,8 +27,46 @@
 // `rogue` entries (obtained under the ARCHIVED level-30 first-choice trio) are re-based to
 // `thief`, since the id `rogue` is REUSED here for the new advanced-tier class of that name.
 //
-// Shape: { id, name, desc, tier: 1 | 2 | 3, baseClass?: '<tier-1 id>', legendary,
-//          obtain?: { kind: 'boss_kill', monsterId, minLevel },
+// v1.2 Phase 2 REVISION (docs/SPEC-V1.2.md Phase 2; docs/SPEC-FULL-LEVEL-ARC.md §5): the two-tier
+// model above becomes THREE tiers, and Runeblade of Kuraan moves off tier 3 into a dedicated
+// Legendary slot (tier: 4) alongside two brand-new invented Legendaries, so tier 3 is exclusively
+// the archived third-branch roster:
+//   - Third tier (tier: 3) at level 38 via "The Master's Calling" (js/data/quests.js
+//     masters_calling), converging ONE PER BASE LINE from whichever tier-2 branch the hero took
+//     (arc §5 "branch convergence" — pinned decision, NOT a second branch-of-2 like tier 2):
+//       Warrior (Gladiator OR Crusader) -> Shadowknight
+//       Magician (Wizard OR Sage)       -> Magus
+//       Thief (Rogue OR Mercenary)      -> Gambit
+//     So a tier-3 class's `baseClass` is the TIER-1 line id ('warrior'/'magician'/'thief'), NOT a
+//     tier-2 id — Game.Classes.thirdTierOptionsFor(c) resolves it off baseClassIdsObtained(c),
+//     mirroring advancedOptionsFor(c)'s baseClass matching. Shadowknight/Gambit ability NAMES are
+//     archived (homepage_2006.md); Magus's ability names and all three classes' concrete
+//     numbers/effects are invented. 3 abilities each (2 passive + 1 signature classOnly tech) —
+//     tuned roughly +20% over the stronger of the two tier-2 sibling abilities per effect (the
+//     "≤+25% over the prior tier" discipline already used for the tier-2 pass, see gladiator's
+//     comments below), a controlled step up, NOT the tier-1->tier-2 jump repeated.
+//   - Legendary tier (tier: 4, display-only "Legendary" header) now holds THREE classes, each
+//     with its own special, mutually-independent unlock route (obtaining one does not block
+//     obtaining another — see js/core/battle.js onWin and js/core/classes.js checkRelicUnlock):
+//       Runeblade of Kuraan — unchanged single boss-kill route (obtain.kind: 'boss_kill').
+//       Vaultbreaker        — NEW invented route: a hidden capstone quest
+//                              (js/data/quests.js vaultbreakers_reckoning) requiring BOTH the
+//                              Juneros Leviathan and the Kastengard Custodian dead — a genuine
+//                              "boss combination kill," reusing the existing multi-step kill-quest
+//                              machinery rather than new battle.js code.
+//       Heir of the Echo    — NEW invented route: obtain.kind: 'relic' — granted the moment
+//                              `quest_eidas_echo_seal` (Eidas' Echo's own drop) enters the
+//                              player's inventory by ANY means (loot, quest reward, or synthesis),
+//                              checked via a guarded hook in js/core/inventory.js addItem().
+//     Legendary abilities: 4 each (3 passive + 1 signature classOnly tech), tuned a further ~+10%
+//     ("a touch above") over the tier-3 band above.
+// See js/core/classes.js Game.Classes.advancedOptionsFor(c)/thirdTierOptionsFor(c) for how the
+// tier-2/tier-3 options are resolved at runtime.
+//
+// Shape: { id, name, desc, tier: 1 | 2 | 3 | 4, baseClass?: '<tier-1 id>', legendary,
+//          obtain?: { kind: 'boss_kill', monsterId, minLevel }
+//                  | { kind: 'boss_combo_quest', questId }   // documentation only; see quests.js
+//                  | { kind: 'relic', itemId, minLevel },
 //          abilities: [ { id, name, kind: 'passive', effect, power, classLevelCost, desc }
 //                     | { id, name, kind: 'tech', techId, classLevelCost, desc } ] }
 //   passive effect: 'damage_pct' | 'armor_flat' | 'magic_armor_flat' | 'dodge_flat' |
@@ -475,12 +513,151 @@ Game.Data.classes = [
     ]
   },
 
+  // =====================================================================================
+  // THIRD TIER (tier: 3) — obtained at level 38 via "The Master's Calling" (js/data/quests.js
+  // masters_calling), converging ONE PER BASE LINE from either tier-2 sibling (v1.2 Phase 2;
+  // docs/SPEC-V1.2.md Phase 2 "branch convergence" — pinned). baseClass is the TIER-1 line id,
+  // not a tier-2 id, per Game.Classes.thirdTierOptionsFor. 3 abilities each (2 passive + 1
+  // signature classOnly tech), tuned ~+20% over the stronger tier-2 sibling per effect.
+  // =====================================================================================
+
+  // ---------- Shadowknight (baseClass: warrior; archived name + ability names, homepage_2006.md
+  // "Tier 4 Update") — converges Gladiator (offense) OR Crusader (defense) ----------
+  {
+    id: 'shadowknight',
+    name: 'Shadowknight',
+    desc: 'A Warrior who has walked past both the arena\'s spectacle and the standard\'s discipline ' +
+      'into something darker — battle-scarred, dark-Anima-touched, and answerable to neither ' +
+      'Gladiator nor Crusader alone. Converges from Warrior, whichever advanced path was taken.',
+    tier: 3,
+    baseClass: 'warrior',
+    legendary: false,
+    abilities: [
+      {
+        id: 'shadowknight_inner_fire',
+        name: 'Inner Fire',
+        kind: 'passive',
+        effect: 'damage_pct',
+        power: 0.13, // invented: +18% over Gladiator's Savage Strikes (0.11), within the ≤+25% discipline
+        classLevelCost: 3,
+        desc: 'A smoldering resolve that never quite goes out, archived as one of the Shadowknight\'s ' +
+          'two active skills (homepage_2006.md) — +13% Damage (all sources).'
+      },
+      {
+        id: 'shadowknight_dragons_fire',
+        name: "Dragon's Fire",
+        kind: 'passive',
+        effect: 'magic_armor_flat',
+        power: 12, // invented: +20% over Crusader's Wardskin (10)
+        classLevelCost: 3,
+        desc: 'The other of the Shadowknight\'s two archived active skills — a smoldering, ' +
+          'draconic-flame ward of protective Anima — flat +12 Magic Armor.'
+      },
+      {
+        id: 'shadowknight_shadow_blade',
+        name: 'Shadow Blade',
+        kind: 'tech',
+        techId: 'tech_shadow_blade',
+        classLevelCost: 5,
+        desc: 'A blade wreathed in living shadow, driven home with the full weight of the ' +
+          'Shadowknight\'s dark training — the archived signature that gives the class its name.'
+      }
+    ]
+  },
+
+  // ---------- Magus (baseClass: magician; archived name, homepage_2006.md; corroborated
+  // forum/t-787.md) — converges Wizard (damage) OR Sage (healing/support); invented abilities ---
+  {
+    id: 'magus',
+    name: 'Magus',
+    desc: 'A Magician who has pushed past both raw spell damage and restorative craft into true ' +
+      'command over uncategorized Anima — the Academy\'s rarely-awarded caster capstone. ' +
+      'Converges from Magician, whichever advanced path was taken.',
+    tier: 3,
+    baseClass: 'magician',
+    legendary: false,
+    abilities: [
+      {
+        id: 'magus_anima_mastery',
+        name: 'Anima Mastery',
+        kind: 'passive',
+        effect: 'damage_pct',
+        power: 0.19, // invented: +19% over Wizard's Arcane Might (0.16)
+        classLevelCost: 3,
+        desc: 'Full command over uncategorized Anima, beyond even a Wizard\'s reach — +19% Damage (all sources).'
+      },
+      {
+        id: 'magus_overflowing_wellspring',
+        name: 'Overflowing Wellspring',
+        kind: 'passive',
+        effect: 'energy_max_flat',
+        power: 36, // invented: +20% over Wizard/Sage's Overcharged Reserves/Deep Wellspring (30)
+        classLevelCost: 3,
+        desc: 'A well of Energy deeper than either the Wizard\'s or the Sage\'s — flat +36 max Energy.'
+      },
+      {
+        id: 'magus_anima_reckoning',
+        name: 'Anima Reckoning',
+        kind: 'tech',
+        techId: 'tech_anima_reckoning',
+        classLevelCost: 5,
+        desc: 'A single, world-shaking verdict of pure Anima far beyond even a Wizard\'s Arcane Cataclysm.'
+      }
+    ]
+  },
+
+  // ---------- Gambit (baseClass: thief; archived name + ability names, homepage_2006.md;
+  // archived quest name "A Gambler's Life") — converges Rogue (crits/dodge) OR Mercenary
+  // (versatility) ----------
+  {
+    id: 'gambit',
+    name: 'Gambit',
+    desc: 'A Thief who has turned pure opportunism into a professional gamble — every fight a bet ' +
+      'placed on nerve, luck, and a blade thrown true. Converges from Thief, whichever advanced ' +
+      'path was taken.',
+    tier: 3,
+    baseClass: 'thief',
+    legendary: false,
+    abilities: [
+      {
+        id: 'gambit_lucky_coin',
+        name: 'Lucky Coin',
+        kind: 'passive',
+        effect: 'gold_pct',
+        power: 0.12, // invented: +20% over Mercenary's Quick Pockets (0.10)
+        classLevelCost: 3,
+        desc: 'Archived as one of the Gambit\'s two active skills (homepage_2006.md) — a coin that ' +
+          'always seems to land the Gambit\'s way — +12% Gold from battle wins.'
+      },
+      {
+        id: 'gambit_gamblers_nerve',
+        name: "Gambler's Nerve",
+        kind: 'passive',
+        effect: 'dodge_flat',
+        power: 0.10, // invented: +25% over Rogue's Quickstep (0.08) — exactly at the tier discipline's cap
+        classLevelCost: 3,
+        desc: 'Nothing rattles a Gambit mid-wager — flat +10% chance to dodge any attack.'
+      },
+      {
+        id: 'gambit_dice_throw',
+        name: 'Dice Throw',
+        kind: 'tech',
+        techId: 'tech_dice_throw',
+        classLevelCost: 5,
+        desc: 'The archived signature that gives the class its name — a thrown blade gambled on a ' +
+          'roll of the dice, hitting far harder than a careful strike ever could when the roll goes well.'
+      }
+    ]
+  },
+
   // ---------- Runeblade of Kuraan (Legendary; invented name, Arkan/Kuraan-lore flavored) ----------
   // Single-player reinterpretation of "may only be obtained by one player" (Classes.md) — a
   // permanent one-per-save unlock (DESIGN.md §3), gated on defeating the estari_ruin_warden
   // (js/data/monsters.js) while at level 30+. See Game.Classes / js/core/battle.js onWin.
-  // tier: 3 is display-only (Status Classes tab "Legendary" header) — Runeblade has no baseClass
-  // and sits above both tiers, unchanged by the v1.1 revision.
+  // v1.2 Phase 2: moved off tier 3 (now the archived Shadowknight/Magus/Gambit roster above) to
+  // its own Legendary slot (tier: 4) — data-only renumber, no save-shape change (the
+  // c.classes[id] entry shape and c.legendaryUnlocked latch are untouched; see
+  // js/core/classes.js/js/core/battle.js for the (now per-class) unlock gate).
   {
     id: 'runeblade_of_kuraan',
     name: 'Runeblade of Kuraan',
@@ -488,7 +665,7 @@ Game.Data.classes = [
       'lost to the Arkan when the Majiku drove them out. Whoever wakes the old runes stands apart ' +
       'from every other hero of Van Arius — this Legendary class can be claimed by only one hero ' +
       'per journey, forged in the ruin of something far older than either Human or Arkan.',
-    tier: 3,
+    tier: 4,
     legendary: true,
     obtain: { kind: 'boss_kill', monsterId: 'estari_ruin_warden', minLevel: 30 },
     abilities: [
@@ -526,6 +703,120 @@ Game.Data.classes = [
         techId: 'tech_runic_severance',
         classLevelCost: 5,
         desc: 'A hybrid Light-and-Dark strike that cleaves through both flesh and ward alike.'
+      }
+    ]
+  },
+
+  // ---------- Vaultbreaker (Legendary; invented name/lore) — v1.2 Phase 2 "boss combination
+  // kill" route. Unlocked via the hidden capstone quest js/data/quests.js
+  // vaultbreakers_reckoning, which requires killing BOTH the Juneros Leviathan (level 25 gate-
+  // boss) and the Kastengard Custodian (level 32 gate-boss) and handing over a material each
+  // already drops (quest_leviathan_scale, quest_custodian_core_shard) — a genuine two-boss
+  // combination, reusing the existing multi-step kill-quest + classChoice machinery rather than
+  // new battle.js code (see js/core/quests.js turnIn's fixed-array classChoice path, identical to
+  // first_calling's). No baseClass — sits above the tier chain like every Legendary. ----------
+  {
+    id: 'vaultbreaker',
+    name: 'Vaultbreaker',
+    desc: 'A Legendary class earned only by breaking BOTH of Van Arius\'s last great guardians — ' +
+      'the Kastengard Custodian sealed in the Society of Modern Magic\'s deepest vault, and the ' +
+      'Juneros Leviathan that has held the deep shoal since before living memory. Whoever proves ' +
+      'their mettle against both fuses the vault\'s old Anima-discipline with the sea\'s crushing ' +
+      'patience into something neither guardian could withstand alone.',
+    tier: 4,
+    legendary: true,
+    obtain: { kind: 'boss_combo_quest', questId: 'vaultbreakers_reckoning' }, // documentation only — js/data/quests.js grants the class via rewards.classChoice on turn-in
+    abilities: [
+      {
+        id: 'vaultbreaker_twofold_resolve',
+        name: 'Twofold Resolve',
+        kind: 'passive',
+        effect: 'damage_pct',
+        power: 0.15, // invented: "a touch above" tier 3's damage_pct band (0.13-0.19)
+        classLevelCost: 2,
+        desc: 'The resolve to end two guardians burns undiminished in a third fight — +15% Damage.'
+      },
+      {
+        id: 'vaultbreaker_vault_forged_plating',
+        name: 'Vault-Forged Plating',
+        kind: 'passive',
+        effect: 'armor_flat',
+        power: 19, // invented: ~+20% over Crusader's Bulwark (14, the highest tier-2 armor_flat) x1.2, then a touch above tier 3
+        classLevelCost: 3,
+        desc: 'Custodian-grade plate, quenched in the Leviathan\'s own deep water — flat +19 Armor.'
+      },
+      {
+        id: 'vaultbreaker_deep_current_ward',
+        name: 'Deep Current Ward',
+        kind: 'passive',
+        effect: 'magic_armor_flat',
+        power: 14, // invented: a touch above Shadowknight's Dragon's Fire (12)
+        classLevelCost: 3,
+        desc: 'A standing ward drawn from both a sealed vault and a drowned shoal — flat +14 Magic Armor.'
+      },
+      {
+        id: 'vaultbreaker_reckoning',
+        name: "Vaultbreaker's Reckoning",
+        kind: 'tech',
+        techId: 'tech_vault_reckoning',
+        classLevelCost: 5,
+        desc: 'A single blow that carries the full weight of two fallen guardians at once.'
+      }
+    ]
+  },
+
+  // ---------- Heir of the Echo (Legendary; invented name/lore) — v1.2 Phase 2 "relic" route.
+  // Unlocked the moment quest_eidas_echo_seal (Eidas' Echo's own drop, js/data/monsters.js
+  // eidas_echo) enters the player's inventory BY ANY MEANS (loot, quest reward, or synthesis) —
+  // checked via a guarded hook in js/core/inventory.js addItem() -> Game.Classes.checkRelicUnlock,
+  // distinct in kind from both Runeblade's silent on-kill latch and Vaultbreaker's quest route.
+  // No baseClass — sits above the tier chain like every Legendary. ----------
+  {
+    id: 'heir_of_the_echo',
+    name: 'Heir of the Echo',
+    desc: 'A Legendary class said to awaken only in the presence of Eidas\' own lingering ' +
+      'Echo-Seal — the crystallized remnant of the Skyspire\'s fallen founder. Whoever carries the ' +
+      'seal inherits a sliver of Eidas\' own hybrid mastery over Light and Dark Anima alike, the ' +
+      'same twin grades the old stories say a "divine race" founder once commanded together.',
+    tier: 4,
+    legendary: true,
+    obtain: { kind: 'relic', itemId: 'quest_eidas_echo_seal', minLevel: 35 },
+    abilities: [
+      {
+        id: 'heir_echo_vitality',
+        name: "Echo's Vitality",
+        kind: 'passive',
+        effect: 'hp_max_flat',
+        power: 50, // invented: a touch above tier 2's highest hp_max_flat (Crusader's Iron Vitality, 40) via the tier-3-implied band
+        classLevelCost: 2,
+        desc: 'A sliver of Eidas\' own endurance, inherited along with the seal — +50 max HP.'
+      },
+      {
+        id: 'heir_echo_reserves',
+        name: "Echo's Reserves",
+        kind: 'passive',
+        effect: 'energy_max_flat',
+        power: 40, // invented: a touch above Magus's Overflowing Wellspring (36)
+        classLevelCost: 3,
+        desc: 'A well of Energy as deep as the Skyspire once flew high — flat +40 max Energy.'
+      },
+      {
+        id: 'heir_echo_step',
+        name: "Echo's Step",
+        kind: 'passive',
+        effect: 'dodge_flat',
+        power: 0.11, // invented: a touch above Gambit's Gambler's Nerve (0.10)
+        classLevelCost: 3,
+        desc: 'A half-step out of phase with the world, the way an Echo always was — flat +11% chance to dodge any attack.'
+      },
+      {
+        id: 'heir_echoing_judgment',
+        name: 'Echoing Judgment',
+        kind: 'tech',
+        techId: 'tech_echoing_judgment',
+        classLevelCost: 5,
+        desc: 'A judgment cast in Eidas\' own hybrid Light-and-Dark Anima, echoing a founder\'s ' +
+          'long-silent verdict onto the battlefield.'
       }
     ]
   }

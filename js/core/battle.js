@@ -730,13 +730,17 @@ Game.Battle = (function () {
     // Phase 6a: Legendary class unlock (DESIGN.md §3; js/data/classes.js
     // runeblade_of_kuraan.obtain). Also placed BEFORE the cutoff early-return — a boss kill that
     // meets the level gate unlocks the class even on a cutoff-beneath-level win (mirrors the
-    // recordKill placement above: a kill is a kill). One-per-save latch; a second kill (or a
-    // kill below the required level) does nothing.
-    if (Game.Classes && !c.legendaryUnlocked) {
+    // recordKill placement above: a kill is a kill). A kill below the required level does
+    // nothing. v1.2 Phase 2: gate is now per-class (Game.Classes.isObtained), not the shared
+    // c.legendaryUnlocked boolean — the roster grew to 3 Legendaries with independent unlock
+    // routes (see js/core/classes.js header), so a second kill of the SAME boss still does
+    // nothing (already obtained), but obtaining one Legendary no longer blocks another.
+    if (Game.Classes) {
       (Game.Data.classes || []).forEach(function (classDef) {
         if (!classDef.legendary || !classDef.obtain || classDef.obtain.kind !== 'boss_kill') return;
         if (classDef.obtain.monsterId !== monster.id) return;
         if (c.level < classDef.obtain.minLevel) return;
+        if (Game.Classes.isObtained(c, classDef.id)) return;
         c.legendaryUnlocked = true;
         Game.Classes.obtainClass(c, classDef.id);
         log(battle, 'The runes of a forgotten age answer your victory — you have obtained the Legendary ' + classDef.name + ' class!');

@@ -215,12 +215,12 @@ Game._debug = {
     console.log(res.message);
   },
 
-  // v1.1 revision: lists all 10 classes (3 Base, 6 Advanced, 1 Legendary — DESIGN.md §3) with
-  // their tier and (for Advanced) baseClass lineage, so Game._debug.giveClass(id) has a ready
-  // reference for every valid id.
+  // v1.1 revision + v1.2 Phase 2: lists all 15 classes (3 Base, 6 Advanced, 3 Third Tier,
+  // 3 Legendary — docs/SPEC-V1.2.md Phase 2) with their tier and (for Advanced/Third Tier)
+  // baseClass lineage, so Game._debug.giveClass(id) has a ready reference for every valid id.
   listClasses: function () {
     (Game.Data.classes || []).forEach(function (cd) {
-      var tierName = cd.legendary ? 'Legendary' : (cd.tier === 2 ? 'Advanced' : 'Base');
+      var tierName = cd.legendary ? 'Legendary' : (cd.tier === 3 ? 'Third Tier' : (cd.tier === 2 ? 'Advanced' : 'Base'));
       var lineage = cd.baseClass ? ' <- ' + cd.baseClass : '';
       console.log(cd.id + '  —  ' + cd.name + '  [' + tierName + lineage + ', ' + cd.abilities.length + ' abilities]');
     });
@@ -235,12 +235,18 @@ Game._debug = {
     console.log('Granted ' + n + ' class XP (Primary full rate, Secondary half).');
   },
 
-  unlockLegendary: function () {
+  // v1.2 Phase 2: an optional classId picks a SPECIFIC Legendary (roster grew from 1 to 3 —
+  // runeblade_of_kuraan/vaultbreaker/heir_of_the_echo); omitted, it defaults to the first
+  // not-yet-obtained Legendary in roster order. Each Legendary latches independently
+  // (Game.Classes.isObtained), so this can be called once per Legendary on the same character.
+  unlockLegendary: function (classId) {
     if (!Game.state.character) { console.warn('No character yet.'); return; }
     var c = Game.state.character;
-    var legendary = (Game.Data.classes || []).filter(function (cl) { return cl.legendary; })[0];
-    if (!legendary) { console.warn('No legendary class defined.'); return; }
-    if (c.legendaryUnlocked) { console.warn('Legendary class already unlocked.'); return; }
+    var legendary = classId
+      ? Game.Classes.getClass(classId)
+      : (Game.Data.classes || []).filter(function (cl) { return cl.legendary && !Game.Classes.isObtained(c, cl.id); })[0];
+    if (!legendary || !legendary.legendary) { console.warn('No such Legendary class.'); return; }
+    if (Game.Classes.isObtained(c, legendary.id)) { console.warn(legendary.name + ' is already unlocked.'); return; }
     c.legendaryUnlocked = true;
     var res = Game.Classes.obtainClass(c, legendary.id);
     Game.persist();

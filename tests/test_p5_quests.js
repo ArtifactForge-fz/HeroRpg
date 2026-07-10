@@ -129,7 +129,7 @@ function winBattle(monsterId) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: quest/story data sanity ===');
-assert(Game.Data.quests.length === 20, '20 quests defined (Phase 6b\'s 19 + v1.1\'s new first_calling), got ' + Game.Data.quests.length);
+assert(Game.Data.quests.length === 22, '22 quests defined (Phase 6b\'s 19 + v1.1\'s new first_calling + v1.2 Phase 2\'s masters_calling + vaultbreakers_reckoning), got ' + Game.Data.quests.length);
 assert(Game.Data.story.length === 3, '3 story chapters, got ' + Game.Data.story.length);
 ['prelude', 'chapter_1', 'chapter_2'].forEach(function (id) {
   var found = Game.Data.story.some(function (ch) { return ch.id === id; });

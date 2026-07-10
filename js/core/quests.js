@@ -92,6 +92,17 @@ Game.Quests = (function () {
       };
     }
 
+    // NEW (v1.2 Phase 2, docs/SPEC-V1.2.md Phase 2): "The Master's Calling" (masters_calling)
+    // requires having obtained a tier-2 (advanced) class first — converging a calling never
+    // advanced makes no sense, mirroring the requiresBaseClass gate one tier up.
+    if (quest.requiresAdvancedClass && Game.Classes && Game.Classes.advancedClassIdsObtained(c).length === 0) {
+      return {
+        ok: false,
+        message: 'You must first advance your calling — obtain an advanced (tier-2) class via ' +
+          'The Trials of Ascension before attempting The Master\'s Calling.'
+      };
+    }
+
     // Delivery-style quests hand over items on accept (quest.acceptItems). All of them must fit
     // or the accept is refused outright — never a partial hand-over.
     var acceptItems = quest.acceptItems || [];
@@ -326,13 +337,16 @@ Game.Quests = (function () {
   }
 
   // `choice` is required only for quests whose rewards carry `classChoice` — either a fixed array
-  // of valid class ids (e.g. first_calling: ['warrior','magician','thief'], DESIGN.md §3) or the
-  // NEW sentinel string 'advanced' (trials_of_eldor / "Trials of Ascension"), which is resolved
-  // HERE via Game.Classes.advancedOptionsFor(c) into the 2 advanced options matching whichever
-  // base class the hero obtained — so a warrior-base hero offering 'wizard' (a magician-branch
-  // class) is rejected by the same indexOf check used for the fixed-array case below. The chosen
-  // class is obtained via Game.Classes.obtainClass — permanent, no re-choice, since the quest
-  // immediately flips to 'completed' same as any other turn-in.
+  // of valid class ids (e.g. first_calling: ['warrior','magician','thief'], DESIGN.md §3;
+  // vaultbreakers_reckoning: ['vaultbreaker']) or a sentinel string: 'advanced' (trials_of_eldor /
+  // "Trials of Ascension"), resolved via Game.Classes.advancedOptionsFor(c) into the 2 advanced
+  // options matching whichever base class the hero obtained, or 'tier3' (masters_calling / "The
+  // Master's Calling", NEW v1.2 Phase 2), resolved via Game.Classes.thirdTierOptionsFor(c) into
+  // the single tier-3 option matching whichever base class the hero obtained — so a warrior-base
+  // hero offering 'wizard' or 'magus' (magician-branch classes) is rejected by the same indexOf
+  // check used for the fixed-array case below. The chosen class is obtained via
+  // Game.Classes.obtainClass — permanent, no re-choice, since the quest immediately flips to
+  // 'completed' same as any other turn-in.
   function turnIn(questId, choice) {
     var c = Game.state.character;
     if (!c) return { ok: false, message: 'No character.' };
@@ -363,6 +377,14 @@ Game.Quests = (function () {
       classChoices = Game.Classes ? Game.Classes.advancedOptionsFor(c) : [];
       if (!classChoices.length) {
         return { ok: false, message: 'You have no base class to advance yet.' };
+      }
+    } else if (classChoices === 'tier3') {
+      // NEW sentinel (v1.2 Phase 2, masters_calling): resolve to the single tier-3 option
+      // matching the hero's obtained base class(es) — requiresAdvancedClass at accept() means
+      // this should never be empty in normal play, but guard anyway (mirrors 'advanced' above).
+      classChoices = Game.Classes ? Game.Classes.thirdTierOptionsFor(c) : [];
+      if (!classChoices.length) {
+        return { ok: false, message: 'You have no advanced calling to converge yet.' };
       }
     }
     if (classChoices && classChoices.indexOf(choice) === -1) {

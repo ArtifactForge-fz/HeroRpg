@@ -110,6 +110,7 @@ function itemExists(id) { return !!Game.Inventory.getItem(id); }
 function monsterExists(id) { return !!Game.Battle.getMonsterDef(id); }
 function techExists(id) { return !!Game.Battle.getTech(id); }
 function areaExists(id) { return !!Game.World.getArea(id); }
+function questExists(id) { return !!Game.Quests.getQuest(id); }
 
 // =====================================================================
 // Part 1: referential integrity over ALL game data
@@ -203,12 +204,13 @@ console.log('\n=== Part 1: referential integrity ===');
     if (q.rewards && q.rewards.classChoice) {
       // v1.1 revision: classChoice is either a fixed array of class ids, or the sentinel string
       // 'advanced' (resolved at runtime via Game.Classes.advancedOptionsFor(c) — js/core/quests.js
-      // turnIn()); only fixed arrays are checked against Game.Classes.getClass here.
+      // turnIn()); only fixed arrays are checked against Game.Classes.getClass here. v1.2 Phase 2
+      // adds the 'tier3' sentinel (Game.Classes.thirdTierOptionsFor(c), masters_calling).
       if (Array.isArray(q.rewards.classChoice)) {
         q.rewards.classChoice.forEach(function (cid) {
           if (!Game.Classes.getClass(cid)) bad.push(q.id + ' -> classChoice ' + cid);
         });
-      } else if (q.rewards.classChoice !== 'advanced') {
+      } else if (q.rewards.classChoice !== 'advanced' && q.rewards.classChoice !== 'tier3') {
         bad.push(q.id + ' -> unrecognized classChoice sentinel ' + q.rewards.classChoice);
       }
     }
@@ -246,6 +248,22 @@ console.log('\n=== Part 1: referential integrity ===');
     }
   });
   assert(bad.length === 0, 'every class boss_kill obtain monsterId exists' + (bad.length ? (': ' + bad.join(', ')) : ''));
+})();
+
+// ---- 1i-2) v1.2 Phase 2: every class relic obtain.itemId exists; every boss_combo_quest
+// obtain.questId exists (Vaultbreaker/Heir of the Echo's special unlock routes) ----
+(function () {
+  var bad = [];
+  Game.Data.classes.forEach(function (cd) {
+    if (!cd.obtain) return;
+    if (cd.obtain.kind === 'relic' && !itemExists(cd.obtain.itemId)) {
+      bad.push(cd.id + ' -> relic obtain item ' + cd.obtain.itemId);
+    }
+    if (cd.obtain.kind === 'boss_combo_quest' && !questExists(cd.obtain.questId)) {
+      bad.push(cd.id + ' -> boss_combo_quest obtain quest ' + cd.obtain.questId);
+    }
+  });
+  assert(bad.length === 0, 'every class relic/boss_combo_quest obtain reference resolves' + (bad.length ? (': ' + bad.join(', ')) : ''));
 })();
 
 // ---- 1j) tech chain rank gating is coherent (rank>1 has a rank-1 predecessor in the same chain) ----

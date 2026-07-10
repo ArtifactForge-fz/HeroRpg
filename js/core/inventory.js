@@ -73,6 +73,10 @@ Game.Inventory = (function () {
     if (!item) return false;
     if (currentWeight(c) + item.weight > carryCapacity(c)) return false;
     c.inventory.push(itemId);
+    // v1.2 Phase 2 (docs/SPEC-V1.2.md Phase 2): guarded hook for the "relic" Legendary unlock
+    // route (Heir of the Echo) — addItem is the single funnel for loot pickup, quest rewards, AND
+    // synthesis output alike, so hooking here (rather than at each call site) catches all three.
+    if (Game.Classes && Game.Classes.checkRelicUnlock) Game.Classes.checkRelicUnlock(c, itemId);
     return true;
   }
 
