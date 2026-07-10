@@ -27,7 +27,22 @@ Handoff note for resuming the level-100 arc. Delete this file once the arc is fi
 - **Pace (user-approved):** **continuous run** — build bands B→F back-to-back, review + commit each,
   then finalize (F4/F5/icons/re-sim/docs). Only stop for a real problem or at completion.
 
-## The exact next action: build Band B
+## ⚠ First: there is a stashed, UNREVIEWED partial Band B
+
+An interrupted Band B agent run was stashed (not committed): `git stash list` →
+`stash@{0}: On level-arc: interrupted Band B attempt (unreviewed, level-arc)`. It contains
+Majiku-Highlands content (areas, `majiku_ridge_chieftain` boss, rank-5 techs, steppe/ridge gear,
+D-class crystals, ~35 placeholder icons). It was interrupted mid-session and never reviewed, so
+**do not trust it**. Two clean options:
+- **Inspect then adopt:** `git stash show -p stash@{0}` (and `git stash show -u` for the untracked
+  icons). If it's complete and correct — matches the Band B brief below, uses the TAPER, boss premium
+  round(1.5*60+10)=100, suites green after `git stash pop` — review it as you would any delivery and
+  commit it as Band B, then skip to Band C.
+- **Drop and rebuild:** `git stash drop stash@{0}` and build Band B fresh from the brief below (the
+  safer default, given it was interrupted).
+The clean Band-A state (HEAD) is green; don't build on the stash without reviewing it first.
+
+## The exact next action: build Band B (after handling the stash above)
 
 Spawn a Sonnet subagent (general-purpose, model sonnet, run in foreground so you can review) with
 the brief below. It was written and ready when the session ended (the user paused before it ran).
