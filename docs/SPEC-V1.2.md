@@ -144,11 +144,21 @@ Build the **tier-3 machinery** and roster. Files: `js/data/classes.js`, `js/core
   tier-3 branch is permitted per arc §5 if wanted; at minimum add **1–2 invented Legendary/hidden
   classes** beyond Runeblade (special unlock routes — boss combination or relic). Keep each new
   class's power within the "≤ +25% over the prior tier" discipline already noted in classes.js.
+- **Branch convergence:** tier-3 converges **one per base line** — Warrior line (Gladiator OR
+  Crusader) → **Shadowknight**; Magician line → **Magus**; Thief line → **Gambit**. So a tier-3
+  class's `baseClass` references the **tier-1 line id** (`'warrior'`/`'magician'`/`'thief'`), not a
+  tier-2 id. Roster stays at the 3 archived names (no per-tier-2 explosion).
 - **Machinery:** add `thirdTierOptionsFor(c)` in `js/core/classes.js` (mirrors
-  `advancedOptionsFor` but matches tier-3 `baseClass` → the player's tier-2 class id) and a new
-  `rewards.classChoice` sentinel `'tier3'` resolved at quest turn-in; the capstone quest sets a
-  `requiresAdvancedClass: true` gate (mirror `requiresBaseClass`). Reuse `obtainClass`/`activate`/
-  class-XP/`buyAbility` unchanged.
+  `advancedOptionsFor`: returns tier-3 classes whose `baseClass` matches the player's obtained
+  tier-1 base class) and a new `rewards.classChoice` sentinel `'tier3'` resolved at quest turn-in;
+  the capstone quest sets a `requiresAdvancedClass: true` gate (accept() refuses unless the
+  character has obtained a tier-2 class — mirror the existing `requiresBaseClass` gate). Reuse
+  `obtainClass`/`activate`/class-XP/`buyAbility` unchanged.
+- **Invented count (pinned):** exactly **2** invented Legendary classes beyond Runeblade (distinct
+  special-unlock routes — e.g. a boss-combination kill and a relic/synthesis route), for 10→15
+  total classes. Use archived ability NAMES where they exist: Shadowknight → Shadow Blade / Inner
+  Fire / Dragon's Fire; Gambit → Lucky Coin / Dice Throw; Magus + the 2 legendaries → invented
+  names. One signature `classOnly` class-tech per new class (add a 2nd only if within balance).
 - **Runeblade renumber (arc §5):** move `runeblade_of_kuraan` off `tier: 3` to a `legendary` slot
   (e.g. `tier: 4` + existing `legendary: true`) and confirm `advancedOptionsFor`/`thirdTierOptionsFor`
   both exclude it. Data-only; verify no save migration needed (class entry shape unchanged).
@@ -161,30 +171,48 @@ Build the **tier-3 machinery** and roster. Files: `js/data/classes.js`, `js/core
 
 ---
 
-## Phase 3 — Content pass (partitioned to avoid file conflicts)
+## Phase 3 — Content pass (two sequential agents, DISJOINT file sets)
 
-Sequential sub-phases (shared files: quests.js, items.js, areas.js — do NOT parallelize agents on
-the same file). Every number cited; new ids need hash-distinct icons.
+Run as two agents to avoid conflicts. **Content-B runs first** (self-contained data), **then
+Content-A** (references B's item ids when stocking the new shop). Do NOT parallelize. Every number
+cited; new ids need hash-distinct icons (the largest mechanical cost — budget it).
 
-- **3a World/towns:** add **Laik, Riverside Village** (archived town, `Recent_Updates.md`
-  2007-08-02) as the 4th town with facilities; move the Professor Flad quest giver from Ju'Mak to
-  Laik (`js/data/quests.js`). Add a **level-30+ outpost** in the Kastengard band (26–40) with an
-  inn/shop/academy so the endgame isn't a bare trek (review #8). `js/data/areas.js`, `js/core/world.js`.
-- **3b Items/economy:** graded **Crystals & Spheres** loot family (review #10 — B-class, Light &
-  Dark; `Recent_Updates.md` Apr–May 2007, "All Crystals restore 70% charge") as area-band drops;
-  a **level-30+ shop stock incl. energy stones** and **30+ synthesis recipes**
-  (`Version_2.1_Changes.md`). `js/data/items.js`, `js/data/monsters.js` (append-only loot),
-  `js/data/recipes.js`.
-- **3c Arkan race:** a short **Arkan questline** and a **Saratus start option** for Arkan characters
-  (review #11; `Arkan.md`, `Version_2.1_Changes.md`). New `requiresRace` quest gate;
-  race-conditional starting location in `js/core/character.js`/`world.js`. If this adds a persisted
-  field, coordinate the save bump (prefer computed gates — see save plan).
-- **3d Shrine & shards:** expand shrine buffs toward the archived "over 20" (review #9;
-  `Version_2.1_Changes.md`) in `js/data/shrine.js`; add **shard-cost techs** — techniques that spend
-  Anima Shards to bestow enhancements (`Anima_Shards.md`) via a new `shardCost` tech field consumed
-  in `useTech`. `js/data/techs.js` + minimal battle.js.
-- **Tests per sub-phase:** town/facility presence, Flad rehost, new item/recipe integrity, drop-table
-  rates unchanged for existing entries, Arkan gating, shrine buff count, shard-cost spend/refusal.
+### Content-B — Items, economy, shrine & shards
+Files: `js/data/items.js`, `js/data/monsters.js` (append-only loot, first-hit-wins), `js/data/recipes.js`,
+`js/data/shrine.js`, `js/data/techs.js`, minimal `js/core/battle.js` (shard spend). No save changes.
+- **Graded Crystals & Spheres** (review #10; `Recent_Updates.md` Apr–May 2007, names `[archived]`,
+  numbers `[invented]`): a **Crystal** line restoring Energy and a **Sphere** line restoring HP, each
+  graded across the level-20→40 bands, plus premium **Light** and **Dark** variants (restore both /
+  larger). Anchor: "All Crystals restore 70% charge" — use ~70% of max Energy as the mid-grade
+  Crystal value and scale grades around it (e.g. 40/55/70/85%). ~8–12 new consumables total, added
+  as **append-only** drops in the 20+ hunting areas' loot tables. Icons for each.
+- **Level-30+ shop stock incl. energy stones** and a few **30+ synthesis recipes**
+  (`Version_2.1_Changes.md`). Define the ITEMS/recipes here (energy stones = purchasable energy
+  restore; 30+ tier consumables/materials). Content-A places the shop that sells them.
+- **Shrine buffs → ~20** (review #9; archived "over 20", `Version_2.1_Changes.md`): currently 5;
+  add ~15 more `js/data/shrine.js` entries using the existing buff schema (effect/power/battles/
+  shardCost) consumed by `Game.World.shrineBonus`, thematically varied, balanced shard costs.
+- **Shard-cost techs** (`Anima_Shards.md`: shards "used when casting certain techniques that bestow
+  enhancements"): add a `shardCost` field to ~2–3 enhancement (buff) techs, consumed in `useTech`
+  (spend shards on cast; refuse with a message if insufficient — route through the character's shard
+  balance). Rule `[archived]`, numbers `[invented]`.
+
+### Content-A — World, towns & Arkan
+Files: `js/data/areas.js`, `js/core/world.js`, `js/data/quests.js`, `js/core/character.js`. No save
+bump (Arkan start sets `currentLocation` by race at creation — not a new persisted field; Arkan
+quests use existing quest state; prefer computed gates).
+- **Laik, Riverside Village** (archived town, `Recent_Updates.md` 2007-08-02) as the 4th town
+  (riverside theme, mid-level band) with shop/inn/vault/tavern; **move the Professor Flad quest
+  giver from Ju'Mak to Laik** (`js/data/quests.js`).
+- **Level-30+ outpost** in the Kastengard band with inn/shop/academy so the 26–40 endgame isn't a
+  bare trek (review #8); its shop sells Content-B's 30+ stock incl. energy stones.
+- **Arkan race** (review #11; `Arkan.md`): a short **Arkan questline** gated by a new
+  `requiresRace: 'Arkan'` quest field; **Arkan characters start in Saratus** (their archived
+  capital) instead of Eldor — and to keep a level-1 Arkan playable, add a small **low-level hunting
+  area adjacent to Saratus** (minLevel 0–1) so early play works there. Human start unchanged (Eldor).
+- **Tests:** town/facility presence, Flad rehosted to Laik, outpost facilities serve 26–40, Arkan
+  starts in Saratus + Human in Eldor, requiresRace gating (Arkan quest hidden/blocked for Humans),
+  the new low-level area is reachable/huntable. Existing drop-table rates unchanged.
 
 ---
 
