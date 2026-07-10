@@ -19,36 +19,46 @@ Phase 8 icon-integration pass. See `js/ui/screens.js`'s `Game.UI.icon()` helper 
 rendered in-game, and `tests/test_icons.js` for the integrity check that every game id has a
 matching file here.
 
-## v1.2 Phase 2 additions (tier-3 + Legendary class techs)
+## v1.2 icons — real DCSS tiles from the upstream repo
 
-Five new 32x32 GUI spell-icon tiles for the tier-3/Legendary class techs added in Phase 2
-(`tech_shadow_blade`, `tech_anima_reckoning`, `tech_dice_throw`, `tech_vault_reckoning`,
-`tech_echoing_judgment`). The `crawl-tiles Oct-5-2010.zip` archive referenced above was not
-available in this working environment, so these five were pulled directly from the same
-CC0/public-domain tile family at its upstream source, the Dungeon Crawl Stone Soup project repo
-(`crawl-ref/source/rltiles/gui/spells/…`, https://github.com/crawl/crawl — the tileset OpenGameArt's
-"Dungeon Crawl 32x32 tiles" page itself redistributes), at these paths:
-`necromancy/excruciating_wounds.png`, `conjuration/orb_of_destruction.png`, `misc/scattershot.png`,
-`earth/shatter.png`, `misc/bolt_of_light.png`. Same license terms apply (CC0 / public domain, no
-attribution required); all five were verified 32x32 and byte-hash-distinct from every icon already
-in this directory (`tests/test_icons.js` covers presence, not this cross-check).
+All 24 new v1.2 ids (Phase 1 offhand weapons, Phase 2 tier-3/Legendary class techs, Phase 3
+Content-B Crystals/Spheres/stones/materials + `tech_warcry_2`) use real Dungeon Crawl Stone Soup
+tiles. The `crawl-tiles Oct-5-2010.zip` archive above wasn't present in the working environment, so
+these were pulled directly from the same CC0/public-domain source — the DCSS project repo
+`crawl-ref/source/rltiles/…` at https://github.com/crawl/crawl (the same art OpenGameArt's
+"Dungeon Crawl 32x32 tiles" page redistributes). Same license (CC0 / public domain).
 
-## v1.2 Phase 3 Content-B additions (graded Crystals/Spheres, 30+ shop items, a shard-cost tech)
+The same pass also **replaced one member of each of 6 pre-existing byte-identical icon pairs** with a
+distinct real tile, so the whole `assets/icons/` set is now byte-hash-distinct (verified: no
+duplicate groups across all 199 files — stricter than `test_icons.js`'s presence check). Ids given
+distinct tiles: `tech_arcane_cataclysm`, `tech_efficient_strike`, `tech_execution_blow`,
+`tech_greater_mending`, `tech_radiant_smite`, `tech_quick_stab`.
 
-17 new 32x32 icons for the items introduced in `js/data/items.js` (`crystal_bclass_1..4`,
-`sphere_bclass_1..4`, `crystal_light`, `crystal_dark`, `sphere_light`, `sphere_dark`,
-`stone_energy_lesser`, `stone_energy_greater`, `material_refined_anima_dust`,
-`potion_vault_reserve`) and one for the new `tech_warcry_2` player technique. The Dungeon Crawl
-tileset archive was, again, not available in this working environment and no live web-fetch tool
-was available either this session, so per this file's own fallback precedent (the five Phase 2
-tiles above) these 17 were instead generated programmatically: a small script
-(`tools/`-adjacent one-off, not checked in) hashes each game id (FNV-style) into a deterministic
-32x32 RGBA pixel pattern (one of five simple shapes — ring/stripes/checker/cross/concentric-ring —
-plus a corner tick mark whose length also derives from the hash) and hand-encodes a minimal valid
-PNG (IHDR + a single uncompressed-filter IDAT via Node's `zlib.deflateSync` + IEND, with correct
-CRC32 chunk checksums). Every one of the 17 was verified: (a) a valid 32x32 RGBA PNG by re-reading
-its IHDR width/height, and (b) byte-hash-distinct from all ~199 other files in this directory,
-including the pre-existing ones (a full-file SHA-equivalent exact-byte comparison, not just the
-first-64-bytes spot check `tests/test_icons.js` runs for monsters). These are flat, abstract
-placeholder tiles rather than a real dungeon/crystal/potion likeness — swap in real Dungeon Crawl
-tiles for these 17 ids if the tileset archive becomes available later.
+Source-tile mapping (game id ← `rltiles` path), chosen by closest visual/thematic fit:
+
+| game id | rltiles source |
+|---|---|
+| crystal_bclass_1..4 | item/gem/{dungeon,lair,snake,vaults}_found_whole |
+| crystal_light / crystal_dark | item/gem/{shoals,crypt}_found_whole |
+| sphere_bclass_1..4 | item/misc/orb_of_zot{1..4} |
+| sphere_light / sphere_dark | item/misc/orb_of_zot5 / uncollected_orb |
+| material_refined_anima_dust | item/misc/misc_sack |
+| potion_vault_reserve | item/potion/i-heal-wounds |
+| stone_energy_lesser / greater | item/misc/misc_stone / misc_tremorstones |
+| knife_offhand_twinfang | item/weapon/quickblade1 |
+| hth_offhand_cestus | item/weapon/club2 |
+| tech_shadow_blade | gui/spells/necromancy/excruciating_wounds |
+| tech_anima_reckoning | gui/spells/air/chain_lightning |
+| tech_dice_throw | gui/spells/misc/scattershot |
+| tech_vault_reckoning | gui/spells/earth/shatter |
+| tech_echoing_judgment | gui/spells/misc/bolt_of_light |
+| tech_warcry_2 | gui/spells/enchantment/berserker_rage |
+| tech_arcane_cataclysm | gui/spells/conjuration/orb_of_destruction |
+| tech_efficient_strike | gui/spells/enchantment/sure_blade |
+| tech_execution_blow | gui/spells/conjuration/momentum_strike |
+| tech_greater_mending | item/potion/i-curing |
+| tech_radiant_smite | gui/spells/fire/starburst |
+| tech_quick_stab | item/weapon/dagger3 |
+
+All were verified as valid 32x32 PNGs and byte-hash-distinct from every other icon in this
+directory. (This supersedes an earlier session note that these tiles were procedural placeholders.)

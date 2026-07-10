@@ -136,9 +136,13 @@ Spec: `docs/SPEC-V1.2.md`. Four phases, each committed green:
   start (Content-A).
 - **P4 docs:** README/DESIGN updated; review #12/#13/#14 resolved.
 
+- **P5 real-icon pass:** replaced all 24 v1.2 placeholder icons AND one member of each of 6
+  pre-existing duplicate icon pairs with real DCSS CC0 tiles pulled from the crawl repo (network
+  works from the lead's Bash even though sub-agents' env lacked it) — `assets/icons/` is now fully
+  byte-hash-distinct. Mapping in `assets/CREDITS.md`.
+
 Earlier combat-depth batch A/B/C (save v7→v8) is documented in `docs/FEATURE-SPEC-ABC.md`.
-KNOWN DEBT: many v1.2 icons are procedural placeholders (Dungeon Crawl tileset unavailable in the
-agent env) — see "Recently completed" note; a real-icon pass is pending. Artifact not redeployed.
+Artifact not redeployed (claude.ai publishing on hold; see Deployment).
 
 ## Backlog (user-approved ideas, not started)
 
@@ -150,9 +154,6 @@ agent env) — see "Recently completed" note; a real-icon pass is pending. Artif
   ladder (recommend BaaS, e.g. Supabase); phased O1–O5, with O1 (a localStorage-preserving
   persistence-adapter seam) the offline-safe prerequisite that keeps the `file://` build + suites
   intact. Orthogonal to the level arc; [revised] reopens the chat feature cut in DESIGN.md §9.
-- **Real-icon pass** — replace the v1.2 procedural placeholder icons (and 6 pre-existing duplicate
-  tech-icon pairs an agent flagged) with real Dungeon Crawl 32×32 CC0 tiles once the tileset is
-  available in the working env. `test_icons.js` enforces presence + hash-distinctness but not art.
 - Unique champion abilities (beyond stat multipliers); Eidolon system (`manual/Version_3.0.md`);
   pets (`heropet.php` existed, no data survived). (Tier-3 classes Shadowknight/Magus/Gambit and the
   Curse affliction — formerly backlog — shipped in v1.2.)
