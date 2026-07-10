@@ -5,7 +5,7 @@ var Game = window.Game || {};
 Game.Save = (function () {
 
   var STORAGE_KEY = 'herorpg_save';
-  var CURRENT_VERSION = 8;
+  var CURRENT_VERSION = 9;
 
   // Transient fields are never persisted: `battle` (Phase 3) holds a live reference to the
   // character plus per-fight state; reloading mid-battle simply abandons the battle.
@@ -187,6 +187,24 @@ Game.Save = (function () {
         if (!Array.isArray(c8.afflictions)) c8.afflictions = [];
       }
       version = 8;
+    }
+
+    // v8 -> v9: v1.2 Phase 1 (Dual Wield) introduces `c.equipment.offhand`. NOTE: this field was
+    // actually already present in every save shape going all the way back to the v1->v2 step
+    // above (added early, ahead of Dual Wield, for the Shields-skill offhand slot) — so in
+    // practice this step is a defensive no-op for any save that already went through v1->v2.
+    // Kept anyway per SPEC-V1.2.md's save-version plan (one coordinated v8->v9 bump for the whole
+    // of v1.2) and as a safety net for any hand-built/partial save object missing the field.
+    if (version === 8) {
+      if (state && state.character) {
+        var c9 = state.character;
+        if (!c9.equipment || typeof c9.equipment !== 'object') {
+          c9.equipment = { weapon: null, offhand: null, head: null, body: null, legs: null, feet: null };
+        } else if (c9.equipment.offhand === undefined) {
+          c9.equipment.offhand = null;
+        }
+      }
+      version = 9;
     }
 
     if (version === CURRENT_VERSION) return state;

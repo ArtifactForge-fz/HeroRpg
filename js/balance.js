@@ -166,5 +166,86 @@ var BALANCE = {
 
   // ---------------- Feature C: Weapon techniques + Defend ----------------
   DEFEND_ENERGY_COST: 2, // invented (user-directed)
-  DEFEND_DAMAGE_MULT: 0.5 // invented (user-directed): halves the next monster hit, applied after mitigation
+  DEFEND_DAMAGE_MULT: 0.5, // invented (user-directed): halves the next monster hit, applied after mitigation
+
+  // ==================== v1.2 Phase 1: use-based skills + fidelity fixes ====================
+  // Grounding: skills are archived as "the level at which your Character performs a certain
+  // action" (reference/manual/Skills.md) and improve by use — SPEC-V1.2.md Phase 1. All numbers
+  // below are invented (user-directed): use-based skill system, unless individually tagged.
+
+  // 1. Weapon skill -> damage (Character.getDamage). Applies to whichever weapon skill governs
+  // the weapon actually swung (main-hand or, via getOffhandDamage, the offhand weapon) — a Rod
+  // only benefits when meleed with, since spell damage scales off Intelligence, not this term.
+  WEAPON_SKILL_DAMAGE_PER_LEVEL: 0.015, // invented (user-directed): use-based skill system
+  // retuned DOWN from the lead's starting cap 0.30 (balance-sim gate, docs/SPEC-V1.2.md Phase 1):
+  // combined with ARMOR_SKILL_ARMOR_CAP at a maxed skill investment, 0.30/0.40 turned an exact
+  // 5-levels-down fight (certain death via Fear at skill=0, 0% win in 250-300 real-RNG trials)
+  // into a 15-54% win rate across three exact +5 level pairs — breaking the archived "5-levels-
+  // down is still lethal" contract. 0.10 brings the same maxed-investment matchups back down to
+  // ~1-4% (in line with the skill=0 noise floor) while still meaningfully improving at-level and
+  // boss fights (see the Phase-1 balance-sim report).
+  WEAPON_SKILL_DAMAGE_CAP: 0.10,
+
+  // 2. Armor skill -> per-piece armor/magicArmor (js/core/inventory.js equippedArmorTotal/
+  // equippedMagicArmorTotal). Scoped to items whose governing skill IS an armor skill (Light/
+  // Medium/Heavy Armor body/head/legs/feet pieces, Shields for the offhand shield) — a weapon's
+  // own hybrid +Magic Armor stat is untouched by this term (that is a weapon, not "armor worn").
+  ARMOR_SKILL_ARMOR_PER_LEVEL: 0.02, // invented (user-directed): use-based skill system
+  // retuned DOWN from the lead's starting cap 0.40 — see WEAPON_SKILL_DAMAGE_CAP's comment above;
+  // the same balance-sim gate found 0.15 restores 5-levels-down lethality when combined with the
+  // retuned weapon cap.
+  ARMOR_SKILL_ARMOR_CAP: 0.15,
+
+  // 3. Dodge & Double Attack gain skill XP at the proc site (js/core/battle.js monsterAct's dodge
+  // branch / attack()'s double-attack branch) — addSkillXp already enforces the 2*level+1 cap.
+  DODGE_SKILL_XP_PER_PROC: 1, // invented (user-directed): use-based skill system
+  DOUBLE_ATTACK_SKILL_XP_PER_PROC: 1, // invented (user-directed): use-based skill system
+
+  // 4. Thievery -> bonus gold + a steal roll (one extra drop-table roll) + XP on every win
+  // (js/core/battle.js onWin).
+  THIEVERY_GOLD_PER_LEVEL: 0.01, // invented (user-directed): use-based skill system
+  THIEVERY_GOLD_CAP: 0.25, // invented (user-directed): use-based skill system
+  THIEVERY_STEAL_PER_LEVEL: 0.015, // invented (user-directed): use-based skill system
+  THIEVERY_STEAL_CAP: 0.30, // invented (user-directed): use-based skill system
+
+  // 5. Dual Wield -> offhand weapon. Basic Attack makes one extra offhand swing (js/core/
+  // battle.js attack()) when both the weapon and offhand slots hold a weapon (not a shield);
+  // the swing's damage is scaled by this multiplier (based on Dual Wield skill level) and rolls
+  // the monster's dodge independently of the main-hand hit(s).
+  DUAL_WIELD_OFFHAND_MULT_BASE: 0.40, // invented (user-directed): use-based skill system
+  DUAL_WIELD_OFFHAND_MULT_PER_LEVEL: 0.02, // invented (user-directed): use-based skill system
+  DUAL_WIELD_OFFHAND_MULT_CAP: 0.75, // invented (user-directed): use-based skill system
+
+  // 6. Intelligence spell hit/miss (js/core/battle.js useTech). RULE is [archived]:
+  // reference/manual/Recent_Updates.md, "Saturday, April 21st 2007 — Your intelligence stat now
+  // decides whether your spell hits or misses yourself or an opponent." Applies to non-weapon
+  // offensive techs (damage/drain); weapon techs instead roll the monster's dodge (like a basic
+  // attack); healing/buff techs always land (parallels Fear's "spares healing" carve-out). The
+  // NUMBERS below are [invented] (no formula survived).
+  INT_SPELL_HIT_BASE: 0.75, // invented: RULE [archived] Recent_Updates.md 2007-04-21, number invented
+  INT_SPELL_HIT_PER_INT: 0.01, // invented: RULE [archived] Recent_Updates.md 2007-04-21, number invented
+  INT_SPELL_HIT_PER_MON_LEVEL: 0.01, // invented: RULE [archived] Recent_Updates.md 2007-04-21, number invented
+  INT_SPELL_HIT_MIN: 0.40, // invented: RULE [archived] Recent_Updates.md 2007-04-21, number invented
+  INT_SPELL_HIT_MAX: 0.98, // invented: RULE [archived] Recent_Updates.md 2007-04-21, number invented
+
+  // 7. Non-elemental damage ignores defense (js/core/battle.js useTech's non-weapon branch):
+  // mitigation = tech.grade ? monster.magicArmor : 0. RULE is [archived] — DESIGN.md §4 / a 2005
+  // note ("non-elemental damage ignores defense"), previously contradicted by the Phase 3
+  // stand-in that always subtracted magicArmor. No new constant: a behavior change to the
+  // existing mitigation assignment.
+
+  // 8. Curse status (battle-scoped debuff, parallel to Poison — not a persistent affliction like
+  // Haunting): halves the player's outgoing damage (attacks AND techs) for CURSE_DURATION turns;
+  // cleared automatically at battle end (battle.playerStatuses is never persisted). Applied by a
+  // monster's `curseChance` field (analogous to a tech's poisonChance), rolled on any successful
+  // monster hit. Cleansable mid-battle by an Abjuration tech carrying `clearsStatus: true`
+  // (js/data/techs.js tech_mend_wounds_2). NAME is [archived]: reference/manual/
+  // Version_2.1_Changes.md ("Added new detrimental effects (Poison, Haunting, Curse)"); the
+  // effect and numbers below are [invented].
+  CURSE_DAMAGE_MULT: 0.75, // invented: NAME [archived] Version_2.1_Changes.md, number invented
+  CURSE_DURATION: 4, // invented: NAME [archived] Version_2.1_Changes.md, number invented
+  // Example per-monster curseChance (js/data/monsters.js kastengard_anima_wraith) — Phase 1 wires
+  // the mechanic on one existing thematic undead/anima monster so it's testable; Phase 3 attaches
+  // curseChance to further thematic monsters.
+  CURSE_APPLY_CHANCE: 0.3 // invented: NAME [archived] Version_2.1_Changes.md, number invented
 };

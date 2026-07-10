@@ -148,6 +148,7 @@ Game.Battle = (function () {
       log: [],
       phase: 'active', // 'active' | 'won' | 'lost' | 'fled' | 'monsterFled'
       pendingLoot: null,
+      pendingStolenLoot: null, // v1.2 Phase 1 item 4: Thievery's extra drop-table roll on win
       lootMessage: null,
       // archived: New_Player_Guide.md "Who gets to attack first depends on whose dexterity is
       // higher." Monsters have no modeled Dexterity — invented: a monster's effective dexterity
@@ -235,6 +236,20 @@ Game.Battle = (function () {
     return bonus;
   }
 
+  // v1.2 Phase 1 item 8 (Curse): true while any 'curse' entry is active among the player's
+  // per-battle statuses. NAME [archived] Version_2.1_Changes.md; effect/numbers [invented] — see
+  // balance.js CURSE_* comment.
+  function playerCurseActive(battle) {
+    for (var i = 0; i < battle.playerStatuses.length; i++) {
+      if (battle.playerStatuses[i].type === 'curse') return true;
+    }
+    return false;
+  }
+
+  function playerCurseMultiplier(battle) {
+    return playerCurseActive(battle) ? BALANCE.CURSE_DAMAGE_MULT : 1;
+  }
+
   // Ticks the player's per-battle statuses (poison damage, buff duration) once per full round.
   function tickPlayerStatuses(battle) {
     if (isOver(battle)) return;
@@ -252,6 +267,8 @@ Game.Battle = (function () {
         log(battle, 'The poison wears off.');
       } else if (st.type === 'buff') {
         log(battle, 'Your ' + st.name + ' fades.');
+      } else if (st.type === 'curse') {
+        log(battle, 'The curse lifts.');
       }
     }
     battle.playerStatuses = remaining;
@@ -287,9 +304,11 @@ Game.Battle = (function () {
     var defending = !!battle.playerDefending;
     battle.playerDefending = false;
 
-    // Player dodge roll (Dodge skill + Dex).
+    // Player dodge roll (Dodge skill + Dex). v1.2 Phase 1 item 3: a successful dodge grants Dodge
+    // skill XP at the proc site (use-based skill system; addSkillXp already enforces the 2L+1 cap).
     if (rng() < playerDodgeChance(battle.player)) {
       log(battle, 'You dodge the ' + monster.name + "'s " + (usedTech ? usedTech.name : 'attack') + '!');
+      Game.Character.addSkillXp(battle.player, 'Dodge', BALANCE.DODGE_SKILL_XP_PER_PROC);
       checkEnd(battle);
       return;
     }
@@ -325,6 +344,15 @@ Game.Battle = (function () {
     if (usedTech && usedTech.poisonChance && rng() < usedTech.poisonChance) {
       battle.playerStatuses.push({ type: 'poison', name: 'Poison', turnsLeft: BALANCE.POISON_DURATION_TURNS });
       log(battle, 'You are poisoned!');
+    }
+
+    // v1.2 Phase 1 item 8: Curse status — a monster-level `curseChance` field (analogous to a
+    // tech's poisonChance) rolled on any successful hit, basic attack or tech alike (unlike
+    // Poison, which is tied to specific monster techs). Battle-scoped debuff; see
+    // playerCurseActive/playerCurseMultiplier below for the outgoing-damage halving.
+    if (monster.curseChance && rng() < monster.curseChance) {
+      battle.playerStatuses.push({ type: 'curse', name: 'Curse', turnsLeft: BALANCE.CURSE_DURATION });
+      log(battle, 'A creeping curse settles over you!');
     }
 
     checkEnd(battle);
@@ -363,11 +391,17 @@ Game.Battle = (function () {
     battle.attackedThisBattle = true;
 
     var fear = fearMultiplier(battle);
-    var baseDamage = (Game.Character.getDamage(battle.player) + playerBuffDamageBonus(battle)) * fear;
+    // v1.2 Phase 1 item 8: Curse halves outgoing damage (attacks AND techs) while active.
+    var curseMult = playerCurseMultiplier(battle);
+    var baseDamage = (Game.Character.getDamage(battle.player) + playerBuffDamageBonus(battle)) * fear * curseMult;
 
     var doubleAttack = rng() < playerDoubleAttackChance(battle.player);
     var hits = doubleAttack ? 2 : 1;
-    if (doubleAttack) log(battle, 'Double attack!');
+    if (doubleAttack) {
+      log(battle, 'Double attack!');
+      // v1.2 Phase 1 item 3: a Double Attack proc grants Double Attack skill XP at the proc site.
+      Game.Character.addSkillXp(battle.player, 'Double Attack', BALANCE.DOUBLE_ATTACK_SKILL_XP_PER_PROC);
+    }
 
     for (var i = 0; i < hits; i++) {
       if (battle.monster.hp <= 0) break;
@@ -381,6 +415,36 @@ Game.Battle = (function () {
       var dmg = Math.max(1, Math.round(raw - battle.monster.armor));
       battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
       log(battle, 'You strike the ' + battle.monster.name + (glancing ? ' with a glancing blow' : '') + ' for ' + dmg + ' damage.');
+    }
+
+    // v1.2 Phase 1 item 5 (Dual Wield): when BOTH the weapon and offhand slots hold a weapon
+    // (an offhand Shield has no `.damage` field, so it never triggers this), the basic Attack
+    // makes one extra offhand swing after the main hit(s), through the same variance/glancing/
+    // fear/armor pipeline, rolling the monster's dodge independently. Dual Wield skill gains XP
+    // per swing (use-based skill system).
+    if (battle.monster.hp > 0) {
+      var offhandItemId = battle.player.equipment.offhand;
+      var offhandItem = offhandItemId ? Game.Inventory.getItem(offhandItemId) : null;
+      var dualWielding = !!(battle.player.equipment.weapon && offhandItem && offhandItem.damage !== undefined);
+      if (dualWielding) {
+        var dwSkillLevel = (battle.player.skills['Dual Wield'] && battle.player.skills['Dual Wield'].level) || 0;
+        var dwMult = Math.min(
+          BALANCE.DUAL_WIELD_OFFHAND_MULT_BASE + BALANCE.DUAL_WIELD_OFFHAND_MULT_PER_LEVEL * dwSkillLevel,
+          BALANCE.DUAL_WIELD_OFFHAND_MULT_CAP
+        );
+        var offhandBase = (Game.Character.getOffhandDamage(battle.player) + playerBuffDamageBonus(battle)) * fear * curseMult * dwMult;
+        if (rng() < monsterDodgeChance(battle.monster)) {
+          log(battle, 'The ' + battle.monster.name + ' dodges your offhand strike!');
+        } else {
+          var glancingOff = rng() < BALANCE.GLANCING_CHANCE;
+          var rawOff = rollVariance(offhandBase);
+          if (glancingOff) rawOff *= BALANCE.GLANCING_MULT;
+          var dmgOff = Math.max(1, Math.round(rawOff - battle.monster.armor));
+          battle.monster.hp = Math.max(0, battle.monster.hp - dmgOff);
+          log(battle, 'Your offhand strikes the ' + battle.monster.name + (glancingOff ? ' with a glancing blow' : '') + ' for ' + dmgOff + ' damage.');
+        }
+        Game.Character.addSkillXp(battle.player, 'Dual Wield', 1);
+      }
     }
 
     if (checkEnd(battle)) return battle;
@@ -465,6 +529,18 @@ Game.Battle = (function () {
       }
       battle.player.hitPoints = Math.min(battle.player.hitPointsMax, battle.player.hitPoints + healAmount);
       log(battle, 'You cast ' + tech.name + ' and recover ' + healAmount + ' HP.');
+      // v1.2 Phase 1 item 8: an Abjuration tech carrying `clearsStatus: true` (js/data/techs.js
+      // tech_mend_wounds_2) cleanses the player's detrimental battle-scoped statuses (Poison,
+      // Curse) mid-battle — invented "cleanse" semantics per SPEC-V1.2.md Phase 1 #8.
+      if (tech.clearsStatus) {
+        var beforeStatusCount = battle.playerStatuses.length;
+        battle.playerStatuses = battle.playerStatuses.filter(function (st) {
+          return st.type !== 'poison' && st.type !== 'curse';
+        });
+        if (battle.playerStatuses.length < beforeStatusCount) {
+          log(battle, 'The ' + tech.name + ' washes away your afflictions.');
+        }
+      }
     } else if (tech.effect === 'buff') {
       battle.playerStatuses.push({
         type: 'buff', name: tech.name, power: tech.power,
@@ -474,11 +550,32 @@ Game.Battle = (function () {
     } else {
       // 'damage' | 'drain'
       var fear = fearMultiplier(battle);
+      // v1.2 Phase 1 item 8: Curse halves outgoing damage (attacks AND techs) while active.
+      var curseMult = playerCurseMultiplier(battle);
       // Phase 6a: Rogue class tech "Shadowstep Strike" resolves as multiple successive hits
       // (js/data/techs.js `hits: 2`) — invented mechanic, modeled as a simple repeat of the
       // same damage roll/resistance/mitigation pipeline used for a single-hit tech.
       var hitCount = tech.hits || 1;
       var haunted = !!(Game.Character && Game.Character.hasAffliction && Game.Character.hasAffliction(battle.player, 'haunting'));
+
+      // v1.2 Phase 1 item 6: Intelligence spell hit/miss. RULE [archived] Recent_Updates.md
+      // 2007-04-21 ("Your intelligence stat now decides whether your spell hits or misses");
+      // numbers [invented] (balance.js INT_SPELL_HIT_*). Rolled ONCE per cast for non-weapon
+      // offensive techs (damage/drain) — a miss still spends Energy but deals no damage/effect.
+      // Weapon techs are physical and instead roll the monster's dodge per-hit below (like a
+      // basic attack), not this Int check.
+      if (!tech.weaponTech) {
+        var hitChance = Math.max(BALANCE.INT_SPELL_HIT_MIN, Math.min(BALANCE.INT_SPELL_HIT_MAX,
+          BALANCE.INT_SPELL_HIT_BASE + BALANCE.INT_SPELL_HIT_PER_INT * battle.player.intelligence -
+          BALANCE.INT_SPELL_HIT_PER_MON_LEVEL * battle.monster.level));
+        if (rng() >= hitChance) {
+          log(battle, 'Your ' + tech.name + ' misses the ' + battle.monster.name + '!');
+          if (checkEnd(battle)) return battle;
+          finishRound(battle);
+          return battle;
+        }
+      }
+
       for (var h = 0; h < hitCount; h++) {
         if (battle.monster.hp <= 0) break;
         var base, mitigation;
@@ -487,11 +584,20 @@ Game.Battle = (function () {
           // Damage stat (Game.Character.getDamage), NOT the Intelligence spell factor
           // (techEffectivePower) used by magic-school techs. grade is always null for these, so
           // (regular) Armor mitigates, with armorPierce reducing the armor term first.
-          base = Game.Character.getDamage(battle.player) * (tech.powerMult || 1) * fear;
+          // v1.2 Phase 1 item 6: weapon techs roll the monster's dodge per hit (like a basic
+          // attack) rather than the Int hit/miss check above.
+          if (rng() < monsterDodgeChance(battle.monster)) {
+            log(battle, 'The ' + battle.monster.name + ' dodges your ' + tech.name + '!');
+            continue;
+          }
+          base = Game.Character.getDamage(battle.player) * (tech.powerMult || 1) * fear * curseMult;
           mitigation = battle.monster.armor * (1 - (tech.armorPierce || 0));
         } else {
-          base = techEffectivePower(battle.player, tech) * fear;
-          mitigation = battle.monster.magicArmor;
+          base = techEffectivePower(battle.player, tech) * fear * curseMult;
+          // v1.2 Phase 1 item 7: non-elemental damage ignores defense — RULE [archived] (DESIGN.md
+          // §4 / 2005 note), adopted here: a grade:null tech's mitigation is 0 regardless of the
+          // monster's Magic Armor; a graded (elemental) tech is still mitigated by it.
+          mitigation = tech.grade ? battle.monster.magicArmor : 0;
         }
         var glancing = rng() < BALANCE.GLANCING_CHANCE;
         var raw = rollVariance(base);
@@ -674,6 +780,16 @@ Game.Battle = (function () {
     goldGain = Math.round(goldGain * (1 + goldPctBonus) * championMult);
     Game.Character.addGold(c, goldGain);
 
+    // v1.2 Phase 1 item 4: Thievery -> bonus gold on every win. invented (user-directed):
+    // use-based skill system (SPEC-V1.2.md Phase 1 #4; BALANCE.THIEVERY_GOLD_PER_LEVEL/_CAP).
+    var thieveryLevel = (c.skills['Thievery'] && c.skills['Thievery'].level) || 0;
+    var thieveryGoldPct = Math.min(BALANCE.THIEVERY_GOLD_PER_LEVEL * thieveryLevel, BALANCE.THIEVERY_GOLD_CAP);
+    var thieveryGoldGain = Math.floor(goldGain * thieveryGoldPct);
+    if (thieveryGoldGain > 0) {
+      Game.Character.addGold(c, thieveryGoldGain);
+      log(battle, 'Your Thievery turns up an extra ' + thieveryGoldGain + ' gold.');
+    }
+
     // Anima Shards by chance — a Champion guarantees the shard, skipping the roll entirely.
     var shardsGain = monster.champion ? 1 : (rng() < monster.shardChance ? 1 : 0);
     if (shardsGain) Game.Character.addShards(c, shardsGain);
@@ -728,6 +844,29 @@ Game.Battle = (function () {
     }
     battle.pendingLoot = lootId;
 
+    // v1.2 Phase 1 item 4: Thievery -> a steal roll. With probability min(THIEVERY_STEAL_PER_LEVEL
+    // * lvl, THIEVERY_STEAL_CAP), take ONE extra roll of the monster's drop table (same top-down
+    // first-hit-wins convention as the main loot roll above, CLAUDE.md "Content conventions") as
+    // bonus pending loot, logged distinctly. Thievery gains skill XP on every (non-cutoff) win —
+    // use-based skill system.
+    var thieveryStealChance = Math.min(BALANCE.THIEVERY_STEAL_PER_LEVEL * thieveryLevel, BALANCE.THIEVERY_STEAL_CAP);
+    var stolenId = null;
+    if (thieveryStealChance > 0 && rng() < thieveryStealChance) {
+      for (var sd = 0; sd < drops.length; sd++) {
+        var stealDropChance = monster.champion ? Math.min(0.95, drops[sd].chance * BALANCE.CHAMPION_REWARD_MULT) : drops[sd].chance;
+        if (rng() < stealDropChance) {
+          stolenId = drops[sd].itemId;
+          break;
+        }
+      }
+    }
+    battle.pendingStolenLoot = stolenId;
+    if (stolenId) {
+      var stolenItem = Game.Inventory.getItem(stolenId);
+      log(battle, 'You lift an extra ' + (stolenItem ? stolenItem.name : stolenId) + ' from the ' + monster.name + '.');
+    }
+    Game.Character.addSkillXp(c, 'Thievery', 1);
+
     // Fury: +1 tick for kills at-or-above your level (archived: Recent_Updates.md 2007-08-11
     // "Kill monsters your level or above to charge the meter"). invented: a Champion kill counts
     // as one level higher for this check ONLY — Fear stays based on the monster's actual level
@@ -739,7 +878,8 @@ Game.Battle = (function () {
 
     battle.rewards = {
       xp: xpGain, gold: goldGain, shards: shardsGain,
-      skillXp: skillXpGranted, loot: lootId, cutoff: false
+      skillXp: skillXpGranted, loot: lootId, cutoff: false,
+      thieveryGold: thieveryGoldGain, stolenLoot: stolenId
     };
 
     log(battle, 'You gain ' + xpGain + ' experience and ' + goldGain + ' gold.' +
@@ -766,6 +906,7 @@ Game.Battle = (function () {
     c.fury = 0; // archived: Fury resets on death (Recent_Updates.md 2007-08-11)
     battle.rewards = null;
     battle.pendingLoot = null;
+    battle.pendingStolenLoot = null;
 
     // (a) Gold loss: ceil(DEATH_GOLD_FRACTION * CARRIED gold) — carried only, vault untouched
     // (revised, user-directed; consistent with the camp-robbery precedent, BALANCE.CAMP_ROBBERY_*,
@@ -835,25 +976,47 @@ Game.Battle = (function () {
     if (Game.persist) Game.persist();
   }
 
-  // Moves pendingLoot into the inventory. If over capacity, the loot stays pending and a
-  // message is returned (archived: New_Player_Guide.md "if you are able to hold it. If not,
+  // Moves pendingLoot (and, if present, Thievery's pendingStolenLoot — v1.2 Phase 1 item 4) into
+  // the inventory. Each is claimed independently; if over capacity, that item stays pending and
+  // a message is returned (archived: New_Player_Guide.md "if you are able to hold it. If not,
   // a message will appear telling you so").
   function claimLoot() {
     var battle = Game.state.battle;
-    if (!battle || !battle.pendingLoot) return { ok: false, message: 'There is nothing to loot.' };
-    var item = Game.Inventory.getItem(battle.pendingLoot);
-    var added = Game.Inventory.addItem(battle.player, battle.pendingLoot);
-    if (!added) {
-      var msg = 'You cannot carry ' + (item ? item.name : 'the item') + ' — you are carrying too much weight.';
-      battle.lootMessage = msg;
-      return { ok: false, message: msg };
+    if (!battle || (!battle.pendingLoot && !battle.pendingStolenLoot)) {
+      return { ok: false, message: 'There is nothing to loot.' };
     }
-    var name = item ? item.name : battle.pendingLoot;
-    battle.pendingLoot = null;
-    battle.lootMessage = null;
-    log(battle, 'You loot the ' + name + '.');
+    var messages = [];
+    var ok = true;
+
+    if (battle.pendingLoot) {
+      var item = Game.Inventory.getItem(battle.pendingLoot);
+      var added = Game.Inventory.addItem(battle.player, battle.pendingLoot);
+      if (!added) {
+        ok = false;
+        messages.push('You cannot carry ' + (item ? item.name : 'the item') + ' — you are carrying too much weight.');
+      } else {
+        var name = item ? item.name : battle.pendingLoot;
+        battle.pendingLoot = null;
+        log(battle, 'You loot the ' + name + '.');
+      }
+    }
+
+    if (battle.pendingStolenLoot) {
+      var stolenItem = Game.Inventory.getItem(battle.pendingStolenLoot);
+      var stolenAdded = Game.Inventory.addItem(battle.player, battle.pendingStolenLoot);
+      if (!stolenAdded) {
+        ok = false;
+        messages.push('You cannot carry ' + (stolenItem ? stolenItem.name : 'the stolen item') + ' — you are carrying too much weight.');
+      } else {
+        var stolenName = stolenItem ? stolenItem.name : battle.pendingStolenLoot;
+        battle.pendingStolenLoot = null;
+        log(battle, 'You loot the stolen ' + stolenName + '.');
+      }
+    }
+
+    battle.lootMessage = ok ? null : messages.join(' ');
     if (Game.persist) Game.persist();
-    return { ok: true, message: '' };
+    return { ok: ok, message: ok ? '' : battle.lootMessage };
   }
 
   // Dismisses the finished battle. On a loss the player is restored to 1 HP with no other
@@ -891,6 +1054,8 @@ Game.Battle = (function () {
     fearMultiplier: fearMultiplier,
     playerDodgeChance: playerDodgeChance,
     playerDoubleAttackChance: playerDoubleAttackChance,
+    playerCurseActive: playerCurseActive,
+    playerCurseMultiplier: playerCurseMultiplier,
     getTech: getTech,
     getMonsterDef: getMonsterDef,
     _rng: Math.random // overridable for deterministic tests

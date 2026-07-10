@@ -141,9 +141,14 @@ Game.Data.techs = [
     energyCost: 16,
     power: 40,
     effect: 'heal',
+    // v1.2 Phase 1 item 8: Mend Wounds II doubles as the Abjuration "cleanse" step — no existing
+    // tech cleared a status, so this small flag was added per SPEC-V1.2.md Phase 1 #8 (reuse/
+    // extend the existing mend/cleanse tech family). Clears Poison and Curse mid-battle in
+    // addition to its usual healing (js/core/battle.js useTech).
+    clearsStatus: true,
     trainingCost: 3,
     skillReq: 5,
-    desc: 'A deeper working of Light-grade Anima that closes far graver wounds than the first rank. Requires Mend Wounds I and Abjuration 5.'
+    desc: 'A deeper working of Light-grade Anima that closes far graver wounds than the first rank, and washes away lingering Poison or Curse. Requires Mend Wounds I and Abjuration 5.'
   },
   {
     id: 'tech_shadowlash_2',

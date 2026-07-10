@@ -238,13 +238,38 @@ Game.Character = (function () {
     'Rods': 'intelligence'
   };
 
+  // v1.2 Phase 1 item 1: weapon skill -> damage. The equipped weapon's `.skill` already selects
+  // the damage STAT (DAMAGE_STAT_BY_SKILL above); the character's level in that same skill now
+  // also adds a capped percentage of damage — invented (user-directed): use-based skill system
+  // (SPEC-V1.2.md Phase 1 #1; BALANCE.WEAPON_SKILL_DAMAGE_PER_LEVEL/_CAP).
+  function weaponSkillDamageMult(c, skillName) {
+    var skillLevel = (skillName && c.skills && c.skills[skillName]) ? c.skills[skillName].level : 0;
+    return 1 + Math.min(BALANCE.WEAPON_SKILL_DAMAGE_PER_LEVEL * skillLevel, BALANCE.WEAPON_SKILL_DAMAGE_CAP);
+  }
+
   function getDamage(c) {
     var stat = DAMAGE_STAT_BY_SKILL[c.equippedWeaponSkill] || 'strength';
     var base = Math.round(c[stat] / BALANCE.STRENGTH_DAMAGE_RATIO) + (c.weaponDamageBonus || 0);
     // Phase 6a: active-class "damage_pct" passives multiply the final Damage number (DESIGN.md
     // §3; js/core/classes.js classBonus, guarded-hook style matching Game.World.shrineBonus).
     var classPct = (Game.Classes && Game.Classes.classBonus) ? Game.Classes.classBonus(c, 'damage_pct') : 0;
-    return Math.round(base * (1 + classPct));
+    return Math.round(base * (1 + classPct) * weaponSkillDamageMult(c, c.equippedWeaponSkill));
+  }
+
+  // v1.2 Phase 1 item 5 (Dual Wield): mirrors getDamage above but reads the OFFHAND weapon's own
+  // stat/skill/damage directly from c.equipment.offhand rather than the cached main-hand fields
+  // (weaponDamageBonus/equippedWeaponSkill are single-slot, main-hand only — refreshWeaponBonus
+  // in js/core/inventory.js never touches the offhand). Returns 0 if the offhand slot is empty
+  // or holds a non-weapon (e.g. a Shield, which has no `.damage` field) — see battle.js attack()'s
+  // dual-wielding check for the same "has .damage" test.
+  function getOffhandDamage(c) {
+    var itemId = c.equipment && c.equipment.offhand;
+    var item = (itemId && Game.Inventory && Game.Inventory.getItem) ? Game.Inventory.getItem(itemId) : null;
+    if (!item || item.damage === undefined) return 0;
+    var stat = DAMAGE_STAT_BY_SKILL[item.skill] || 'strength';
+    var base = Math.round(c[stat] / BALANCE.STRENGTH_DAMAGE_RATIO) + (item.damage || 0);
+    var classPct = (Game.Classes && Game.Classes.classBonus) ? Game.Classes.classBonus(c, 'damage_pct') : 0;
+    return Math.round(base * (1 + classPct) * weaponSkillDamageMult(c, item.skill));
   }
 
   function getArmor(c) {
@@ -350,6 +375,7 @@ Game.Character = (function () {
     create: create,
     recalcDerived: recalcDerived,
     getDamage: getDamage,
+    getOffhandDamage: getOffhandDamage,
     getArmor: getArmor,
     getMagicArmor: getMagicArmor,
     addGold: addGold,

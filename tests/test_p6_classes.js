@@ -254,7 +254,7 @@ assert(loadedV6.character.primaryClass === 'thief', 'primaryClass (active slot) 
 Game.state = loadedV6;
 Game.persist();
 var resavedV6 = JSON.parse(localStorageStore['herorpg_save']);
-assert(resavedV6.version === 8, 'resaved payload is stamped CURRENT_VERSION 8, got ' + resavedV6.version);
+assert(resavedV6.version === 9, 'resaved payload is stamped CURRENT_VERSION 9, got ' + resavedV6.version);
 
 // Second crafted payload: rogue in the SECONDARY slot instead of primary ("incl. active slots").
 console.log('\n=== Test 1b: v6 save with rogue in the SECONDARY slot also migrates ===');
@@ -305,7 +305,7 @@ assert(loadedV1.character.primaryClass === null && loadedV1.character.secondaryC
 assert(loadedV1.character.legendaryUnlocked === false, 'v1->v7: legendary latch false');
 Game.state = loadedV1;
 Game.persist();
-assert(JSON.parse(localStorageStore['herorpg_save']).version === 8, 'v1->v8 resave stamps version 8');
+assert(JSON.parse(localStorageStore['herorpg_save']).version === 9, 'v1->v9 resave stamps version 9');
 
 // =================== Test 3: first_calling gates at level 5 ===================
 console.log('\n=== Test 3: first_calling gated at level 5 ===');
@@ -470,6 +470,10 @@ setRng(fixedRng(0.99));
 var battle11 = Game.Battle.start('plains_field_rat');
 battle11.monster.hp = 999;
 var beforeHp11 = battle11.monster.hp;
+// v1.2 Phase 1 item 6: non-weapon damage techs now roll an Intelligence-based hit chance before
+// dealing damage — 0.99 (used above for battle setup) would roll a miss here, so drop to 0.5
+// (well under this build's hit chance) just for the cast itself.
+setRng(fixedRng(0.5));
 Game.Battle.useTech('tech_crushing_blow');
 assert(battle11.monster.hp < beforeHp11, 'Crushing Blow lands damage while Warrior is active (hp ' + beforeHp11 + ' -> ' + battle11.monster.hp + ')');
 Game.Battle.flee();
@@ -601,6 +605,9 @@ setRng(fixedRng(0.99));
 var loopBattle = Game.Battle.start('plains_field_rat');
 loopBattle.monster.hp = 999;
 var loopHpBefore = loopBattle.monster.hp;
+// v1.2 Phase 1 item 6: drop to 0.5 (well under this build's Int-based hit chance) just for the
+// cast itself — see the identical Crushing Blow comment above.
+setRng(fixedRng(0.5));
 Game.Battle.useTech('tech_efficient_strike');
 assert(loopBattle.monster.hp < loopHpBefore, 'loop: Efficient Strike (class tech) lands damage in battle while Mercenary active');
 Game.Battle.flee();

@@ -147,7 +147,7 @@ assert(loaded.character.equipment && loaded.character.equipment.weapon === null,
 Game.state = loaded;
 Game.persist();
 var resaved = JSON.parse(localStorageStore['herorpg_save']);
-assert(resaved.version === 8, 'resaved payload is stamped CURRENT_VERSION 8 (Feature B afflictions migration), got ' + resaved.version);
+assert(resaved.version === 9, 'resaved payload is stamped CURRENT_VERSION 9 (v1.2 Phase 1 equipment.offhand migration), got ' + resaved.version);
 
 // ================= Test 3: level/stat requirement gating =================
 console.log('\n=== Test 3: equip blocked with red reqs when unmet; cursed item traps ===');

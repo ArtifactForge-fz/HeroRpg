@@ -143,6 +143,21 @@ Game.Inventory = (function () {
     return true;
   }
 
+  // v1.2 Phase 1 item 2: armor skill -> per-piece armor. Only items governed by an ARMOR skill
+  // (Light/Medium/Heavy Armor for body/head/legs/feet, Shields for the offhand shield) scale —
+  // a weapon's own hybrid +Magic Armor stat (e.g. a Rod with `magicArmor`) is a weapon stat, not
+  // "armor worn", so it is untouched by this term even though it shares the `magicArmor` field.
+  // invented (user-directed): use-based skill system (SPEC-V1.2.md Phase 1 #2;
+  // BALANCE.ARMOR_SKILL_ARMOR_PER_LEVEL/_CAP). NOTE: the archived "over-armoring stalls melee"
+  // bug (CLAUDE.md) is about MONSTER armor; this scales PLAYER armor (reduces incoming damage).
+  var ARMOR_SKILLS = ['Light Armor', 'Medium Armor', 'Heavy Armor', 'Shields'];
+
+  function armorSkillMult(c, item) {
+    if (!item || !item.skill || ARMOR_SKILLS.indexOf(item.skill) === -1) return 1;
+    var skillLevel = (c.skills && c.skills[item.skill]) ? c.skills[item.skill].level : 0;
+    return 1 + Math.min(BALANCE.ARMOR_SKILL_ARMOR_PER_LEVEL * skillLevel, BALANCE.ARMOR_SKILL_ARMOR_CAP);
+  }
+
   // Sum of equipped armor/magicArmor, added to the Endurance/Intelligence stat contribution
   // in Game.Character.getArmor / getMagicArmor.
   function equippedArmorTotal(c) {
@@ -152,7 +167,7 @@ Game.Inventory = (function () {
       var itemId = c.equipment[EQUIP_SLOTS[i]];
       if (!itemId) continue;
       var item = getItem(itemId);
-      if (item && item.armor) total += item.armor;
+      if (item && item.armor) total += Math.round(item.armor * armorSkillMult(c, item));
     }
     return total;
   }
@@ -164,7 +179,7 @@ Game.Inventory = (function () {
       var itemId = c.equipment[EQUIP_SLOTS[i]];
       if (!itemId) continue;
       var item = getItem(itemId);
-      if (item && item.magicArmor) total += item.magicArmor;
+      if (item && item.magicArmor) total += Math.round(item.magicArmor * armorSkillMult(c, item));
     }
     return total;
   }

@@ -358,7 +358,8 @@ Game.Screens = (function () {
       var row = el('div', { class: 'stat-row alt' + (idx % 2) }, [
         el('span', { class: 'stat-name' }, [skillName]),
         el('span', { class: 'stat-value' }, ['Lv ' + sk.level]),
-        el('span', { class: 'skill-xp-track' }, [el('span', { class: 'skill-xp-fill', style: 'width:' + pct + '%; display:block;' })])
+        el('span', { class: 'skill-xp-track' }, [el('span', { class: 'skill-xp-fill', style: 'width:' + pct + '%; display:block;' })]),
+        el('span', { class: 'tinyfont skill-effect' }, [skillEffectFor(c, skillName)])
       ]);
       skillTable.appendChild(row);
     });
@@ -544,6 +545,41 @@ Game.Screens = (function () {
       el('span', { class: 'stat-name' }, [label]),
       el('span', {}, [value])
     ]);
+  }
+
+  // v1.2 Phase 1: skill-effect display (SPEC-V1.2.md Phase 1 file list — "minimal js/ui/
+  // screens.js for the offhand slot and skill-effect display"). Read-only: mirrors the same
+  // formulas js/core/character.js, js/core/inventory.js, and js/core/battle.js apply, so the
+  // Status screen's Skills table shows what each skill is currently worth in combat.
+  var SKILL_EFFECT_WEAPON_SKILLS = ['Swords', 'Polearms', 'Knives', 'Rods', 'Hand to Hand'];
+  var SKILL_EFFECT_ARMOR_SKILLS = ['Light Armor', 'Medium Armor', 'Heavy Armor', 'Shields'];
+
+  function skillEffectFor(c, skillName) {
+    var lvl = (c.skills[skillName] && c.skills[skillName].level) || 0;
+    if (SKILL_EFFECT_WEAPON_SKILLS.indexOf(skillName) !== -1) {
+      var dmgPct = Math.min(BALANCE.WEAPON_SKILL_DAMAGE_PER_LEVEL * lvl, BALANCE.WEAPON_SKILL_DAMAGE_CAP);
+      return '+' + Math.round(dmgPct * 100) + '% Damage when wielded';
+    }
+    if (SKILL_EFFECT_ARMOR_SKILLS.indexOf(skillName) !== -1) {
+      var armorPct = Math.min(BALANCE.ARMOR_SKILL_ARMOR_PER_LEVEL * lvl, BALANCE.ARMOR_SKILL_ARMOR_CAP);
+      return '+' + Math.round(armorPct * 100) + '% Armor when worn';
+    }
+    if (skillName === 'Dodge' && Game.Battle && Game.Battle.playerDodgeChance) {
+      return Math.round(Game.Battle.playerDodgeChance(c) * 100) + '% Dodge chance';
+    }
+    if (skillName === 'Double Attack' && Game.Battle && Game.Battle.playerDoubleAttackChance) {
+      return Math.round(Game.Battle.playerDoubleAttackChance(c) * 100) + '% Double Attack chance';
+    }
+    if (skillName === 'Thievery') {
+      var goldPct = Math.min(BALANCE.THIEVERY_GOLD_PER_LEVEL * lvl, BALANCE.THIEVERY_GOLD_CAP);
+      var stealPct = Math.min(BALANCE.THIEVERY_STEAL_PER_LEVEL * lvl, BALANCE.THIEVERY_STEAL_CAP);
+      return '+' + Math.round(goldPct * 100) + '% bonus gold, ' + Math.round(stealPct * 100) + '% steal chance';
+    }
+    if (skillName === 'Dual Wield') {
+      var dwPct = Math.min(BALANCE.DUAL_WIELD_OFFHAND_MULT_BASE + BALANCE.DUAL_WIELD_OFFHAND_MULT_PER_LEVEL * lvl, BALANCE.DUAL_WIELD_OFFHAND_MULT_CAP);
+      return Math.round(dwPct * 100) + '% offhand damage';
+    }
+    return '';
   }
 
   // ---------- Inventory screen (DESIGN.md §6, §8; New_Player_Guide.md "The Inventory Screen") ----------
@@ -1926,21 +1962,29 @@ Game.Screens = (function () {
         } else {
           outcome.appendChild(el('div', { class: 'smallfont mt4' }, ['This monster was too far below your level — no rewards.']));
         }
-        if (battle.pendingLoot) {
-          var lootItem = Game.Inventory.getItem(battle.pendingLoot);
-          outcome.appendChild(el('div', { class: 'mt8', style: 'display:flex; align-items:center; gap:4px;' }, [
-            Game.UI.icon(battle.pendingLoot, 32),
-            el('span', { class: 'loot-icon', title: lootItem ? lootItem.name : battle.pendingLoot }, ['🎁 ' + (lootItem ? lootItem.name : battle.pendingLoot) + ' ']),
-            el('button', {
-              class: 'button',
-              onclick: function () {
-                var res = Game.Battle.claimLoot();
-                if (!res.ok) alert(res.message);
-                Game.persist();
-                refreshBattleScreen();
-              }
-            }, ['Loot'])
-          ]));
+        if (battle.pendingLoot || battle.pendingStolenLoot) {
+          var lootRow = el('div', { class: 'mt8', style: 'display:flex; align-items:center; gap:4px; flex-wrap:wrap;' });
+          if (battle.pendingLoot) {
+            var lootItem = Game.Inventory.getItem(battle.pendingLoot);
+            lootRow.appendChild(Game.UI.icon(battle.pendingLoot, 32));
+            lootRow.appendChild(el('span', { class: 'loot-icon', title: lootItem ? lootItem.name : battle.pendingLoot }, ['🎁 ' + (lootItem ? lootItem.name : battle.pendingLoot) + ' ']));
+          }
+          if (battle.pendingStolenLoot) {
+            // v1.2 Phase 1 item 4 (Thievery): a distinct icon/label for the bonus stolen item.
+            var stolenItem = Game.Inventory.getItem(battle.pendingStolenLoot);
+            lootRow.appendChild(Game.UI.icon(battle.pendingStolenLoot, 32));
+            lootRow.appendChild(el('span', { class: 'loot-icon', title: stolenItem ? stolenItem.name : battle.pendingStolenLoot }, ['🗝️ ' + (stolenItem ? stolenItem.name : battle.pendingStolenLoot) + ' ']));
+          }
+          lootRow.appendChild(el('button', {
+            class: 'button',
+            onclick: function () {
+              var res = Game.Battle.claimLoot();
+              if (!res.ok) alert(res.message);
+              Game.persist();
+              refreshBattleScreen();
+            }
+          }, ['Loot']));
+          outcome.appendChild(lootRow);
           if (battle.lootMessage) {
             outcome.appendChild(el('div', { class: 'tinyfont req-bad mt4' }, [battle.lootMessage]));
           }

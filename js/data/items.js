@@ -197,6 +197,37 @@ Game.Data.items = [
     desc: 'A kite shield reinforced with iron banding along its face.'
   },
 
+  // ---------- Offhand: Dual Wield weapons (v1.2 Phase 1 item 5) ----------
+  // invented (user-directed): use-based skill system. These share the `offhand` slot with the
+  // Shields above but carry a `damage` field instead of `armor` — js/core/battle.js attack()'s
+  // dual-wielding check (`offhandItem.damage !== undefined`) is what tells the two apart, so a
+  // player equips either a shield OR an offhand weapon there, never both. Same equip requirements
+  // (levelReq/statReqs) as an equivalent main-hand weapon of the same skill/tier.
+  {
+    id: 'knife_offhand_twinfang',
+    name: 'Twinfang Dirk',
+    slot: 'offhand',
+    skill: 'Knives',
+    damage: 4,
+    weight: 2,
+    levelReq: 1,
+    value: 16,
+    tags: [],
+    desc: 'A short, balanced dirk meant to be paired with a main-hand blade rather than carried alone.'
+  },
+  {
+    id: 'hth_offhand_cestus',
+    name: "Brawler's Cestus",
+    slot: 'offhand',
+    skill: 'Hand to Hand',
+    damage: 5,
+    weight: 2,
+    levelReq: 1,
+    value: 16,
+    tags: [],
+    desc: 'A weighted leather cestus worn on the off hand to double up a bare-knuckle fighter\'s strikes.'
+  },
+
   // ---------- Armor: Light Armor (body/head/legs/feet) ----------
   {
     id: 'light_body_traveler_tunic',

@@ -618,7 +618,7 @@ assert(Array.isArray(loaded11.character.afflictions) && loaded11.character.affli
 Game.state = loaded11;
 Game.persist();
 var resaved11 = JSON.parse(localStorageStore['herorpg_save']);
-assert(resaved11.version === 8, 'resave stamps version 8 (Feature B afflictions migration)');
+assert(resaved11.version === 9, 'resave stamps version 9 (v1.2 Phase 1 equipment.offhand migration)');
 
 // v1 -> v4 chain (continues on through v8; the historical "v4" name in the label below refers to
 // the fields this specific fixture checks, not the final stamped version)
@@ -651,7 +651,7 @@ assert(Array.isArray(loaded11b.character.afflictions) && loaded11b.character.aff
 assert(loaded11b.character.name === 'V3Timer', 'v7->v8 migration: identity intact');
 Game.state = loaded11b;
 Game.persist();
-assert(JSON.parse(localStorageStore['herorpg_save']).version === 8, 'v7->v8 resave stamps version 8');
+assert(JSON.parse(localStorageStore['herorpg_save']).version === 9, 'v7->v9 resave stamps version 9');
 
 // A v7 save that (hypothetically) already carried an afflictions array is left untouched (no
 // double-init / data loss).

@@ -992,6 +992,12 @@ Game.Data.monsters = [
     element: 'Dark',
     resistances: { Dark: 0.5, Light: -0.25 },
     techs: ['mon_dark_hex', 'mon_anima_lance'],
+    // v1.2 Phase 1 item 8: Curse status. NAME [archived] Version_2.1_Changes.md ("Added new
+    // detrimental effects (Poison, Haunting, Curse)"); rate [invented] (BALANCE.CURSE_APPLY_CHANCE).
+    // Given to this monster specifically for testability — a "raw... Anima given a fleeting will
+    // of its own" is exactly the thematic undead/anima flavor Phase 1 asked for; Phase 3 attaches
+    // curseChance to further thematic monsters.
+    curseChance: BALANCE.CURSE_APPLY_CHANCE,
     xp: BALANCE.MONSTER_XP(27),
     goldMin: 26,
     goldMax: 54,

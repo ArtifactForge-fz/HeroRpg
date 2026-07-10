@@ -394,7 +394,7 @@ assert(loaded10.character.quests && typeof loaded10.character.quests === 'object
 Game.state = loaded10;
 Game.persist();
 var resaved10 = JSON.parse(localStorageStore['herorpg_save']);
-assert(resaved10.version === 8, 'resave stamps CURRENT_VERSION 8 (Feature B afflictions migration), got ' + resaved10.version);
+assert(resaved10.version === 9, 'resave stamps CURRENT_VERSION 9 (v1.2 Phase 1 equipment.offhand migration), got ' + resaved10.version);
 
 // v1 -> v5 chain
 var v1c = JSON.parse(JSON.stringify(v4Character));

@@ -500,7 +500,7 @@ assert(loaded.character.fury === 0, 'migration adds fury=0');
 Game.state = loaded;
 Game.persist();
 var resaved = JSON.parse(localStorageStore['herorpg_save']);
-assert(resaved.version === 8, 'resave stamps current version 8 (Feature B afflictions migration on top)');
+assert(resaved.version === 9, 'resave stamps current version 9 (v1.2 Phase 1 equipment.offhand migration on top)');
 
 // v1 chain still works end-to-end (v1 -> v2 -> v3 -> v4)
 var v1c = JSON.parse(JSON.stringify(v2Character));
@@ -518,6 +518,49 @@ Game.persist();
 var savedMid = JSON.parse(localStorageStore['herorpg_save']);
 assert(savedMid.state.battle === undefined, 'mid-battle save does not persist the battle object');
 Game.Battle.endBattle();
+
+// =================== Test 10b: v8 -> v9 migration (Dual Wield equipment.offhand) ===================
+console.log('\n=== Test 10b: v8 -> v9 migration backfills equipment.offhand; v1->v9 chain intact ===');
+var v8Character = JSON.parse(JSON.stringify(v2Character));
+v8Character.techs = [];
+v8Character.techSets = [
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null]
+];
+v8Character.fury = 0;
+v8Character.currentLocation = 'eldor';
+v8Character.vault = { platinum: 0, gold: 0, items: [] };
+v8Character.shrineBuffs = [];
+v8Character.quests = {};
+v8Character.classes = {};
+v8Character.primaryClass = null;
+v8Character.secondaryClass = null;
+v8Character.legendaryUnlocked = false;
+v8Character.afflictions = [];
+// A real v8 save's equipment shape (pre-Dual-Wield) — the `offhand` key is entirely absent, not
+// just null, exercising the actual backfill branch of the v8->v9 migration step.
+v8Character.equipment = { weapon: null, head: null, body: null, legs: null, feet: null };
+localStorageStore['herorpg_save'] = JSON.stringify({ version: 8, state: { character: v8Character } });
+var loadedV9 = Game.Save.load();
+assert(loadedV9 !== null, 'v8 save loads');
+assert(loadedV9.character.equipment.offhand === null, 'v8->v9 migration backfills equipment.offhand=null');
+Game.state = loadedV9;
+Game.persist();
+var resavedV9 = JSON.parse(localStorageStore['herorpg_save']);
+assert(resavedV9.version === 9, 'resave stamps CURRENT_VERSION 9, got ' + resavedV9.version);
+
+// v1 -> v9 full chain also ends up with equipment.offhand present (SPEC-V1.2.md Phase 1 #5).
+var v1ToV9 = JSON.parse(JSON.stringify(v8Character));
+delete v1ToV9.inventory; delete v1ToV9.equipment; delete v1ToV9.equippedWeaponSkill;
+delete v1ToV9.techs; delete v1ToV9.techSets; delete v1ToV9.fury;
+delete v1ToV9.currentLocation; delete v1ToV9.vault; delete v1ToV9.shrineBuffs;
+delete v1ToV9.quests; delete v1ToV9.classes; delete v1ToV9.primaryClass; delete v1ToV9.secondaryClass; delete v1ToV9.legendaryUnlocked;
+delete v1ToV9.afflictions;
+localStorageStore['herorpg_save'] = JSON.stringify({ version: 1, state: { character: v1ToV9 } });
+var loadedV1toV9 = Game.Save.load();
+assert(loadedV1toV9 !== null && loadedV1toV9.character.equipment && loadedV1toV9.character.equipment.offhand === null,
+  'v1 save chains all the way through v9 with equipment.offhand present');
 
 // =================== Test 11: full screen renders ===================
 // Phase 4 note: Explore is now area-scoped (js/data/areas.js) rather than a flat list of every
@@ -897,6 +940,393 @@ var potionLine17b = b17b.log.filter(function (l) { return l.indexOf(potionItem17
 assert(!!potionLine17b, 'potion heal log line present: ' + potionLine17b);
 var healed17b = potionLine17b ? parseInt(potionLine17b.match(/recover (\d+) HP/)[1], 10) : -1;
 assert(healed17b === expectedHalvedPotion17b, 'Haunting halves potion healing: healed ' + healed17b + ', expected ' + expectedHalvedPotion17b);
+Game.Battle.endBattle();
+
+// =================== Test 18: weapon skill -> damage bonus (v1.2 Phase 1 #1) ===================
+console.log('\n=== Test 18: weapon skill -> damage bonus, capped (v1.2 Phase 1 #1) ===');
+var c18 = makeCharacter({ name: 'WeaponSkillDmgTest' }); // default: Swords 3
+var base18 = Math.round(c18.strength / BALANCE.STRENGTH_DAMAGE_RATIO) + (c18.weaponDamageBonus || 0);
+var mult18 = 1 + Math.min(BALANCE.WEAPON_SKILL_DAMAGE_PER_LEVEL * c18.skills['Swords'].level, BALANCE.WEAPON_SKILL_DAMAGE_CAP);
+assert(Game.Character.getDamage(c18) === Math.round(base18 * mult18),
+  'getDamage includes the weapon-skill multiplier at Swords level ' + c18.skills['Swords'].level + ': got ' + Game.Character.getDamage(c18) + ', expected ' + Math.round(base18 * mult18));
+
+c18.skills['Swords'].level = 0;
+assert(Game.Character.getDamage(c18) === base18, 'zero weapon skill -> no damage bonus (multiplier 1)');
+
+c18.skills['Swords'].level = 999;
+assert(Game.Character.getDamage(c18) === Math.round(base18 * (1 + BALANCE.WEAPON_SKILL_DAMAGE_CAP)),
+  'weapon-skill damage multiplier clamps at WEAPON_SKILL_DAMAGE_CAP');
+
+// A Rod only benefits when meleed with (getDamage), not via spell damage (techEffectivePower uses
+// Intelligence, not this term) — sanity-check the multiplier is keyed off c.equippedWeaponSkill.
+var c18b = makeCharacter({ skills: { 'Rods': 10 }, name: 'RodSkillDmgTest' });
+assert(c18b.equippedWeaponSkill === 'Rods', 'sanity: Rods creation build auto-equips a Rod');
+var base18b = Math.round(c18b.intelligence / BALANCE.STRENGTH_DAMAGE_RATIO) + (c18b.weaponDamageBonus || 0);
+var mult18b = 1 + Math.min(BALANCE.WEAPON_SKILL_DAMAGE_PER_LEVEL * 10, BALANCE.WEAPON_SKILL_DAMAGE_CAP);
+assert(Game.Character.getDamage(c18b) === Math.round(base18b * mult18b), 'Rods skill scales melee getDamage() when a Rod is the equipped weapon');
+
+// =================== Test 19: armor skill -> per-piece armor/magicArmor (v1.2 Phase 1 #2) ===================
+console.log('\n=== Test 19: armor skill -> per-piece armor scaling, capped (v1.2 Phase 1 #2) ===');
+var c19 = makeCharacter({ skills: { 'Light Armor': 5 }, name: 'ArmorSkillTest' });
+var tunic19 = Game.Inventory.getItem('light_body_traveler_tunic'); // starter-kit body armor, Light Armor skill
+var mult19 = 1 + Math.min(BALANCE.ARMOR_SKILL_ARMOR_PER_LEVEL * 5, BALANCE.ARMOR_SKILL_ARMOR_CAP);
+assert(Game.Inventory.equippedArmorTotal(c19) === Math.round(tunic19.armor * mult19),
+  'equippedArmorTotal scales body armor by Light Armor skill level 5: got ' + Game.Inventory.equippedArmorTotal(c19) + ', expected ' + Math.round(tunic19.armor * mult19));
+
+c19.skills['Light Armor'].level = 999;
+assert(Game.Inventory.equippedArmorTotal(c19) === Math.round(tunic19.armor * (1 + BALANCE.ARMOR_SKILL_ARMOR_CAP)),
+  'armor-skill multiplier clamps at ARMOR_SKILL_ARMOR_CAP');
+
+c19.skills['Light Armor'].level = 0;
+assert(Game.Inventory.equippedArmorTotal(c19) === tunic19.armor, 'zero armor skill -> no bonus (multiplier 1)');
+
+// Shields skill governs the offhand Shield slot specifically.
+var c19b = makeCharacter({ skills: { 'Shields': 4 }, name: 'ShieldSkillTest' });
+Game.Inventory.addItem(c19b, 'shield_wooden_buckler');
+var eqShield19b = Game.Inventory.equip(c19b, 'shield_wooden_buckler');
+assert(eqShield19b.ok, 'equip shield succeeds: ' + eqShield19b.failures.join(';'));
+var shield19b = Game.Inventory.getItem('shield_wooden_buckler');
+var multShield19b = 1 + Math.min(BALANCE.ARMOR_SKILL_ARMOR_PER_LEVEL * 4, BALANCE.ARMOR_SKILL_ARMOR_CAP);
+var expectedTotal19b = tunic19.armor + Math.round(shield19b.armor * multShield19b); // Light Armor skill is 0 here
+assert(Game.Inventory.equippedArmorTotal(c19b) === expectedTotal19b,
+  'Shields skill scales the offhand shield piece independently: got ' + Game.Inventory.equippedArmorTotal(c19b) + ', expected ' + expectedTotal19b);
+
+// =================== Test 20: armor-skill scaling excludes a weapon's own hybrid Magic Armor ===================
+console.log('\n=== Test 20: armor-skill scaling applies to armor pieces, not a weapon\'s hybrid Magic Armor stat ===');
+var c20 = makeCharacter({ skills: { 'Heavy Armor': 6, 'Rods': 6 }, name: 'HybridMagicArmorTest' });
+c20.level = 15; c20.strength = 28; c20.intelligence = 22;
+Game.Inventory.addItem(c20, 'heavy_body_stoneback_warplate');
+var eqBody20 = Game.Inventory.equip(c20, 'heavy_body_stoneback_warplate');
+assert(eqBody20.ok, 'equip heavy body armor succeeds: ' + eqBody20.failures.join(';'));
+Game.Inventory.addItem(c20, 'rod_tideglass_conduit');
+var eqRod20 = Game.Inventory.equip(c20, 'rod_tideglass_conduit');
+assert(eqRod20.ok, 'equip hybrid rod succeeds: ' + eqRod20.failures.join(';'));
+
+var bodyItem20 = Game.Inventory.getItem('heavy_body_stoneback_warplate');
+var rodItem20 = Game.Inventory.getItem('rod_tideglass_conduit');
+var heavyMult20 = 1 + Math.min(BALANCE.ARMOR_SKILL_ARMOR_PER_LEVEL * 6, BALANCE.ARMOR_SKILL_ARMOR_CAP);
+var expectedMagicArmor20 = Math.round(bodyItem20.magicArmor * heavyMult20) + rodItem20.magicArmor;
+assert(Game.Inventory.equippedMagicArmorTotal(c20) === expectedMagicArmor20,
+  'equippedMagicArmorTotal scales the Heavy Armor piece but leaves the Rod\'s hybrid Magic Armor stat unscaled: got ' +
+  Game.Inventory.equippedMagicArmorTotal(c20) + ', expected ' + expectedMagicArmor20);
+
+// =================== Test 21: Dodge/Double Attack skill XP at proc site, capped at 2L+1 ===================
+console.log('\n=== Test 21: Dodge/Double Attack skill XP granted at proc site, capped at 2L+1 (v1.2 Phase 1 #3) ===');
+var c21 = makeCharacter({ name: 'DodgeDoubleAttackXpTest' });
+c21.dexterity = 200; // saturates both Dodge and Double Attack chances to their caps
+setRng(fixedRng(0.01)); // well under both capped chances -> both procs fire
+var b21 = Game.Battle.start('plains_field_rat');
+Game.Battle.attack();
+assert(c21.skills['Dodge'].xp === BALANCE.DODGE_SKILL_XP_PER_PROC, 'Dodge skill gained exactly DODGE_SKILL_XP_PER_PROC XP from a successful dodge: got ' + c21.skills['Dodge'].xp);
+assert(c21.skills['Double Attack'].xp === BALANCE.DOUBLE_ATTACK_SKILL_XP_PER_PROC, 'Double Attack skill gained exactly DOUBLE_ATTACK_SKILL_XP_PER_PROC XP from a proc: got ' + c21.skills['Double Attack'].xp);
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+var c21b = makeCharacter({ name: 'DodgeDoubleAttackCapTest' });
+c21b.dexterity = 200;
+var cap21b = Game.Character.skillCap(c21b);
+c21b.skills['Dodge'].level = cap21b;
+c21b.skills['Double Attack'].level = cap21b;
+setRng(fixedRng(0.01));
+Game.Battle.start('plains_field_rat');
+Game.Battle.attack();
+assert(c21b.skills['Dodge'].level === cap21b && c21b.skills['Dodge'].xp === 0, 'Dodge XP/level does not exceed the 2L+1 cap');
+assert(c21b.skills['Double Attack'].level === cap21b && c21b.skills['Double Attack'].xp === 0, 'Double Attack XP/level does not exceed the 2L+1 cap');
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// =================== Test 22: Thievery — bonus gold, steal roll, XP on win (v1.2 Phase 1 #4) ===================
+console.log('\n=== Test 22: Thievery — bonus gold, steal roll (hit and miss), XP on win (v1.2 Phase 1 #4) ===');
+
+function setupThieveryWin(thieveryLevel, name) {
+  var c = makeCharacter({ name: name });
+  c.level = 6;
+  Game.Character.recalcDerived(c);
+  c.hitPoints = c.hitPointsMax = 500;
+  c.skills['Thievery'].level = thieveryLevel;
+  setRng(fixedRng(0.99));
+  var b = Game.Battle.start('majiku_forest_scout'); // level 6, matches player level -> no cutoff
+  b.monster.hp = 1; // next hit kills
+  b.monster.goldMin = b.monster.goldMax = 40; // deterministic gold regardless of the gold-roll rng
+  b.monster.drops = [{ itemId: 'potion_minor_healing', chance: 0.1 }]; // single deterministic drop entry
+  return { c: c, b: b };
+}
+
+// (a) steal roll HITS: bonus gold + a distinct stolen item; main loot roll misses.
+var setup22a = setupThieveryWin(12, 'ThieveryHitTest'); // goldPct=min(0.12,0.25)=0.12; stealChance=min(0.18,0.30)=0.18
+setRng(seqRng([
+  0.99, 0.99, 0.99, 0.5, // player attack: doubleAttack(false), monsterDodge(false), glancing(false), variance(neutral)
+  0.5,  // onWin gold roll (irrelevant: goldMin===goldMax)
+  0.99, // shard roll -> miss
+  0.99, // main loot roll (chance 0.1) -> miss
+  0.05, // Thievery steal-chance roll (0.05 < 0.18) -> hit
+  0.01  // steal drop-table roll (0.01 < 0.1) -> hits the potion
+], 0.99));
+Game.Battle.attack();
+var r22a = setup22a.b.rewards;
+assert(r22a.thieveryGold === Math.floor(40 * 0.12), 'Thievery bonus gold = floor(gold * min(THIEVERY_GOLD_PER_LEVEL*lvl, cap)): got ' + r22a.thieveryGold);
+assert(setup22a.b.pendingLoot === null, 'sanity: main loot roll missed');
+assert(setup22a.b.pendingStolenLoot === 'potion_minor_healing' && r22a.stolenLoot === 'potion_minor_healing', 'Thievery steal roll hit -> extra pending loot');
+assert(setup22a.b.log.some(function (l) { return /lift an extra/.test(l); }), 'distinct steal log line present');
+assert(setup22a.c.skills['Thievery'].xp === 1, 'Thievery gains 1 XP on the (non-cutoff) win');
+var invBefore22a = setup22a.c.inventory.length;
+var claim22a = Game.Battle.claimLoot();
+assert(claim22a.ok && setup22a.c.inventory.length === invBefore22a + 1 && setup22a.b.pendingStolenLoot === null,
+  'stolen loot is claimable via the normal Loot flow');
+Game.Battle.endBattle();
+
+// (b) steal roll MISSES: no stolen loot, but the gold bonus still applies.
+var setup22b = setupThieveryWin(12, 'ThieveryMissTest');
+setRng(seqRng([
+  0.99, 0.99, 0.99, 0.5,
+  0.5, 0.99, 0.99,
+  0.99 // steal-chance roll (0.99 >= 0.18) -> miss; no further roll consumed
+], 0.99));
+Game.Battle.attack();
+var r22b = setup22b.b.rewards;
+assert(setup22b.b.pendingStolenLoot === null && r22b.stolenLoot === null, 'Thievery steal roll miss -> no stolen loot');
+assert(r22b.thieveryGold === Math.floor(40 * 0.12), 'gold bonus still applies on a steal-roll miss');
+Game.Battle.endBattle();
+
+// (c) zero Thievery investment -> no bonus gold, no steal roll consumed at all.
+var setup22c = setupThieveryWin(0, 'ThieveryZeroTest');
+setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.5, 0.99, 0.99], 0.99)); // no 8th value: stealChance=0 short-circuits before rng()
+Game.Battle.attack();
+var r22c = setup22c.b.rewards;
+assert(r22c.thieveryGold === 0 && r22c.stolenLoot === null, 'zero Thievery skill -> no bonus gold, no steal roll');
+Game.Battle.endBattle();
+
+// =================== Test 23: Dual Wield offhand swing (v1.2 Phase 1 #5) ===================
+console.log('\n=== Test 23: Dual Wield offhand swing (v1.2 Phase 1 #5) ===');
+
+// (a) No offhand swing without a second weapon equipped.
+var c23a = makeCharacter({ name: 'NoOffhandTest' });
+setRng(fixedRng(0.99));
+var b23a = Game.Battle.start('plains_field_rat');
+var dwXpBefore23a = c23a.skills['Dual Wield'].xp;
+Game.Battle.attack();
+assert(!/offhand/i.test(b23a.log.join(' ')), 'no offhand swing logged without a second weapon equipped');
+assert(c23a.skills['Dual Wield'].xp === dwXpBefore23a, 'Dual Wield gains no XP without dual wielding');
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// (b) No offhand swing with a Shield (armor, not a weapon) in the offhand slot.
+var c23b = makeCharacter({ name: 'ShieldOffhandTest' });
+Game.Inventory.addItem(c23b, 'shield_wooden_buckler');
+Game.Inventory.equip(c23b, 'shield_wooden_buckler');
+setRng(fixedRng(0.99));
+var b23b = Game.Battle.start('plains_field_rat');
+Game.Battle.attack();
+assert(!/offhand/i.test(b23b.log.join(' ')), 'no offhand swing with a Shield (not a weapon) in the offhand slot');
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// (c) Offhand swing present with two weapons; damage formula matches getOffhandDamage * dwMult;
+// Dual Wield skill gains 1 XP per swing.
+var c23c = makeCharacter({ skills: { 'Dual Wield': 8 }, name: 'DualWieldDamageTest' });
+c23c.level = 5; // skill cap 2*5+1=11, comfortably above Dual Wield 8 so the XP-grant assertion below is meaningful
+Game.Character.recalcDerived(c23c);
+Game.Inventory.addItem(c23c, 'knife_offhand_twinfang');
+var eqOff23c = Game.Inventory.equip(c23c, 'knife_offhand_twinfang');
+assert(eqOff23c.ok, 'equip offhand dagger succeeds: ' + eqOff23c.failures.join(';'));
+setRng(fixedRng(0.5)); // no double attack, no monster dodge, no glancing, neutral variance
+var b23c = Game.Battle.start('plains_field_rat');
+var mHpBefore23c = b23c.monster.hp;
+var fear23c = Game.Battle.fearMultiplier(b23c);
+var dwLevel23c = c23c.skills['Dual Wield'].level;
+var dwMult23c = Math.min(BALANCE.DUAL_WIELD_OFFHAND_MULT_BASE + BALANCE.DUAL_WIELD_OFFHAND_MULT_PER_LEVEL * dwLevel23c, BALANCE.DUAL_WIELD_OFFHAND_MULT_CAP);
+var mainDmg23c = Math.max(1, Math.round(Game.Character.getDamage(c23c) * fear23c - b23c.monster.armor));
+var offhandBase23c = Game.Character.getOffhandDamage(c23c) * fear23c * dwMult23c;
+var offhandDmg23c = Math.max(1, Math.round(offhandBase23c - b23c.monster.armor));
+var dwXpBefore23c = c23c.skills['Dual Wield'].xp;
+Game.Battle.attack();
+var dealt23c = mHpBefore23c - b23c.monster.hp;
+assert(dealt23c === mainDmg23c + offhandDmg23c,
+  'main-hand + offhand damage both land: dealt ' + dealt23c + ', expected ' + (mainDmg23c + offhandDmg23c) + ' (main ' + mainDmg23c + ' + offhand ' + offhandDmg23c + ')');
+assert(/offhand strikes/i.test(b23c.log.join(' ')), 'offhand strike logged');
+assert(c23c.skills['Dual Wield'].xp === dwXpBefore23c + 1, 'Dual Wield skill gains 1 XP per offhand swing');
+Game.Battle.endBattle();
+
+// (d) offhand swing rolls the monster's dodge independently of the main-hand hit.
+var c23d = makeCharacter({ skills: { 'Dual Wield': 5 }, name: 'DualWieldDodgeTest' });
+Game.Inventory.addItem(c23d, 'knife_offhand_twinfang');
+Game.Inventory.equip(c23d, 'knife_offhand_twinfang');
+setRng(fixedRng(0.99));
+var b23d = Game.Battle.start('plains_field_rat');
+setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.0], 0.99)); // DA=false, main monDodge=false, main glancing=false, main variance=neutral, offhand monDodge(0.0) = true
+Game.Battle.attack();
+assert(/dodges your offhand/i.test(b23d.log.join(' ')), 'offhand strike can be dodged independently of the main hand');
+Game.Battle.endBattle();
+
+// =================== Test 24: Intelligence spell hit/miss (v1.2 Phase 1 #6) ===================
+console.log('\n=== Test 24: Intelligence spell hit/miss; weapon techs roll dodge instead (v1.2 Phase 1 #6) ===');
+
+// Hit case: rng below the Int-based hit chance -> full damage pipeline proceeds.
+var c24 = makeCharacter({ skills: { 'Evocation': 3 }, name: 'IntHitTest' });
+setRng(fixedRng(0.5));
+var b24 = Game.Battle.start('plains_field_rat');
+var hitChance24 = Math.max(BALANCE.INT_SPELL_HIT_MIN, Math.min(BALANCE.INT_SPELL_HIT_MAX,
+  BALANCE.INT_SPELL_HIT_BASE + BALANCE.INT_SPELL_HIT_PER_INT * c24.intelligence - BALANCE.INT_SPELL_HIT_PER_MON_LEVEL * b24.monster.level));
+assert(hitChance24 > 0.5, 'sanity: this matchup\'s Int hit chance is above the 0.5 rng used below');
+var mHpBefore24 = b24.monster.hp;
+Game.Battle.useTech('tech_firebolt_1');
+assert(b24.monster.hp < mHpBefore24, 'spell hits and deals damage when rng < Int hit chance');
+Game.Battle.endBattle();
+
+// Miss case: rng above the hit chance -> no damage, Energy still spent, distinct log line.
+var c24b = makeCharacter({ skills: { 'Evocation': 3 }, name: 'IntMissTest' });
+setRng(fixedRng(0.99));
+var b24b = Game.Battle.start('plains_field_rat');
+var hitChance24b = Math.max(BALANCE.INT_SPELL_HIT_MIN, Math.min(BALANCE.INT_SPELL_HIT_MAX,
+  BALANCE.INT_SPELL_HIT_BASE + BALANCE.INT_SPELL_HIT_PER_INT * c24b.intelligence - BALANCE.INT_SPELL_HIT_PER_MON_LEVEL * b24b.monster.level));
+assert(hitChance24b < 0.99, 'sanity: 0.99 is above this matchup\'s Int hit chance');
+var mHpBefore24b = b24b.monster.hp;
+var energyBefore24b = c24b.energy;
+Game.Battle.useTech('tech_firebolt_1');
+assert(b24b.monster.hp === mHpBefore24b, 'spell miss deals no damage');
+assert(energyBefore24b - c24b.energy === Game.Battle.getTech('tech_firebolt_1').energyCost, 'Energy is still spent on a miss');
+assert(b24b.log.some(function (l) { return /misses the/.test(l); }), 'distinct miss log line present');
+Game.Battle.endBattle();
+
+// Healing techs always land, ignoring the Int hit/miss roll entirely (parallels Fear's "spares
+// healing" carve-out) — same rng (0.99) that would miss an offensive spell above.
+var c24c = makeCharacter({ skills: { 'Abjuration': 3 }, name: 'HealAlwaysLandsTest' });
+c24c.hitPoints = 1;
+setRng(fixedRng(0.99));
+Game.Battle.start('plains_field_rat');
+Game.Battle.useTech('tech_mend_wounds_1');
+assert(c24c.hitPoints > 1, 'healing technique always lands, ignoring the Int hit/miss roll');
+Game.Battle.endBattle();
+
+// Weapon techs roll the monster's dodge instead of the Int check: at rng 0.99 (which just missed
+// a magic tech above), a weapon tech still lands, because it only rolls the monster's tiny dodge
+// chance rather than the Int-based hit chance.
+var c24d = makeCharacter({ name: 'WeaponTechDodgeTest' }); // Swords 3 -> Cleave I known+slotted
+setRng(fixedRng(0.99));
+var b24d = Game.Battle.start('plains_field_rat');
+var mHpBefore24d = b24d.monster.hp;
+Game.Battle.useTech('tech_cleave_1');
+assert(b24d.monster.hp < mHpBefore24d, 'weapon tech lands at rng 0.99 (would miss a magic tech\'s Int check, but weapon techs roll monster dodge instead)');
+Game.Battle.endBattle();
+
+// ...and that monster-dodge roll can independently miss the weapon tech when it IS rolled low.
+var c24e = makeCharacter({ name: 'WeaponTechDodgeMissTest' });
+setRng(fixedRng(0.99));
+var b24e = Game.Battle.start('plains_field_rat');
+setRng(fixedRng(0.0)); // 0.0 < monsterDodgeChance -> the monster dodges the weapon tech
+var mHpBefore24e = b24e.monster.hp;
+Game.Battle.useTech('tech_cleave_1');
+assert(b24e.monster.hp === mHpBefore24e, 'the monster\'s dodge (not Int) can make a weapon tech miss entirely');
+assert(/dodges your Cleave/.test(b24e.log.join(' ')), 'dodge log line present for the weapon tech');
+Game.Battle.endBattle();
+
+// =================== Test 25: non-elemental tech damage ignores defense (v1.2 Phase 1 #7) ===================
+console.log('\n=== Test 25: non-elemental (grade:null) tech damage ignores Magic Armor; graded techs still mitigated (v1.2 Phase 1 #7) ===');
+
+var c25 = makeCharacter({ name: 'NonElementalTest' });
+c25.primaryClass = 'warrior'; // minimal setup: isClassTechUsable only checks primaryClass/secondaryClass
+c25.techs.push('tech_crushing_blow');
+c25.techSets[0][1] = 'tech_crushing_blow'; // slot 0 already holds the Swords starter tech (Cleave I)
+setRng(fixedRng(0.99));
+var b25 = Game.Battle.start('estari_loose_rubble'); // magicArmor 2, nonzero -> the fix is visible
+setRng(fixedRng(0.5)); // hit-chance check passes, no glancing, neutral variance
+var tech25 = Game.Battle.getTech('tech_crushing_blow');
+var fear25 = Game.Battle.fearMultiplier(b25);
+var expectedDmg25 = Math.max(1, Math.round(Game.Battle.techEffectivePower(c25, tech25) * fear25)); // mitigation=0 for grade:null
+var mHpBefore25 = b25.monster.hp;
+Game.Battle.useTech('tech_crushing_blow');
+var dealt25 = mHpBefore25 - b25.monster.hp;
+assert(dealt25 === expectedDmg25,
+  'grade:null non-weapon tech ignores monster.magicArmor (' + b25.monster.magicArmor + ') entirely: dealt ' + dealt25 + ', expected ' + expectedDmg25);
+Game.Battle.endBattle();
+
+// Contrast: a GRADED (elemental) non-weapon tech is still mitigated by Magic Armor as before.
+var c25b = makeCharacter({ skills: { 'Evocation': 3 }, name: 'ElementalStillMitigatedTest' });
+setRng(fixedRng(0.99));
+var b25b = Game.Battle.start('estari_loose_rubble');
+setRng(fixedRng(0.5));
+var tech25b = Game.Battle.getTech('tech_firebolt_1');
+var fear25b = Game.Battle.fearMultiplier(b25b);
+var raw25b = Game.Battle.techEffectivePower(c25b, tech25b) * fear25b * 1.25; // Fire vulnerability (-0.25 resistance)
+var expectedDmg25b = Math.max(1, Math.round(raw25b - b25b.monster.magicArmor));
+var mHpBefore25b = b25b.monster.hp;
+Game.Battle.useTech('tech_firebolt_1');
+var dealt25b = mHpBefore25b - b25b.monster.hp;
+assert(dealt25b === expectedDmg25b, 'graded (elemental) tech is still mitigated by Magic Armor: dealt ' + dealt25b + ', expected ' + expectedDmg25b);
+Game.Battle.endBattle();
+
+// =================== Test 26: Curse status (v1.2 Phase 1 #8) ===================
+console.log('\n=== Test 26: Curse status — apply, halves outgoing damage, expires, cleanse (v1.2 Phase 1 #8) ===');
+
+// Applying: a monster hit carrying curseChance (forced to 1 for testability) applies Curse.
+var c26 = makeCharacter({ name: 'CurseApplyTest' });
+c26.hitPoints = c26.hitPointsMax = 500;
+setRng(fixedRng(0.99));
+var b26 = Game.Battle.start('majiku_forest_scout'); // opening strike happens here, before curseChance is set below
+b26.monster.curseChance = 1; // force-testable proc (analogous to a tech's poisonChance)
+Game.Battle.attack(); // triggers the monster's counter via finishRound -> monsterAct
+assert(Game.Battle.playerCurseActive(b26), 'Curse status applied by a curseChance-carrying monster hit');
+assert(b26.log.some(function (l) { return /curse settles/i.test(l); }), 'distinct Curse-applied log line');
+
+// Halves outgoing attack damage while active.
+var fearCurse26 = Game.Battle.fearMultiplier(b26);
+var curseDmg26 = Math.max(1, Math.round(Game.Character.getDamage(c26) * fearCurse26 * BALANCE.CURSE_DAMAGE_MULT - b26.monster.armor));
+setRng(fixedRng(0.5)); // no monster dodge on our attack, no glancing, neutral variance
+var mHpBefore26 = b26.monster.hp;
+Game.Battle.attack();
+var dealt26 = mHpBefore26 - b26.monster.hp;
+assert(dealt26 === curseDmg26, 'Curse halves outgoing attack damage: dealt ' + dealt26 + ', expected ' + curseDmg26);
+Game.Battle.endBattle();
+
+// Clears at battle end (battle-scoped, never persisted on the character).
+setRng(fixedRng(0.99));
+var b26fresh = Game.Battle.start('plains_field_rat');
+assert(!Game.Battle.playerCurseActive(b26fresh), 'Curse does not carry over into a new battle');
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// Halves outgoing TECH damage too (not just Attack).
+var c26t = makeCharacter({ skills: { 'Evocation': 3 }, name: 'CurseTechTest' });
+setRng(fixedRng(0.5));
+var b26t = Game.Battle.start('plains_field_rat');
+var tech26t = Game.Battle.getTech('tech_firebolt_1');
+var fear26t = Game.Battle.fearMultiplier(b26t);
+var expectedCursedTechDmg26t = Math.max(1, Math.round(Game.Battle.techEffectivePower(c26t, tech26t) * fear26t * BALANCE.CURSE_DAMAGE_MULT - b26t.monster.magicArmor));
+b26t.playerStatuses.push({ type: 'curse', name: 'Curse', turnsLeft: BALANCE.CURSE_DURATION });
+var mHpBefore26t = b26t.monster.hp;
+Game.Battle.useTech('tech_firebolt_1');
+var dealt26t = mHpBefore26t - b26t.monster.hp;
+assert(dealt26t === expectedCursedTechDmg26t, 'Curse halves outgoing tech damage too: dealt ' + dealt26t + ', expected ' + expectedCursedTechDmg26t);
+Game.Battle.endBattle();
+
+// Duration: expires after exactly CURSE_DURATION turns, then a fade log line and normal damage resume.
+var c26d = makeCharacter({ name: 'CurseDurationTest' });
+setRng(fixedRng(0.99));
+var b26d = Game.Battle.start('plains_field_rat');
+b26d.monster.hp = b26d.monster.hpMax = 100000; // survive many rounds
+b26d.playerStatuses.push({ type: 'curse', name: 'Curse', turnsLeft: BALANCE.CURSE_DURATION });
+for (var ci = 0; ci < BALANCE.CURSE_DURATION - 1; ci++) {
+  assert(Game.Battle.playerCurseActive(b26d), 'Curse still active before turn ' + (ci + 1) + ' of ' + BALANCE.CURSE_DURATION);
+  Game.Battle.attack();
+}
+Game.Battle.attack(); // final tick: turnsLeft reaches 0 and the status is removed
+assert(!Game.Battle.playerCurseActive(b26d), 'Curse expired after exactly CURSE_DURATION turns');
+assert(b26d.log.some(function (l) { return /curse lifts/i.test(l); }), 'distinct Curse-expired log line');
+Game.Battle.endBattle();
+
+// Cleansable mid-battle by Mend Wounds II (Abjuration, clearsStatus: true) — also clears Poison.
+var c26e = makeCharacter({ skills: { 'Abjuration': 5 }, name: 'CurseCleanseTest' });
+c26e.techs.push('tech_mend_wounds_2');
+c26e.techSets[0][1] = 'tech_mend_wounds_2';
+setRng(fixedRng(0.99));
+var b26e = Game.Battle.start('plains_field_rat');
+b26e.playerStatuses.push({ type: 'curse', name: 'Curse', turnsLeft: BALANCE.CURSE_DURATION });
+b26e.playerStatuses.push({ type: 'poison', name: 'Poison', turnsLeft: BALANCE.POISON_DURATION_TURNS });
+assert(Game.Battle.playerCurseActive(b26e), 'sanity: cursed before cleansing');
+Game.Battle.useTech('tech_mend_wounds_2');
+assert(!Game.Battle.playerCurseActive(b26e), 'Mend Wounds II (clearsStatus) removes Curse mid-battle');
+assert(!b26e.playerStatuses.some(function (s) { return s.type === 'poison'; }), 'Mend Wounds II also removes Poison');
+assert(b26e.log.some(function (l) { return /washes away/i.test(l); }), 'distinct cleanse log line');
 Game.Battle.endBattle();
 
 // =================== Summary ===================
