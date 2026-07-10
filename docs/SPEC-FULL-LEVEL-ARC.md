@@ -1,6 +1,10 @@
 # SPEC — Full 100+ Level Arc
 
-**Status:** Backlog, not started. Authored 2026-07-10. Do **after** the in-flight build lands.
+**Status:** IN PROGRESS — started 2026-07-10 on branch `level-arc`, after v1.2 landed on main.
+Currently in **F1 (balance-to-100)**. Decisions D1–D4 resolved (see §10). NOTE: the third class
+tier (F4's roster — Shadowknight/Magus/Gambit + Runeblade→legendary) already shipped in **v1.2** at
+unlock level 38; F4 here is reduced to **re-gating tier-3 to ~L60** once content supports it, plus a
+class-balance pass across the extended range.
 **Owner model:** lead (scoping/spec/review) drafts; Sonnet subagents do the content/mechanical work.
 **Relationship to authority:** This spec *extends* `docs/DESIGN.md` §10.3, which deliberately scoped
 v1 to "levels 1–40 playable." It does not override any archived mechanic — it grows the content
@@ -212,6 +216,26 @@ F4/F5 add the systems that ride on top. F3–F5 can overlap once F2's bands are 
   names) or two (adds [invented] names)? Recommend start with the three archived names.
 - **D4 — Region count actually built.** All six Van Arius regions, or fewer larger ones? Affects
   F2 scope.
+
+### Decisions resolved (2026-07-10, F1 kickoff — lead)
+
+- **D1 → hard cap 100.** Add one constant `BALANCE.LEVEL_CAP = 100` (archived: game "originally
+  designed based on a level-100 cap", `homepage_2007.md`); route all level-cap logic through it so a
+  future raise is one line (honors the archived "dynamic cap" direction).
+- **D2 → keep the low curve, reshape the tail, target ~40–60 h to 100.** Preserve `50·(n−1)^1.8`
+  through ~L40 so early pacing is unchanged (level 30 stays ~3–4 h, DESIGN §10.1); if the F1 sim
+  shows 40→100 is a grind wall at realistic monster-XP rates, flatten the tail (reduced exponent or
+  a gentler segment past ~40) so total time-to-100 lands in ~40–60 h. Content-neutral (no save
+  fields); the F1 sim picks the exact numbers and must assert the time-to-100 target.
+- **D3 → the three archived names only.** Shadowknight/Magus/Gambit already shipped (v1.2); no new
+  invented tier-3 branches this arc. A tier-4/5 advancement (archived direction) is explicitly
+  deferred — our Legendaries currently occupy the `tier:4` slot, so a real 4th *advancement* tier
+  would need a renumber and is out of scope here.
+- **D4 → a single coherent northward progression, ~13 new hunting-area bands + 2–3 settlements**,
+  one band per ~4–5 levels across 40→100 (no gap wider than the ±5 XP/loot cutoff). Seed from
+  archived lore/names — the Forests of Kuraan, the Majiku lands to the north, deeper Kastengard, and
+  the red-moon/Skyspire endgame (DESIGN §2, arc §6) — rather than formally instantiating all six Van
+  Arius regions as separate systems. F2 fixes the exact band list.
 
 ## 11. Explicitly out of scope
 

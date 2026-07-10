@@ -85,4 +85,36 @@ var total = 0;
 for (var k in skillPoints) total += skillPoints[k];
 console.assert(total === BALANCE.CREATION_SKILL_POINT_MAX_PER_SKILL + 2, 'sanity: total skill points in test fixture');
 
+// ---- Test 9 (F1 balance-to-100, docs/SPEC-FULL-LEVEL-ARC.md D1): leveling stops at LEVEL_CAP ----
+// console.assert alone doesn't fail this file's exit code (a pre-existing quirk of this suite --
+// Node's console.assert never throws or sets a nonzero exit), so this block additionally tracks
+// failures explicitly and sets process.exitCode, matching what the other nine suites already do.
+var capFailures = 0;
+function capAssert(cond, msg) {
+  console.assert(cond, msg);
+  if (!cond) { capFailures++; console.error('FAIL: ' + msg); }
+}
+
+var capChar = Game.Character.create({ race: 'Human', name: 'CapTest', gender: 'Male', skillPoints: skillPoints });
+var hugeLevels = Game.Character.addXp(capChar, 999999999); // absurdly large XP grant, must still clamp
+console.log('Level after huge XP grant:', capChar.level, 'levels gained:', hugeLevels, 'xp:', capChar.xp);
+capAssert(capChar.level === BALANCE.LEVEL_CAP, 'level should clamp to BALANCE.LEVEL_CAP (100), got ' + capChar.level);
+capAssert(hugeLevels === BALANCE.LEVEL_CAP - 1, 'a fresh (level 1) character should gain exactly LEVEL_CAP-1 levels, got ' + hugeLevels);
+capAssert(Game.Character.xpNeededForNext(capChar) === 0, 'xpNeededForNext at cap should be 0 (no next level), got ' + Game.Character.xpNeededForNext(capChar));
+capAssert(Game.Character.xpIntoCurrentLevel(capChar) === 0, 'xpIntoCurrentLevel at cap should be 0, got ' + Game.Character.xpIntoCurrentLevel(capChar));
+
+// Further XP at the cap is a genuine no-op — no dangling excess, no phantom stat/training points.
+var spBeforeCap = capChar.statPoints, tpBeforeCap = capChar.trainingPoints, xpBeforeCap = capChar.xp;
+var moreLevels = Game.Character.addXp(capChar, 50000);
+capAssert(moreLevels === 0, 'addXp at cap should report 0 levels gained, got ' + moreLevels);
+capAssert(capChar.level === BALANCE.LEVEL_CAP, 'level should still be LEVEL_CAP after more XP at the cap');
+capAssert(capChar.statPoints === spBeforeCap, 'statPoints should not grow from XP earned past the cap');
+capAssert(capChar.trainingPoints === tpBeforeCap, 'trainingPoints should not grow from XP earned past the cap');
+capAssert(capChar.xp === xpBeforeCap, 'xp should not grow from XP earned past the cap (excess is dropped)');
+
+if (capFailures > 0) {
+  console.log(capFailures + ' TEST(S) FAILED (LEVEL_CAP block)');
+  process.exitCode = 1;
+}
+
 console.log('ALL ASSERTIONS PASSED (no console.assert failures printed above means success)');

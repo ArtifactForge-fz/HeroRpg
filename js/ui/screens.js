@@ -272,7 +272,7 @@ Game.Screens = (function () {
     top.appendChild(identity);
 
     var levelRow = el('div', { class: 'hrpg-table mt8' });
-    levelRow.appendChild(makeInfoRow('Level', String(c.level)));
+    levelRow.appendChild(makeInfoRow('Level', String(c.level) + (c.level >= BALANCE.LEVEL_CAP ? ' (MAX)' : '')));
     levelRow.appendChild(makeInfoRow('Class', classLabel(c)));
     levelRow.appendChild(makeInfoRow('Monster Kills', String(c.monsterKills)));
     levelRow.appendChild(makeInfoRow('Deaths', String(c.deaths)));
@@ -283,11 +283,15 @@ Game.Screens = (function () {
 
     var xpNeeded = Game.Character.xpNeededForNext(c);
     var xpInto = Game.Character.xpIntoCurrentLevel(c);
-    var xpPct = Math.max(0, Math.min(100, Math.round((xpInto / xpNeeded) * 100)));
+    // F1 balance-to-100: at BALANCE.LEVEL_CAP, xpNeededForNext returns 0 (nothing left to show
+    // progress toward) — guard the percentage so it reads 100%/"MAX LEVEL" instead of NaN from a
+    // 0/0 division.
+    var atCap = c.level >= BALANCE.LEVEL_CAP;
+    var xpPct = atCap ? 100 : Math.max(0, Math.min(100, Math.round((xpInto / xpNeeded) * 100)));
     top.appendChild(el('div', { class: 'mt8' }, [el('b', {}, ['Level Progress'])]));
     top.appendChild(el('div', { class: 'statbar-track', style: 'width:300px;' }, [
       el('div', { class: 'statbar-fill xp', style: 'width:' + xpPct + '%;' }),
-      el('div', { class: 'statbar-text' }, [xpInto + ' / ' + xpNeeded + ' XP'])
+      el('div', { class: 'statbar-text' }, [atCap ? 'MAX LEVEL' : (xpInto + ' / ' + xpNeeded + ' XP')])
     ]));
 
     top.appendChild(el('div', { class: 'mt8' }, [
@@ -1801,7 +1805,9 @@ Game.Screens = (function () {
     vit.appendChild(battleBar('Energy', 'energy', c.energy, c.energyMax));
     var xpNeeded = Game.Character.xpNeededForNext(c);
     var xpInto = Game.Character.xpIntoCurrentLevel(c);
-    vit.appendChild(battleBar('XP', 'xp', xpInto, xpNeeded));
+    // F1 balance-to-100: at BALANCE.LEVEL_CAP both are 0 — battleBar's default text ("0 / 0 XP")
+    // would read as nonsense at the cap, so pass an explicit "MAX LEVEL" label instead.
+    vit.appendChild(battleBar('XP', 'xp', xpInto, xpNeeded, c.level >= BALANCE.LEVEL_CAP ? 'MAX LEVEL' : null));
     // Yellow Fear bar only when feared (archived: New_Player_Guide.md "There may be a fourth
     // (yellow) bar which tells how much Fear you have").
     var fearLv = Game.Battle.fearLevels(battle);

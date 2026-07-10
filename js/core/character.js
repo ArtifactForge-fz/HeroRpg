@@ -312,22 +312,37 @@ Game.Character = (function () {
     c.animaShards = Math.min(BALANCE.ANIMA_SHARDS_CAP, c.animaShards + amount);
   }
 
+  // F1 balance-to-100 (docs/SPEC-FULL-LEVEL-ARC.md D1, BALANCE.LEVEL_CAP): at the cap there is no
+  // "next level" to show progress toward, so both helpers report 0/0 rather than a meaningless
+  // (or NaN-from-division) number — js/ui/screens.js's two XP-bar renderers special-case a 0
+  // xpNeededForNext as "MAX" instead of computing a percentage.
   function xpNeededForNext(c) {
+    if (c.level >= BALANCE.LEVEL_CAP) return 0;
     return BALANCE.XP_TO_LEVEL(c.level + 1) - BALANCE.XP_TO_LEVEL(c.level);
   }
 
   function xpIntoCurrentLevel(c) {
+    if (c.level >= BALANCE.LEVEL_CAP) return 0;
     return c.xp - BALANCE.XP_TO_LEVEL(c.level);
   }
 
   function addXp(c, amount) {
+    // F1 balance-to-100: once at the cap, further combat XP has nowhere to go — a no-op rather
+    // than letting c.xp grow unbounded (which xpIntoCurrentLevel/xpNeededForNext above would then
+    // have to keep guarding against forever, for no gameplay benefit). Excess XP earned in the
+    // SAME addXp call that reaches the cap is dropped by the c.xp clamp below the loop, matching
+    // the same "excess handled sensibly" rule.
+    if (c.level >= BALANCE.LEVEL_CAP) return 0;
     c.xp += amount;
     var leveled = 0;
-    while (c.xp >= BALANCE.XP_TO_LEVEL(c.level + 1)) {
+    while (c.level < BALANCE.LEVEL_CAP && c.xp >= BALANCE.XP_TO_LEVEL(c.level + 1)) {
       c.level += 1;
       c.statPoints += BALANCE.LEVELUP_STAT_POINTS; // archived: Level_Up.md
       c.trainingPoints += BALANCE.LEVELUP_TRAINING_POINTS; // archived: Level_Up.md
       leveled += 1;
+    }
+    if (c.level >= BALANCE.LEVEL_CAP) {
+      c.xp = BALANCE.XP_TO_LEVEL(BALANCE.LEVEL_CAP); // clamp: no dangling excess above the cap's threshold
     }
     if (leveled > 0) {
       recalcDerived(c);

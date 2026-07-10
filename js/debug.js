@@ -14,14 +14,16 @@ Game._debug = {
   setLevel: function (n) {
     if (!Game.state.character) { console.warn('No character yet.'); return; }
     var c = Game.state.character;
-    c.level = n;
-    c.xp = BALANCE.XP_TO_LEVEL(n);
+    // F1 balance-to-100: clamp to BALANCE.LEVEL_CAP so this console-only debug helper can't park a
+    // save above the cap (which addXp's own clamp would never do through normal play).
+    c.level = Math.min(n, BALANCE.LEVEL_CAP);
+    c.xp = BALANCE.XP_TO_LEVEL(c.level);
     Game.Character.recalcDerived(c);
     c.hitPoints = c.hitPointsMax;
     c.energy = c.energyMax;
     Game.persist();
     Game.refreshCurrentScreen();
-    console.log('Level set to ' + n + '.');
+    console.log('Level set to ' + c.level + (c.level !== n ? ' (clamped to LEVEL_CAP)' : '') + '.');
   },
 
   addGold: function (n) {

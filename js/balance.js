@@ -18,6 +18,27 @@ var BALANCE = {
   ANIMA_SHARDS_CAP: 999, // archived: Anima_Shards.md ("maximum of 999 Anima Shards at any time")
 
   XP_TO_LEVEL: function (n) { return Math.round(50 * Math.pow(n - 1, 1.8)); }, // invented: DESIGN.md §10 open decision 1; cumulative XP to reach level n, so level 1 = 0 (characters start at 0 XP)
+  // F1 balance-to-100 (docs/SPEC-FULL-LEVEL-ARC.md §2/§9-F1, D1): the game's archived design target
+  // was a level cap, not an open-ended climb -- homepage_2007.md (2007-05-25): "The game was
+  // originally designed based on a level-100 cap, though we have decided to extend that to a
+  // dynamic cap that can be changed as content is released" [archived]; homepage_2006.md: "After
+  // playing the game through all 109 levels for myself" [archived]. D1 resolved: hard cap of 100
+  // (round number, matches the 2007 design target exactly), stored as ONE constant so a future
+  // raise (the archived "dynamic cap" direction) is a one-line change. Game.Character.addXp is the
+  // single point that reads this to stop leveling; xpNeededForNext/xpIntoCurrentLevel special-case
+  // level >= LEVEL_CAP so the "XP to next level" UI never divides by a zero/undefined delta.
+  LEVEL_CAP: 100,
+  // F1 balance-to-100 sim finding (docs/SPEC-FULL-LEVEL-ARC.md D2): the F1 exit-gate sim
+  // (scratchpad sim_f1_progression.js, real engine via node vm, sampled actions-per-kill at 15
+  // levels 1-100 against at-level regulars) extended XP_TO_LEVEL UNCHANGED through level 100 and
+  // found NO grind wall: kills-needed-per-level and rounds-per-kill both stay nearly flat across
+  // the whole range (the exponent's marginal XP growth, ~n^0.8, is outpaced by MONSTER_XP's linear
+  // 10/level reward, so late levels need slightly FEWER kills than mid-game ones). Calibrated
+  // against the accepted "level 30 ~= 3-4h" anchor (DESIGN.md §10.1), pure-combat time-to-100 comes
+  // out to ~11.7h -- comfortably under the ~40-60h target (D2), even before F2/F3 add the
+  // travel/shopping/quest overhead a finished 1-100 arc will carry. D2's contingency ("if 40->100
+  // is a grind wall, flatten the tail") therefore does NOT trigger -- XP_TO_LEVEL is intentionally
+  // left unchanged, extended as-is to level 100.
 
   // Starting stats — invented (DESIGN.md leaves numeric starting stats unspecified).
   START_HP: 50, // invented
@@ -99,6 +120,14 @@ var BALANCE = {
   CAMP_ENERGY_FRACTION_OF_HEAL: 1, // invented: Camp restores the same fraction of Energy as HP (New_Player_Guide.md only documents HP; Energy inclusion+fraction invented)
 
   INN_FEE_BASE: 5, INN_FEE_PER_LEVEL: 2, // invented: New_Player_Guide.md documents the Inn but not its price
+  // F1 balance-to-100 economy check (docs/SPEC-FULL-LEVEL-ARC.md §4/§9-F1): verified INN_FEE and
+  // HAUNTING_CLEANSE_FEE (below) against a fitted at-level gold-income curve out to level 100 (sim
+  // sim_f1_level100.js's getGold()). Both fees are a SMOOTHLY DECREASING fraction of a full
+  // energy-bar's income at every level sampled (INN_FEE: ~21% of income at L40 down to ~11% at
+  // L100; no cliff, no reversal) -- this is the SAME shape the fee already has across the shipped
+  // 1-40 range (it declines there too), so the 40-100 extension does not introduce a NEW
+  // inflate-into-irrelevance regression; it continues an already-accepted trend, still a real
+  // (double-digit-percent) cost at the cap. Left UNCHANGED -- no slope retune needed.
 
   SHOP_SELL_RATE: 0.5, // invented: sale price = floor(item.value * 0.5); no archived sell-back rate survived
 
@@ -247,5 +276,43 @@ var BALANCE = {
   // Example per-monster curseChance (js/data/monsters.js kastengard_anima_wraith) — Phase 1 wires
   // the mechanic on one existing thematic undead/anima monster so it's testable; Phase 3 attaches
   // curseChance to further thematic monsters.
-  CURSE_APPLY_CHANCE: 0.3 // invented: NAME [archived] Version_2.1_Changes.md, number invented
+  CURSE_APPLY_CHANCE: 0.3, // invented: NAME [archived] Version_2.1_Changes.md, number invented
+
+  // ==================== F1: balance-to-100 (docs/SPEC-FULL-LEVEL-ARC.md §9-F1) ====================
+  // F1 authors NO content (monsters/items/areas) -- these are CONVENTION NOTES for F3 content
+  // authors, proven out against a real-engine sim (scratchpad sim_f1_level100.js) using synthetic
+  // representative gear/monsters, not new gameplay constants wired into any code path yet.
+  //
+  // 1. Weapon-tier extension (CLAUDE.md: "levelReq 1 / 5-15 / 25 / 35, damage ~= 3+2*levelReq").
+  //    §4/§9-F1 asks for new bands every ~10 levels past 35: 45/55/65/75/85/95, damage ~=
+  //    3+2*levelReq, same as every prior tier. THE SIM FOUND A PROBLEM with reading that formula
+  //    literally all the way to band 95: total player power (weapon-bonus damage stacking on top
+  //    of Strength-derived damage; per-piece armor stacking on top of Endurance-derived armor)
+  //    grows roughly 2x faster than monster hp/damage's fixed +12/+2-per-level slope, because the
+  //    gear term is ADDITIVE on top of an already-scaling stat term. Fear's fixed 10%/level penalty
+  //    (archived, Fear.md -- not tunable) can only claw back a bounded PERCENTAGE of that; once the
+  //    ABSOLUTE margin grows large enough, a 5-levels-down fight stops being lethal (measured: 0%
+  //    win at band 35->45 but 99% win at band 95->105 with a literal linear read of the formula --
+  //    silently breaking the archived "5-levels-down = certain death via Fear" contract by L100).
+  //    FIX (sim-tuned): past band 35, F3 should gate new weapon/armor tiers' damage/armor values
+  //    off a TAPERED effective levelReq — effectiveLevelReq = 35 + 0.7*(levelReq-35) for
+  //    levelReq > 35 — rather than the literal levelReq. E.g. the band-95 weapon should carry
+  //    damage ~= 3+2*(35+0.7*60) = 3+2*77 = ~157, not 3+2*95 = 193. Bands <=35 are UNCHANGED (real,
+  //    shipped items keep the literal formula). 0.7 is the LEAST aggressive taper that still drove
+  //    5-levels-down win% to 0% at every checkpoint 40/50/60/70/80/90/100 in the sim (400-trial
+  //    runs); see the F1 sim report for the full sweep. Armor pieces taper the same way.
+  //
+  // 2. Boss premiums (CLAUDE.md: "bosses get flat hp/damage premiums and x3 xp", e.g.
+  //    estari_ruin_warden's +120hp/+10dmg at L10, eidas_echo's +45dmg at L40 -- each hand-tuned per
+  //    boss via its own sim check). For the F1 exit-gate sim's SYNTHETIC bosses (no real boss
+  //    content exists past L40 yet), hp premium = +12*level (matches the "~12*level pattern" the
+  //    existing bosses already use) and damage premium = round(1.5*level + 10) (sim-tuned so a
+  //    boss is winnable 99-100% of the time by a same-level prepared player while costing 29-56% of
+  //    their HP, scaling from ~29% at L40 to ~56% at L100 -- "winnable but costly", per the archived
+  //    difficulty contract, CLAUDE.md). F3 should tune each REAL 41-100 boss individually the same
+  //    way the 1-40 bosses were (this is a starting ballpark, not a hard rule).
+  //
+  // No new runtime constants are added for either note above: F1 authors no content, so there is
+  // nothing yet to wire a real BALANCE.* formula into. F3 should re-derive/re-cite these when real
+  // 41-100 items/monsters are authored (and re-sim-check each boss individually, per CLAUDE.md).
 };
