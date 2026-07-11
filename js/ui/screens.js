@@ -1113,32 +1113,58 @@ Game.Screens = (function () {
 
     root.appendChild(el('div', { class: 'tcat mt8' }, ['Facilities']));
     var facPanel = el('div', { class: 'panel' });
-    FACILITY_ORDER.forEach(function (type, idx) {
-      if (!presentTypes[type]) return;
-      var open = townOpenFacility === type;
+
+    // [revised] user-directed UI change (v1.4, 2026-07-11): master->detail instead of the old
+    // accordion that stacked EVERY facility on one screen (duplicating the Actions panel's
+    // quick-link list). Nothing selected -> a plain directory, one row per facility; selected
+    // (here or via an Actions quick-link -> openTownFacility) -> ONLY that facility's options,
+    // with a back row to return to the directory.
+    if (townOpenFacility && !presentTypes[townOpenFacility]) {
+      // Stale selection carried over from another town (e.g. opened the Shrine in Eldor, then
+      // traveled somewhere without one) — reset to the directory instead of an empty panel.
+      townOpenFacility = null;
+    }
+
+    if (!townOpenFacility) {
+      var rowIdx = 0;
+      FACILITY_ORDER.forEach(function (type) {
+        if (!presentTypes[type]) return;
+        var header = el('div', {
+          class: 'stat-row alt' + (rowIdx % 2),
+          style: 'cursor:pointer;',
+          onclick: function () {
+            townOpenFacility = type;
+            refreshTownScreen();
+          }
+        }, [
+          el('span', { class: 'stat-name' }, ['▸ ' + FACILITY_LABELS[type]])
+        ]);
+        facPanel.appendChild(header);
+        rowIdx++;
+      });
+    } else {
+      var type = townOpenFacility;
       var header = el('div', {
-        class: 'stat-row alt' + (idx % 2),
+        class: 'stat-row alt0',
         style: 'cursor:pointer;',
         onclick: function () {
-          townOpenFacility = open ? null : type;
+          townOpenFacility = null;
           refreshTownScreen();
         }
       }, [
-        el('span', { class: 'stat-name' }, [(open ? '▾ ' : '▸ ') + FACILITY_LABELS[type]])
+        el('span', { class: 'stat-name' }, ['◂ ' + FACILITY_LABELS[type] + ' — back to all facilities'])
       ]);
       facPanel.appendChild(header);
-      if (open) {
-        var body = el('div', { class: 'mt4 mb8' });
-        if (type === 'shop') renderShopPanel(body, c, area, presentTypes.shop);
-        else if (type === 'synthesis') renderSynthesisPanel(body, c);
-        else if (type === 'inn') renderInnPanel(body, c);
-        else if (type === 'vault') renderVaultPanel(body, c);
-        else if (type === 'academy') renderAcademyPanel(body, c);
-        else if (type === 'shrine') renderShrinePanel(body, c);
-        else if (type === 'tavern') renderTavernPanel(body, c, area);
-        facPanel.appendChild(body);
-      }
-    });
+      var body = el('div', { class: 'mt4 mb8' });
+      if (type === 'shop') renderShopPanel(body, c, area, presentTypes.shop);
+      else if (type === 'synthesis') renderSynthesisPanel(body, c);
+      else if (type === 'inn') renderInnPanel(body, c);
+      else if (type === 'vault') renderVaultPanel(body, c);
+      else if (type === 'academy') renderAcademyPanel(body, c);
+      else if (type === 'shrine') renderShrinePanel(body, c);
+      else if (type === 'tavern') renderTavernPanel(body, c, area);
+      facPanel.appendChild(body);
+    }
     root.appendChild(facPanel);
   }
 

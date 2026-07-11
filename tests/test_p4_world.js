@@ -1101,12 +1101,14 @@ try {
   console.log('PASS: town screen rendered (Eldor, no facility expanded)');
 } catch (e) { failures++; console.error('FAIL: town screen threw: ' + e.stack); }
 
-// Expand every facility panel and render each without throwing.
-var facilityHeaders = document.getElementById('maincontent').queryAllByClass('stat-row');
-// Click each facility header row (best-effort: re-navigate + click sequentially since renders replace the DOM)
+// Open every facility panel and render each without throwing. v1.4 town master->detail
+// (js/ui/screens.js renderTown, [revised] user-directed): the Town screen shows EITHER the
+// facility directory OR one selected facility's options — so return to the directory between
+// facilities via openTownFacility(null) (the same public path the Actions quick-links use),
+// since a plain re-navigate keeps the previous selection open and hides the other headers.
 ['shop', 'synthesis', 'inn', 'vault', 'academy', 'shrine'].forEach(function (facType) {
   try {
-    Game.Screens.navigate('town');
+    Game.Screens.openTownFacility(null);
     var rows = document.getElementById('maincontent').queryAllByClass('stat-row');
     var target = rows.filter(function (r) { return r.textContent.indexOf(({
       shop: 'Shop', synthesis: 'Synthesis Shop', inn: 'Inn', vault: 'Vault', academy: 'Academy', shrine: 'Spirit Shrine'
