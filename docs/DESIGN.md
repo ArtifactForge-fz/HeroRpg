@@ -144,6 +144,12 @@ purchases, deactivation wipe):
   technique (from equipped sets), flee. Every action costs Energy.
 - **Fear**: fighting above your level shows a yellow bar; stats −10% per level difference; affects
   spell damage but not healing.
+  - **Known limitation (v1.3 level arc):** because Fear spares healing (archived) and the extended
+    arc hands out abundant healing techs + energy consumables, a fully-supplied high-level character
+    can out-sustain a fight 5+ levels above them — so the archived "deep underdog = near-certain
+    death" outcome isn't strictly enforced past ~L50. At-level and boss balance are unaffected
+    (proven by the real-content re-sim). Fixing it fully needs a Fear/healing/energy pass (deferred,
+    user-accepted); see `js/balance.js` F1 CONVENTION NOTES §3 and `docs/SPEC-FULL-LEVEL-ARC.md`.
 - **Fury Meter**: kills at-or-above your level add ticks, +1% combat & skill XP each; resets on
   death, flee, or daily — single-player: reset on death/flee/inn rest **[adapted]**.
 - Monsters: have levels, elements/resistances by Anima grade, can use techniques (v2.1 added 24
@@ -231,5 +237,13 @@ Eidolons/v3.0 systems, arcade. Pets (`heropet.php` existed) — deferred, no des
      Vanguard Camp outpost) + more hunting areas incl. a low-level Arkan start zone; ~120 items
      (graded Crystals/Spheres, 30+ economy); ~20 Spirit Shrine buffs; 25 quests (incl. the Arkan
      race line + tier-3 class capstone); **15 classes across 3 tiers + 3 Legendaries.**
+   - **v1.3 actual — level-100 arc** (`docs/SPEC-FULL-LEVEL-ARC.md`, `SPEC-ARC-BANDS.md`): playable
+     range extended to `BALANCE.LEVEL_CAP = 100`. +13 hunting areas + 2 settlements (Kuraan
+     Reclamation Camp, Frosthold Waystation) across six northward regions (Kuraan → Majiku
+     Highlands → Frozen Reaches/Ukai → Estari ruins → Skyspire → Red Moon); +~40 monsters incl. 6
+     band bosses ending in Eidas Ascendant (L100); high-tier gear on a **tapered** damage/armor
+     curve (F1 finding — literal 3+2·levelReq breaks at scale); extended tech chains (ranks to 9);
+     Chapters III–IV + Epilogue. Tier-3 class unlock moved 38→60. XP curve unchanged (sim: ~12 h to
+     100). See the §4 Fear known-limitation note.
 4. **Balance oracle**: encode every archived number as a named constant in one `balance.js` file
    with a comment citing its reference file, so archived vs invented stays auditable in code.

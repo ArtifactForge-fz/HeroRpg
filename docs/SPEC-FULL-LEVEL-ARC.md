@@ -1,10 +1,13 @@
 # SPEC — Full 100+ Level Arc
 
-**Status:** IN PROGRESS — started 2026-07-10 on branch `level-arc`, after v1.2 landed on main.
-Currently in **F1 (balance-to-100)**. Decisions D1–D4 resolved (see §10). NOTE: the third class
-tier (F4's roster — Shadowknight/Magus/Gambit + Runeblade→legendary) already shipped in **v1.2** at
-unlock level 38; F4 here is reduced to **re-gating tier-3 to ~L60** once content supports it, plus a
-class-balance pass across the extended range.
+**Status:** COMPLETE (2026-07-11) on branch `level-arc` — F1 + Bands A–F + F4 + F5 + real-icon pass
++ balance re-sim all shipped and green; ready to merge to `main`. Decisions D1–D4 resolved (§10).
+**Accepted known limitation (user-approved):** the "5+ levels down = near-certain death via Fear"
+contract is not fully enforced past ~L50 — a fully-supplied character out-sustains via Fear-spared
+healing + energy consumables. At-level and boss balance hold (real-content re-sim). A deeper
+Fear/healing/energy pass is deferred; the over-armoring half of the problem WAS fixed
+(`ARMOR_STACK_DIVISOR=2`, see `js/balance.js` F1 notes §3). NOTE: the third class tier
+(Shadowknight/Magus/Gambit + Runeblade→legendary) shipped in v1.2 at L38; F4 re-gated it to L60.
 **Owner model:** lead (scoping/spec/review) drafts; Sonnet subagents do the content/mechanical work.
 **Relationship to authority:** This spec *extends* `docs/DESIGN.md` §10.3, which deliberately scoped
 v1 to "levels 1–40 playable." It does not override any archived mechanic — it grows the content

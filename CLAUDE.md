@@ -2,8 +2,10 @@
 
 Single-player browser remake of **herorpg.net** (2004–2008, dead), reconstructed from Wayback
 Machine scrapes. Static HTML/CSS/JS, no build step, no dependencies — open `index.html` via
-`file://`. **v1.2 (save version 9) is complete on `main`.** A level-100 content arc is IN PROGRESS
-on branch `level-arc` (F1 + Band A done) — **to resume, read `docs/CONTINUE-LEVEL-ARC.md` first.**
+`file://`. **v1.3 — the level-100 arc — is complete (save version 9)** on branch `level-arc`, ready
+to merge to `main`. See `docs/SPEC-FULL-LEVEL-ARC.md` (+ `SPEC-ARC-BANDS.md`) and the "Recently
+completed" section below. One accepted known limitation: the 5-levels-down=death contract isn't
+fully enforced at high levels (Fear-spared healing sustain) — deferred, documented in DESIGN §4.
 
 ## Cardinal rules
 
@@ -121,6 +123,27 @@ localStorage fallback — and syntax-checks its 3 script blocks as it writes. A 
 rebuilds it after every commit so a deployable single-file build always matches HEAD. The hooks
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
 re-enable it. Never build/ship from a tree with red suites.
+
+## Recently completed (2026-07-11) — v1.3 the level-100 arc (branch `level-arc`)
+
+Specs: `docs/SPEC-FULL-LEVEL-ARC.md` + `docs/SPEC-ARC-BANDS.md`. Extends the playable range 40→100
+(`BALANCE.LEVEL_CAP=100`). Phased, each committed green; no save-version change (all data + one
+constant). Order: **F1** balance-to-100 (cap + routing; sim proved the math closes; found the
+mandatory gear TAPER `effectiveLevelReq=35+0.7·(lr−35)`) → **Bands A–F** (levels 41–100: 13 areas +
+2 towns across six northward regions Kuraan→Majiku→Ukai→Estari→Skyspire→Red Moon, ~40 monsters, 6
+bosses ending in Eidas Ascendant L100, tapered gear, tech ranks→9, quests) → **F4** tier-3 re-gate
+38→60 → **F5** story spine (Ch III–IV + Epilogue) → **real-icon pass** (210 band ids → real DCSS
+tiles; monsters mutually distinct) → **balance re-sim** with real content.
+- Balance: the re-sim caught arc over-armoring (5 tapered armor slots stacked ~1.5× a monster's
+  single damage term) — fixed with `ARMOR_STACK_DIVISOR=2` + a tech-power tap (levelReq>35 only;
+  1–40 untouched). Bosses now winnable-but-costly; at-level holds.
+- ACCEPTED KNOWN LIMITATION (user-approved): 5-levels-down≠guaranteed death past ~L50 (Fear-spared
+  healing + energy consumables let a kitted player out-sustain). Deferred Fear/healing/energy pass;
+  documented in DESIGN §4 and `js/balance.js` F1 notes §3.
+- Icon pipeline note: the LEAD's Bash can pull DCSS `rltiles` tiles (sub-agents' env can't); stage
+  downloads in a REPO-RELATIVE dir (mktemp `/tmp` paths misresolve as `D:\tmp\…` for the Windows
+  node/curl); `execSync` curl must not use `< /dev/null` (cmd.exe). Only monster icons need mutual
+  byte-distinctness (`test_icons.js` Test 2); items/techs may reuse tiles.
 
 ## Recently completed (2026-07-10) — v1.2 (branch `v1.2-skills-classes-content`)
 
