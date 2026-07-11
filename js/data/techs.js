@@ -1027,7 +1027,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Fire',
     energyCost: 42,
-    power: 92,
+    power: 51, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 92 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 50.6 -> 51. Cleave/Impale/Firebolt ranks 6-9 were compressing fights (killing before Fear/armor could matter); armor fix alone wasn't enough, see balance.js.
     effect: 'damage',
     trainingCost: 10,
     skillReq: 40,
@@ -1055,7 +1055,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 3.2, // invented (user-directed)
+    powerMult: 1.76, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.2 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 1.76 (was invented 3.2).
     energyCost: 34,
     effect: 'damage',
     trainingCost: 10,
@@ -1070,7 +1070,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 3.1, // invented (user-directed)
+    powerMult: 1.71, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.1 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 1.705 -> 1.71 (was invented 3.1).
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 34,
     effect: 'damage',
@@ -1096,7 +1096,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Fire',
     energyCost: 48,
-    power: 112,
+    power: 62, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 112 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 61.6 -> 62.
     effect: 'damage',
     trainingCost: 12,
     skillReq: 50,
@@ -1124,7 +1124,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 3.5, // invented (user-directed)
+    powerMult: 1.93, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.5 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 1.925 -> 1.93 (was invented 3.5).
     energyCost: 38,
     effect: 'damage',
     trainingCost: 12,
@@ -1139,7 +1139,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 3.4, // invented (user-directed)
+    powerMult: 1.87, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.4 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 1.87 (was invented 3.4).
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 38,
     effect: 'damage',
@@ -1165,7 +1165,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Fire',
     energyCost: 54,
-    power: 132,
+    power: 73, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 132 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 72.6 -> 73.
     effect: 'damage',
     trainingCost: 14,
     skillReq: 60,
@@ -1193,7 +1193,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 3.8, // invented (user-directed)
+    powerMult: 2.09, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.8 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 2.09 (was invented 3.8).
     energyCost: 42,
     effect: 'damage',
     trainingCost: 14,
@@ -1208,7 +1208,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 3.7, // invented (user-directed)
+    powerMult: 2.04, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.7 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 2.035 -> 2.04 (was invented 3.7).
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 42,
     effect: 'damage',
@@ -1235,7 +1235,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Fire',
     energyCost: 60,
-    power: 152,
+    power: 84, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 152 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 83.6 -> 84.
     effect: 'damage',
     trainingCost: 16,
     skillReq: 70,
@@ -1263,7 +1263,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 4.1, // invented (user-directed)
+    powerMult: 2.26, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 4.1 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 2.255 -> 2.26 (was invented 4.1).
     energyCost: 46,
     effect: 'damage',
     trainingCost: 16,
@@ -1278,7 +1278,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 4.0, // invented (user-directed)
+    powerMult: 2.2, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 4.0 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 2.2 (was invented 4.0).
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 46,
     effect: 'damage',

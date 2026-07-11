@@ -315,4 +315,77 @@ var BALANCE = {
   // No new runtime constants are added for either note above: F1 authors no content, so there is
   // nothing yet to wire a real BALANCE.* formula into. F3 should re-derive/re-cite these when real
   // 41-100 items/monsters are authored (and re-sim-check each boss individually, per CLAUDE.md).
+  //
+  // 3. ARMOR-STACK CORRECTION (post-launch re-sim finding, once bands A-F were actually authored):
+  //    note 1 above says "Armor pieces taper the same way [as weapon damage]" -- true for a SINGLE
+  //    piece, but a real geared character wears up to 5 armor slots (head/body/legs/feet/offhand)
+  //    simultaneously, all stacking ADDITIVELY into one flat mitigation number (js/core/
+  //    inventory.js equippedArmorTotal), while a monster's damage is a SINGLE linear term (3+2*lvl).
+  //    A holistic re-sim with the REAL Band A-F items (scratchpad sim_realcontent_100.js) found
+  //    that note 1's single-item taper, once multiplied by 5 slots, still overshoots a same-level
+  //    monster's entire damage term by ~1.3-1.6x -- so even halved by Fear at 5-levels-down, the
+  //    player's mitigated incoming damage rounds down to the 1-HP floor almost every hit, and the
+  //    "5-levels-down = certain death" contract silently broke again (measured before this fix:
+  //    100% win / ~99% HP left / 0 consumables at every checkpoint 50/70/90/100, on a full 5-slot
+  //    matched set of the note-1 tapered values -- i.e. the note-1 taper alone is NOT sufficient
+  //    once real full sets exist; it was only ever sim-validated against a single weapon-damage
+  //    term, not N-slot armor stacking).
+  //    FIX (sim-swept): ARMOR_STACK_DIVISOR = 2 -- every arc armor/magicArmor field with
+  //    levelReq > 35 (js/data/items.js) is the note-1 tapered value further divided by 2 (rounded,
+  //    floor 1), e.g. Band A's tapered body armor 43 -> 22; weapon damage is NOT divided. A LARGER
+  //    divisor (3-10) drove the 5-levels-down win rate down much further in an isolated sim using a
+  //    maximally-optimized 6-slot/max-tech/grade-II-consumable "prepared player" build -- but every
+  //    divisor above 2 was sim-checked and rejected because it broke one of two OTHER, harder
+  //    constraints discovered along the way:
+  //      (a) the EXISTING, already-shipped hand-rolled boss-fight tests (tests/test_p3_battle.js
+  //          Tests 32/35/38/41/44/47), which model a more modest "geared" warrior (weapon+body+
+  //          shield only -- 2 armor slots, not 5 -- pure basic Attack, grade-I consumables): for
+  //          THAT weaker/partial-gear build the divisor's ONLY lever is armor (no tech involved),
+  //          and divisor >=3 crashed eidas_ascendant (the hardest, "amplified" final boss) as low as
+  //          a 56-75%-and-falling win rate across repeated 60-trial runs (real, unseeded RNG) --
+  //          too close to (and sometimes under) the suite's existing >=60% "not unwinnable" floor
+  //          to be safe from flakiness. Divisor 2 keeps that same fixture at a comfortable, stable
+  //          ~78-85% across repeated runs.
+  //      (b) a LIGHT-armor/caster spot-check (Intelligence/Vitality/Endurance, Rods+Firebolt, Light
+  //          Armor) added specifically to verify this fix doesn't unfairly cripple a non-tank build:
+  //          a caster ALREADY carries less armor than the melee build, so pushing the companion tech
+  //          tap (below) much past 0.55 dropped the caster's Band-A boss (majiku_warlord) win rate
+  //          as low as 25-28% in the same re-sim -- an unintended, unacceptable caster regression,
+  //          not a deliberate target of this fix.
+  //    Divisor 2 is therefore the LARGEST value compatible with both constraints, not merely the
+  //    value that best serves the fuller-gear 5-down check in isolation. NOTE: this means arc armor
+  //    pieces can read as numerically "worse" than the levelReq<=35 tier immediately below them
+  //    (e.g. Band A's corrected body armor 22 vs the levelReq-35 heavy_body_vault_bulwark's
+  //    unchanged 37) -- an accepted, sim-forced trade-off, not an authoring error; levelReq<=35
+  //    items are explicitly OUT OF SCOPE and were not touched.
+  //    OFFENSE_TECH_TAPER = 0.55 (companion tap, js/data/techs.js): the re-sim also found the armor
+  //    fix alone was not sufficient for a geared, tech-using player -- Cleave/Impale/Firebolt ranks
+  //    6-9 (added in Bands C-F, powerMult up to 4.1x / power up to 152) let such a player kill a
+  //    monster in ~2-4 actions REGARDLESS of the monster's own damage, so the fight ends before
+  //    enough monster hits land for Fear-reduced armor to matter -- compressed fights, not just
+  //    over-mitigation, were silently defeating the contract too. Ranks 6-9 of those three chains
+  //    only (Mend Wounds heal power was deliberately left untouched -- nerfing it in the sweep made
+  //    bosses swing from "winnable" to "coin-flip" at Lv100 without meaningfully helping 5-down,
+  //    since abundant energy-restore crystals mean Mend Wounds is rarely the bottleneck) have their
+  //    powerMult/power multiplied by 0.55, sim-picked as the largest tap that still kept the caster
+  //    Band-A boss spot-check comfortably above ~85% (see constraint (b) above); the pre-existing
+  //    hand-rolled boss tests are unaffected by this lever (they use plain Attack, never a tech).
+  //    RESULT (sim-verified, scratchpad sim_realcontent_100.js, 300-trial runs, divisor 2 / tap 0.55):
+  //    at-level stays 100% win / ~97-99% HP left at every checkpoint (comfortably clear of the
+  //    >=85% floor); bosses stay 98.7-100% win (melee) / 89-100% win (caster) at a real cost of
+  //    74-91% HP left -- Eidas Ascendant is close to the costliest melee boss encounter (99.7% win,
+  //    75% HP left, ~10-15 rounds); 5-levels-down win% drops from 100% to 73-100% (melee, worse at
+  //    low checkpoints, back to ~100% by L90-100) / 55-100% (caster, same pattern) -- a real,
+  //    measurable improvement over the pre-fix 100%/99%/0-consumables baseline but NOT the literal
+  //    "~0% win" ideal at every checkpoint. Two structural reasons this divisor/tap pairing cannot
+  //    close that last gap without breaking constraint (a) or (b) above: a sustain ceiling (Mend
+  //    Wounds heal + an abundant graded-consumable stockpile, both intentionally part of a "prepared
+  //    player" loadout and both out of this fix's scope) lets a well-supplied player grind out a long
+  //    fight almost indefinitely rather than dying outright; and a caster's Intelligence-scaled
+  //    Firebolt/armor-skill math resists this correction more at L100 than at L50 (its L100
+  //    5-levels-down check stayed ~100% win at every divisor/tap combo tried). Flagged for F3/a
+  //    future balance pass (a per-band or per-boss ARMOR_STACK_DIVISOR, or updating the existing
+  //    hand-rolled boss-test fixtures to a fuller gear loadout so a larger divisor becomes safe)
+  //    rather than solved here by further nerfing consumables, Mend Wounds, or monster stats (all
+  //    out of this fix's scope).
 };

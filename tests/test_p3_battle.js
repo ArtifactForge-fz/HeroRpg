@@ -1478,6 +1478,15 @@ console.log('\n=== Test 31: Band A levelReq-45/48 weapons carry TAPERED damage p
 function taperedEffectiveLevelReq(levelReq) {
   return levelReq <= 35 ? levelReq : 35 + 0.7 * (levelReq - 35);
 }
+// js/balance.js F1 CONVENTION NOTES note 3 (post-launch re-sim, real Band A-F content): a full
+// 5-slot matched armor set at the note-1 tapered value alone overshoots a same-level monster's
+// whole damage term, silently breaking the 5-levels-down Fear contract again -- ARMOR_STACK_DIVISOR
+// further divides the tapered armor/magicArmor number (levelReq > 35 only; weapon damage is NOT
+// divided).
+var ARMOR_STACK_DIVISOR = 2;
+function correctedArmor(levelReq) {
+  return Math.max(1, Math.round(Math.round(1 + taperedEffectiveLevelReq(levelReq)) / ARMOR_STACK_DIVISOR));
+}
 var band45WeaponIds = [
   'sword_kuraan_reclaimers_blade', 'polearm_arkan_vanguard_lance', 'knife_fringewood_fang',
   'rod_majiku_wardbreaker', 'hth_reclaimers_gauntlets'
@@ -1491,14 +1500,15 @@ band45WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage45, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage45);
   assert(it.damage !== literalDamage45, id + ' damage is NOT the literal-formula value ' + literalDamage45 + ' (the F1 taper must be applied)');
 });
-// Armor tapers the same way (1 + effectiveLevelReq).
+// Armor tapers the same way (1 + effectiveLevelReq), THEN the ARMOR-STACK CORRECTION divides that
+// by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor45 = 1 + 45; // 46 -- literal read
-var taperedArmor45 = Math.round(1 + taperedEffectiveLevelReq(45)); // 43
+var taperedArmor45 = correctedArmor(45); // 43 / 2 = 22
 ['light_body_kuraan_windweave', 'medium_body_reclaimers_hauberk', 'heavy_body_kuraan_bulwark_plate', 'shield_kuraan_wardbulwark'].forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band A tier-45 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor45, id + ' armor (' + it.armor + ') equals the TAPERED value ' + taperedArmor45);
+  assert(it.armor === taperedArmor45, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor45);
   assert(it.armor !== literalArmor45, id + ' armor is NOT the literal-formula value ' + literalArmor45);
 });
 
@@ -1652,27 +1662,30 @@ band55WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage55, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage55);
   assert(it.damage !== literalDamage55, id + ' damage is NOT the literal-formula value ' + literalDamage55 + ' (the F1 taper must be applied)');
 });
-// Armor tapers the same way (1 + effectiveLevelReq).
+// Armor tapers the same way (1 + effectiveLevelReq), THEN the ARMOR-STACK CORRECTION divides that
+// by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor55 = 1 + 55; // 56 -- literal read
-var taperedArmor55 = Math.round(1 + taperedEffectiveLevelReq(55)); // 50
+var taperedArmor55 = correctedArmor(55); // 50 / 2 = 25
 ['light_body_steppewind_mantle', 'medium_body_hostguard_brigandine', 'heavy_body_ridgeplate_cuirass', 'shield_highland_bulwark'].forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band B tier-55 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor55, id + ' armor (' + it.armor + ') equals the TAPERED value ' + taperedArmor55);
+  assert(it.armor === taperedArmor55, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor55);
   assert(it.armor !== literalArmor55, id + ' armor is NOT the literal-formula value ' + literalArmor55);
 });
-// Sub-tier (levelReq 58) tapers to a DIFFERENT value than the main tier (levelReq 55), confirming
-// the taper is re-derived per levelReq rather than a fixed band-wide constant.
+// Sub-tier (levelReq 58) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
+// 55), confirming the taper is re-derived per levelReq rather than a fixed band-wide constant --
+// (ARMOR_STACK_DIVISOR's rounding happens to keep these particular adjacent tapered values
+// distinct at divisor 2, unlike some larger divisors swept during the fix, so this stays strict).
 var literalArmor58 = 1 + 58; // 59 -- literal read
-var taperedArmor58 = Math.round(1 + taperedEffectiveLevelReq(58)); // 52
+var taperedArmor58 = correctedArmor(58); // 52 / 2 = 26
 ['light_legs_steppewind_leggings', 'medium_feet_hostguard_boots', 'heavy_legs_ridgeplate_legguards'].forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band B sub-tier-58 armor exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor58, id + ' armor (' + it.armor + ') equals the TAPERED sub-tier value ' + taperedArmor58);
+  assert(it.armor === taperedArmor58, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED sub-tier value ' + taperedArmor58);
   assert(it.armor !== literalArmor58, id + ' armor is NOT the literal-formula value ' + literalArmor58);
-  assert(it.armor !== taperedArmor55, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier tapered value ' + taperedArmor55 + ' (taper is re-derived per levelReq)');
+  assert(it.armor !== taperedArmor55, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor55 + ' (taper is re-derived per levelReq)');
 });
 
 // =================== Test 35: majiku_ridge_chieftain lair fight — winnable but costly (real RNG sim) ===================
@@ -1826,27 +1839,29 @@ band65WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage65, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage65);
   assert(it.damage !== literalDamage65, id + ' damage is NOT the literal-formula value ' + literalDamage65 + ' (the F1 taper must be applied)');
 });
-// Armor tapers the same way (round(1 + effectiveLevelReq)).
+// Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
+// divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor65 = 1 + 65; // 66 -- literal read
-var taperedArmor65 = Math.round(1 + taperedEffectiveLevelReq(65)); // 57
+var taperedArmor65 = correctedArmor(65); // 57 / 2 = 29
 ['light_body_frosthold_veilcloak', 'medium_body_waystation_hauberk', 'heavy_body_glacial_bulwark_plate', 'shield_frosthold_bulwark'].forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band C tier-65 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor65, id + ' armor (' + it.armor + ') equals the TAPERED value ' + taperedArmor65);
+  assert(it.armor === taperedArmor65, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor65);
   assert(it.armor !== literalArmor65, id + ' armor is NOT the literal-formula value ' + literalArmor65);
 });
-// Sub-tier (levelReq 68) tapers to a DIFFERENT value than the main tier (levelReq 65), confirming
-// the taper is re-derived per levelReq rather than a fixed band-wide constant.
+// Sub-tier (levelReq 68) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
+// 65), confirming the taper is re-derived per levelReq rather than a fixed band-wide constant --
+// (57 and 59 correct to distinct integers 29/30 at divisor 2, so this stays strict).
 var literalArmor68 = 1 + 68; // 69 -- literal read
-var taperedArmor68 = Math.round(1 + taperedEffectiveLevelReq(68)); // 59
+var taperedArmor68 = correctedArmor(68); // 59 / 2 = 30
 ['light_legs_frosthold_ward_leggings', 'medium_feet_waystation_boots', 'heavy_legs_glacial_greatplate_legguards'].forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band C sub-tier-68 armor exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor68, id + ' armor (' + it.armor + ') equals the TAPERED sub-tier value ' + taperedArmor68);
+  assert(it.armor === taperedArmor68, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED sub-tier value ' + taperedArmor68);
   assert(it.armor !== literalArmor68, id + ' armor is NOT the literal-formula value ' + literalArmor68);
-  assert(it.armor !== taperedArmor65, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier tapered value ' + taperedArmor65 + ' (taper is re-derived per levelReq)');
+  assert(it.armor !== taperedArmor65, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor65 + ' (taper is re-derived per levelReq)');
 });
 
 // =================== Test 38: ukai_deep_dweller lair fight — winnable but costly (real RNG sim) ===================
@@ -2000,27 +2015,29 @@ band75WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage75, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage75);
   assert(it.damage !== literalDamage75, id + ' damage is NOT the literal-formula value ' + literalDamage75 + ' (the F1 taper must be applied)');
 });
-// Armor tapers the same way (round(1 + effectiveLevelReq)).
+// Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
+// divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor75 = 1 + 75; // 76 -- literal read
-var taperedArmor75 = Math.round(1 + taperedEffectiveLevelReq(75)); // 64
+var taperedArmor75 = correctedArmor(75); // 64 / 2 = 32
 ['light_body_wellspring_veil', 'medium_body_estari_brigandine', 'heavy_body_warden_plate', 'shield_estari_bulwark'].forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band D tier-75 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor75, id + ' armor (' + it.armor + ') equals the TAPERED value ' + taperedArmor75);
+  assert(it.armor === taperedArmor75, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor75);
   assert(it.armor !== literalArmor75, id + ' armor is NOT the literal-formula value ' + literalArmor75);
 });
-// Sub-tier (levelReq 78) tapers to a DIFFERENT value than the main tier (levelReq 75), confirming
-// the taper is re-derived per levelReq rather than a fixed band-wide constant.
+// Sub-tier (levelReq 78) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
+// 75), confirming the taper is re-derived per levelReq rather than a fixed band-wide constant --
+// (64 and 66 correct to distinct integers 32/33 at divisor 2, so this stays strict).
 var literalArmor78 = 1 + 78; // 79 -- literal read
-var taperedArmor78 = Math.round(1 + taperedEffectiveLevelReq(78)); // 66
+var taperedArmor78 = correctedArmor(78); // 66 / 2 = 33
 ['light_legs_wellspring_leggings', 'medium_feet_estari_boots', 'heavy_legs_warden_legguards'].forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band D sub-tier-78 armor exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor78, id + ' armor (' + it.armor + ') equals the TAPERED sub-tier value ' + taperedArmor78);
+  assert(it.armor === taperedArmor78, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED sub-tier value ' + taperedArmor78);
   assert(it.armor !== literalArmor78, id + ' armor is NOT the literal-formula value ' + literalArmor78);
-  assert(it.armor !== taperedArmor75, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier tapered value ' + taperedArmor75 + ' (taper is re-derived per levelReq)');
+  assert(it.armor !== taperedArmor75, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor75 + ' (taper is re-derived per levelReq)');
 });
 
 // =================== Test 41: estari_warden_prime lair fight — winnable but costly (real RNG sim) ===================
@@ -2174,27 +2191,29 @@ band85WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage85, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage85);
   assert(it.damage !== literalDamage85, id + ' damage is NOT the literal-formula value ' + literalDamage85 + ' (the F1 taper must be applied)');
 });
-// Armor tapers the same way (round(1 + effectiveLevelReq)).
+// Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
+// divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor85 = 1 + 85; // 86 -- literal read
-var taperedArmor85 = Math.round(1 + taperedEffectiveLevelReq(85)); // 71
+var taperedArmor85 = correctedArmor(85); // 71 / 2 = 36
 ['light_body_skysilk_shroud', 'medium_body_spireguard_brigandine', 'heavy_body_spireward_plate', 'shield_spireward_aegis'].forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band E tier-85 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor85, id + ' armor (' + it.armor + ') equals the TAPERED value ' + taperedArmor85);
+  assert(it.armor === taperedArmor85, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor85);
   assert(it.armor !== literalArmor85, id + ' armor is NOT the literal-formula value ' + literalArmor85);
 });
-// Sub-tier (levelReq 88) tapers to a DIFFERENT value than the main tier (levelReq 85), confirming
-// the taper is re-derived per levelReq rather than a fixed band-wide constant.
+// Sub-tier (levelReq 88) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
+// 85), confirming the taper is re-derived per levelReq rather than a fixed band-wide constant --
+// (71 and 73 correct to distinct integers 36/37 at divisor 2, so this stays strict).
 var literalArmor88 = 1 + 88; // 89 -- literal read
-var taperedArmor88 = Math.round(1 + taperedEffectiveLevelReq(88)); // 73
+var taperedArmor88 = correctedArmor(88); // 73 / 2 = 37
 ['light_legs_stormline_leggings', 'medium_feet_stormline_boots', 'heavy_legs_stormline_legguards'].forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band E sub-tier-88 armor exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor88, id + ' armor (' + it.armor + ') equals the TAPERED sub-tier value ' + taperedArmor88);
+  assert(it.armor === taperedArmor88, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED sub-tier value ' + taperedArmor88);
   assert(it.armor !== literalArmor88, id + ' armor is NOT the literal-formula value ' + literalArmor88);
-  assert(it.armor !== taperedArmor85, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier tapered value ' + taperedArmor85 + ' (taper is re-derived per levelReq)');
+  assert(it.armor !== taperedArmor85, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor85 + ' (taper is re-derived per levelReq)');
 });
 
 // =================== Test 44: society_anima_horror lair fight — winnable but costly (real RNG sim) ===================
@@ -2363,27 +2382,29 @@ band95WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage95, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage95);
   assert(it.damage !== literalDamage95, id + ' damage is NOT the literal-formula value ' + literalDamage95 + ' (the F1 taper must be applied)');
 });
-// Armor tapers the same way (round(1 + effectiveLevelReq)).
+// Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
+// divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor95 = 1 + 95; // 96 -- literal read
-var taperedArmor95 = Math.round(1 + taperedEffectiveLevelReq(95)); // 78
+var taperedArmor95 = correctedArmor(95); // 78 / 2 = 39
 ['light_body_moonveil_shroud', 'medium_body_sanctum_brigandine', 'heavy_body_redmoon_plate', 'shield_redmoon_aegis'].forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band F tier-95 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor95, id + ' armor (' + it.armor + ') equals the TAPERED value ' + taperedArmor95);
+  assert(it.armor === taperedArmor95, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor95);
   assert(it.armor !== literalArmor95, id + ' armor is NOT the literal-formula value ' + literalArmor95);
 });
-// Sub-tier (levelReq 98) tapers to a DIFFERENT value than the main tier (levelReq 95), confirming
-// the taper is re-derived per levelReq rather than a fixed band-wide constant.
+// Sub-tier (levelReq 98) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
+// 95), confirming the taper is re-derived per levelReq rather than a fixed band-wide constant --
+// (78 and 80 correct to distinct integers 39/40 at divisor 2, so this stays strict).
 var literalArmor98 = 1 + 98; // 99 -- literal read
-var taperedArmor98 = Math.round(1 + taperedEffectiveLevelReq(98)); // 80
+var taperedArmor98 = correctedArmor(98); // 80 / 2 = 40
 ['light_legs_moonveil_leggings', 'medium_feet_sanctum_boots', 'heavy_legs_redmoon_legguards'].forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band F sub-tier-98 armor exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor98, id + ' armor (' + it.armor + ') equals the TAPERED sub-tier value ' + taperedArmor98);
+  assert(it.armor === taperedArmor98, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED sub-tier value ' + taperedArmor98);
   assert(it.armor !== literalArmor98, id + ' armor is NOT the literal-formula value ' + literalArmor98);
-  assert(it.armor !== taperedArmor95, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier tapered value ' + taperedArmor95 + ' (taper is re-derived per levelReq)');
+  assert(it.armor !== taperedArmor95, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor95 + ' (taper is re-derived per levelReq)');
 });
 
 // =================== Test 47: eidas_ascendant lair fight — THE ARC FINALE, winnable but the costliest fight in the game (real RNG sim) ===================

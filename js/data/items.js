@@ -1330,7 +1330,7 @@ Game.Data.items = [
     slot: 'weapon',
     skill: 'Swords',
     damage: 92, // +26% over sword_kastengard_relic_blade (lvl35, dmg 73), the best pre-existing sword
-    magicArmor: 10, // hybrid: a weapon carrying +Magic Armor (Light/Dark, "divine race" flavor)
+    magicArmor: 5, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 10 / 2 = 5.
     weight: 7,
     levelReq: 38,
     statReqs: { strength: 50 },
@@ -1593,7 +1593,12 @@ Game.Data.items = [
   // 35): effectiveLevelReq = 35 + 0.7*(levelReq-35). Main tier at levelReq 45 (effectiveLevelReq
   // 42 -> damage 3+2*42=87, armor 1+42=43 — NOT the literal 3+2*45=93 / 1+45=46); a levelReq-48
   // sub-tier (effectiveLevelReq 44.1 -> damage ~91, armor ~45). Bands <=35 are unchanged (kept
-  // literal, per the F1 note). statReqs continue the existing levelReq+9-ish trend (e.g.
+  // literal, per the F1 note). ARMOR-STACK CORRECTION (post-launch re-sim finding, see
+  // js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR): the armor numbers actually stored on
+  // each piece below are the tapered value ABOVE further divided by 2 (e.g. the tapered 43 body
+  // armor is stored as 22) — a full 5-slot matched set of the literal tapered value stacks
+  // additively against a monster's single damage term and silently defeats Fear at 5-levels-down;
+  // damage (weapons) is NOT divided, only armor/magicArmor. statReqs continue the existing levelReq+9-ish trend (e.g.
   // sword_kastengard_relic_blade levelReq35/statReq44); value is an invented economy continuation
   // of the existing per-tier growth curve (no archived value formula survived — see this file's
   // header comment).
@@ -1672,8 +1677,8 @@ Game.Data.items = [
     name: 'Kuraan Wardbulwark',
     slot: 'offhand',
     skill: 'Shields',
-    armor: 43, // TAPERED: 1+42=43
-    magicArmor: 14,
+    armor: 22, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22.
+    magicArmor: 7, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 14 / 2 = 7.
     weight: 8,
     levelReq: 45,
     statReqs: { strength: 54 },
@@ -1688,8 +1693,8 @@ Game.Data.items = [
     name: 'Kuraan Windweave Robe',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 43, // TAPERED, see header comment above
-    magicArmor: 14,
+    armor: 22, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22.
+    magicArmor: 7, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 14 / 2 = 7.
     weight: 3,
     levelReq: 45,
     value: 1850,
@@ -1701,8 +1706,8 @@ Game.Data.items = [
     name: 'Kuraan Windveil Hood',
     slot: 'head',
     skill: 'Light Armor',
-    armor: 43,
-    magicArmor: 14,
+    armor: 22, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22.
+    magicArmor: 7, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 14 / 2 = 7.
     weight: 2,
     levelReq: 45,
     value: 1820,
@@ -1714,7 +1719,7 @@ Game.Data.items = [
     name: "Reclaimer's Hauberk",
     slot: 'body',
     skill: 'Medium Armor',
-    armor: 43,
+    armor: 22, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22.
     weight: 6,
     levelReq: 45,
     value: 1850,
@@ -1726,7 +1731,7 @@ Game.Data.items = [
     name: "Reclaimer's Greaves",
     slot: 'legs',
     skill: 'Medium Armor',
-    armor: 43,
+    armor: 22, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22.
     weight: 6,
     levelReq: 45,
     value: 1830,
@@ -1738,7 +1743,7 @@ Game.Data.items = [
     name: 'Kuraan Bulwark Plate',
     slot: 'body',
     skill: 'Heavy Armor',
-    armor: 43,
+    armor: 22, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22.
     weight: 10,
     levelReq: 45,
     statReqs: { strength: 48 },
@@ -1751,7 +1756,7 @@ Game.Data.items = [
     name: 'Kuraan Warhelm',
     slot: 'head',
     skill: 'Heavy Armor',
-    armor: 43,
+    armor: 22, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22.
     weight: 10,
     levelReq: 45,
     statReqs: { strength: 48 },
@@ -1766,8 +1771,8 @@ Game.Data.items = [
     name: 'Kuraan Ward-Leggings',
     slot: 'legs',
     skill: 'Light Armor',
-    armor: 45, // TAPERED: effectiveLevelReq 35+0.7*13=44.1 -> 1+44.1=45.1
-    magicArmor: 15,
+    armor: 23, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 45 / 2 = 23.
+    magicArmor: 8, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 15 / 2 = 8.
     weight: 3,
     levelReq: 48,
     value: 1950,
@@ -1779,7 +1784,7 @@ Game.Data.items = [
     name: "Reclaimer's Boots",
     slot: 'feet',
     skill: 'Medium Armor',
-    armor: 45,
+    armor: 23, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 45 / 2 = 23.
     weight: 6,
     levelReq: 48,
     value: 1930,
@@ -1791,7 +1796,7 @@ Game.Data.items = [
     name: 'Kuraan Greatplate Legguards',
     slot: 'legs',
     skill: 'Heavy Armor',
-    armor: 45,
+    armor: 23, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 45 / 2 = 23.
     weight: 10,
     levelReq: 48,
     statReqs: { strength: 50 },
@@ -1888,7 +1893,7 @@ Game.Data.items = [
     name: 'Kuraan Ashcloak',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 52, // +21% over the tapered tier-45 body armor (43)
+    armor: 26, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 52 / 2 = 26.
     damage: 5, // hybrid: armor granting a weapon-like Damage bonus, matching the ashroot_ward_cloak precedent
     weight: 3,
     levelReq: 45,
@@ -1902,7 +1907,7 @@ Game.Data.items = [
     slot: 'weapon',
     skill: 'Rods',
     damage: 109, // +20% over the tapered levelReq-48 damage (~91)
-    armor: 6, // hybrid: a weapon carrying +Armor, a stat shop rods never have
+    armor: 3, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 6 / 2 = 3.
     weight: 4,
     levelReq: 48,
     statReqs: { intelligence: 60 },
@@ -1916,7 +1921,7 @@ Game.Data.items = [
     slot: 'weapon',
     skill: 'Swords',
     damage: 108, // +24% over the tapered levelReq-45 damage (87)
-    magicArmor: 12, // hybrid: a weapon carrying +Magic Armor
+    magicArmor: 6, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 12 / 2 = 6.
     weight: 7,
     levelReq: 45,
     statReqs: { strength: 58 },
@@ -1932,7 +1937,10 @@ Game.Data.items = [
   // (mandatory past band 35): effectiveLevelReq = 35 + 0.7*(levelReq-35). Main tier at levelReq 55
   // (effectiveLevelReq 35+0.7*20=49 -> damage 3+2*49=101, armor 1+49=50 — NOT the literal
   // 3+2*55=113 / 1+55=56); a levelReq-58 sub-tier (effectiveLevelReq 35+0.7*23=51.1 -> damage
-  // ~105, armor ~52). Bands <=35 are unchanged (kept literal, per the F1 note). statReqs continue
+  // ~105, armor ~52). Bands <=35 are unchanged (kept literal, per the F1 note). ARMOR-STACK
+  // CORRECTION (see Band A header above / js/balance.js F1 CONVENTION NOTES): armor/magicArmor
+  // numbers stored below are the tapered value ABOVE further divided by 2 (ARMOR_STACK_DIVISOR);
+  // damage is untouched. statReqs continue
   // the levelReq+9-ish weapon/shield trend and levelReq+3-ish heavy-armor trend established at
   // tier 45 (js/data/items.js Band A header); value is an invented economy continuation of the
   // existing per-tier growth curve (~1.25x per 10 levelReq, matching 1400->1750 tier35->45 — no
@@ -2012,8 +2020,8 @@ Game.Data.items = [
     name: 'Highland Bulwark',
     slot: 'offhand',
     skill: 'Shields',
-    armor: 50, // TAPERED: 1+49=50
-    magicArmor: 16,
+    armor: 25, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25.
+    magicArmor: 8, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 16 / 2 = 8.
     weight: 8,
     levelReq: 55,
     statReqs: { strength: 64 },
@@ -2028,8 +2036,8 @@ Game.Data.items = [
     name: 'Steppewind Mantle',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 50, // TAPERED, see header comment above
-    magicArmor: 16,
+    armor: 25, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25.
+    magicArmor: 8, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 16 / 2 = 8.
     weight: 3,
     levelReq: 55,
     value: 2310,
@@ -2041,8 +2049,8 @@ Game.Data.items = [
     name: 'Steppewind Cowl',
     slot: 'head',
     skill: 'Light Armor',
-    armor: 50,
-    magicArmor: 16,
+    armor: 25, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25.
+    magicArmor: 8, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 16 / 2 = 8.
     weight: 2,
     levelReq: 55,
     value: 2280,
@@ -2054,7 +2062,7 @@ Game.Data.items = [
     name: 'Hostguard Brigandine',
     slot: 'body',
     skill: 'Medium Armor',
-    armor: 50,
+    armor: 25, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25.
     weight: 6,
     levelReq: 55,
     value: 2310,
@@ -2066,7 +2074,7 @@ Game.Data.items = [
     name: 'Hostguard Greaves',
     slot: 'legs',
     skill: 'Medium Armor',
-    armor: 50,
+    armor: 25, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25.
     weight: 6,
     levelReq: 55,
     value: 2290,
@@ -2078,7 +2086,7 @@ Game.Data.items = [
     name: 'Ridgeplate Cuirass',
     slot: 'body',
     skill: 'Heavy Armor',
-    armor: 50,
+    armor: 25, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25.
     weight: 10,
     levelReq: 55,
     statReqs: { strength: 58 },
@@ -2091,7 +2099,7 @@ Game.Data.items = [
     name: 'Ridgeplate Helm',
     slot: 'head',
     skill: 'Heavy Armor',
-    armor: 50,
+    armor: 25, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25.
     weight: 10,
     levelReq: 55,
     statReqs: { strength: 58 },
@@ -2106,8 +2114,8 @@ Game.Data.items = [
     name: 'Steppewind Leggings',
     slot: 'legs',
     skill: 'Light Armor',
-    armor: 52, // TAPERED: effectiveLevelReq 35+0.7*23=51.1 -> 1+51.1=52.1
-    magicArmor: 17,
+    armor: 26, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 52 / 2 = 26.
+    magicArmor: 9, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 17 / 2 = 9.
     weight: 3,
     levelReq: 58,
     value: 2440,
@@ -2119,7 +2127,7 @@ Game.Data.items = [
     name: 'Hostguard Boots',
     slot: 'feet',
     skill: 'Medium Armor',
-    armor: 52,
+    armor: 26, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 52 / 2 = 26.
     weight: 6,
     levelReq: 58,
     value: 2410,
@@ -2131,7 +2139,7 @@ Game.Data.items = [
     name: 'Ridgeplate Legguards',
     slot: 'legs',
     skill: 'Heavy Armor',
-    armor: 52,
+    armor: 26, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 52 / 2 = 26.
     weight: 10,
     levelReq: 58,
     statReqs: { strength: 60 },
@@ -2228,7 +2236,7 @@ Game.Data.items = [
     name: 'Highland Ashmantle',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 60, // +20% over the tapered tier-55 body armor (50)
+    armor: 30, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 60 / 2 = 30.
     damage: 6, // hybrid: armor granting a weapon-like Damage bonus, matching the kuraan_ashcloak precedent
     weight: 3,
     levelReq: 55,
@@ -2242,7 +2250,7 @@ Game.Data.items = [
     slot: 'weapon',
     skill: 'Rods',
     damage: 126, // +20% over the tapered levelReq-58 damage (~105)
-    armor: 7, // hybrid: a weapon carrying +Armor, a stat shop rods never have
+    armor: 4, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 7 / 2 = 4.
     weight: 4,
     levelReq: 58,
     statReqs: { intelligence: 70 },
@@ -2256,7 +2264,7 @@ Game.Data.items = [
     slot: 'weapon',
     skill: 'Polearms',
     damage: 125, // +24% over the tapered levelReq-55 damage (101)
-    magicArmor: 14, // hybrid: a weapon carrying +Magic Armor
+    magicArmor: 7, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 14 / 2 = 7.
     weight: 9,
     levelReq: 55,
     statReqs: { strength: 68 },
@@ -2273,7 +2281,9 @@ Game.Data.items = [
   // Main tier at levelReq 65 (effectiveLevelReq 35+0.7*30=56 -> damage 3+2*56=115, armor
   // round(1+56)=57 — NOT the literal 3+2*65=133 / 1+65=66); a levelReq-68 sub-tier
   // (effectiveLevelReq 35+0.7*33=58.1 -> damage ~119, armor round(1+58.1)=59). Bands <=35 are
-  // unchanged (kept literal, per the F1 note). statReqs continue the levelReq+9-ish
+  // unchanged (kept literal, per the F1 note). ARMOR-STACK CORRECTION (see Band A header /
+  // js/balance.js F1 CONVENTION NOTES): armor/magicArmor stored below are the tapered value ABOVE
+  // further divided by 2 (ARMOR_STACK_DIVISOR); damage is untouched. statReqs continue the levelReq+9-ish
   // weapon/shield trend and levelReq+3-ish heavy-armor trend established at tier 45/55
   // (js/data/items.js Band A/B headers); value is an invented economy continuation of the
   // existing per-tier growth curve (~1.2x per 10 levelReq, matching 2190->2630 tier55->65 — no
@@ -2353,8 +2363,8 @@ Game.Data.items = [
     name: 'Frosthold Bulwark',
     slot: 'offhand',
     skill: 'Shields',
-    armor: 57, // TAPERED: round(1+56)=57
-    magicArmor: 18,
+    armor: 29, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 57 / 2 = 29.
+    magicArmor: 9, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 18 / 2 = 9.
     weight: 8,
     levelReq: 65,
     statReqs: { strength: 74 },
@@ -2369,8 +2379,8 @@ Game.Data.items = [
     name: 'Frosthold Veilcloak',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 57, // TAPERED, see header comment above
-    magicArmor: 18,
+    armor: 29, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 57 / 2 = 29.
+    magicArmor: 9, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 18 / 2 = 9.
     weight: 3,
     levelReq: 65,
     value: 2770,
@@ -2382,8 +2392,8 @@ Game.Data.items = [
     name: 'Frosthold Veilhood',
     slot: 'head',
     skill: 'Light Armor',
-    armor: 57,
-    magicArmor: 18,
+    armor: 29, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 57 / 2 = 29.
+    magicArmor: 9, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 18 / 2 = 9.
     weight: 2,
     levelReq: 65,
     value: 2740,
@@ -2395,7 +2405,7 @@ Game.Data.items = [
     name: 'Waystation Hauberk',
     slot: 'body',
     skill: 'Medium Armor',
-    armor: 57,
+    armor: 29, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 57 / 2 = 29.
     weight: 6,
     levelReq: 65,
     value: 2770,
@@ -2407,7 +2417,7 @@ Game.Data.items = [
     name: 'Waystation Greaves',
     slot: 'legs',
     skill: 'Medium Armor',
-    armor: 57,
+    armor: 29, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 57 / 2 = 29.
     weight: 6,
     levelReq: 65,
     value: 2750,
@@ -2419,7 +2429,7 @@ Game.Data.items = [
     name: 'Glacial Bulwark Plate',
     slot: 'body',
     skill: 'Heavy Armor',
-    armor: 57,
+    armor: 29, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 57 / 2 = 29.
     weight: 10,
     levelReq: 65,
     statReqs: { strength: 68 },
@@ -2432,7 +2442,7 @@ Game.Data.items = [
     name: 'Glacial Warhelm',
     slot: 'head',
     skill: 'Heavy Armor',
-    armor: 57,
+    armor: 29, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 57 / 2 = 29.
     weight: 10,
     levelReq: 65,
     statReqs: { strength: 68 },
@@ -2447,8 +2457,8 @@ Game.Data.items = [
     name: 'Frosthold Ward-Leggings',
     slot: 'legs',
     skill: 'Light Armor',
-    armor: 59, // TAPERED: effectiveLevelReq 35+0.7*33=58.1 -> round(1+58.1)=59
-    magicArmor: 19,
+    armor: 30, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 59 / 2 = 30.
+    magicArmor: 10, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 19 / 2 = 10.
     weight: 3,
     levelReq: 68,
     value: 2930,
@@ -2460,7 +2470,7 @@ Game.Data.items = [
     name: 'Waystation Boots',
     slot: 'feet',
     skill: 'Medium Armor',
-    armor: 59,
+    armor: 30, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 59 / 2 = 30.
     weight: 6,
     levelReq: 68,
     value: 2890,
@@ -2472,7 +2482,7 @@ Game.Data.items = [
     name: 'Glacial Greatplate Legguards',
     slot: 'legs',
     skill: 'Heavy Armor',
-    armor: 59,
+    armor: 30, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 59 / 2 = 30.
     weight: 10,
     levelReq: 68,
     statReqs: { strength: 70 },
@@ -2569,7 +2579,7 @@ Game.Data.items = [
     name: "Frostwalker's Shroud",
     slot: 'body',
     skill: 'Light Armor',
-    armor: 68, // +19% over the tapered tier-65 body armor (57)
+    armor: 34, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 68 / 2 = 34.
     damage: 7, // hybrid: armor granting a weapon-like Damage bonus, matching the ashcloak/ashmantle precedent
     weight: 3,
     levelReq: 65,
@@ -2583,7 +2593,7 @@ Game.Data.items = [
     slot: 'weapon',
     skill: 'Rods',
     damage: 143, // +20% over the tapered levelReq-68 damage (~119)
-    armor: 8, // hybrid: a weapon carrying +Armor, a stat shop rods never have
+    armor: 4, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 8 / 2 = 4.
     weight: 4,
     levelReq: 68,
     statReqs: { intelligence: 80 },
@@ -2597,7 +2607,7 @@ Game.Data.items = [
     slot: 'weapon',
     skill: 'Hand to Hand',
     damage: 143, // +24% over the tapered levelReq-65 damage (115)
-    magicArmor: 16, // hybrid: a weapon carrying +Magic Armor
+    magicArmor: 8, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 16 / 2 = 8.
     weight: 4,
     levelReq: 65,
     statReqs: { strength: 78 },
@@ -2614,7 +2624,9 @@ Game.Data.items = [
   // at levelReq 75 (effectiveLevelReq 35+0.7*40=63 -> damage 3+2*63=129, armor round(1+63)=64 —
   // NOT the literal 3+2*75=153 / 1+75=76); a levelReq-78 sub-tier (effectiveLevelReq
   // 35+0.7*43=65.1 -> armor round(1+65.1)=66). Bands <=35 are unchanged (kept literal, per the F1
-  // note). statReqs continue the levelReq+9-ish weapon/shield trend and levelReq+3-ish
+  // note). ARMOR-STACK CORRECTION (see Band A header / js/balance.js F1 CONVENTION NOTES):
+  // armor/magicArmor stored below are the tapered value ABOVE further divided by 2
+  // (ARMOR_STACK_DIVISOR); damage is untouched. statReqs continue the levelReq+9-ish weapon/shield trend and levelReq+3-ish
   // heavy-armor trend established at tier 45/55/65 (js/data/items.js Band A/B/C headers); value
   // is an invented economy continuation of the existing per-tier growth curve (a steady +440-500
   // per 10 levelReq — no archived value formula survived, see this file's header comment).
@@ -2693,8 +2705,8 @@ Game.Data.items = [
     name: 'Estari Bulwark',
     slot: 'offhand',
     skill: 'Shields',
-    armor: 64, // TAPERED: round(1+63)=64
-    magicArmor: 20,
+    armor: 32, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 64 / 2 = 32.
+    magicArmor: 10, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 20 / 2 = 10.
     weight: 8,
     levelReq: 75,
     statReqs: { strength: 84 },
@@ -2709,8 +2721,8 @@ Game.Data.items = [
     name: 'Wellspring Veil',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 64, // TAPERED, see header comment above
-    magicArmor: 20,
+    armor: 32, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 64 / 2 = 32.
+    magicArmor: 10, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 20 / 2 = 10.
     weight: 3,
     levelReq: 75,
     value: 3230,
@@ -2722,8 +2734,8 @@ Game.Data.items = [
     name: 'Wellspring Hood',
     slot: 'head',
     skill: 'Light Armor',
-    armor: 64,
-    magicArmor: 20,
+    armor: 32, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 64 / 2 = 32.
+    magicArmor: 10, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 20 / 2 = 10.
     weight: 2,
     levelReq: 75,
     value: 3200,
@@ -2735,7 +2747,7 @@ Game.Data.items = [
     name: 'Estari Brigandine',
     slot: 'body',
     skill: 'Medium Armor',
-    armor: 64,
+    armor: 32, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 64 / 2 = 32.
     weight: 6,
     levelReq: 75,
     value: 3230,
@@ -2747,7 +2759,7 @@ Game.Data.items = [
     name: 'Estari Greaves',
     slot: 'legs',
     skill: 'Medium Armor',
-    armor: 64,
+    armor: 32, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 64 / 2 = 32.
     weight: 6,
     levelReq: 75,
     value: 3210,
@@ -2759,7 +2771,7 @@ Game.Data.items = [
     name: 'Warden Plate',
     slot: 'body',
     skill: 'Heavy Armor',
-    armor: 64,
+    armor: 32, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 64 / 2 = 32.
     weight: 10,
     levelReq: 75,
     statReqs: { strength: 78 },
@@ -2772,7 +2784,7 @@ Game.Data.items = [
     name: 'Warden Helm',
     slot: 'head',
     skill: 'Heavy Armor',
-    armor: 64,
+    armor: 32, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 64 / 2 = 32.
     weight: 10,
     levelReq: 75,
     statReqs: { strength: 78 },
@@ -2787,8 +2799,8 @@ Game.Data.items = [
     name: 'Wellspring Leggings',
     slot: 'legs',
     skill: 'Light Armor',
-    armor: 66, // TAPERED: effectiveLevelReq 35+0.7*43=65.1 -> round(1+65.1)=66
-    magicArmor: 21,
+    armor: 33, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 66 / 2 = 33.
+    magicArmor: 11, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 21 / 2 = 11.
     weight: 3,
     levelReq: 78,
     value: 3420,
@@ -2800,7 +2812,7 @@ Game.Data.items = [
     name: 'Estari Boots',
     slot: 'feet',
     skill: 'Medium Armor',
-    armor: 66,
+    armor: 33, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 66 / 2 = 33.
     weight: 6,
     levelReq: 78,
     value: 3370,
@@ -2812,7 +2824,7 @@ Game.Data.items = [
     name: 'Warden Legguards',
     slot: 'legs',
     skill: 'Heavy Armor',
-    armor: 66,
+    armor: 33, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 66 / 2 = 33.
     weight: 10,
     levelReq: 78,
     statReqs: { strength: 80 },
@@ -2909,7 +2921,7 @@ Game.Data.items = [
     name: 'Estari Anima Shroud',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 76, // +19% over the tapered tier-75 body armor (64)
+    armor: 38, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 76 / 2 = 38.
     damage: 9, // hybrid: armor granting a weapon-like Damage bonus, matching the ashcloak/ashmantle/frostwalker's-shroud precedent
     weight: 3,
     levelReq: 75,
@@ -2923,7 +2935,7 @@ Game.Data.items = [
     slot: 'weapon',
     skill: 'Rods',
     damage: 160, // +20% over the tapered levelReq-78 weapon-equivalent damage (~133)
-    armor: 9, // hybrid: a weapon carrying +Armor, a stat shop rods never have
+    armor: 5, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 9 / 2 = 5.
     weight: 4,
     levelReq: 78,
     statReqs: { intelligence: 88 },
@@ -2937,7 +2949,7 @@ Game.Data.items = [
     slot: 'weapon',
     skill: 'Swords',
     damage: 160, // +24% over the tapered levelReq-75 damage (129)
-    magicArmor: 18, // hybrid: a weapon carrying +Magic Armor
+    magicArmor: 9, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 18 / 2 = 9.
     weight: 7,
     levelReq: 75,
     statReqs: { strength: 88 },
@@ -2954,7 +2966,9 @@ Game.Data.items = [
   // at levelReq 85 (effectiveLevelReq 35+0.7*50=70 -> damage 3+2*70=143, armor round(1+70)=71 —
   // NOT the literal 3+2*85=173 / 1+85=86); a levelReq-88 sub-tier (effectiveLevelReq
   // 35+0.7*53=72.1 -> armor round(1+72.1)=73). Bands <=35 are unchanged (kept literal, per the F1
-  // note). statReqs continue the levelReq+9-ish weapon/shield trend and levelReq+3-ish
+  // note). ARMOR-STACK CORRECTION (see Band A header / js/balance.js F1 CONVENTION NOTES):
+  // armor/magicArmor stored below are the tapered value ABOVE further divided by 2
+  // (ARMOR_STACK_DIVISOR); damage is untouched. statReqs continue the levelReq+9-ish weapon/shield trend and levelReq+3-ish
   // heavy-armor trend established at tier 45/55/65/75 (js/data/items.js Band A/B/C/D headers);
   // value is an invented economy continuation of the existing per-tier growth curve (a steady
   // +440-500 per 10 levelReq — no archived value formula survived, see this file's header comment).
@@ -3033,8 +3047,8 @@ Game.Data.items = [
     name: 'Spireward Aegis',
     slot: 'offhand',
     skill: 'Shields',
-    armor: 71, // TAPERED: round(1+70)=71
-    magicArmor: 22,
+    armor: 36, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 71 / 2 = 36.
+    magicArmor: 11, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 22 / 2 = 11.
     weight: 8,
     levelReq: 85,
     statReqs: { strength: 94 },
@@ -3049,8 +3063,8 @@ Game.Data.items = [
     name: 'Skysilk Shroud',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 71, // TAPERED, see header comment above
-    magicArmor: 22,
+    armor: 36, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 71 / 2 = 36.
+    magicArmor: 11, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 22 / 2 = 11.
     weight: 3,
     levelReq: 85,
     value: 3710,
@@ -3062,8 +3076,8 @@ Game.Data.items = [
     name: 'Skysilk Hood',
     slot: 'head',
     skill: 'Light Armor',
-    armor: 71,
-    magicArmor: 22,
+    armor: 36, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 71 / 2 = 36.
+    magicArmor: 11, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 22 / 2 = 11.
     weight: 2,
     levelReq: 85,
     value: 3680,
@@ -3075,7 +3089,7 @@ Game.Data.items = [
     name: 'Spireguard Brigandine',
     slot: 'body',
     skill: 'Medium Armor',
-    armor: 71,
+    armor: 36, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 71 / 2 = 36.
     weight: 6,
     levelReq: 85,
     value: 3710,
@@ -3087,7 +3101,7 @@ Game.Data.items = [
     name: 'Spireguard Greaves',
     slot: 'legs',
     skill: 'Medium Armor',
-    armor: 71,
+    armor: 36, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 71 / 2 = 36.
     weight: 6,
     levelReq: 85,
     value: 3690,
@@ -3099,7 +3113,7 @@ Game.Data.items = [
     name: 'Spireward Plate',
     slot: 'body',
     skill: 'Heavy Armor',
-    armor: 71,
+    armor: 36, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 71 / 2 = 36.
     weight: 10,
     levelReq: 85,
     statReqs: { strength: 88 },
@@ -3112,7 +3126,7 @@ Game.Data.items = [
     name: 'Spireward Helm',
     slot: 'head',
     skill: 'Heavy Armor',
-    armor: 71,
+    armor: 36, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 71 / 2 = 36.
     weight: 10,
     levelReq: 85,
     statReqs: { strength: 88 },
@@ -3127,8 +3141,8 @@ Game.Data.items = [
     name: 'Stormline Leggings',
     slot: 'legs',
     skill: 'Light Armor',
-    armor: 73, // TAPERED: effectiveLevelReq 35+0.7*53=72.1 -> round(1+72.1)=73
-    magicArmor: 23,
+    armor: 37, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 73 / 2 = 37.
+    magicArmor: 12, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 23 / 2 = 12.
     weight: 3,
     levelReq: 88,
     value: 3900,
@@ -3140,7 +3154,7 @@ Game.Data.items = [
     name: 'Stormline Boots',
     slot: 'feet',
     skill: 'Medium Armor',
-    armor: 73,
+    armor: 37, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 73 / 2 = 37.
     weight: 6,
     levelReq: 88,
     value: 3850,
@@ -3152,7 +3166,7 @@ Game.Data.items = [
     name: 'Stormline Legguards',
     slot: 'legs',
     skill: 'Heavy Armor',
-    armor: 73,
+    armor: 37, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 73 / 2 = 37.
     weight: 10,
     levelReq: 88,
     statReqs: { strength: 90 },
@@ -3249,7 +3263,7 @@ Game.Data.items = [
     name: 'Anima-Scoured Wraps',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 85, // +20% over the tapered tier-85 body armor (71)
+    armor: 43, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 85 / 2 = 43.
     damage: 10, // hybrid: armor granting a weapon-like Damage bonus, matching the estari_anima_shroud/ashmantle precedent
     weight: 3,
     levelReq: 85,
@@ -3264,7 +3278,7 @@ Game.Data.items = [
     slot: 'weapon',
     skill: 'Rods',
     damage: 176, // +20% over the tapered levelReq-88 weapon-equivalent damage (~147)
-    armor: 11, // hybrid: a weapon carrying +Armor, a stat shop rods never have
+    armor: 6, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 11 / 2 = 6.
     weight: 4,
     levelReq: 88,
     statReqs: { intelligence: 98 },
@@ -3279,7 +3293,7 @@ Game.Data.items = [
     slot: 'weapon',
     skill: 'Swords',
     damage: 177, // +24% over the tapered levelReq-85 damage (143)
-    magicArmor: 20, // hybrid: a weapon carrying +Magic Armor
+    magicArmor: 10, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 20 / 2 = 10.
     weight: 7,
     levelReq: 85,
     statReqs: { strength: 98 },
@@ -3296,7 +3310,9 @@ Game.Data.items = [
   // 35 + 0.7*(levelReq-35). Main tier at levelReq 95 (effectiveLevelReq 35+0.7*60=77 -> damage
   // 3+2*77=157, armor round(1+77)=78 — NOT the literal 3+2*95=193 / 1+95=96); a levelReq-98
   // sub-tier (effectiveLevelReq 35+0.7*63=79.1 -> armor round(1+79.1)=80). Bands <=35 are
-  // unchanged (kept literal, per the F1 note). statReqs continue the levelReq+9-ish weapon/shield
+  // unchanged (kept literal, per the F1 note). ARMOR-STACK CORRECTION (see Band A header /
+  // js/balance.js F1 CONVENTION NOTES): armor/magicArmor stored below are the tapered value ABOVE
+  // further divided by 2 (ARMOR_STACK_DIVISOR); damage is untouched. statReqs continue the levelReq+9-ish weapon/shield
   // trend and levelReq+3-ish heavy-armor trend established at tier 45/55/65/75/85 (js/data/
   // items.js Band A/B/C/D/E headers); value is an invented economy continuation of the existing
   // per-tier growth curve (no archived value formula survived, see this file's header comment).
@@ -3375,8 +3391,8 @@ Game.Data.items = [
     name: 'Redmoon Aegis',
     slot: 'offhand',
     skill: 'Shields',
-    armor: 78, // TAPERED: round(1+77)=78
-    magicArmor: 24,
+    armor: 39, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 78 / 2 = 39.
+    magicArmor: 12, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 24 / 2 = 12.
     weight: 8,
     levelReq: 95,
     statReqs: { strength: 104 },
@@ -3391,8 +3407,8 @@ Game.Data.items = [
     name: 'Moonveil Shroud',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 78, // TAPERED, see header comment above
-    magicArmor: 24,
+    armor: 39, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 78 / 2 = 39.
+    magicArmor: 12, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 24 / 2 = 12.
     weight: 3,
     levelReq: 95,
     value: 4210,
@@ -3404,8 +3420,8 @@ Game.Data.items = [
     name: 'Moonveil Hood',
     slot: 'head',
     skill: 'Light Armor',
-    armor: 78,
-    magicArmor: 24,
+    armor: 39, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 78 / 2 = 39.
+    magicArmor: 12, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 24 / 2 = 12.
     weight: 2,
     levelReq: 95,
     value: 4160,
@@ -3417,7 +3433,7 @@ Game.Data.items = [
     name: 'Sanctum Brigandine',
     slot: 'body',
     skill: 'Medium Armor',
-    armor: 78,
+    armor: 39, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 78 / 2 = 39.
     weight: 6,
     levelReq: 95,
     value: 4210,
@@ -3429,7 +3445,7 @@ Game.Data.items = [
     name: 'Sanctum Greaves',
     slot: 'legs',
     skill: 'Medium Armor',
-    armor: 78,
+    armor: 39, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 78 / 2 = 39.
     weight: 6,
     levelReq: 95,
     value: 4170,
@@ -3441,7 +3457,7 @@ Game.Data.items = [
     name: 'Redmoon Plate',
     slot: 'body',
     skill: 'Heavy Armor',
-    armor: 78,
+    armor: 39, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 78 / 2 = 39.
     weight: 10,
     levelReq: 95,
     statReqs: { strength: 98 },
@@ -3454,7 +3470,7 @@ Game.Data.items = [
     name: 'Redmoon Helm',
     slot: 'head',
     skill: 'Heavy Armor',
-    armor: 78,
+    armor: 39, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 78 / 2 = 39.
     weight: 10,
     levelReq: 95,
     statReqs: { strength: 98 },
@@ -3469,8 +3485,8 @@ Game.Data.items = [
     name: 'Moonveil Leggings',
     slot: 'legs',
     skill: 'Light Armor',
-    armor: 80, // TAPERED: effectiveLevelReq 35+0.7*63=79.1 -> round(1+79.1)=80
-    magicArmor: 25,
+    armor: 40, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 80 / 2 = 40.
+    magicArmor: 13, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 25 / 2 = 13.
     weight: 3,
     levelReq: 98,
     value: 4380,
@@ -3482,7 +3498,7 @@ Game.Data.items = [
     name: 'Sanctum Boots',
     slot: 'feet',
     skill: 'Medium Armor',
-    armor: 80,
+    armor: 40, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 80 / 2 = 40.
     weight: 6,
     levelReq: 98,
     value: 4330,
@@ -3494,7 +3510,7 @@ Game.Data.items = [
     name: 'Redmoon Legguards',
     slot: 'legs',
     skill: 'Heavy Armor',
-    armor: 80,
+    armor: 40, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 80 / 2 = 40.
     weight: 10,
     levelReq: 98,
     statReqs: { strength: 100 },
@@ -3591,7 +3607,7 @@ Game.Data.items = [
     name: 'Voidmoon Wraps',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 94, // +20% over the tapered tier-95 body armor (78)
+    armor: 47, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 94 / 2 = 47.
     damage: 11, // hybrid: armor granting a weapon-like Damage bonus, matching the anima_scoured_wraps/estari_anima_shroud precedent
     weight: 3,
     levelReq: 95,
@@ -3606,7 +3622,7 @@ Game.Data.items = [
     slot: 'weapon',
     skill: 'Rods',
     damage: 193, // +20% over the tapered levelReq-98 weapon-equivalent damage (~161)
-    armor: 12, // hybrid: a weapon carrying +Armor, a stat shop rods never have
+    armor: 6, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 12 / 2 = 6.
     weight: 4,
     levelReq: 98,
     statReqs: { intelligence: 108 },
@@ -3621,7 +3637,7 @@ Game.Data.items = [
     slot: 'weapon',
     skill: 'Swords',
     damage: 195, // +24% over the tapered levelReq-95 damage (157)
-    magicArmor: 22, // hybrid: a weapon carrying +Magic Armor
+    magicArmor: 11, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 22 / 2 = 11.
     weight: 7,
     levelReq: 95,
     statReqs: { strength: 108 },
