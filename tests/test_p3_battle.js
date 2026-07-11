@@ -421,6 +421,64 @@ assert(c7.skills['Swords'].xp === swordsXpBefore7 && c7.skills['Swords'].level =
 assert(c7.monsterKills === 1, 'kill still counted');
 Game.Battle.endBattle();
 
+// =================== Test 7b (v1.3.1 fix 2): [revised] quest-material drops survive the cutoff ===================
+console.log('\n=== Test 7b: [revised] a quest_-prefixed drop still rolls under the 5-level cutoff; a non-quest drop does not ===');
+var c7g = makeCharacter({ name: 'CutoffQuestDropTest' });
+c7g.level = 9; // estari_loose_rubble is level 4 -> levelDiff 5, cutoff applies
+c7g.xp = BALANCE.XP_TO_LEVEL(9);
+c7g.strength = 60;
+Game.Character.recalcDerived(c7g);
+c7g.hitPoints = c7g.hitPointsMax;
+setRng(fixedRng(0.99));
+var b7g = Game.Battle.start('estari_loose_rubble'); // drops: [shield_wooden_buckler 0.05, quest_animate_rubble_core 0.5]
+b7g.monster.hp = 1;
+var xpBefore7g = c7g.xp, goldBefore7g = c7g.gold, shardsBefore7g = c7g.animaShards;
+// attack(): [dbl, dodge, glancing, variance]; cutoff's own drop loop: [shield miss, quest hit]
+setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.99, 0.0], 0.99));
+Game.Battle.attack();
+assert(b7g.phase === 'won', 'battle won');
+assert(b7g.rewards.cutoff === true, 'rewards flagged as cutoff');
+assert(c7g.xp === xpBefore7g, 'zero combat XP under the cutoff, unchanged by the quest-material exemption');
+assert(c7g.gold === goldBefore7g && c7g.animaShards === shardsBefore7g, 'zero gold/shards under the cutoff, unchanged by the quest-material exemption');
+assert(b7g.pendingLoot === 'quest_animate_rubble_core', 'v1.3.1 fix 2: a quest_-prefixed item still rolls (and can drop) under the cutoff, got pendingLoot=' + b7g.pendingLoot);
+var claim7g = Game.Battle.claimLoot();
+assert(claim7g.ok === true && c7g.inventory.indexOf('quest_animate_rubble_core') !== -1, 'quest material is actually claimable into inventory');
+Game.Battle.endBattle();
+
+var c7h = makeCharacter({ name: 'CutoffNonQuestDropTest' });
+c7h.level = 9;
+c7h.xp = BALANCE.XP_TO_LEVEL(9);
+c7h.strength = 60;
+Game.Character.recalcDerived(c7h);
+c7h.hitPoints = c7h.hitPointsMax;
+setRng(fixedRng(0.99));
+var b7h = Game.Battle.start('estari_loose_rubble');
+b7h.monster.hp = 1;
+var xpBefore7h = c7h.xp, goldBefore7h = c7h.gold;
+// cutoff's own drop loop: shield_wooden_buckler (0.05 chance) hits first -> NOT quest_-prefixed -> discarded
+setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.0], 0.99));
+Game.Battle.attack();
+assert(b7h.rewards.cutoff === true, 'rewards flagged as cutoff');
+assert(c7h.xp === xpBefore7h && c7h.gold === goldBefore7h, 'zero XP/gold under the cutoff (non-quest-drop case)');
+assert(b7h.pendingLoot === null, 'v1.3.1 fix 2: a non-quest_ drop that hits under the cutoff is discarded, not granted, got pendingLoot=' + b7h.pendingLoot);
+Game.Battle.endBattle();
+
+// =================== Test 7c (v1.3.1 fix 5): Fury still ticks on a kill that levels the player up ===================
+console.log('\n=== Test 7c: Fury ticks for an at-or-above-level kill even when that same kill levels the player up ===');
+var c7i = makeCharacter({ name: 'FuryLevelUpTest' });
+c7i.level = 1;
+c7i.xp = BALANCE.XP_TO_LEVEL(2) - 1; // one XP short of leveling to 2
+c7i.fury = 0;
+setRng(fixedRng(0.99));
+var b7i = Game.Battle.start('plains_field_rat'); // level 1, same level as the player
+b7i.monster.hp = 1;
+setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.0, 0.0, 0.99], 0.99)); // attack + onWin gold/shard/drop rolls
+Game.Battle.attack();
+assert(b7i.phase === 'won', 'battle won');
+assert(c7i.level === 2, 'sanity: the kill leveled the player up to 2 (was exactly 1 XP short of the level-2 threshold)');
+assert(c7i.fury === 1, 'v1.3.1 fix 5: Fury ticks for an at-or-above-level kill judged by the PRE-kill level, even though this very kill leveled the player up (got fury=' + c7i.fury + ')');
+Game.Battle.endBattle();
+
 // =================== Test 8: skill xp decline between 1 and 4 levels above ===================
 console.log('\n=== Test 8: skill XP declines when outleveling the monster ===');
 var c8 = makeCharacter({ name: 'DeclineTest' });

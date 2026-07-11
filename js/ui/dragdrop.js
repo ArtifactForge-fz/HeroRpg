@@ -21,16 +21,21 @@ Game.DragDrop = (function () {
 
   // Makes `node` a drop target; onDrop(itemId) is called with the dragged item's id.
   function makeDropTarget(node, onDrop) {
+    // Fix #7: dragover fires continuously while hovering, so appending ' drop-hover'
+    // unconditionally on every event stacked up multiple occurrences in node.className; the
+    // dragleave/drop cleanup regex lacked the /g flag and only ever stripped ONE occurrence,
+    // leaving the class (and its CSS) stuck on after the drag ended. Only add the class if it's
+    // not already present, and strip ALL occurrences on cleanup.
     node.addEventListener('dragover', function (ev) {
       ev.preventDefault();
-      node.className += ' drop-hover';
+      if (!/\bdrop-hover\b/.test(node.className)) node.className += ' drop-hover';
     });
     node.addEventListener('dragleave', function () {
-      node.className = node.className.replace(/\s*drop-hover\b/, '');
+      node.className = node.className.replace(/\s*drop-hover\b/g, '');
     });
     node.addEventListener('drop', function (ev) {
       ev.preventDefault();
-      node.className = node.className.replace(/\s*drop-hover\b/, '');
+      node.className = node.className.replace(/\s*drop-hover\b/g, '');
       var itemId = ev.dataTransfer.getData('text/plain');
       if (itemId) onDrop(itemId);
     });

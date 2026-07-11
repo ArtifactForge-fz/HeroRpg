@@ -12,6 +12,29 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.3.1',
+    date: '2026-07-11',
+    title: 'Bugfix Release',
+    saveVersion: 9,
+    highlights: [
+      'Fixed camping from the sidebar freezing the game when you were ambushed in your sleep.',
+      'Quest materials now drop even from monsters far below your level, so collect quests — ' +
+        'including "The Trials of Ascension" and "Vaultbreaker\'s Reckoning" — can no longer ' +
+        'become permanently uncompletable if you out-level their hunting grounds.',
+      'Eidas\' Echo now actually drops its seal and its unique blade, making the Heir of the ' +
+        'Echo class obtainable.',
+      'Arkan heroes can now always return to their home town of Saratus, whatever their level.',
+      'The battle log now follows the newest events, the Attack button shows its energy cost, ' +
+        'and running out of energy in battle is explained instead of silently disabling buttons.',
+      'Selling a unique or quest item and importing a save over an existing hero now ask for ' +
+        'confirmation, and loot too heavy to carry warns you before it is forfeited.',
+      'Assorted fixes: Fury now counts a kill that levels you up, health no longer exceeds its ' +
+        'maximum after deactivating a class, shrine blessings tick when a monster flees, and ' +
+        'drag-and-drop highlights no longer get stuck.'
+    ]
+  },
+
+  {
     version: 'v1.3',
     date: '2026-07-11',
     title: 'The Level-100 Arc',

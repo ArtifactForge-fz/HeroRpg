@@ -651,7 +651,9 @@ Game.Screens = (function () {
 
       Game.DragDrop.makeDropTarget(row, function (droppedId) {
         var dropped = Game.Inventory.getItem(droppedId);
-        if (!dropped || dropped.slot !== slot) return;
+        // Fix #8: dropping an item on the wrong equipment slot used to fail silently. Give the
+        // same kind of feedback the Auto-Equip box already gives on a failed drop.
+        if (!dropped || dropped.slot !== slot) { alert("That item doesn't fit that slot."); return; }
         var result = Game.Inventory.equip(c, droppedId);
         if (!result.ok) { alert('Cannot equip: ' + result.failures.join('; ')); return; }
         Game.persist();
@@ -684,7 +686,8 @@ Game.Screens = (function () {
     Game.DragDrop.makeDropTarget(unequipBox, function (droppedId) {
       var slot = null;
       Game.Inventory.EQUIP_SLOTS.forEach(function (s) { if (c.equipment[s] === droppedId) slot = s; });
-      if (!slot) return; // not an equipped item
+      // Fix #8: dropping a non-equipped item on the Unequip box used to fail silently.
+      if (!slot) { alert('That item is not currently equipped.'); return; }
       var result = Game.Inventory.unequip(c, slot);
       if (!result.ok) { alert(result.message); return; }
       Game.persist();
@@ -1179,6 +1182,12 @@ Game.Screens = (function () {
           el('button', {
             class: 'button',
             onclick: function () {
+              // Fix #5: js/core/world.js sell() will happily sell 'unique' (monster-drop-only,
+              // never restockable) or 'quest_'-prefixed items with no warning. Confirm those two
+              // cases only; ordinary items keep the existing 1-click sell. Wording mirrors the
+              // Discard confirm above ("Discard X forever?").
+              var isIrreplaceable = (item.tags && item.tags.indexOf('unique') !== -1) || itemId.indexOf('quest_') === 0;
+              if (isIrreplaceable && !window.confirm('Sell ' + item.name + ' forever? This item cannot be bought back.')) return;
               var res = Game.World.sell(itemId);
               if (!res.ok) alert(res.message);
               refreshTownScreen();
@@ -1827,10 +1836,15 @@ Game.Screens = (function () {
     // ---- Action icons: Attack (sword) / Item (bag) / Defend (shield) / Escape (tornado) —
     // original terminology plus Feature C's Defend action ----
     var canDefend = !over && canAct && c.energy >= BALANCE.DEFEND_ENERGY_COST;
+    // Fix #6: canAct (js/core/battle.js) is just `energy > 0`; when it's false the core's "out of
+    // Energy — you can only flee or fall" message (battle.js attack()/useItem()) never surfaces
+    // because the disabled buttons prevent the calls that would log it. Reuse the exact wording
+    // for the disabled buttons' title AND a visible note (below).
+    var outOfEnergyMsg = 'You are out of Energy — you can only flee or fall.';
     var actions = el('div', { class: 'battle-actions mt8' }, [
       el('button', {
         class: 'button battle-action',
-        title: 'Attack with your equipped weapon',
+        title: (!over && !canAct) ? outOfEnergyMsg : 'Attack with your equipped weapon (' + BALANCE.ATTACK_ENERGY_COST + ' Energy)',
         disabled: (over || !canAct) ? 'disabled' : null,
         onclick: function () {
           Game.Battle.attack();
@@ -1840,7 +1854,7 @@ Game.Screens = (function () {
       }, ['🗡 Attack']),
       el('button', {
         class: 'button battle-action',
-        title: 'Use a combat item',
+        title: (!over && !canAct) ? outOfEnergyMsg : 'Use a combat item',
         disabled: (over || !canAct) ? 'disabled' : null,
         onclick: function () {
           battleShowItems = !battleShowItems;
@@ -1871,6 +1885,12 @@ Game.Screens = (function () {
       }, ['🌪 Escape (' + Math.round(Game.Battle.fleeChance(battle) * 100) + '%)'])
     ]);
     vit.appendChild(actions);
+
+    // Fix #6 (visible half): the tooltip alone is easy to miss, so also render the same
+    // explanation as a small note near the action buttons whenever the player is stuck.
+    if (!over && !canAct) {
+      vit.appendChild(el('div', { class: 'tinyfont req-bad mt4' }, [outOfEnergyMsg]));
+    }
 
     // ---- Combat item list (bag) ----
     if (battleShowItems && !over) {
@@ -1921,9 +1941,14 @@ Game.Screens = (function () {
         var slottedId = set[slotIdx];
         var tech = slottedId ? getTechById(slottedId) : null;
         var castable = tech && !over && canAct && c.energy >= tech.energyCost;
+        // Fix #6: techs are also gated by canAct — explain why a tech is unusable when the
+        // player is simply out of Energy, same wording as the Attack/Item buttons above.
+        var slotTitle = tech
+          ? ((!over && !canAct) ? (tech.name + ' — ' + outOfEnergyMsg) : (tech.name + ' (' + tech.energyCost + ' energy)'))
+          : 'Empty slot';
         var slot = el('div', {
           class: 'tech-slot' + (tech ? ' filled' : '') + (castable ? ' castable' : ''),
-          title: tech ? (tech.name + ' (' + tech.energyCost + ' energy)') : 'Empty slot',
+          title: slotTitle,
           onclick: function () {
             if (!tech || over || !canAct) return;
             Game.Battle.useTech(tech.id);
@@ -2000,6 +2025,19 @@ Game.Screens = (function () {
           outcome.appendChild(lootRow);
           if (battle.lootMessage) {
             outcome.appendChild(el('div', { class: 'tinyfont req-bad mt4' }, [battle.lootMessage]));
+            // Fix #4a: name the exact shortfall (item weight vs. free capacity) instead of just
+            // "too much weight" — read-only math against js/core/inventory.js's own formulas.
+            var freeCapacity = Game.Inventory.carryCapacity(c) - Game.Inventory.currentWeight(c);
+            var stillPendingIds = [];
+            if (battle.pendingLoot) stillPendingIds.push(battle.pendingLoot);
+            if (battle.pendingStolenLoot) stillPendingIds.push(battle.pendingStolenLoot);
+            stillPendingIds.forEach(function (pendingId) {
+              var pendingItem = Game.Inventory.getItem(pendingId);
+              if (!pendingItem) return;
+              outcome.appendChild(el('div', { class: 'tinyfont mt4' }, [
+                pendingItem.name + ' weighs ' + pendingItem.weight + ' — you have ' + Math.max(0, freeCapacity) + ' free capacity.'
+              ]));
+            });
           }
         }
       } else if (battle.phase === 'lost') {
@@ -2016,6 +2054,21 @@ Game.Screens = (function () {
         el('button', {
           class: 'button',
           onclick: function () {
+            // Fix #4b: js/core/battle.js endBattle() discards pendingLoot/pendingStolenLoot with
+            // no warning, and uniques are monster-drop-only (never in shops/recipes) — so a missed
+            // claim can be unrecoverable. Confirm before forfeiting.
+            if (battle.pendingLoot || battle.pendingStolenLoot) {
+              var forfeitNames = [];
+              if (battle.pendingLoot) {
+                var forfeitLoot = Game.Inventory.getItem(battle.pendingLoot);
+                forfeitNames.push(forfeitLoot ? forfeitLoot.name : battle.pendingLoot);
+              }
+              if (battle.pendingStolenLoot) {
+                var forfeitStolen = Game.Inventory.getItem(battle.pendingStolenLoot);
+                forfeitNames.push(forfeitStolen ? forfeitStolen.name : battle.pendingStolenLoot);
+              }
+              if (!window.confirm('You still have unclaimed loot (' + forfeitNames.join(', ') + ') — leaving now forfeits it forever. Continue?')) return;
+            }
             Game.Battle.endBattle();
             battleShowItems = false;
             Game.persist();
@@ -2035,6 +2088,16 @@ Game.Screens = (function () {
 
     layout.appendChild(right);
     root.appendChild(layout);
+
+    // Fix #3: css/theme.css .battle-log is a fixed-height overflow-y:auto panel rebuilt on every
+    // action; a freshly-built panel scrolls to the top by default, hiding the newest line(s) below
+    // the fold. Scroll to the bottom — this MUST run after root.appendChild above: a detached
+    // element's scrollHeight is 0, so scrolling before attachment is a silent no-op.
+    // scrollHeight/scrollTop only exist on a real browser element (fakedom's FakeNode has
+    // neither), so this is wrapped defensively rather than asserted on in tests.
+    try {
+      logPanel.scrollTop = logPanel.scrollHeight;
+    } catch (e) { /* no-op under fakedom / non-DOM test harness */ }
   }
 
   // ---------- Router ----------
@@ -2055,8 +2118,15 @@ Game.Screens = (function () {
   function navigate(screenName) {
     if (!routes[screenName]) return;
     // Battle lock (New_Player_Guide.md: "once you've started a battle, you cannot access your
-    // inventory or techniques"): while a battle exists, only the battle screen may render.
-    if (Game.state.battle && screenName !== 'battle') return;
+    // inventory or techniques"): while a battle exists, only the battle screen may render. Fix #2:
+    // previously this was a silent `return`, which left a stale screen on-screen (soft lock) if
+    // anything triggered a refresh/nav while a battle was live (e.g. a Camp ambush — see fix #1).
+    // Redirect to the battle screen instead of blanking. The reassignment (rather than a nested
+    // navigate() call) means this cannot recurse: the guard's condition is false once
+    // screenName === 'battle'.
+    if (Game.state.battle && screenName !== 'battle') {
+      screenName = 'battle';
+    }
     currentScreen = screenName;
     var root = document.getElementById('maincontent');
     routes[screenName](root);

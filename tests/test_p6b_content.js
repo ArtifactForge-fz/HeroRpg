@@ -105,6 +105,11 @@ function assert(cond, msg) {
 function setRng(fn) { Game.Battle._rng = fn; }
 function fixedRng(v) { return function () { return v; }; }
 function realRng() { return Math.random; }
+// Sequence rng: consume values in order, then fall back to a default (v1.3.1 fix 3's drop-table test).
+function seqRng(values, fallback) {
+  var i = 0;
+  return function () { return i < values.length ? values[i++] : fallback; };
+}
 
 function itemExists(id) { return !!Game.Inventory.getItem(id); }
 function monsterExists(id) { return !!Game.Battle.getMonsterDef(id); }
@@ -429,17 +434,25 @@ assert(uniqueItems.length === 30, 'sanity: 30 unique items defined in items.js (
 })();
 
 // ---- every unique item is appended LAST in its dropping monster's drops array (established
-// convention: appended entries don't disturb existing rates) ----
+// convention: appended entries don't disturb existing rates) — EXCEPT eidas_echo's
+// sword_skyspire_ember_blade. v1.3.1 fix 3 (docs/REVIEW-2026-07-11.md Part 3 C1) reordered
+// eidas_echo's drops so its guaranteed lore_eidas_final_journal (chance 1) sits LAST, as the true
+// fallback — a chance-1 entry must never be followed by anything else (first-hit-wins makes every
+// later entry dead code), which now outranks the "unique is always last" convention specifically
+// on this one monster. See js/data/monsters.js eidas_echo's own drops comment for the full
+// rationale and effective-probability math.
 (function () {
   var bad = [];
+  var GUARANTEED_FALLBACK_EXCEPTIONS = { 'sword_skyspire_ember_blade|eidas_echo': true };
   uniqueItems.forEach(function (it) {
     Game.Data.monsters.forEach(function (m) {
       var idx = (m.drops || []).map(function (d) { return d.itemId; }).indexOf(it.id);
       if (idx === -1) return;
+      if (GUARANTEED_FALLBACK_EXCEPTIONS[it.id + '|' + m.id]) return;
       if (idx !== m.drops.length - 1) bad.push(it.id + ' is not the LAST drop entry on ' + m.id);
     });
   });
-  assert(bad.length === 0, 'every unique item is the last drop entry on its monster' + (bad.length ? (': ' + bad.join('; ')) : ''));
+  assert(bad.length === 0, 'every unique item is the last drop entry on its monster (except the documented eidas_echo guaranteed-fallback exception)' + (bad.length ? (': ' + bad.join('; ')) : ''));
 })();
 
 // ---- zero unique items appear in any shop stock ----
@@ -672,6 +685,61 @@ console.log('eidas_echo sim results over ' + SIM_COUNT + ' battles: ' + JSON.str
 // boss must extract a real cost — either meaningful HP loss or consumed resources.
 assert(winRate >= 0.6, 'eidas_echo is reliably beatable by a prepared level-40 warrior (win rate ' + (winRate * 100).toFixed(1) + '%, want >= 60%)');
 assert(avgHpLeft <= 0.8 || avgConsumed >= 1, 'eidas_echo extracts a real cost on wins (avg HP left ' + (avgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + avgConsumed.toFixed(1) + ')');
+
+// =====================================================================
+// Part 5 (v1.3.1 fix 3): eidas_echo's reordered drop table (js/data/monsters.js). Before the fix,
+// the guaranteed lore_eidas_final_journal (chance 1) sat AHEAD of quest_eidas_echo_seal (0.7) and
+// sword_skyspire_ember_blade (0.05) — first-hit-wins made both of those permanently unreachable
+// (the Heir of the Echo Legendary's only obtain route, and the roster's capstone unique). Now the
+// journal sits last, as the true fallback. Stubbed-RNG, deterministic sequence through the single
+// Game.Battle._rng() stub — proves each of the two previously-shadowed drops CAN fire.
+// =====================================================================
+console.log('\n=== Part 5: eidas_echo drop-table reorder — seal and sword can each drop (v1.3.1 fix 3) ===');
+
+function makeDropTestCharacter() {
+  var c = makeCharacter({ name: 'EidasDropTester' });
+  c.dexterity = 999; // guarantees playerFirst (avoids the level-40 boss's rng-consuming opening strike)
+  Game.Character.recalcDerived(c);
+  c.hitPoints = c.hitPointsMax;
+  c.energy = c.energyMax;
+  return c;
+}
+
+// (a) quest_eidas_echo_seal (0.7) can drop: 3 gear entries (0.1 each) miss, then the seal hits.
+var cSeal = makeDropTestCharacter();
+setRng(fixedRng(0.99));
+var battleSeal = Game.Battle.start('eidas_echo');
+assert(battleSeal.playerFirst === true, 'sanity: boosted Dexterity gives the player first strike (keeps the scripted rng sequence below deterministic)');
+battleSeal.monster.hp = 1;
+setRng(seqRng([
+  0.99, 0.99, 0.99, 0.5, // attack(): no double-attack, no monster dodge, no glancing, variance roll
+  0.0,                   // onWin: gold roll
+  0.0,                   // onWin: shard roll
+  0.99, 0.99, 0.99,      // drop loop: the 3 gear entries (chance 0.1 each) miss
+  0.0                    // drop loop: quest_eidas_echo_seal (chance 0.7) hits
+], 0.99));
+Game.Battle.attack();
+assert(battleSeal.phase === 'won', 'eidas_echo killed (seal test)');
+assert(battleSeal.pendingLoot === 'quest_eidas_echo_seal', 'v1.3.1 fix 3: quest_eidas_echo_seal can drop, got pendingLoot=' + battleSeal.pendingLoot);
+Game.Battle.endBattle();
+
+// (b) sword_skyspire_ember_blade (0.05) can drop: gear + the seal all miss, then the sword hits.
+var cSword = makeDropTestCharacter();
+setRng(fixedRng(0.99));
+var battleSword = Game.Battle.start('eidas_echo');
+battleSword.monster.hp = 1;
+setRng(seqRng([
+  0.99, 0.99, 0.99, 0.5,
+  0.0,                   // gold roll
+  0.0,                   // shard roll
+  0.99, 0.99, 0.99,      // 3 gear entries miss
+  0.99,                  // quest_eidas_echo_seal (chance 0.7) misses
+  0.0                    // sword_skyspire_ember_blade (chance 0.05) hits
+], 0.99));
+Game.Battle.attack();
+assert(battleSword.phase === 'won', 'eidas_echo killed (sword test)');
+assert(battleSword.pendingLoot === 'sword_skyspire_ember_blade', 'v1.3.1 fix 3: sword_skyspire_ember_blade can drop, got pendingLoot=' + battleSword.pendingLoot);
+Game.Battle.endBattle();
 
 // =====================================================================
 console.log('\n===================================');

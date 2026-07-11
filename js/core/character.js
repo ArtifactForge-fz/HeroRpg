@@ -218,6 +218,17 @@ Game.Character = (function () {
     return false;
   }
 
+  // v1.3.1 fix 4 [invented]: a character's home town, re-derived at runtime from race — mirrors
+  // the same race -> start-area mapping create() uses above (currentLocation's initializer), kept
+  // here as the single source of truth rather than duplicated in js/core/world.js travelTo. NOT a
+  // new persisted field: callers always recompute it from c.race, never read/write it directly.
+  // No archived record of an explicit "home town always reachable" exemption survives; designed in
+  // the original's spirit so a character's own racial starting town never locks them out of their
+  // own early racial quests via that town's minLevel gate (js/core/world.js travelTo).
+  function homeTownId(c) {
+    return (c && c.race === 'Arkan') ? 'saratus' : 'eldor';
+  }
+
   // Vitality drives max HP. Phase 1 formula: base start HP plus a flat per-point gain.
   // invented: exact HP-per-Vitality growth curve was never archived.
   var HP_PER_VITALITY = 5; // invented
@@ -229,6 +240,15 @@ Game.Character = (function () {
     // archived direction: energy is a dynamic pool that grows each level (homepage_2007.md
     // 2007-05-25); see BALANCE.ENERGY_PER_LEVEL for the Phase 7 balance-pass rationale.
     c.energyMax = BALANCE.START_ENERGY + (c.level - 1) * BALANCE.ENERGY_PER_LEVEL + classEnergyBonus;
+    // v1.3.1 fix 6: recalcDerived only ever adjusted the maxes, never clamped current hitPoints/
+    // energy down to match — deactivating a class (or swapping a slot) that carried an
+    // hp_max_flat/energy_max_flat passive could leave current HP/Energy ABOVE the new, lower max
+    // (e.g. full HP at the bonus, then deactivate -> hitPointsMax drops but hitPoints does not).
+    // Callers that intentionally set current to the (old, higher) max right after calling this
+    // (create(), spendStatPoint's vitality branch) are unaffected: they either raise the max first
+    // or already re-clamp their own way.
+    if (c.hitPoints > c.hitPointsMax) c.hitPoints = c.hitPointsMax;
+    if (c.energy > c.energyMax) c.energy = c.energyMax;
   }
 
   // archived: Damage.md — Swords/Blunt/Polearms<-Str, Knives<-Dex, Rods<-Int, Hand to Hand<-Str
@@ -408,7 +428,8 @@ Game.Character = (function () {
     goldTotalAsGold: goldTotalAsGold,
     hasAffliction: hasAffliction,
     addAffliction: addAffliction,
-    removeAffliction: removeAffliction
+    removeAffliction: removeAffliction,
+    homeTownId: homeTownId
   };
 })();
 

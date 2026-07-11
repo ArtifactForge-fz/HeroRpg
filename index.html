@@ -74,8 +74,23 @@
     character: null
   };
 
+  // Fix #11: Game.Save.save() returns false on localStorage failure (quota exceeded, storage
+  // disabled, private-mode restrictions) but the caller previously discarded that boolean, so
+  // progress could be silently lost. Warn once per "failure epoch" — don't nag on every single
+  // action while storage stays broken — and reset the flag as soon as a save succeeds again so a
+  // NEW failure (e.g. storage comes back, fills up again later) re-warns.
+  var saveFailureWarned = false;
   Game.persist = function () {
-    Game.Save.save(Game.state);
+    var ok = Game.Save.save(Game.state);
+    if (!ok) {
+      if (!saveFailureWarned) {
+        saveFailureWarned = true;
+        alert('Warning: your progress could not be saved (browser storage may be full or disabled). Play will continue, but recent changes may be lost if you close the game.');
+      }
+    } else {
+      saveFailureWarned = false;
+    }
+    return ok;
   };
 
   Game.refreshCurrentScreen = function () {
@@ -213,7 +228,15 @@
         var res = Game.World.camp();
         alert(res.message);
         Game.persist();
-        Game.refreshCurrentScreen();
+        // Fix #1: camp() can return an ambush that already started a battle
+        // (Game.state.battle set — js/core/world.js camp()). A plain refresh would hit the
+        // battle-lock in Game.Screens.navigate and render nothing. Mirror the Explore screen's
+        // Camp handler (js/ui/screens.js renderExplore) and route straight to the battle screen.
+        if (res.event === 'ambush' && res.battle) {
+          Game.Screens.navigate('battle');
+        } else {
+          Game.refreshCurrentScreen();
+        }
       }, true);
 
       // Phase 5 quest touch-tokens (Standing Stones): same visibility rule as the Explore
@@ -271,6 +294,10 @@
       if (!str) return;
       var state = Game.Save.importString(str);
       if (!state) { alert('Import failed: invalid save string.'); return; }
+      // Fix #10: importing used to overwrite Game.state on any valid string with no warning,
+      // unlike New Game (which does confirm). Only prompt when there's an existing character to
+      // lose; wording parallels the New Game confirm above.
+      if (Game.state.character && !window.confirm('This will permanently overwrite your current character with the imported save. Continue?')) return;
       Game.state = state;
       Game.persist();
       boot();

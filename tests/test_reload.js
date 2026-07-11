@@ -118,8 +118,8 @@ function guardAssert(cond, msg) {
 // ---- 1. README version <-> changelog[0].version ----
 var readmePath = path.join(base, '..', 'README.md');
 var readmeText = fs.readFileSync(readmePath, 'utf8');
-var readmeVersionMatch = readmeText.match(/Development status:\s*\*\*v(\d+\.\d+)/);
-guardAssert(readmeVersionMatch, 'could not find "Development status: **vX.Y" line in README.md');
+var readmeVersionMatch = readmeText.match(/Development status:\s*\*\*v(\d+\.\d+(?:\.\d+)?)/);
+guardAssert(readmeVersionMatch, 'could not find "Development status: **vX.Y[.Z]" line in README.md');
 var readmeVersion = 'v' + readmeVersionMatch[1];
 var changelogTop = Game.Data.changelog[0];
 guardAssert(
@@ -150,8 +150,8 @@ guardAssert(
 );
 Game.Data.changelog.forEach(function (entry, i) {
   guardAssert(
-    typeof entry.version === 'string' && /^v\d+\.\d+$/.test(entry.version),
-    'changelog[' + i + '].version must match /^v\\d+\\.\\d+$/, got "' + entry.version + '"'
+    typeof entry.version === 'string' && /^v\d+\.\d+(\.\d+)?$/.test(entry.version),
+    'changelog[' + i + '].version must match /^v\\d+\\.\\d+(\\.\\d+)?$/, got "' + entry.version + '"'
   );
   guardAssert(
     typeof entry.title === 'string' && entry.title.length > 0,

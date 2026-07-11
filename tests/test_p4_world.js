@@ -482,6 +482,21 @@ assert(Array.isArray(c1.shrineBuffs) && c1.shrineBuffs.length === 0, 'new charac
 
 var c1arkan = makeCharacter({ name: 'FreshArkan', race: 'Arkan' });
 assert(c1arkan.currentLocation === 'saratus', 'new Arkan character starts in saratus (Arkan.md: their archived capital)');
+
+// =================== Test 1b (v1.3.1 fix 4): home-town exemption to travelTo's minLevel gate ===================
+console.log('\n=== Test 1b: L1 Arkan can travel to Saratus (home town, minLevel 14); L1 non-Arkan cannot ===');
+assert(Game.Character.homeTownId(c1arkan) === 'saratus', 'Game.Character.homeTownId reports saratus for an Arkan');
+var resArkanLeave = Game.World.travelTo('eldor'); // leave home town first so travelTo below actually exercises the gate
+assert(resArkanLeave.ok === true, 'sanity: Arkan can travel away from Saratus to Eldor (minLevel 0)');
+var resArkanHome = Game.World.travelTo('saratus');
+assert(resArkanHome.ok === true, 'L1 Arkan travels back to Saratus (home town) despite being far under its minLevel 14: ' + resArkanHome.message);
+assert(c1arkan.currentLocation === 'saratus', 'Arkan back in Saratus');
+
+var cHumanBlocked = makeCharacter({ name: 'HumanBlockedTest' });
+assert(Game.Character.homeTownId(cHumanBlocked) === 'eldor', 'Game.Character.homeTownId reports eldor for a Human');
+var resHumanBlocked = Game.World.travelTo('saratus');
+assert(resHumanBlocked.ok === false && /Requires Level 14/.test(resHumanBlocked.message), 'L1 Human (Saratus is not their home town) still blocked: ' + resHumanBlocked.message);
+
 // makeCharacter's Game.Character.create() call sets Game.state.character as a side effect —
 // restore it to c1 so Test 2 below (which drives Game.World.travelTo off Game.state.character)
 // continues to operate on the character it expects.
@@ -778,6 +793,37 @@ var res6f = Game.World.withdrawItem('tent_travelers_tent');
 assert(res6f.ok === false && /weight/i.test(res6f.message), 'withdraw blocked over capacity: ' + res6f.message);
 assert(c6c.vault.items.indexOf('tent_travelers_tent') !== -1, 'item remains in vault after blocked withdraw');
 
+// =================== Test 6d (v1.3.1 fix 8): vault ops gated on battle + Vault facility presence ===================
+console.log('\n=== Test 6d: vault ops fail during a battle, and fail where there is no Vault facility ===');
+var c6d = makeCharacter({ name: 'VaultGateTest' });
+Game.Character.addGold(c6d, 100);
+Game.Inventory.addItem(c6d, 'tent_travelers_tent');
+
+// blocked during battle (mirrors buy/sell/innRest/camp/travelTo's existing battle gate)
+setRng(fixedRng(0.99));
+Game.Battle.start('plains_field_rat');
+var resDepositGoldBattle = Game.World.depositGold(10);
+assert(resDepositGoldBattle.ok === false && /battle/i.test(resDepositGoldBattle.message), 'depositGold blocked during battle: ' + resDepositGoldBattle.message);
+var resWithdrawGoldBattle = Game.World.withdrawGold(10);
+assert(resWithdrawGoldBattle.ok === false && /battle/i.test(resWithdrawGoldBattle.message), 'withdrawGold blocked during battle: ' + resWithdrawGoldBattle.message);
+var resDepositItemBattle = Game.World.depositItem('tent_travelers_tent');
+assert(resDepositItemBattle.ok === false && /battle/i.test(resDepositItemBattle.message), 'depositItem blocked during battle: ' + resDepositItemBattle.message);
+var resWithdrawItemBattle = Game.World.withdrawItem('tent_travelers_tent');
+assert(resWithdrawItemBattle.ok === false && /battle/i.test(resWithdrawItemBattle.message), 'withdrawItem blocked during battle: ' + resWithdrawItemBattle.message);
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// blocked in an area without a Vault facility (mirrors learnTech/buyBuff's existing facility gate)
+Game.World.travelTo('plains_of_averast'); // hunting area, no facilities at all
+var resDepositGoldNoVault = Game.World.depositGold(10);
+assert(resDepositGoldNoVault.ok === false && /Vault/.test(resDepositGoldNoVault.message), 'depositGold fails without a Vault facility: ' + resDepositGoldNoVault.message);
+var resWithdrawGoldNoVault = Game.World.withdrawGold(10);
+assert(resWithdrawGoldNoVault.ok === false && /Vault/.test(resWithdrawGoldNoVault.message), 'withdrawGold fails without a Vault facility: ' + resWithdrawGoldNoVault.message);
+var resDepositItemNoVault = Game.World.depositItem('tent_travelers_tent');
+assert(resDepositItemNoVault.ok === false && /Vault/.test(resDepositItemNoVault.message), 'depositItem fails without a Vault facility: ' + resDepositItemNoVault.message);
+var resWithdrawItemNoVault = Game.World.withdrawItem('tent_travelers_tent');
+assert(resWithdrawItemNoVault.ok === false && /Vault/.test(resWithdrawItemNoVault.message), 'withdrawItem fails without a Vault facility: ' + resWithdrawItemNoVault.message);
+
 // =================== Test 7: Academy tech chain gating ===================
 console.log('\n=== Test 7: Academy chain gating (Firebolt II requires Firebolt I + Evocation skillReq) ===');
 var c7 = makeCharacter({ skills: { 'Evocation': 3 }, name: 'AcademyTest' });
@@ -842,6 +888,22 @@ c7e.skills['Swords'].level = 20;
 var check7h = Game.World.canLearn(c7e, Game.Battle.getTech('tech_cleave_2'));
 assert(check7h.ok === false, 'Cleave II blocked without Cleave I known: ' + check7h.failures.join(' '));
 
+// =================== Test 7c (v1.3.1 fix 1): learnTech refuses a classOnly tech ===================
+console.log('\n=== Test 7c: learnTech refuses a classOnly tech (Training-Points Academy path) and leaves trainingPoints numeric ===');
+var c7f = makeCharacter({ name: 'ClassOnlyRejectTest' });
+c7f.trainingPoints = 10;
+var tpBefore7f = c7f.trainingPoints;
+// tech_crushing_blow (js/data/techs.js) is classOnly: true — bought with Class Levels via
+// Game.Classes.buyAbility, never with Training Points here. Before the fix, canLearn's
+// `c.trainingPoints < tech.trainingCost` check passed vacuously (tech.trainingCost is undefined
+// on a classOnly tech, and `x < undefined` is always false), so learnTech proceeded to
+// `c.trainingPoints -= undefined`, corrupting it to NaN.
+var res7f = Game.World.learnTech('tech_crushing_blow');
+assert(res7f.ok === false, 'learnTech refuses a classOnly tech: ' + res7f.message);
+assert(c7f.techs.indexOf('tech_crushing_blow') === -1, 'classOnly tech not added to known techs');
+assert(c7f.trainingPoints === tpBefore7f, 'trainingPoints unchanged by the refusal');
+assert(typeof c7f.trainingPoints === 'number' && !isNaN(c7f.trainingPoints), 'v1.3.1 fix 1: trainingPoints remains a real number (not NaN)');
+
 // =================== Test 8: Spirit Shrine buffs ===================
 console.log('\n=== Test 8: shrine buff deducts shards, modifies battle numbers, expires after 5 battle-ends ===');
 var c8 = makeCharacter({ name: 'ShrineTest' });
@@ -881,6 +943,32 @@ c8c.level = 6;
 Game.World.travelTo('jumak_village');
 var res8c = Game.World.buyBuff('shrine_stoneskin');
 assert(res8c.ok === false && /Shrine/.test(res8c.message), 'no Shrine in Ju`Mak: ' + res8c.message);
+
+// =================== Test 8d (v1.3.1 fix 7): monsterFled battle end still ticks shrine buffs + persists ===================
+console.log('\n=== Test 8d: a monster fleeing (energy depleted) still decrements shrine-buff battlesLeft ===');
+var c8d = makeCharacter({ name: 'MonsterFledShrineTest' });
+c8d.level = 5; // strong enough not to die
+Game.Character.recalcDerived(c8d);
+c8d.hitPoints = c8d.hitPointsMax = 500;
+c8d.energy = c8d.energyMax = 10000;
+Game.Character.addShards(c8d, 50);
+var res8d = Game.World.buyBuff('shrine_stoneskin');
+assert(res8d.ok === true, 'buyBuff succeeds: ' + res8d.message);
+assert(c8d.shrineBuffs.length === 1 && c8d.shrineBuffs[0].battlesLeft === 5, 'buff stored with battlesLeft=5');
+setRng(fixedRng(0.99)); // monster never uses techs, always basic attack (cost 5); no dodge/glancing either way
+var b8d = Game.Battle.start('plains_field_rat'); // rat energy 30 -> 6 counters until 0
+b8d.monster.hp = b8d.monster.hpMax = 100000; // never actually dies, so the battle can only end via monsterFled
+var guard8d = 0;
+while (b8d.phase === 'active' && guard8d++ < 50) {
+  Game.Battle.attack();
+}
+assert(b8d.phase === 'monsterFled', 'monster at 0 energy flees -> phase monsterFled (got ' + b8d.phase + ' after ' + guard8d + ' rounds)');
+// Before the fix, the monsterFled branch of checkEnd (js/core/battle.js) was the only battle-end
+// phase that skipped Game.World.tickShrineBuffsOnBattleEnd — every other phase (win/loss/flee/
+// cutoff-win) already ticks it, per the standing "win/loss/flee all count" comment at the buff's
+// own definition.
+assert(c8d.shrineBuffs.length === 1 && c8d.shrineBuffs[0].battlesLeft === 4, 'v1.3.1 fix 7: shrine buff battlesLeft decremented on a monsterFled battle-end, got ' + JSON.stringify(c8d.shrineBuffs));
+Game.Battle.endBattle();
 
 // =================== Test 9: uncurse ===================
 console.log('\n=== Test 9: uncurse removes cursed ring for its value in gold ===');

@@ -155,6 +155,14 @@ purchases, deactivation wipe):
 - Monsters: have levels, elements/resistances by Anima grade, can use techniques (v2.1 added 24
   monster techs), bosses are harder. XP/loot cutoff: enemy more than 5 levels below you yields
   nothing.
+  - **[revised] v1.3.1 quest-material exemption** (user-approved; `js/core/battle.js` onWin cutoff
+    branch): items whose id starts with `quest_` still roll on the drop table even when the
+    cutoff applies; XP, gold, shards, and any non-`quest_` loot remain fully cut, unchanged. The
+    unqualified cutoff otherwise permanently dead-ends every collect quest whose material source
+    sits 5+ levels below the quest's own accept level (verified uncompletable: `trials_of_eldor`,
+    `vaultbreakers_reckoning`, and 5 lesser collect quests) — a kill that can never drop its own
+    required material makes the quest uncompletable forever, which the archived 5-level rule was
+    never meant to do.
 - Status effects: **Poison, Haunting, Curse** (v2.1 set; Blind/Silence were removed) — **all three
   now implemented**: Poison (battle DoT) and Curse (battle-scoped −25% player damage, v1.2) as
   battle statuses; Haunting as a persistent affliction (halves magical/consumable healing until

@@ -1223,15 +1223,32 @@ Game.Data.monsters = [
     goldMin: 150,
     goldMax: 260,
     shardChance: 0.75,
+    // v1.3.1 fix 3 [revised] (docs/REVIEW-2026-07-11.md Part 3 C1; user-approved): the guaranteed
+    // lore_eidas_final_journal (chance 1) originally sat BEFORE quest_eidas_echo_seal and
+    // sword_skyspire_ember_blade — first-hit-wins made both of those permanently unreachable
+    // (effective 0% — the Heir of the Echo Legendary's only obtain route, and the roster's
+    // capstone unique, were both dead code). Reordered so the append-last convention's rarer/
+    // gated entries (seal, then the unique) roll BEFORE the guaranteed fallback; the journal (pure
+    // lore, value 0, consumed by no quest — see js/data/quests.js/story.js) now sits LAST as the
+    // true fallback that only fires when nothing rarer hit. STANDING RULE going forward: a
+    // chance-1 (or any guaranteed) drop must never be followed by anything else in a monster's
+    // drops array — first-hit-wins means every entry after it is dead. Effective per-kill
+    // probabilities with this order: sword_kastengard_relic_blade 0.1, rod_eidas_remnant_wand
+    // 0.9*0.1=0.09, heavy_body_vault_bulwark 0.81*0.1=0.081, quest_eidas_echo_seal
+    // 0.729*0.7=0.5103 (~51%, ~2 kills expected), sword_skyspire_ember_blade
+    // 0.729*0.3*0.05=0.01094 (~1.1%, ~91 kills expected, matching this game's other boss-unique
+    // rates, e.g. foothills_matriarch's hth_matriarchs_fang_wraps at ~1.3%), lore_eidas_final_journal
+    // (fallback) 0.729*0.3*0.95=0.2078 (~21%, ~5 kills expected) — eidas_echo is a repeatable Lair
+    // fight (js/data/areas.js kastengard_deep.lair), so all four remain comfortably obtainable.
     drops: [
       { itemId: 'sword_kastengard_relic_blade', chance: 0.1 },
       { itemId: 'rod_eidas_remnant_wand', chance: 0.1 },
       { itemId: 'heavy_body_vault_bulwark', chance: 0.1 },
-      { itemId: 'lore_eidas_final_journal', chance: 1 },
       { itemId: 'quest_eidas_echo_seal', chance: 0.7 },
       // Phase 9: unique equipment (js/data/items.js) — boss signature, the roster's capstone.
-      // Appended last so prior loot rates (including the guaranteed journal above) are unchanged.
-      { itemId: 'sword_skyspire_ember_blade', chance: 0.05 }
+      { itemId: 'sword_skyspire_ember_blade', chance: 0.05 },
+      // Guaranteed fallback — MUST stay last (see standing rule above).
+      { itemId: 'lore_eidas_final_journal', chance: 1 }
     ],
     desc: 'Not Eidas himself — no living thing could have lasted three centuries — but something of him all the same: an Anima-projection anchored to the old Skyspire ground works, still murmuring about a "divine race" that never came to pass. The last guardian of Kastengard\'s deepest vault, and, perhaps, the answer to what the twinkling light in the night sky has truly been all this time.'
   },

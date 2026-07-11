@@ -264,7 +264,7 @@ var BALANCE = {
   // existing mitigation assignment.
 
   // 8. Curse status (battle-scoped debuff, parallel to Poison — not a persistent affliction like
-  // Haunting): halves the player's outgoing damage (attacks AND techs) for CURSE_DURATION turns;
+  // Haunting): reduces the player's outgoing damage by 25% (attacks AND techs) for CURSE_DURATION turns;
   // cleared automatically at battle end (battle.playerStatuses is never persisted). Applied by a
   // monster's `curseChance` field (analogous to a tech's poisonChance), rolled on any successful
   // monster hit. Cleansable mid-battle by an Abjuration tech carrying `clearsStatus: true`

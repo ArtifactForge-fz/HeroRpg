@@ -217,6 +217,13 @@ Game.Battle = (function () {
       // the monster was not defeated, and only "If you win, you may get several things".
       battle.phase = 'monsterFled';
       log(battle, "The " + battle.monster.name + "'s energy is spent — it escapes from battle! You gain nothing.");
+      // v1.3.1 fix 7: every other battle-end phase (win/loss/flee/cutoff-win) already ticks shrine
+      // buffs down and persists (see the same call in onWin/onLoss/flee below) — monsterFled was
+      // the one phase that skipped both, closing a player-favorable gap (a free battle-end that
+      // cost a shrine buff none of its remaining battles, and could revert on a later un-persisted
+      // reload).
+      if (Game.World && Game.World.tickShrineBuffsOnBattleEnd) Game.World.tickShrineBuffsOnBattleEnd(battle.player);
+      if (Game.persist) Game.persist();
       return true;
     }
     return false;
@@ -391,7 +398,7 @@ Game.Battle = (function () {
     battle.attackedThisBattle = true;
 
     var fear = fearMultiplier(battle);
-    // v1.2 Phase 1 item 8: Curse halves outgoing damage (attacks AND techs) while active.
+    // v1.2 Phase 1 item 8: Curse reduces outgoing damage by 25% (attacks AND techs) while active.
     var curseMult = playerCurseMultiplier(battle);
     var baseDamage = (Game.Character.getDamage(battle.player) + playerBuffDamageBonus(battle)) * fear * curseMult;
 
@@ -563,7 +570,7 @@ Game.Battle = (function () {
     } else {
       // 'damage' | 'drain'
       var fear = fearMultiplier(battle);
-      // v1.2 Phase 1 item 8: Curse halves outgoing damage (attacks AND techs) while active.
+      // v1.2 Phase 1 item 8: Curse reduces outgoing damage by 25% (attacks AND techs) while active.
       var curseMult = playerCurseMultiplier(battle);
       // Phase 6a: Rogue class tech "Shadowstep Strike" resolves as multiple successive hits
       // (js/data/techs.js `hits: 2`) — invented mechanic, modeled as a simple repeat of the
@@ -761,14 +768,39 @@ Game.Battle = (function () {
     }
 
     var levelDiff = c.level - monster.level;
+    // v1.3.1 fix 5: snapshot the level BEFORE Game.Character.addXp (below) can raise it, so the
+    // Fury check further down judges the kill against the level the player fought at, not a level
+    // reached mid-resolution by the very XP this kill grants.
+    var levelBeforeXp = c.level;
 
     // archived: Recent_Updates.md 2007-04-06 "The experience/loot cutoff for monsters is once
     // again 5 levels" — a monster 5+ levels below you yields nothing at all (no XP, skill XP,
     // gold, shards, or loot).
     if (levelDiff >= BALANCE.XP_LOOT_CUTOFF_LEVELS) {
-      battle.rewards = { xp: 0, gold: 0, shards: 0, skillXp: {}, loot: null, cutoff: true };
-      battle.pendingLoot = null;
+      // v1.3.1 fix 2 [revised] (user-approved; docs/DESIGN.md §4): the loot cutoff above otherwise
+      // permanently dead-ends any collect quest whose material source sits 5+ levels below the
+      // quest's own accept level (verified: trials_of_eldor, vaultbreakers_reckoning, and 5 lesser
+      // collect quests) — a kill that can NEVER drop its own quest material makes the quest
+      // uncompletable forever. Quest-material items (id prefix 'quest_') still roll on the drop
+      // table even under the cutoff; XP, gold, shards, and any NON-quest_ loot remain fully cut,
+      // exactly as before. Same top-down first-hit-wins convention as the main loot roll below
+      // (CLAUDE.md "Content conventions"); still routes through the single rng() stub.
+      var cutoffLootId = null;
+      var cutoffDrops = monster.drops || [];
+      for (var cd = 0; cd < cutoffDrops.length; cd++) {
+        if (rng() < cutoffDrops[cd].chance) {
+          cutoffLootId = cutoffDrops[cd].itemId;
+          break;
+        }
+      }
+      if (cutoffLootId && cutoffLootId.indexOf('quest_') !== 0) cutoffLootId = null;
+      battle.rewards = { xp: 0, gold: 0, shards: 0, skillXp: {}, loot: cutoffLootId, cutoff: true };
+      battle.pendingLoot = cutoffLootId;
       log(battle, 'The ' + monster.name + ' was far beneath your level. You gain nothing.');
+      if (cutoffLootId) {
+        var cutoffItem = Game.Inventory.getItem(cutoffLootId);
+        log(battle, 'The ' + monster.name + ' dropped: ' + (cutoffItem ? cutoffItem.name : cutoffLootId) + '. Click Loot to claim it.');
+      }
       if (Game.World && Game.World.tickShrineBuffsOnBattleEnd) Game.World.tickShrineBuffsOnBattleEnd(c);
       if (Game.persist) Game.persist();
       return;
@@ -889,7 +921,10 @@ Game.Battle = (function () {
     // as one level higher for this check ONLY — Fear stays based on the monster's actual level
     // (fearLevels/fearMultiplier above are untouched by the champion flag).
     var furyEffectiveLevel = monster.champion ? monster.level + 1 : monster.level;
-    if (furyEffectiveLevel >= c.level) {
+    // v1.3.1 fix 5: compare against levelBeforeXp (snapshotted above, BEFORE addXp could have
+    // leveled the player up), not the live c.level — a kill that levels you up must still be judged
+    // by the level you were when you fought it, not the level addXp already bumped you to.
+    if (furyEffectiveLevel >= levelBeforeXp) {
       c.fury = (c.fury || 0) + 1;
     }
 

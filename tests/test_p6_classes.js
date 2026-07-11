@@ -532,6 +532,27 @@ assert(battle11b.monster.hp === beforeHp11b, 'Crushing Blow does NOT land while 
 Game.Battle.flee();
 Game.Battle.endBattle();
 
+// =================== Test 11c (v1.3.1 fix 6): current HP clamped down after losing an hp_max_flat passive ===================
+console.log('\n=== Test 11c: deactivating an hp_max_flat passive clamps current HP down to the new max ===');
+var c11c = makeCharacter({ name: 'HpClampTest' });
+setLevel(c11c, 30);
+c11c.currentLocation = 'eldor';
+Game.Classes.obtainClass(c11c, 'crusader');
+Game.Classes.activate(c11c, 'crusader', 'primary');
+// Iron Vitality (crusader_iron_vitality, hp_max_flat +40) costs 3 unspent Class Levels.
+Game.Classes.addClassXp(c11c, Game.Classes.classXpForLevel(10) + 100);
+var unspent11c = Game.Classes.unspentClassLevels(c11c, 'crusader');
+assert(unspent11c >= 3, 'enough unspent class levels for Iron Vitality (3), got ' + unspent11c);
+var hpMaxBefore11c = c11c.hitPointsMax;
+var buyIronVitality11c = Game.Classes.buyAbility(c11c, 'crusader', 'crusader_iron_vitality');
+assert(buyIronVitality11c.ok === true, 'Iron Vitality purchased: ' + buyIronVitality11c.message);
+assert(c11c.hitPointsMax === hpMaxBefore11c + 40, 'Iron Vitality raises hitPointsMax by +40 (before=' + hpMaxBefore11c + ', after=' + c11c.hitPointsMax + ')');
+c11c.hitPoints = c11c.hitPointsMax; // full HP, at the boosted max
+var deactivate11c = Game.Classes.deactivate(c11c, 'primary');
+assert(deactivate11c.ok === true, 'crusader deactivated: ' + deactivate11c.message);
+assert(c11c.hitPointsMax === hpMaxBefore11c, 'hitPointsMax drops back by 40 after losing Iron Vitality');
+assert(c11c.hitPoints === c11c.hitPointsMax, 'v1.3.1 fix 6: current hitPoints clamped down to the new (lower) max, not left dangling above it (hitPoints=' + c11c.hitPoints + ', hitPointsMax=' + c11c.hitPointsMax + ')');
+
 // =================== Test 12: deactivate wipes xp/levels/abilities; reactivate starts at zero ===================
 console.log('\n=== Test 12: deactivate permanently wipes progress; reactivating rebuilds from zero ===');
 var c12 = makeCharacter({ name: 'Deactivator' });

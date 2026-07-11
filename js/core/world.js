@@ -88,7 +88,14 @@ Game.World = (function () {
     if (Game.state.battle) return { ok: false, message: 'You cannot travel during a battle.' };
     var area = getArea(areaId);
     if (!area) return { ok: false, message: 'Unknown location.' };
-    if (c.level < area.minLevel) {
+    // v1.3.1 fix 4 [invented]: a character's own home town is always reachable, regardless of its
+    // minLevel gate — no archived record of this exemption survives, but without it an Arkan
+    // character (home: Saratus, js/core/character.js create(); Saratus gated at minLevel 14,
+    // js/data/areas.js) cannot accept or turn in their own L1/L6/L8 racial quests at their own
+    // starting town until level 14. Game.Character.homeTownId(c) re-derives the home town from
+    // race every call — NOT a new persisted field.
+    var isHomeTown = Game.Character && Game.Character.homeTownId && Game.Character.homeTownId(c) === areaId;
+    if (!isHomeTown && c.level < area.minLevel) {
       return { ok: false, message: 'Requires Level ' + area.minLevel + ' (you are Level ' + c.level + ').' };
     }
     c.currentLocation = areaId;
@@ -285,9 +292,16 @@ Game.World = (function () {
 
   // ---------------- Vault (Recent_Updates.md 2007-08-01; account-wide safe storage, no fees) ----------------
 
+  // v1.3.1 fix 8: the four vault ops below were missing BOTH gates every sibling town-facility op
+  // already has — a Game.state.battle check (like buy/sell/innRest/camp/travelTo) and a facility
+  // presence check (like learnTech/buyBuff gate on 'academy'/'shrine'). Mirroring those exactly
+  // (same error-message style) so the Vault behaves like every other facility.
   function depositGold(amountGold) {
     var c = Game.state.character;
     if (!c) return { ok: false, message: 'No character.' };
+    if (Game.state.battle) return { ok: false, message: 'You cannot use the Vault during a battle.' };
+    var area = currentArea();
+    if (!getFacility(area, 'vault')) return { ok: false, message: 'There is no Vault here.' };
     if (amountGold <= 0) return { ok: false, message: 'Enter a positive amount.' };
     if (Game.Character.goldTotalAsGold(c) < amountGold) {
       return { ok: false, message: 'You do not have that much gold.' };
@@ -301,6 +315,9 @@ Game.World = (function () {
   function withdrawGold(amountGold) {
     var c = Game.state.character;
     if (!c) return { ok: false, message: 'No character.' };
+    if (Game.state.battle) return { ok: false, message: 'You cannot use the Vault during a battle.' };
+    var area = currentArea();
+    if (!getFacility(area, 'vault')) return { ok: false, message: 'There is no Vault here.' };
     if (amountGold <= 0) return { ok: false, message: 'Enter a positive amount.' };
     var vaultTotal = c.vault.platinum * BALANCE.GOLD_PER_PLATINUM + c.vault.gold;
     if (vaultTotal < amountGold) return { ok: false, message: 'The Vault does not hold that much gold.' };
@@ -332,6 +349,9 @@ Game.World = (function () {
   function depositItem(itemId) {
     var c = Game.state.character;
     if (!c) return { ok: false, message: 'No character.' };
+    if (Game.state.battle) return { ok: false, message: 'You cannot use the Vault during a battle.' };
+    var area = currentArea();
+    if (!getFacility(area, 'vault')) return { ok: false, message: 'There is no Vault here.' };
     if (c.inventory.indexOf(itemId) === -1) {
       return { ok: false, message: 'You do not have that item (or it is equipped).' };
     }
@@ -345,6 +365,9 @@ Game.World = (function () {
   function withdrawItem(itemId) {
     var c = Game.state.character;
     if (!c) return { ok: false, message: 'No character.' };
+    if (Game.state.battle) return { ok: false, message: 'You cannot use the Vault during a battle.' };
+    var area = currentArea();
+    if (!getFacility(area, 'vault')) return { ok: false, message: 'There is no Vault here.' };
     var idx = c.vault.items.indexOf(itemId);
     if (idx === -1) return { ok: false, message: 'That item is not in your Vault.' };
     var item = Game.Inventory.getItem(itemId);
@@ -408,7 +431,13 @@ Game.World = (function () {
     var tech = null;
     var list = Game.Data.techs || [];
     for (var i = 0; i < list.length; i++) { if (list[i].id === techId) tech = list[i]; }
-    if (!tech || tech.monsterOnly) return { ok: false, message: 'Unknown technique.' };
+    // v1.3.1 fix 1: classOnly techs (js/data/techs.js) have no trainingCost field, so the
+    // `c.trainingPoints < tech.trainingCost` check in canLearn() above (`x < undefined` is always
+    // false) passed vacuously and c.trainingPoints -= undefined below corrupted it to NaN.
+    // learnableTechs() already excludes classOnly techs (js/core/world.js above) — this rejection
+    // must match it exactly so the Academy's Training-Points path can never reach a classOnly tech
+    // (those are bought with Class Levels instead, via Game.Classes.buyAbility).
+    if (!tech || tech.monsterOnly || tech.classOnly) return { ok: false, message: 'Unknown technique.' };
     var check = canLearn(c, tech);
     if (!check.ok) return { ok: false, message: check.failures.join(' ') };
     c.trainingPoints -= tech.trainingCost;
