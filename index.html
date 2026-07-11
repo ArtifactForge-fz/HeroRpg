@@ -39,6 +39,7 @@
 
   <div id="footer" class="smallfont" title="So long, and thanks for all the fish.">
     Powered by RadiantWeb and RadiantRPG &mdash; in memory of HeroRPG (herorpg.net, 2004&ndash;2008)
+    &mdash; <a href="changelog.html" id="versionloglink">Version Log</a>
   </div>
 </div>
 
@@ -47,6 +48,7 @@
 <script src="js/data/monsters.js"></script>
 <script src="js/data/techs.js"></script>
 <script src="js/data/areas.js"></script>
+<script src="js/data/changelog.js"></script>
 <script src="js/data/shrine.js"></script>
 <script src="js/data/recipes.js"></script>
 <script src="js/data/quests.js"></script>
@@ -302,6 +304,12 @@
       Game.Screens.navigate('creation');
     }
     renderSavePanel();
+  }
+
+  // Footer version-log link text derives from the changelog data so it can never go stale.
+  var versionLogLink = document.getElementById('versionloglink');
+  if (versionLogLink && Game.Data && Game.Data.changelog && Game.Data.changelog[0]) {
+    versionLogLink.textContent = Game.Data.changelog[0].version + ' — Version Log';
   }
 
   boot();

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HeroRPG — Version Log</title>
+<link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<div id="app">
+  <div id="titlebar">HeroRPG — Version Log</div>
+
+  <div class="panelsurround" style="padding:6px; margin-bottom:6px;">
+    <a href="index.html">&larr; Back to the game</a>
+  </div>
+
+  <div id="versionlog"></div>
+
+  <div id="footer" class="smallfont" title="So long, and thanks for all the fish.">
+    Powered by RadiantWeb and RadiantRPG &mdash; in memory of HeroRPG (herorpg.net, 2004&ndash;2008)
+  </div>
+</div>
+
+<script src="js/data/changelog.js"></script>
+<script>
+(function () {
+  var Game = window.Game;
+  var wrap = document.getElementById('versionlog');
+
+  var entries = (Game.Data && Game.Data.changelog) || [];
+
+  entries.forEach(function (entry) {
+    var section = document.createElement('div');
+    section.style.marginBottom = '10px';
+
+    var header = document.createElement('div');
+    header.className = 'tcat';
+    header.textContent = entry.version + ' — ' + entry.title + ' — ' + entry.date;
+    section.appendChild(header);
+
+    var panel = document.createElement('div');
+    panel.className = 'panel';
+
+    var meta = document.createElement('div');
+    meta.className = 'smallfont';
+    meta.style.marginBottom = '4px';
+    meta.textContent = 'Save version: ' + entry.saveVersion;
+    panel.appendChild(meta);
+
+    var list = document.createElement('ul');
+    list.style.margin = '0';
+    list.style.paddingLeft = '18px';
+    (entry.highlights || []).forEach(function (line) {
+      var li = document.createElement('li');
+      li.className = 'smallfont';
+      li.textContent = line;
+      list.appendChild(li);
+    });
+    panel.appendChild(list);
+
+    section.appendChild(panel);
+    wrap.appendChild(section);
+  });
+})();
+</script>
+</body>
+</html>

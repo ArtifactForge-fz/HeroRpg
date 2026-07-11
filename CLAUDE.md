@@ -73,6 +73,11 @@ fully enforced at high levels (Fear-spared healing sustain) — deferred, docume
   that one line).
 - Quest step kinds: kill / collect / touch / visit (+ `acceptItems`, `classChoice` rewards incl.
   the `'advanced'` sentinel). Quest materials use id prefix `quest_`.
+- Version Log: every release milestone gets a PREPENDED entry in `js/data/changelog.js`
+  (player-facing wording, no dev jargon); the game footer's link text auto-derives the shown
+  version from entry `[0]`, so it can never go stale. The release guard in `test_reload.js`
+  fails if README's announced version or the current save version disagrees with entry `[0]`,
+  so the suites enforce the convention.
 
 ## Testing
 
