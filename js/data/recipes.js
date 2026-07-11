@@ -178,6 +178,26 @@ Game.Data.recipes = [
     gold: 500,
     output: 'crystal_eclass_2',
     desc: 'Fuse two E-Class Crystal Is into a single, denser E-Class Crystal II.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band D (docs/SPEC-ARC-BANDS.md, F2/F3): two synthesis recipes for Estari Ruins
+  // Deep — a gear-tier reforge using a Band D quest material, and a graded-consumable
+  // progression recipe matching the synth_eclass_crystal_2 precedent above.
+  // =====================================================================
+  {
+    id: 'synth_estari_wardblade',
+    inputs: ['sword_frosthold_vanguard_blade', 'quest_anima_taint_sample'],
+    gold: 850,
+    output: 'sword_estari_wardblade',
+    desc: "Reforge a Frosthold Vanguard Blade around a catalogued Anima Taint Sample to strike a fresh Estari Wardblade."
+  },
+  {
+    id: 'synth_fclass_crystal_2',
+    inputs: ['crystal_fclass_1', 'crystal_fclass_1'],
+    gold: 550,
+    output: 'crystal_fclass_2',
+    desc: 'Fuse two F-Class Crystal Is into a single, denser F-Class Crystal II.'
   }
 ];
 

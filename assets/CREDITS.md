@@ -141,3 +141,29 @@ other icon in `assets/icons/` (304 files total, zero duplicate hashes) — not j
 other. The lead's real-DCSS-tile pass at the end of the Level-Arc work should replace these 35
 placeholders the same way the P5 pass replaced the v1.2 ones and Bands A/B's are slated to be
 replaced.
+
+## Level-Arc Band D icons — procedural placeholders (pending the lead's real-tile pass)
+
+The 35 new ids introduced by Level-Arc Band D (Estari Ruins Deep, levels 71-80 —
+`docs/SPEC-ARC-BANDS.md`) use hand-generated procedural placeholder tiles, not real Dungeon Crawl
+art: 7 new monsters (`estari_sublevel_warden`, `estari_anima_conduit`, `anima_scarred_excavator`,
+`estari_wellspring_warden`, `raw_anima_horror`, `estari_ruin_vanguard`, `estari_warden_prime`),
+6 weapons/shield (`sword_estari_wardblade`, `polearm_estari_warpike`, `knife_estari_shard_fang`,
+`rod_wellspring_conduit`, `hth_warden_gauntlets`, `shield_estari_bulwark`), 9 armor pieces
+(`light_body_wellspring_veil`, `light_head_wellspring_hood`, `medium_body_estari_brigandine`,
+`medium_legs_estari_greaves`, `heavy_body_warden_plate`, `heavy_head_warden_helm`,
+`light_legs_wellspring_leggings`, `medium_feet_estari_boots`, `heavy_legs_warden_legguards`),
+5 consumables (`crystal_fclass_1`, `crystal_fclass_2`, `sphere_fclass_1`, `sphere_fclass_2`,
+`stone_energy_wellspring`), 1 quest material (`quest_anima_taint_sample`), 3 unique items
+(`light_body_estari_anima_shroud`, `rod_wellspring_heartcore`, `sword_warden_primes_relic`), and
+4 techs (`tech_firebolt_7`, `tech_mend_wounds_7`, `tech_cleave_7`, `tech_impale_7`).
+
+Generated with the same hand-rolled per-id-hash placeholder approach as Bands A/B/C above
+(deterministic fill/accent colors + one of 5 patterns — border ring, diagonal stripes, checker
+quadrants, cross, or concentric ring — plus a small corner mark); the PNG container itself is built
+with Node's `zlib.deflateSync`/manual chunk+CRC32 writer, guaranteeing a structurally valid stream.
+All 35 were verified programmatically as valid 32x32 RGBA PNGs and byte-hash-distinct from every
+other icon in `assets/icons/` (339 files total, zero duplicate hashes) — not just against each
+other. The lead's real-DCSS-tile pass at the end of the Level-Arc work should replace these 35
+placeholders the same way the P5 pass replaced the v1.2 ones and Bands A/B/C's are slated to be
+replaced.

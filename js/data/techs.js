@@ -1077,6 +1077,75 @@ Game.Data.techs = [
     trainingCost: 10,
     skillReq: 40,
     desc: 'The Frozen-Reaches-era form of Impale, taught only once a polearm-wielder has proven the first five ranks. Requires Impale V and Polearms 40.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band D (docs/SPEC-ARC-BANDS.md, F2/F3): one further rank into the same two magic-
+  // school chains and two weapon-tech chains Bands A/B/C extended, gated by skill level per the
+  // existing Academy chain model (js/core/world.js previousRankId/canLearn — rank>1 requires the
+  // previous rank known AND the governing skill >= skillReq). skillReq 50 is comfortably inside a
+  // level 71+ character's skill cap (BALANCE.SKILL_CAP(71) = 143) for anyone who has actually
+  // trained the skill. Numeric progressions (power/powerMult/energyCost/trainingCost) continue
+  // each chain's existing rank-to-rank deltas (e.g. Firebolt's power deltas 16/18/18 -> +20 here).
+  // =====================================================================
+  {
+    id: 'tech_firebolt_7',
+    name: 'Firebolt VII',
+    chain: 'Firebolt',
+    rank: 7,
+    skill: 'Evocation',
+    grade: 'Fire',
+    energyCost: 48,
+    power: 112,
+    effect: 'damage',
+    trainingCost: 12,
+    skillReq: 50,
+    desc: 'The Estari-Wellspring-era form of Firebolt, taught only to Evocation adepts who have proven the first six ranks. Requires Firebolt VI and Evocation 50.'
+  },
+  {
+    id: 'tech_mend_wounds_7',
+    name: 'Mend Wounds VII',
+    chain: 'Mend Wounds',
+    rank: 7,
+    skill: 'Abjuration',
+    grade: 'Light',
+    energyCost: 46,
+    power: 162,
+    effect: 'heal',
+    trainingCost: 12,
+    skillReq: 50,
+    desc: 'An Estari-Wellspring-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds VI and Abjuration 50. Unaffected by Fear (Fear.md).'
+  },
+  {
+    id: 'tech_cleave_7',
+    name: 'Cleave VII',
+    chain: 'Cleave',
+    rank: 7,
+    skill: 'Swords',
+    grade: null,
+    weaponTech: true,
+    powerMult: 3.5, // invented (user-directed)
+    energyCost: 38,
+    effect: 'damage',
+    trainingCost: 12,
+    skillReq: 50,
+    desc: 'The Estari-Wellspring-era form of Cleave, taught only once a swordsman has proven the first six ranks. Requires Cleave VI and Swords 50.'
+  },
+  {
+    id: 'tech_impale_7',
+    name: 'Impale VII',
+    chain: 'Impale',
+    rank: 7,
+    skill: 'Polearms',
+    grade: null,
+    weaponTech: true,
+    powerMult: 3.4, // invented (user-directed)
+    armorPierce: 0.35, // invented (user-directed)
+    energyCost: 38,
+    effect: 'damage',
+    trainingCost: 12,
+    skillReq: 50,
+    desc: 'The Estari-Wellspring-era form of Impale, taught only once a polearm-wielder has proven the first six ranks. Requires Impale VI and Polearms 50.'
   }
 ];
 

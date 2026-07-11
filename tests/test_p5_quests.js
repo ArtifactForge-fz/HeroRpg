@@ -129,7 +129,7 @@ function winBattle(monsterId) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: quest/story data sanity ===');
-assert(Game.Data.quests.length === 34, '34 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end + Band B\'s break_the_majiku_host/storms_over_the_ridge/the_chieftains_reckoning + Band C\'s win_passage_from_the_ukai/what_slips_through_the_ice/the_deep_dwellers_reckoning), got ' + Game.Data.quests.length);
+assert(Game.Data.quests.length === 37, '37 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end + Band B\'s break_the_majiku_host/storms_over_the_ridge/the_chieftains_reckoning + Band C\'s win_passage_from_the_ukai/what_slips_through_the_ice/the_deep_dwellers_reckoning + Band D\'s the_taboo_wellspring/what_the_wellspring_woke/the_warden_primes_reckoning), got ' + Game.Data.quests.length);
 assert(Game.Data.story.length === 3, '3 story chapters, got ' + Game.Data.story.length);
 ['prelude', 'chapter_1', 'chapter_2'].forEach(function (id) {
   var found = Game.Data.story.some(function (ch) { return ch.id === id; });
@@ -796,6 +796,61 @@ var res26b = Game.Quests.turnIn('the_deep_dwellers_reckoning');
 assert(res26b.ok === true, 'the_deep_dwellers_reckoning turn-in succeeds: ' + res26b.message);
 assert(c26.quests['the_deep_dwellers_reckoning'].status === 'completed', 'the_deep_dwellers_reckoning marked completed');
 assert(Game.Quests.inventoryCount(c26, 'heavy_head_glacial_warhelm') >= 1, 'the_deep_dwellers_reckoning grants the Glacial Warhelm');
+
+// =================== Test 21: Level-Arc Band D quests (accept -> progress -> turn-in) ===================
+console.log('\n=== Test 21: Band D quests — the_taboo_wellspring / what_the_wellspring_woke / the_warden_primes_reckoning ===');
+
+// 21a) main-spine quest: accept at Frosthold Waystation, force-satisfy its kill/collect/visit
+// steps, turn in for the full multi-reward (mirrors Test 20a's pattern).
+var c27 = makeCharacter({ name: 'BandDMainTest' });
+grantVitalityForLevel(c27, 71);
+Game.World.travelTo('frosthold_waystation');
+var res27a = Game.Quests.accept('the_taboo_wellspring');
+assert(res27a.ok === true, 'the_taboo_wellspring accepted at Frosthold Waystation: ' + res27a.message);
+assert(Game.Quests.canTurnIn('the_taboo_wellspring') === false, 'the_taboo_wellspring not yet turn-in-able (steps unsatisfied)');
+Game._debug.completeQuestStep('the_taboo_wellspring');
+assert(Game.Quests.canTurnIn('the_taboo_wellspring') === true, 'the_taboo_wellspring steps force-satisfied (5x kill + 3x collect + visit anima_wellspring)');
+var gold27a = Game.Character.goldTotalAsGold(c27);
+var xp27a = c27.xp;
+var tp27a = c27.trainingPoints;
+var res27b = Game.Quests.turnIn('the_taboo_wellspring');
+assert(res27b.ok === true, 'the_taboo_wellspring turn-in succeeds: ' + res27b.message);
+assert(Game.Character.goldTotalAsGold(c27) === gold27a + 1500, 'the_taboo_wellspring grants +1500 gold');
+assert(c27.xp === xp27a + 2300, 'the_taboo_wellspring grants +2300 xp');
+assert(c27.trainingPoints === tp27a + 3, 'the_taboo_wellspring grants +3 Training Points');
+assert(Game.Quests.inventoryCount(c27, 'sword_estari_wardblade') >= 1, 'the_taboo_wellspring grants an Estari Wardblade');
+assert(c27.quests['the_taboo_wellspring'].status === 'completed', 'the_taboo_wellspring marked completed');
+
+// 21b) side quest: REAL kill progress (not force-satisfied) via winBattle against The Anima
+// Wellspring regulars, same pattern as Test 20b's hunt-quest loop.
+var c28 = makeCharacter({ name: 'BandDSideTest' });
+grantVitalityForLevel(c28, 76);
+Game.World.travelTo('frosthold_waystation');
+var res28a = Game.Quests.accept('what_the_wellspring_woke');
+assert(res28a.ok === true, 'what_the_wellspring_woke accepted: ' + res28a.message);
+Game.World.travelTo('anima_wellspring');
+for (var w21 = 0; w21 < 4; w21++) winBattle('raw_anima_horror');
+assert(c28.quests['what_the_wellspring_woke'].progress.kills['raw_anima_horror'] === 4, 'real kill progress reached 4/4 via winBattle against raw_anima_horror');
+assert(Game.Quests.canTurnIn('what_the_wellspring_woke') === true, 'what_the_wellspring_woke turn-in-able after 4 real kills');
+Game.World.travelTo('frosthold_waystation');
+var res28b = Game.Quests.turnIn('what_the_wellspring_woke');
+assert(res28b.ok === true, 'what_the_wellspring_woke turn-in succeeds: ' + res28b.message);
+assert(Game.Quests.inventoryCount(c28, 'sphere_fclass_2') >= 1, 'what_the_wellspring_woke grants an F-Class Sphere II');
+
+// 21c) boss-kill side quest: REAL kill via winBattle against the Band D lair boss itself.
+var c29 = makeCharacter({ name: 'BandDBossTest' });
+grantVitalityForLevel(c29, 80);
+Game.World.travelTo('frosthold_waystation');
+var res29a = Game.Quests.accept('the_warden_primes_reckoning');
+assert(res29a.ok === true, 'the_warden_primes_reckoning accepted: ' + res29a.message);
+Game.World.travelTo('anima_wellspring');
+winBattle('estari_warden_prime');
+assert(c29.quests['the_warden_primes_reckoning'].progress.kills['estari_warden_prime'] === 1, 'estari_warden_prime kill recorded via winBattle (lair fight, same Game.Battle.start call as the Explore screen\'s lair button)');
+Game.World.travelTo('frosthold_waystation');
+var res29b = Game.Quests.turnIn('the_warden_primes_reckoning');
+assert(res29b.ok === true, 'the_warden_primes_reckoning turn-in succeeds: ' + res29b.message);
+assert(c29.quests['the_warden_primes_reckoning'].status === 'completed', 'the_warden_primes_reckoning marked completed');
+assert(Game.Quests.inventoryCount(c29, 'heavy_head_warden_helm') >= 1, 'the_warden_primes_reckoning grants the Warden Helm');
 
 // =================== Summary ===================
 console.log('\n===================================');

@@ -799,6 +799,56 @@ Game.Data.quests = [
     ],
     rewards: { gold: 2600, xp: 3600, items: ['heavy_head_glacial_warhelm'], trainingPoints: 4 },
     completionText: 'Thessaly turns the Deep-Dweller\'s own claw over in her hands, and for a long moment says nothing at all. "The Warlord held Kuraan for a generation. The Chieftain held the whole Majiku host. And the Ukai held this cave since before either of them were born — and you\'ve just ended that too. Whatever waits past the undercaverns, hero, we\'re not asking the Ukai for anything. We\'re walking through."'
+  },
+
+  // =====================================================================
+  // Level-Arc Band D (docs/SPEC-ARC-BANDS.md, F2/F3): Estari Ruins Deep, levels 71-80 — the story
+  // beat "The taboo Anima wellspring — mining it kills Exos." Main-spine quest + two side quests,
+  // all given at Frosthold Waystation (js/data/areas.js) since Band D adds no new settlement.
+  // =====================================================================
+
+  // ---------- Band D main-spine quest ----------
+  {
+    id: 'the_taboo_wellspring',
+    name: 'The Taboo Wellspring',
+    giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
+    levelMin: 71,
+    intro: 'Waystation Commander Thessaly has a fourth map pinned up now, and this one worries her more than the undercaverns ever did. "Tremors out of the Estari sublevels, hero — the ones sealed since before the Ukai\'s own lore remembers. The old story says the Estari found something down there called Anima and the Council of Three banned anyone from ever mining it, on pain of killing the world itself. Something\'s woken the sublevel wardens regardless. Break them, bring me samples of whatever they\'re leaking, and get eyes on the Wellspring the Estari sealed it all to protect."',
+    steps: [
+      { kind: 'kill', monsterId: 'estari_sublevel_warden', count: 5 },
+      { kind: 'collect', itemId: 'quest_anima_taint_sample', count: 3 },
+      { kind: 'visit', areaId: 'anima_wellspring' }
+    ],
+    rewards: { gold: 1500, xp: 2300, items: ['sword_estari_wardblade'], trainingPoints: 3 },
+    completionText: 'Thessaly holds a sample up to the light, and whatever she sees in it drains the color from her face. "Anima-Warden Yulei will want to look at this herself — these traces aren\'t Estari make, hero. Somebody\'s been down there recently, and whoever it was knew exactly what the Council of Three banned and dug into the Wellspring anyway. Take the blade. You\'re not done here — none of us are."'
+  },
+
+  // ---------- Band D side quest 1: Anima Wellspring hunt ----------
+  {
+    id: 'what_the_wellspring_woke',
+    name: 'What the Wellspring Woke',
+    giver: { areaId: 'frosthold_waystation', npc: 'Anima-Warden Yulei' },
+    levelMin: 76,
+    intro: 'Anima-Warden Yulei has spread the taint samples across Thessaly\'s table, and none of it sits right with her. "It\'s never been like this, hero — not the deepwood witches, not the hostcaller shamans, not even the Ukai\'s own hollow deeplings. This is raw Anima given shape and hunger straight out of the seam itself, no scarred victim in between. The Wellspring is growing them now. Put down four Raw Anima-Horrors before one drifts far enough to reach Frosthold."',
+    steps: [
+      { kind: 'kill', monsterId: 'raw_anima_horror', count: 4 }
+    ],
+    rewards: { gold: 1300, xp: 1900, items: ['sphere_fclass_2'] },
+    completionText: 'Yulei sets the last of her instruments down, and for once looks more grim than relieved. "Four fewer horrors out of the Wellspring. But they were never the disease, hero — they\'re the symptom. Something cracked that seal on purpose. I need to know what, and I need to know soon."'
+  },
+
+  // ---------- Band D side quest 2: Estari Warden-Prime boss kill ----------
+  {
+    id: 'the_warden_primes_reckoning',
+    name: "The Warden-Prime's Reckoning",
+    giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
+    levelMin: 80,
+    intro: 'Thessaly has a fifth map now, the Wellspring itself inked in past the sublevels. "You\'ve seen the taint, hero, and you\'ve seen what it\'s growing. The Warden-Prime is the last thing standing between us and whoever cracked that seal — the Estari built it to enforce the Council of Three\'s ban against anyone, and right now that includes us. End it, and the Wellspring finally answers to someone who isn\'t trying to mine it to exhaustion."',
+    steps: [
+      { kind: 'kill', monsterId: 'estari_warden_prime', count: 1 }
+    ],
+    rewards: { gold: 2900, xp: 3900, items: ['heavy_head_warden_helm'], trainingPoints: 4 },
+    completionText: 'Thessaly turns the Warden-Prime\'s own relic-blade over in her hands, and for once she doesn\'t reach for a fourth map. "The Warlord held Kuraan. The Chieftain held the highlands. The Deep-Dweller held the undercaverns. And the Warden-Prime held the one thing all three of them were only guarding the way to. Whatever cracked that seal, hero, it wanted the Wellspring badly enough to wake a ward that\'s slept since before written history. We\'d better find out why before it finishes what it started."'
   }
 ];
 

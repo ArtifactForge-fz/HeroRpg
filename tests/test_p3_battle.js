@@ -122,9 +122,9 @@ function makeCharacter(opts) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: data sanity (monsters reference real items/techs) ===');
-assert(Game.Data.monsters.length === 66, '66 monsters defined (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss), got ' + Game.Data.monsters.length);
+assert(Game.Data.monsters.length === 73, '73 monsters defined (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss + 6 Level-Arc Band D regulars + 1 Band D boss), got ' + Game.Data.monsters.length);
 var bosses = Game.Data.monsters.filter(function (m) { return m.boss; });
-assert(bosses.length === 8, 'exactly 8 bosses defined (Phase 6b adds 4 to the original estari_ruin_warden, Level-Arc Band A adds majiku_warlord, Band B adds majiku_ridge_chieftain, Band C adds ukai_deep_dweller), got ' + bosses.length);
+assert(bosses.length === 9, 'exactly 9 bosses defined (Phase 6b adds 4 to the original estari_ruin_warden, Level-Arc Band A adds majiku_warlord, Band B adds majiku_ridge_chieftain, Band C adds ukai_deep_dweller, Band D adds estari_warden_prime), got ' + bosses.length);
 var badRefs = [];
 Game.Data.monsters.forEach(function (m) {
   (m.drops || []).forEach(function (d) {
@@ -1952,6 +1952,180 @@ console.log('ukai_deep_dweller sim results over ' + DEEP_DWELLER_SIM_COUNT + ' b
 // Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
 assert(uddWinRate >= 0.6, 'ukai_deep_dweller is reliably beatable by a geared level-70 warrior (win rate ' + (uddWinRate * 100).toFixed(1) + '%, want >= 60%)');
 assert(uddAvgHpLeft <= 0.85 || uddAvgConsumed >= 1, 'ukai_deep_dweller extracts a real cost on wins (avg HP left ' + (uddAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + uddAvgConsumed.toFixed(1) + ')');
+
+// =================== Test 39: Level-Arc Band D (Estari Ruins Deep) monster formulas + boss premiums ===================
+console.log('\n=== Test 39: Band D regulars match the header formulas; estari_warden_prime carries the F1 boss premiums ===');
+var bandDRegularIds = [
+  'estari_sublevel_warden', 'estari_anima_conduit', 'anima_scarred_excavator',
+  'estari_wellspring_warden', 'raw_anima_horror', 'estari_ruin_vanguard'
+];
+assert(bandDRegularIds.length === 6, 'sanity: 6 Band D regular monster ids listed in this test');
+bandDRegularIds.forEach(function (id) {
+  var m = Game.Battle.getMonsterDef(id);
+  assert(!!m, 'Band D regular monster exists: ' + id);
+  if (!m) return;
+  assert(m.hp === BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * m.level, id + ' hp matches the header formula exactly');
+  assert(m.damage === BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * m.level, id + ' damage matches the header formula exactly');
+  assert(m.energy === BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * m.level, id + ' energy matches the header formula exactly');
+  assert(m.xp === BALANCE.MONSTER_XP(m.level), id + ' xp matches BALANCE.MONSTER_XP(level)');
+});
+// Two thematic anima-scarred/anima-horror monsters carry the v1.2 Curse mechanic (phase brief).
+['anima_scarred_excavator', 'raw_anima_horror'].forEach(function (id) {
+  var m = Game.Battle.getMonsterDef(id);
+  assert(m.curseChance === BALANCE.CURSE_APPLY_CHANCE, id + ' carries curseChance BALANCE.CURSE_APPLY_CHANCE');
+});
+
+var wardenPrime = Game.Battle.getMonsterDef('estari_warden_prime');
+assert(!!wardenPrime && wardenPrime.boss === true, 'estari_warden_prime exists and is a boss');
+assert(wardenPrime.level === 80, 'estari_warden_prime is level 80');
+var ewpBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 80;
+var ewpBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 80;
+assert(wardenPrime.hp === ewpBaseHp + 12 * 80, 'estari_warden_prime hp carries the +12*level boss premium (' + ewpBaseHp + ' + 960 = ' + (ewpBaseHp + 960) + '), got ' + wardenPrime.hp);
+assert(wardenPrime.damage === ewpBaseDmg + Math.round(1.5 * 80 + 10), 'estari_warden_prime damage carries the F1 round(1.5*level+10) boss premium (' + ewpBaseDmg + ' + 130 = ' + (ewpBaseDmg + 130) + '), got ' + wardenPrime.damage);
+assert(wardenPrime.xp === BALANCE.MONSTER_XP(80) * 3, 'estari_warden_prime xp carries the x3 boss premium');
+
+// =================== Test 40: Level-Arc Band D weapon damage is TAPERED, not literal ===================
+console.log('\n=== Test 40: Band D levelReq-75/78 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
+var band75WeaponIds = [
+  'sword_estari_wardblade', 'polearm_estari_warpike', 'knife_estari_shard_fang',
+  'rod_wellspring_conduit', 'hth_warden_gauntlets'
+];
+var literalDamage75 = 3 + 2 * 75; // 153 -- what a NON-tapered literal read would give
+var taperedDamage75 = 3 + 2 * taperedEffectiveLevelReq(75); // 129
+assert(taperedDamage75 === 129, 'sanity: the band-75 TAPERED damage value is 129, per the phase brief, got ' + taperedDamage75);
+band75WeaponIds.forEach(function (id) {
+  var it = Game.Inventory.getItem(id);
+  assert(!!it, 'Band D tier-75 weapon exists: ' + id);
+  if (!it) return;
+  assert(it.damage === taperedDamage75, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage75);
+  assert(it.damage !== literalDamage75, id + ' damage is NOT the literal-formula value ' + literalDamage75 + ' (the F1 taper must be applied)');
+});
+// Armor tapers the same way (round(1 + effectiveLevelReq)).
+var literalArmor75 = 1 + 75; // 76 -- literal read
+var taperedArmor75 = Math.round(1 + taperedEffectiveLevelReq(75)); // 64
+['light_body_wellspring_veil', 'medium_body_estari_brigandine', 'heavy_body_warden_plate', 'shield_estari_bulwark'].forEach(function (id) {
+  var it = Game.Inventory.getItem(id);
+  assert(!!it, 'Band D tier-75 armor/shield exists: ' + id);
+  if (!it) return;
+  assert(it.armor === taperedArmor75, id + ' armor (' + it.armor + ') equals the TAPERED value ' + taperedArmor75);
+  assert(it.armor !== literalArmor75, id + ' armor is NOT the literal-formula value ' + literalArmor75);
+});
+// Sub-tier (levelReq 78) tapers to a DIFFERENT value than the main tier (levelReq 75), confirming
+// the taper is re-derived per levelReq rather than a fixed band-wide constant.
+var literalArmor78 = 1 + 78; // 79 -- literal read
+var taperedArmor78 = Math.round(1 + taperedEffectiveLevelReq(78)); // 66
+['light_legs_wellspring_leggings', 'medium_feet_estari_boots', 'heavy_legs_warden_legguards'].forEach(function (id) {
+  var it = Game.Inventory.getItem(id);
+  assert(!!it, 'Band D sub-tier-78 armor exists: ' + id);
+  if (!it) return;
+  assert(it.armor === taperedArmor78, id + ' armor (' + it.armor + ') equals the TAPERED sub-tier value ' + taperedArmor78);
+  assert(it.armor !== literalArmor78, id + ' armor is NOT the literal-formula value ' + literalArmor78);
+  assert(it.armor !== taperedArmor75, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier tapered value ' + taperedArmor75 + ' (taper is re-derived per levelReq)');
+});
+
+// =================== Test 41: estari_warden_prime lair fight — winnable but costly (real RNG sim) ===================
+console.log('\n=== Test 41: estari_warden_prime (Band D lair boss) is winnable-but-costly for a geared level-80 warrior ===');
+function buildLevel80WellspringWarrior() {
+  var skillPoints = {};
+  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
+  skillPoints['Swords'] = 3;
+  skillPoints['Heavy Armor'] = 2;
+  var c = Game.Character.create({
+    race: 'Human',
+    name: 'WardenPrimeTester',
+    gender: 'Male',
+    skillPoints: skillPoints
+  });
+  c.level = 80;
+  c.xp = BALANCE.XP_TO_LEVEL(80);
+  // 79 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
+  // (same split style as buildLevel70FrostholdWarrior above).
+  c.statPoints = 79 * BALANCE.LEVELUP_STAT_POINTS;
+  var totalPoints80 = c.statPoints;
+  for (var i = 0; i < totalPoints80; i++) {
+    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
+    Game.Character.spendStatPoint(c, stat);
+  }
+  var gearIds80 = ['sword_estari_wardblade', 'heavy_body_warden_plate', 'shield_estari_bulwark'];
+  gearIds80.forEach(function (id) {
+    Game.Inventory.addItem(c, id);
+    var res = Game.Inventory.equip(c, id);
+    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
+  });
+  for (i = 0; i < 6; i++) {
+    Game.Inventory.addItem(c, 'sphere_fclass_1');
+    Game.Inventory.addItem(c, 'crystal_fclass_1');
+  }
+  Game.Character.recalcDerived(c);
+  c.hitPoints = c.hitPointsMax;
+  c.energy = c.energyMax;
+  return c;
+}
+
+function countBandDConsumables(c) {
+  var n = 0;
+  for (var i = 0; i < c.inventory.length; i++) {
+    if (c.inventory[i] === 'sphere_fclass_1' || c.inventory[i] === 'crystal_fclass_1') n++;
+  }
+  return n;
+}
+
+function simulateWardenPrimeBattle() {
+  var c = buildLevel80WellspringWarrior();
+  Game.state.character = c;
+  Game.state.battle = null;
+  Game.Battle._rng = Math.random; // real RNG for this sim
+
+  var consumablesBefore = countBandDConsumables(c);
+  var battle = Game.Battle.start('estari_warden_prime');
+  var rounds = 0;
+  var MAX_ROUNDS = 500;
+  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
+    rounds++;
+    if (!Game.Battle.canAct(battle)) {
+      var crystalIdx = c.inventory.indexOf('crystal_fclass_1');
+      if (crystalIdx !== -1) {
+        Game.Battle.useItem('crystal_fclass_1');
+        continue;
+      }
+    }
+    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_fclass_1') !== -1) {
+      Game.Battle.useItem('sphere_fclass_1');
+      continue;
+    }
+    Game.Battle.attack();
+  }
+  var consumablesAfter = countBandDConsumables(c);
+  return {
+    phase: battle.phase,
+    hpLeftFrac: c.hitPoints / c.hitPointsMax,
+    consumablesConsumed: consumablesBefore - consumablesAfter
+  };
+}
+
+var WARDEN_PRIME_SIM_COUNT = 30;
+var ewpWins = 0;
+var ewpOutcomes = {};
+var ewpHpLeftSum = 0;
+var ewpConsumedSum = 0;
+for (var ewpRun = 0; ewpRun < WARDEN_PRIME_SIM_COUNT; ewpRun++) {
+  var ewpResult = simulateWardenPrimeBattle();
+  ewpOutcomes[ewpResult.phase] = (ewpOutcomes[ewpResult.phase] || 0) + 1;
+  if (ewpResult.phase === 'won') {
+    ewpWins++;
+    ewpHpLeftSum += ewpResult.hpLeftFrac;
+    ewpConsumedSum += ewpResult.consumablesConsumed;
+  }
+}
+var ewpWinRate = ewpWins / WARDEN_PRIME_SIM_COUNT;
+var ewpAvgHpLeft = ewpWins ? ewpHpLeftSum / ewpWins : 0;
+var ewpAvgConsumed = ewpWins ? ewpConsumedSum / ewpWins : 0;
+console.log('estari_warden_prime sim results over ' + WARDEN_PRIME_SIM_COUNT + ' battles: ' + JSON.stringify(ewpOutcomes) +
+  ' — win rate ' + (ewpWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (ewpAvgHpLeft * 100).toFixed(0) +
+  '%, avg consumables spent ' + ewpAvgConsumed.toFixed(1));
+// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
+assert(ewpWinRate >= 0.6, 'estari_warden_prime is reliably beatable by a geared level-80 warrior (win rate ' + (ewpWinRate * 100).toFixed(1) + '%, want >= 60%)');
+assert(ewpAvgHpLeft <= 0.85 || ewpAvgConsumed >= 1, 'estari_warden_prime extracts a real cost on wins (avg HP left ' + (ewpAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + ewpAvgConsumed.toFixed(1) + ')');
 
 // =================== Summary ===================
 console.log('\n===================================');

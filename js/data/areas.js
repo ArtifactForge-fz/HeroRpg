@@ -565,7 +565,18 @@ Game.Data.areas = [
           'potion_vault_reserve',
           'crystal_eclass_1', 'crystal_eclass_2', 'sphere_eclass_1', 'sphere_eclass_2',
           'stone_energy_frosthold',
-          'sword_majiku_hostbreaker', 'shield_highland_bulwark'
+          'sword_majiku_hostbreaker', 'shield_highland_bulwark',
+          // Level-Arc Band D (docs/SPEC-ARC-BANDS.md): the Estari Ruins Deep tier-75/78 gear and
+          // F-Class consumables (js/data/items.js) — Frosthold Waystation still serves the whole
+          // 61-90 range, so Band D adds no new settlement and simply extends this stock.
+          'sword_estari_wardblade', 'polearm_estari_warpike', 'knife_estari_shard_fang',
+          'rod_wellspring_conduit', 'hth_warden_gauntlets', 'shield_estari_bulwark',
+          'light_body_wellspring_veil', 'light_head_wellspring_hood',
+          'medium_body_estari_brigandine', 'medium_legs_estari_greaves',
+          'heavy_body_warden_plate', 'heavy_head_warden_helm',
+          'light_legs_wellspring_leggings', 'medium_feet_estari_boots', 'heavy_legs_warden_legguards',
+          'crystal_fclass_1', 'crystal_fclass_2', 'sphere_fclass_1', 'sphere_fclass_2',
+          'stone_energy_wellspring'
         ]
       },
       { type: 'inn' },
@@ -580,6 +591,50 @@ Game.Data.areas = [
       { type: 'tavern' }
     ],
     desc: 'A wind-scoured waystation thrown up at the edge of the ice-fields, the last Crown-held ground before the Ukai\'s own undercaverns. Waystation Commander Thessaly holds the line here — Inn, Vault, Academy, Spirit Shrine, and a well-stocked Shop selling gear fit for the frozen approach.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band D (docs/SPEC-ARC-BANDS.md, F2/F3): Estari Ruins Deep, levels 71-80 — the story
+  // descends past the won Ukai passage into the precursor Estari's own sealed sublevels, down to
+  // the taboo Anima Wellspring itself (DESIGN.md §2 lore: the precursor race Estari discovered
+  // Anima, ninth-dimensional matter that is the life-force of Exos itself; mining it would kill
+  // the planet, so the Council of Three banned it — archived, Prelude.md/Chapter I). The low-level
+  // Estari Ruins (js/data/areas.js `estari_ruins`, level 4-5) were only the outer shell; these
+  // sublevels are the real depth the archived lore gestures at. Two overlapping hunting bands
+  // (Estari Sublevels 71-74, The Anima Wellspring 76-79; gap of 2 levels, under the archived ±5
+  // XP/loot cutoff, BALANCE.XP_LOOT_CUTOFF_LEVELS) plus the band's lair boss. NO new settlement —
+  // Frosthold Waystation (Band C) already serves the whole 61-90 range. Same travel-reachability
+  // note as Bands A/B/C: js/ui/screens.js renderExplore lists ALL of Game.Data.areas as
+  // destinations, gated only by Game.World.travelTo's level check — no separate adjacency graph.
+  // =====================================================================
+
+  // ---------- Estari Sublevels: level 71-74 hunting ----------
+  {
+    id: 'estari_sublevels',
+    name: 'Estari Sublevels',
+    type: 'hunting',
+    minLevel: 71,
+    // The sealed lower levels of the Estari ruins, dug deeper than anything Eldor's own Ruin
+    // Warden ever guarded — wardens, raw-anima constructs, and the first scarred remnants of
+    // whoever last excavated this deep.
+    monsters: ['estari_sublevel_warden', 'estari_anima_conduit', 'anima_scarred_excavator'],
+    facilities: [],
+    desc: "The Estari ruins run far deeper than Eldor's own excavated shell ever let on — sealed sublevels, still warded by constructs older than the Ukai's own undercaverns. Something down here is leaking raw Anima again, badly enough that even long-dead ward-stone is waking to stop it. Further down, the sublevels open onto whatever the Estari themselves were guarding: the Anima Wellspring."
+  },
+
+  // ---------- The Anima Wellspring: level 76-79 hunting + lair boss ----------
+  {
+    id: 'anima_wellspring',
+    name: 'The Anima Wellspring',
+    type: 'hunting',
+    minLevel: 76,
+    monsters: ['estari_wellspring_warden', 'raw_anima_horror', 'estari_ruin_vanguard'],
+    // The boss is a separate "Lair" entry, fightable only once the party is closer to its own
+    // level (invented gate, matches the majiku_warlord/majiku_ridge_chieftain/ukai_deep_dweller
+    // precedent).
+    lair: { monsterId: 'estari_warden_prime', minLevel: 80, name: "The Warden-Prime's Sanctum" },
+    facilities: [],
+    desc: "The taboo itself: a raw seam of Anima the Estari sealed away rather than mine to exhaustion, exactly as the Council of Three's ban demanded (Prelude.md). Somebody — or something — has cracked that seal again, and the Estari Warden-Prime that answers to the wellspring's own old wards has started treating anything that moves, hero included, as the trespass the ban was written to prevent."
   }
 ];
 

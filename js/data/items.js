@@ -2605,6 +2605,346 @@ Game.Data.items = [
     tags: ['unique'],
     // boss signature: ukai_deep_dweller (js/data/monsters.js), the Band C lair boss.
     desc: "A claw wrenched whole from the Deep-Dweller itself, still cold enough to numb the hand that wields it — proof even the Ukai's own proudest guardian could not hold its hollow."
+  },
+
+  // =====================================================================
+  // Level-Arc Band D (docs/SPEC-ARC-BANDS.md, F2/F3): Estari Ruins Deep, levels 71-80. Weapon/
+  // armor damage and armor values below are TAPERED per the F1 CONVENTION NOTES block in
+  // js/balance.js (mandatory past band 35): effectiveLevelReq = 35 + 0.7*(levelReq-35). Main tier
+  // at levelReq 75 (effectiveLevelReq 35+0.7*40=63 -> damage 3+2*63=129, armor round(1+63)=64 —
+  // NOT the literal 3+2*75=153 / 1+75=76); a levelReq-78 sub-tier (effectiveLevelReq
+  // 35+0.7*43=65.1 -> armor round(1+65.1)=66). Bands <=35 are unchanged (kept literal, per the F1
+  // note). statReqs continue the levelReq+9-ish weapon/shield trend and levelReq+3-ish
+  // heavy-armor trend established at tier 45/55/65 (js/data/items.js Band A/B/C headers); value
+  // is an invented economy continuation of the existing per-tier growth curve (a steady +440-500
+  // per 10 levelReq — no archived value formula survived, see this file's header comment).
+  // =====================================================================
+
+  // ---------- Weapons: tier (levelReq 75), one per weapon skill ----------
+  {
+    id: 'sword_estari_wardblade',
+    name: 'Estari Wardblade',
+    slot: 'weapon',
+    skill: 'Swords',
+    damage: 129, // TAPERED: effectiveLevelReq 35+0.7*40=63 -> 3+2*63=129 (F1 finding; NOT the literal 3+2*75=153)
+    weight: 7,
+    levelReq: 75,
+    statReqs: { strength: 84 },
+    value: 3070,
+    tags: [],
+    desc: "A heavy blade forged from a fallen sublevel warden's own ward-plating, tuned by Frosthold's smiths to strike where Estari construct-hide runs thinnest."
+  },
+  {
+    id: 'polearm_estari_warpike',
+    name: 'Estari Warpike',
+    slot: 'weapon',
+    skill: 'Polearms',
+    damage: 129, // TAPERED, see header comment above
+    weight: 9,
+    levelReq: 75,
+    statReqs: { strength: 84 },
+    value: 3070,
+    tags: [],
+    desc: "A long pike weighted to punch clean through a ruin vanguard's reforged plating, its haft warded against the Wellspring's own stray discharge."
+  },
+  {
+    id: 'knife_estari_shard_fang',
+    name: 'Estari Shard Fang',
+    slot: 'weapon',
+    skill: 'Knives',
+    damage: 129, // TAPERED, see header comment above
+    weight: 3,
+    levelReq: 75,
+    statReqs: { dexterity: 84 },
+    value: 3070,
+    tags: [],
+    desc: "A curved blade shaped from a shattered anima conduit's own crystal casing, favored by scouts working the Estari sublevels' tighter corridors."
+  },
+  {
+    id: 'rod_wellspring_conduit',
+    name: 'Wellspring Conduit Rod',
+    slot: 'weapon',
+    skill: 'Rods',
+    damage: 129, // TAPERED, see header comment above
+    weight: 4,
+    levelReq: 75,
+    statReqs: { intelligence: 84 },
+    value: 3070,
+    tags: [],
+    desc: "A captured wellspring warden's own ward-core, unpicked and reforged by Arkan battlemages into a conduit that draws on the taboo seam without breaking the Council of Three's ban outright."
+  },
+  {
+    id: 'hth_warden_gauntlets',
+    name: 'Warden Gauntlets',
+    slot: 'weapon',
+    skill: 'Hand to Hand',
+    damage: 129, // TAPERED, see header comment above
+    weight: 4,
+    levelReq: 75,
+    statReqs: { strength: 84 },
+    value: 3070,
+    tags: [],
+    desc: "Banded gauntlets cast from a sublevel warden's own broken fists, heavy enough to crack a ruin vanguard's plating in a single blow."
+  },
+
+  // ---------- Offhand: Shield (levelReq 75) ----------
+  {
+    id: 'shield_estari_bulwark',
+    name: 'Estari Bulwark',
+    slot: 'offhand',
+    skill: 'Shields',
+    armor: 64, // TAPERED: round(1+63)=64
+    magicArmor: 20,
+    weight: 8,
+    levelReq: 75,
+    statReqs: { strength: 84 },
+    value: 3220,
+    tags: [],
+    desc: "A broad shield banded with reforged construct plating, warded against both the sublevels' crushing blows and the Wellspring's own stray Anima discharge."
+  },
+
+  // ---------- Armor: tier (levelReq 75) — light/medium/heavy ----------
+  {
+    id: 'light_body_wellspring_veil',
+    name: 'Wellspring Veil',
+    slot: 'body',
+    skill: 'Light Armor',
+    armor: 64, // TAPERED, see header comment above
+    magicArmor: 20,
+    weight: 3,
+    levelReq: 75,
+    value: 3230,
+    tags: [],
+    desc: 'A ward-weave cut for scouts moving quietly through the Estari sublevels ahead of the waystation column.'
+  },
+  {
+    id: 'light_head_wellspring_hood',
+    name: 'Wellspring Hood',
+    slot: 'head',
+    skill: 'Light Armor',
+    armor: 64,
+    magicArmor: 20,
+    weight: 2,
+    levelReq: 75,
+    value: 3200,
+    tags: [],
+    desc: "A matching hood to the Wellspring Veil, its warding thread tuned against the excavators' own anima-scarred curse."
+  },
+  {
+    id: 'medium_body_estari_brigandine',
+    name: 'Estari Brigandine',
+    slot: 'body',
+    skill: 'Medium Armor',
+    armor: 64,
+    weight: 6,
+    levelReq: 75,
+    value: 3230,
+    tags: [],
+    desc: 'Boiled leather and salvaged construct-plate rivets, standard issue to every hero pushing into the Estari sublevels.'
+  },
+  {
+    id: 'medium_legs_estari_greaves',
+    name: 'Estari Greaves',
+    slot: 'legs',
+    skill: 'Medium Armor',
+    armor: 64,
+    weight: 6,
+    levelReq: 75,
+    value: 3210,
+    tags: [],
+    desc: 'Greaves fitted for the long, careful descent through sealed sublevels toward the Anima Wellspring itself.'
+  },
+  {
+    id: 'heavy_body_warden_plate',
+    name: 'Warden Plate',
+    slot: 'body',
+    skill: 'Heavy Armor',
+    armor: 64,
+    weight: 10,
+    levelReq: 75,
+    statReqs: { strength: 78 },
+    value: 3340,
+    tags: [],
+    desc: "Heavy plate hammered at Frosthold's own forge from salvaged warden-plating, thick enough to stand a ruin vanguard's own charge."
+  },
+  {
+    id: 'heavy_head_warden_helm',
+    name: 'Warden Helm',
+    slot: 'head',
+    skill: 'Heavy Armor',
+    armor: 64,
+    weight: 10,
+    levelReq: 75,
+    statReqs: { strength: 78 },
+    value: 3290,
+    tags: [],
+    desc: 'A war-helm forged for the officers leading the push down through the Estari sublevels toward the Wellspring.'
+  },
+
+  // ---------- Armor: sub-tier (levelReq 78) ----------
+  {
+    id: 'light_legs_wellspring_leggings',
+    name: 'Wellspring Leggings',
+    slot: 'legs',
+    skill: 'Light Armor',
+    armor: 66, // TAPERED: effectiveLevelReq 35+0.7*43=65.1 -> round(1+65.1)=66
+    magicArmor: 21,
+    weight: 3,
+    levelReq: 78,
+    value: 3420,
+    tags: [],
+    desc: 'Warded leggings woven for the deepest approach, where the sublevels finally open onto the Anima Wellspring itself.'
+  },
+  {
+    id: 'medium_feet_estari_boots',
+    name: 'Estari Boots',
+    slot: 'feet',
+    skill: 'Medium Armor',
+    armor: 66,
+    weight: 6,
+    levelReq: 78,
+    value: 3370,
+    tags: [],
+    desc: 'Sturdy boots re-soled at Frosthold for heroes ranging into the Wellspring proper.'
+  },
+  {
+    id: 'heavy_legs_warden_legguards',
+    name: 'Warden Legguards',
+    slot: 'legs',
+    skill: 'Heavy Armor',
+    armor: 66,
+    weight: 10,
+    levelReq: 78,
+    statReqs: { strength: 80 },
+    value: 3500,
+    tags: [],
+    desc: "Massive plate legguards salvaged and reforged from a fallen Estari ruin vanguard's own armor."
+  },
+
+  // ---------- Consumables: F-Class Crystal/Sphere + Energy Stone, extending the graded line
+  // (E-Class I-II, levelReq 61-66) into Band D ----------
+  {
+    id: 'crystal_fclass_1',
+    name: 'F-Class Crystal I',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 71,
+    value: 1130,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 540,
+    desc: "A denser grade of Anima crystal cut from the Estari Sublevels' own leaking seams, restoring more Energy than any E-Class grade."
+  },
+  {
+    id: 'crystal_fclass_2',
+    name: 'F-Class Crystal II',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 76,
+    value: 1365,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 580,
+    desc: "The deeper-grade F-Class Crystal, cut only from seams within a stone's throw of the Anima Wellspring itself."
+  },
+  {
+    id: 'sphere_fclass_1',
+    name: 'F-Class Sphere I',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 71,
+    value: 1190,
+    tags: [],
+    combatUsable: true,
+    heal: 960,
+    desc: 'A denser grade of Anima sphere, closing wounds faster than any E-Class grade.'
+  },
+  {
+    id: 'sphere_fclass_2',
+    name: 'F-Class Sphere II',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 76,
+    value: 1330,
+    tags: [],
+    combatUsable: true,
+    heal: 1020,
+    desc: "The deeper-grade F-Class Sphere, mended from Anima drawn only from the Wellspring's own edge."
+  },
+  {
+    id: 'stone_energy_wellspring',
+    name: 'Wellspring Energy Stone',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 75,
+    value: 720,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 500,
+    desc: 'A dependable Energy Stone sold at Frosthold Waystation for heroes pushing down into the Estari sublevels.'
+  },
+
+  // ---------- Band D quest material ----------
+  {
+    id: 'quest_anima_taint_sample',
+    name: 'Anima Taint Sample',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 1,
+    value: 12,
+    tags: ['no-trade'],
+    desc: "A vial of tainted Anima drawn from a sublevel construct or ruin vanguard alike, its residue unlike anything Anima-Warden Yulei has catalogued before. She wants every sample she can get."
+  },
+
+  // ---------- Band D unique equipment (monster-drop only; tag 'unique', +15-25% over the
+  // tapered tier per CLAUDE.md / SPEC-ARC-BANDS.md — never sold, never a synthesis input/output) ----------
+  {
+    id: 'light_body_estari_anima_shroud',
+    name: 'Estari Anima Shroud',
+    slot: 'body',
+    skill: 'Light Armor',
+    armor: 76, // +19% over the tapered tier-75 body armor (64)
+    damage: 9, // hybrid: armor granting a weapon-like Damage bonus, matching the ashcloak/ashmantle/frostwalker's-shroud precedent
+    weight: 3,
+    levelReq: 75,
+    value: 3900,
+    tags: ['unique'],
+    desc: "A shroud burned grey by the same raw Anima that scarred the excavator who wore it, its ash-dark weave sharp enough to cut on contact even this deep below the sublevels."
+  },
+  {
+    id: 'rod_wellspring_heartcore',
+    name: "Wellspring Heartcore",
+    slot: 'weapon',
+    skill: 'Rods',
+    damage: 160, // +20% over the tapered levelReq-78 weapon-equivalent damage (~133)
+    armor: 9, // hybrid: a weapon carrying +Armor, a stat shop rods never have
+    weight: 4,
+    levelReq: 78,
+    statReqs: { intelligence: 88 },
+    value: 4060,
+    tags: ['unique'],
+    desc: "A rod grown whole from the raw Anima-Horror's own core, warding its wielder even as it channels the same unmined Anima the Council of Three's ban was written to keep sealed."
+  },
+  {
+    id: 'sword_warden_primes_relic',
+    name: "The Warden-Prime's Relic",
+    slot: 'weapon',
+    skill: 'Swords',
+    damage: 160, // +24% over the tapered levelReq-75 damage (129)
+    magicArmor: 18, // hybrid: a weapon carrying +Magic Armor
+    weight: 7,
+    levelReq: 75,
+    statReqs: { strength: 88 },
+    value: 4200,
+    tags: ['unique'],
+    // boss signature: estari_warden_prime (js/data/monsters.js), the Band D lair boss.
+    desc: "A blade struck whole from the Warden-Prime's own core-plating, still humming with the same ancient enforcement-ward that has guarded the Anima Wellspring since before the Council of Three's ban was ever needed."
   }
 ];
 

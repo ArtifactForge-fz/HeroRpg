@@ -118,10 +118,10 @@ function makeCharacter(opts) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: areas/monsters/items data sanity ===');
-assert(Game.Data.areas.length === 22, '22 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A + Level-Arc Band A\'s kuraan_fringe_woods/deep_kuraan/kuraan_reclamation_camp + Band B\'s majiku_border_steppe/highland_war_camps, NO new Band B settlement + Band C\'s glacial_approach/ukai_undercaverns/frosthold_waystation per SPEC-ARC-BANDS.md), got ' + Game.Data.areas.length);
+assert(Game.Data.areas.length === 24, '24 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A + Level-Arc Band A\'s kuraan_fringe_woods/deep_kuraan/kuraan_reclamation_camp + Band B\'s majiku_border_steppe/highland_war_camps, NO new Band B settlement + Band C\'s glacial_approach/ukai_undercaverns/frosthold_waystation + Band D\'s estari_sublevels/anima_wellspring, NO new Band D settlement, per SPEC-ARC-BANDS.md), got ' + Game.Data.areas.length);
 var townCount = Game.Data.areas.filter(function (a) { return a.type === 'town'; }).length;
-assert(townCount === 7, '7 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp + Kuraan Reclamation Camp + Frosthold Waystation — Band B adds no new town, Band C adds Frosthold Waystation), got ' + townCount);
-assert(Game.Data.monsters.length === 66, '66 monsters (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss), got ' + Game.Data.monsters.length);
+assert(townCount === 7, '7 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp + Kuraan Reclamation Camp + Frosthold Waystation — Bands B and D add no new town, Band C adds Frosthold Waystation), got ' + townCount);
+assert(Game.Data.monsters.length === 73, '73 monsters (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss + 6 Level-Arc Band D regulars + 1 Band D boss), got ' + Game.Data.monsters.length);
 var gares = Game.World.getArea('gares_riverbanks');
 assert(gares && gares.monsters.length === 7, 'Gares Riverbanks lists 7 monsters (4 original + 3 enemy-variety-pass)');
 gares.monsters.forEach(function (mid) {
@@ -324,6 +324,54 @@ assert(connToUndercavernsBlocked.ok === false, 'level 65 cannot yet reach Ukai U
 connCheckC.level = 66;
 var connToUndercaverns = Game.World.travelTo('ukai_undercaverns');
 assert(connToUndercaverns.ok === true, 'level 66 reaches Ukai Undercaverns directly from Frosthold Waystation');
+
+// =================== Test 0g: Level-Arc Band D — Estari Ruins Deep (docs/SPEC-ARC-BANDS.md) ===================
+console.log('\n=== Test 0g: Estari Sublevels / The Anima Wellspring exist, level-gated, huntable, travel-reachable ===');
+var estariSublevels = Game.World.getArea('estari_sublevels');
+var animaWellspring = Game.World.getArea('anima_wellspring');
+assert(!!estariSublevels && estariSublevels.type === 'hunting', 'Estari Sublevels exists as a hunting area');
+assert(estariSublevels.minLevel === 71, 'Estari Sublevels gates travel at minLevel 71');
+assert(!!animaWellspring && animaWellspring.type === 'hunting', 'The Anima Wellspring exists as a hunting area');
+assert(animaWellspring.minLevel === 76, 'The Anima Wellspring gates travel at minLevel 76');
+assert(!!animaWellspring.lair && animaWellspring.lair.monsterId === 'estari_warden_prime' && animaWellspring.lair.minLevel === 80, 'The Anima Wellspring carries the estari_warden_prime lair gated at minLevel 80');
+// No new settlement for Band D — Frosthold Waystation (Band C) still serves the 61-90 range.
+['shop', 'inn', 'vault', 'academy', 'shrine', 'tavern'].forEach(function (t) {
+  assert(!!Game.World.getFacility(frostholdWaystation, t), 'Frosthold Waystation still has facility: ' + t);
+});
+// No gap wider than the archived ±5 XP/loot cutoff between the two hunting bands' monster levels.
+var sublevelsLevels = estariSublevels.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var wellspringLevels = animaWellspring.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var maxSublevelsLevel = Math.max.apply(null, sublevelsLevels);
+var minWellspringLevel = Math.min.apply(null, wellspringLevels);
+assert(minWellspringLevel - maxSublevelsLevel < BALANCE.XP_LOOT_CUTOFF_LEVELS, 'no gap wider than the ±5 XP/loot cutoff between Estari Sublevels (max lvl ' + maxSublevelsLevel + ') and The Anima Wellspring (min lvl ' + minWellspringLevel + ')');
+// Also no gap wider than the cutoff versus the PRIOR band's top hunting area (Ukai Undercaverns,
+// max lvl 69), confirming continuous coverage across the Band C/D seam.
+var undercavernsLevelsForGap = Game.World.getArea('ukai_undercaverns').monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var maxUndercavernsLevel = Math.max.apply(null, undercavernsLevelsForGap);
+var minSublevelsLevel = Math.min.apply(null, sublevelsLevels);
+assert(minSublevelsLevel - maxUndercavernsLevel < BALANCE.XP_LOOT_CUTOFF_LEVELS, 'no gap wider than the ±5 XP/loot cutoff between Ukai Undercaverns (max lvl ' + maxUndercavernsLevel + ') and Estari Sublevels (min lvl ' + minSublevelsLevel + ')');
+// Frosthold Waystation's shop stocks Band D's tapered gear/consumables.
+var frostholdShopD = Game.World.getFacility(frostholdWaystation, 'shop');
+['sword_estari_wardblade', 'shield_estari_bulwark', 'crystal_fclass_1', 'sphere_fclass_1', 'stone_energy_wellspring'].forEach(function (iid) {
+  assert(frostholdShopD.stock.indexOf(iid) !== -1, 'Frosthold Waystation shop stocks Band D gear/consumable: ' + iid);
+  assert(!!Game.Inventory.getItem(iid), 'Band D shop stock item resolves: ' + iid);
+});
+// Travel connectivity: same mechanism as Bands A/B/C (js/ui/screens.js renderExplore lists ALL
+// areas, gated only by Game.World.travelTo's level check) — a level-71 character standing
+// anywhere must be able to reach Estari Sublevels directly.
+var connCheckD = makeCharacter({ name: 'ConnectivityTestD' });
+connCheckD.level = 70;
+var connBlockedD = Game.World.travelTo('estari_sublevels');
+assert(connBlockedD.ok === false, 'a level-70 character cannot yet reach Estari Sublevels');
+connCheckD.level = 71;
+var connAllowedD = Game.World.travelTo('estari_sublevels');
+assert(connAllowedD.ok === true, 'a fresh level-71 character reaches Estari Sublevels directly (no adjacency graph): ' + connAllowedD.message);
+assert(connCheckD.currentLocation === 'estari_sublevels', 'currentLocation updated to Estari Sublevels');
+var connToWellspringBlocked = Game.World.travelTo('anima_wellspring');
+assert(connToWellspringBlocked.ok === false, 'level 71 cannot yet reach The Anima Wellspring (minLevel 76)');
+connCheckD.level = 76;
+var connToWellspring = Game.World.travelTo('anima_wellspring');
+assert(connToWellspring.ok === true, 'level 76 reaches The Anima Wellspring directly from Estari Sublevels');
 
 // =================== Test 1: new character starts by race (v1.2 Phase 3 Content-A) ===================
 console.log('\n=== Test 1: new character defaults (Human -> Eldor, Arkan -> Saratus) ===');

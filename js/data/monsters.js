@@ -1821,6 +1821,211 @@ Game.Data.monsters = [
       { itemId: 'hth_deep_dwellers_claw', chance: 0.05 }
     ],
     desc: 'Whatever the Ukai actually mean by "Deep-Dweller" — something old, cave-shaped, and utterly unimpressed by an outsider column, held in reserve at the undercaverns\' heart for exactly this kind of trespass. Breaking it, per every Ukai elder who will still speak to outsiders, is the only argument the cavern-dwellers have ever respected. Costly, but not, at last, impossible.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band D (docs/SPEC-ARC-BANDS.md, F2/F3): Estari Ruins Deep, levels 71-80 — Estari
+  // Sublevels / The Anima Wellspring (js/data/areas.js). Same header formulas, unchanged: hp =
+  // 20+12*level, damage = 3+2*level, energy = 40+10*level, xp = BALANCE.MONSTER_XP(level); armor
+  // varied per archetype, capped well under a same-level warrior's expected hit (per the
+  // estari_loose_rubble milestone-gate retune). goldMin/goldMax continue the Band A/B/C linear
+  // trend (goldMin = 50+2*(level-41), goldMax = 2*goldMin); shardChance continues the same
+  // 0.32+0.02*(level-41) trend but is capped at 0.95 from this band on (the raw formula crosses
+  // 1.0 -- an invalid probability -- around level 75, so a hard cap keeps the roll meaningfully
+  // probabilistic instead of functionally guaranteed). Two thematic anima-scarred/anima-horror
+  // monsters carry curseChance (v1.2 Curse mechanic, BALANCE.CURSE_APPLY_CHANCE), continuing
+  // Bands A/B/C's coverage; monster techs reuse the existing mon_* roster (js/data/techs.js),
+  // including mon_anima_lance -- explicitly credited there as "the signature strike of the
+  // Society of Modern Magic's constructs and remnants at Kastengard", which doubles as a quiet
+  // foreshadow of Band E's Society Anima-Horror.
+  // =====================================================================
+
+  // ---------- Estari Sublevels (level 71-74) ----------
+  {
+    id: 'estari_sublevel_warden',
+    name: 'Estari Sublevel Warden',
+    level: 71,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 71,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 71,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 71,
+    armor: 76, // tank profile: level+5, a construct ward-guardian, same profile as majiku_frost_exile/ukai_cave_warden's tank kin
+    magicArmor: 16,
+    element: null,
+    resistances: {},
+    techs: ['mon_stone_slam'],
+    xp: BALANCE.MONSTER_XP(71),
+    goldMin: 110,
+    goldMax: 220,
+    shardChance: 0.92,
+    drops: [
+      { itemId: 'sword_estari_wardblade', chance: 0.03 },
+      { itemId: 'crystal_fclass_1', chance: 0.08 },
+      { itemId: 'quest_anima_taint_sample', chance: 0.5 }
+    ],
+    desc: 'A construct ward-guardian dug up out of the Estari sublevels, hammering anything that moves with the same crushing, ancient purpose it was built for before the Council of Three ever banned a single seam of Anima.'
+  },
+
+  // ---------- Level 72 ----------
+  {
+    id: 'estari_anima_conduit',
+    name: 'Estari Anima Conduit',
+    level: 72,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 72,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 72,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 72,
+    armor: 58, // glass cannon: level-14, same profile as glacial_frost_stalker/highland_ridgehawk
+    magicArmor: 8,
+    element: 'Star',
+    resistances: { Star: 0.5, Earth: -0.3 },
+    techs: ['mon_static_arc'],
+    xp: BALANCE.MONSTER_XP(72),
+    goldMin: 112,
+    goldMax: 224,
+    shardChance: 0.94,
+    drops: [
+      { itemId: 'knife_estari_shard_fang', chance: 0.03 },
+      { itemId: 'sphere_fclass_1', chance: 0.08 }
+    ],
+    desc: 'A sublevel ward-stone still channeling raw, stray Anima the way it has for millennia, arcing wild current at anything that crosses its old sentry line.'
+  },
+
+  // ---------- Level 74 (curse-flavored anima/undead) ----------
+  {
+    id: 'anima_scarred_excavator',
+    name: 'Anima-Scarred Excavator',
+    level: 74,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 74,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 74,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 74,
+    armor: 62, // spell-wall profile: level-12, thin hide, magicArmor well above armor
+    magicArmor: 100,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.3 },
+    // v1.2 Curse mechanic (BALANCE.CURSE_APPLY_CHANCE), continuing Band A/B/C's anima-scarred
+    // lineage — here the excavator who ignored the Council of Three's ban and mined the seam
+    // raw, scarred by the very Anima it dug for.
+    curseChance: BALANCE.CURSE_APPLY_CHANCE,
+    techs: ['mon_dark_hex', 'mon_anima_lance'],
+    xp: BALANCE.MONSTER_XP(74),
+    goldMin: 116,
+    goldMax: 232,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'sphere_fclass_1', chance: 0.08 },
+      // Band D unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'light_body_estari_anima_shroud', chance: 0.02 }
+    ],
+    desc: "An excavator who broke the old taboo and mined the Wellspring's seam raw, kin to the anima-scarred revenants of Kuraan, the highlanders of the steppe, and the frostwalkers of the ice — but scarred by the very Anima the Council of Three always warned would kill for the taking."
+  },
+
+  // ---------- The Anima Wellspring (level 76-79) ----------
+  {
+    id: 'estari_wellspring_warden',
+    name: 'Estari Wellspring Warden',
+    level: 76,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 76,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 76,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 76,
+    armor: 64, // spell-wall profile: level-12, magicArmor well above armor
+    magicArmor: 104,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.25 },
+    techs: ['mon_dark_hex', 'mon_static_arc'],
+    xp: BALANCE.MONSTER_XP(76),
+    goldMin: 120,
+    goldMax: 240,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'rod_wellspring_conduit', chance: 0.03 },
+      { itemId: 'crystal_fclass_2', chance: 0.08 }
+    ],
+    desc: "A ward-guardian set to hold the Wellspring's own outer seal, drawing on the same Estari ward-craft that has kept the taboo seam bound since before the Council of Three's ban was even needed."
+  },
+
+  // ---------- Level 78 (curse-flavored anima/undead) ----------
+  {
+    id: 'raw_anima_horror',
+    name: 'Raw Anima-Horror',
+    level: 78,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 78,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 78,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 78,
+    armor: 66, // spell-wall profile: level-12
+    magicArmor: 108,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Star: -0.3 },
+    // v1.2 Curse mechanic (BALANCE.CURSE_APPLY_CHANCE) — Band D's second thematic curse carrier,
+    // and the first monster born directly of raw, unmined Anima rather than a scarred survivor
+    // (a deliberate escalation, previewing Band E's Society Anima-Horror capstone).
+    curseChance: BALANCE.CURSE_APPLY_CHANCE,
+    techs: ['mon_anima_lance', 'mon_dark_hex'],
+    xp: BALANCE.MONSTER_XP(78),
+    goldMin: 124,
+    goldMax: 248,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'sphere_fclass_2', chance: 0.08 },
+      // Band D unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'rod_wellspring_heartcore', chance: 0.02 }
+    ],
+    desc: "Something the Wellspring itself grew rather than scarred — raw Anima given a shape and a hunger the instant the old seal cracked, exactly the outcome the Council of Three's ban was written to prevent."
+  },
+
+  // ---------- Level 79 ----------
+  {
+    id: 'estari_ruin_vanguard',
+    name: 'Estari Ruin Vanguard',
+    level: 79,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 79,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 79,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 79,
+    armor: 86, // tank profile: level+7, the Warden-Prime's own vanguard, same profile as majiku_ironclad_vanguard/ukai_deep_vanguard
+    magicArmor: 24,
+    element: null,
+    resistances: {},
+    techs: ['mon_hunters_mark', 'mon_earthen_crush'],
+    xp: BALANCE.MONSTER_XP(79),
+    goldMin: 126,
+    goldMax: 252,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'stone_energy_wellspring', chance: 0.08 },
+      { itemId: 'quest_anima_taint_sample', chance: 0.5 }
+    ],
+    desc: "One of the Warden-Prime's own vanguard, held at the Wellspring's threshold to answer for anything the wellspring wardens and anima-horrors fail to turn back."
+  },
+
+  // ---------- Lair boss: Estari Warden-Prime (level 80) ----------
+  // invented Band D capstone (docs/SPEC-ARC-BANDS.md): flat hp/damage premiums per the F1
+  // CONVENTION NOTES block (js/balance.js) — hp premium +12*level (matches the majiku_warlord/
+  // majiku_ridge_chieftain/ukai_deep_dweller pattern), damage premium round(1.5*level+10) =
+  // round(130) = 130 (F1's sim-tuned starting ballpark for a real level-80 boss), xp premium x3.
+  // "Winnable but costly" per the difficulty contract, CLAUDE.md.
+  {
+    id: 'estari_warden_prime',
+    name: 'Estari Warden-Prime',
+    level: 80,
+    boss: true,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 80 + 12 * 80, // 980 + 960 = 1940
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 80,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 80 + Math.round(1.5 * 80 + 10), // 163 + 130 = 293
+    armor: 60,
+    magicArmor: 58,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.25 },
+    techs: ['mon_dark_hex', 'mon_hunters_mark', 'mon_earthen_crush', 'mon_anima_lance'],
+    xp: BALANCE.MONSTER_XP(80) * 3, // invented: boss XP premium
+    goldMin: 340,
+    goldMax: 560,
+    shardChance: 0.7,
+    drops: [
+      { itemId: 'heavy_head_warden_helm', chance: 0.1 },
+      { itemId: 'quest_anima_taint_sample', chance: 0.6 },
+      // Band D unique equipment (js/data/items.js) — boss signature. Appended last so prior loot
+      // rates (including the guaranteed-ish sample above) are unchanged.
+      { itemId: 'sword_warden_primes_relic', chance: 0.05 }
+    ],
+    desc: "The Estari's own last answer to anyone who would break the Council of Three's ban: an ancient ward-construct grown huge and merciless at the Wellspring's own heart, unable to tell a careless excavator from a hero who never meant to mine a single seam. It does not negotiate. It only enforces."
   }
 ];
 
