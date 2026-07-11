@@ -221,3 +221,26 @@ other icon in `assets/icons/` (409 files total, zero duplicate hashes) — not j
 other. The lead's real-DCSS-tile pass at the end of the Level-Arc work should replace these 35
 placeholders the same way the P5 pass replaced the v1.2 ones and Bands A/B/C/D/E's are slated to
 be replaced.
+
+## Level-Arc real-icon pass — SUPERSEDES all six band placeholder sections above
+
+**All 210 Level-Arc band ids (Bands A–F) now use real art**, replacing the procedural placeholders
+documented in the six sections above (those notes are historical). Sourced by the lead's pass
+(`test_icons.js` requires presence for all icons and byte-distinctness only among monsters, so
+items/techs may reuse tiles):
+- **Monsters (42)** — real Dungeon Crawl tiles from the upstream repo (`mon/{humanoids,undead,
+  animals,nonliving,statues}/…` at https://github.com/crawl/crawl), each mapped by theme and
+  verified mutually byte-distinct (length + first-64-byte check, per `test_icons.js` Test 2).
+- **Weapons** — swords/polearms/knives from `item/weapon/…`; rods from `item/staff/i-staff_*`;
+  hand-to-hand from `item/armour/glove*`.
+- **Armor bodies** from `item/armour/{robe,leather,ring/scale/chain_mail,plate,…}`; **feet** from
+  `item/armour/boots*`. **Heads, legs, and shields** — DCSS has no separate tiles for those slots,
+  so each reuses an existing real repo icon of the same slot/weight (e.g. `heavy_head_great_helm`,
+  `medium_legs_banded_greaves`, `shield_ironbound_kite`) — allowed since only monsters need
+  distinctness.
+- **Crystals** from `item/gem/*_found_whole`; **spheres** from `item/misc/orb_of_zot*` +
+  `item/potion/*`; **stones** from `item/misc` + `item/wand/gem_*`; **quest items** from `item/misc`.
+- **Techs (24)** from `gui/spells/…` by chain theme (firebolt→fire, cleave→physical/earth,
+  impale→earth/air/conjuration, mend_wounds→light/restoration).
+All CC0 / public domain. Every tile verified a valid 32×32 PNG. Mapping script (not committed):
+scratchpad `real_icons_arc.js`.
