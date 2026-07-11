@@ -134,6 +134,24 @@ rebuilds it after every commit so a deployable single-file build always matches 
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
 re-enable it. Never build/ship from a tree with red suites.
 
+## Recently completed (2026-07-11) — v1.3.1 bugfix release (merged to `main`, `3df44ea`)
+
+Full-codebase review (3 parallel reviews: core correctness / UX / mechanics+data) is committed
+at `docs/REVIEW-2026-07-11.md` with every finding triaged `[v1.3.1]` (fixed) or `[deferred]`.
+Headliners fixed: quest-material exemption to the 5-level loot cutoff (`[revised]`, DESIGN §4 —
+unwalled the tier-2→3 class quest, Vaultbreaker, and 5 collect quests), eidas_echo drop reorder
+(Heir of the Echo was unobtainable; NEW STANDING RULE: nothing may follow a chance-1 drop entry),
+Arkan home-town travel exemption, learnTech classOnly NaN, camp-ambush UI soft-lock, battle-log
+autoscroll + a batch of confirm/feedback UX fixes. No save-version change (stays 9). The release
+guard (test_reload.js) now requires each release to prepend a `js/data/changelog.js` entry AND
+bump README's "Development status" version (regex accepts vX.Y.Z). **The `[deferred]` findings in
+REVIEW-2026-07-11.md are the seeded queue for the next dev cycle** (biggest: dominated tech ranks
+6–9 need a re-taper+re-sim; endgame UI list scaling; onboarding/stat explanations). Deploy of
+v1.3.1 to Strato was NOT run (permission-gated; user runs `sh tools/deploy.sh`). Ops notes: a
+CRLF checkout used to break `tools/build_artifact.js` (fixed, normalizes on read); concurrent
+sessions share this checkout — another session's `git commit` lands on whatever branch is
+checked out, so verify `git status`/`git log` before committing or switching branches.
+
 ## Recently completed (2026-07-11) — v1.3 the level-100 arc (branch `level-arc`)
 
 Specs: `docs/SPEC-FULL-LEVEL-ARC.md` + `docs/SPEC-ARC-BANDS.md`. Extends the playable range 40→100
