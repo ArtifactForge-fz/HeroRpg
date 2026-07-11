@@ -849,6 +849,57 @@ Game.Data.quests = [
     ],
     rewards: { gold: 2900, xp: 3900, items: ['heavy_head_warden_helm'], trainingPoints: 4 },
     completionText: 'Thessaly turns the Warden-Prime\'s own relic-blade over in her hands, and for once she doesn\'t reach for a fourth map. "The Warlord held Kuraan. The Chieftain held the highlands. The Deep-Dweller held the undercaverns. And the Warden-Prime held the one thing all three of them were only guarding the way to. Whatever cracked that seal, hero, it wanted the Wellspring badly enough to wake a ward that\'s slept since before written history. We\'d better find out why before it finishes what it started."'
+  },
+
+  // =====================================================================
+  // Level-Arc Band E (docs/SPEC-ARC-BANDS.md, F2/F3): Ascent to the Skyspire, levels 81-90 — the
+  // story beat "Climb Eidas's Skyspire; confronting the Society's last remnant" (DESIGN.md §2).
+  // Main-spine quest + two side quests, all given at Frosthold Waystation (js/data/areas.js)
+  // since Band E adds no new settlement.
+  // =====================================================================
+
+  // ---------- Band E main-spine quest ----------
+  {
+    id: 'the_skyspire_ascent',
+    name: 'The Skyspire Ascent',
+    giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
+    levelMin: 81,
+    intro: 'Waystation Commander Thessaly has a sixth map pinned up now, and this one points somewhere she never expected to send anyone: straight up Eidas\'s own Skyspire. "The Wellspring was the Estari\'s taboo, hero, but the Skyspire is Kastengard\'s. Eidas reformed his Society there, built that tower, and sailed for the red moon to found his \'divine race\' without ever standing it down. His last remnant never left — and neither did whatever anima-horrors they\'ve been growing since. Break the lower wardens, gather what pages of the Society\'s own ciphers you can carry, and get eyes on the upper spans."',
+    steps: [
+      { kind: 'kill', monsterId: 'skyspire_lower_warden', count: 5 },
+      { kind: 'collect', itemId: 'quest_society_cipher_page', count: 3 },
+      { kind: 'visit', areaId: 'skyspire_upper_spans' }
+    ],
+    rewards: { gold: 1700, xp: 2600, items: ['sword_spireward_blade'], trainingPoints: 3 },
+    completionText: 'Thessaly hands the cipher pages off before she\'s even finished reading them. "Cipher-Adept Rennick will want these worse than I do — this isn\'t Estari make, hero, and it isn\'t Ukai either. It\'s the Society\'s own hand, later than anything on record. Eidas has been gone a long time. Somebody up there hasn\'t stopped working."'
+  },
+
+  // ---------- Band E side quest 1: Skyspire Upper Spans hunt ----------
+  {
+    id: 'what_the_society_grew',
+    name: 'What the Society Grew',
+    giver: { areaId: 'frosthold_waystation', npc: 'Cipher-Adept Rennick' },
+    levelMin: 86,
+    intro: 'Cipher-Adept Rennick has every cipher page spread across a borrowed table, and none of it sits right with her. "The Society never stopped, hero — not when Eidas left, not when the Council of Three\'s old ban should have scared anyone else off Anima for good. These pages talk about \'ravagers,\' shaped and grown right there in the sanctum. Put down four Anima-Horror Ravagers before one grows large enough to come down off the spans on its own."',
+    steps: [
+      { kind: 'kill', monsterId: 'anima_horror_ravager', count: 4 }
+    ],
+    rewards: { gold: 1500, xp: 2100, items: ['sphere_gclass_2'] },
+    completionText: 'Rennick sets the last page down and doesn\'t look relieved at all. "Four fewer ravagers off the upper spans. But they were never the Society\'s goal, hero — they\'re what happens when nobody\'s left to hold the leash. I need to know what the last remnant is actually building up there, and I need to know before it finishes."'
+  },
+
+  // ---------- Band E side quest 2: Society Anima-Horror boss kill ----------
+  {
+    id: 'the_societys_last_stand',
+    name: "The Society's Last Stand",
+    giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
+    levelMin: 90,
+    intro: 'Thessaly has a seventh map now, the Skyspire\'s own sanctum inked in past the upper spans. "You\'ve seen the pages, hero, and you\'ve seen what they grew. The Anima-Horror is the last thing the Society of Modern Magic ever built, or the last thing it lost control of — either way, it\'s standing between us and whatever\'s left of Eidas\'s own tower. End it, and the Skyspire finally answers to someone who isn\'t chasing a dead man to the red moon."',
+    steps: [
+      { kind: 'kill', monsterId: 'society_anima_horror', count: 1 }
+    ],
+    rewards: { gold: 3200, xp: 4200, items: ['heavy_head_spireward_helm'], trainingPoints: 4 },
+    completionText: 'Thessaly turns the Anima-Horror\'s own edge over in her hands, and for a long moment neither of them says a word. "The Warlord held Kuraan. The Chieftain held the highlands. The Deep-Dweller held the undercaverns. The Warden-Prime held the Wellspring. And this thing held the Society\'s own tower — the last of Eidas\'s work still standing watch since he sailed for the red moon. Whatever\'s waiting for you up there now, hero, it isn\'t a remnant anymore. It\'s him."'
   }
 ];
 

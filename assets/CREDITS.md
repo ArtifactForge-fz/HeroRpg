@@ -167,3 +167,30 @@ other icon in `assets/icons/` (339 files total, zero duplicate hashes) — not j
 other. The lead's real-DCSS-tile pass at the end of the Level-Arc work should replace these 35
 placeholders the same way the P5 pass replaced the v1.2 ones and Bands A/B/C's are slated to be
 replaced.
+
+## Level-Arc Band E icons — procedural placeholders (pending the lead's real-tile pass)
+
+The 35 new ids introduced by Level-Arc Band E (Ascent to the Skyspire, levels 81-90 —
+`docs/SPEC-ARC-BANDS.md`) use hand-generated procedural placeholder tiles, not real Dungeon Crawl
+art: 7 new monsters (`skyspire_lower_warden`, `society_remnant_battlemage`, `anima_horror_stalker`,
+`skyspire_upper_sentinel`, `society_arcanist_prime`, `anima_horror_ravager`,
+`society_anima_horror`), 6 weapons/shield (`sword_spireward_blade`, `polearm_skyspire_halberd`,
+`knife_society_renegade_dirk`, `rod_anima_channeling_rod`, `hth_spireguard_gauntlets`,
+`shield_spireward_aegis`), 9 armor pieces (`light_body_skysilk_shroud`, `light_head_skysilk_hood`,
+`medium_body_spireguard_brigandine`, `medium_legs_spireguard_greaves`, `heavy_body_spireward_plate`,
+`heavy_head_spireward_helm`, `light_legs_stormline_leggings`, `medium_feet_stormline_boots`,
+`heavy_legs_stormline_legguards`), 5 consumables (`crystal_gclass_1`, `crystal_gclass_2`,
+`sphere_gclass_1`, `sphere_gclass_2`, `stone_energy_skyspire`), 1 quest material
+(`quest_society_cipher_page`), 3 unique items (`light_body_anima_scoured_wraps`,
+`rod_anima_horrors_core`, `sword_anima_horrors_edge`), and 4 techs (`tech_firebolt_8`,
+`tech_mend_wounds_8`, `tech_cleave_8`, `tech_impale_8`).
+
+Generated with the same hand-rolled per-id-hash placeholder approach as Bands A/B/C/D above
+(deterministic fill/accent colors + one of 5 patterns — border ring, diagonal stripes, checker
+quadrants, cross, or concentric ring — plus a small corner mark); the PNG container itself is built
+with Node's `zlib.deflateSync`/manual chunk+CRC32 writer, guaranteeing a structurally valid stream.
+All 35 were verified programmatically as valid 32x32 RGBA PNGs and byte-hash-distinct from every
+other icon in `assets/icons/` (374 files total, zero duplicate hashes) — not just against each
+other. The lead's real-DCSS-tile pass at the end of the Level-Arc work should replace these 35
+placeholders the same way the P5 pass replaced the v1.2 ones and Bands A/B/C/D's are slated to be
+replaced.

@@ -198,6 +198,26 @@ Game.Data.recipes = [
     gold: 550,
     output: 'crystal_fclass_2',
     desc: 'Fuse two F-Class Crystal Is into a single, denser F-Class Crystal II.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band E (docs/SPEC-ARC-BANDS.md, F2/F3): two synthesis recipes for the Ascent to
+  // the Skyspire — a gear-tier reforge using a Band E quest material, and a graded-consumable
+  // progression recipe matching the synth_fclass_crystal_2 precedent above.
+  // =====================================================================
+  {
+    id: 'synth_spireward_blade',
+    inputs: ['sword_estari_wardblade', 'quest_society_cipher_page'],
+    gold: 900,
+    output: 'sword_spireward_blade',
+    desc: "Reforge an Estari Wardblade around a deciphered Society Cipher Page to strike a fresh Spireward Blade."
+  },
+  {
+    id: 'synth_gclass_crystal_2',
+    inputs: ['crystal_gclass_1', 'crystal_gclass_1'],
+    gold: 600,
+    output: 'crystal_gclass_2',
+    desc: 'Fuse two G-Class Crystal Is into a single, denser G-Class Crystal II.'
   }
 ];
 

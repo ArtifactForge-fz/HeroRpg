@@ -576,7 +576,18 @@ Game.Data.areas = [
           'heavy_body_warden_plate', 'heavy_head_warden_helm',
           'light_legs_wellspring_leggings', 'medium_feet_estari_boots', 'heavy_legs_warden_legguards',
           'crystal_fclass_1', 'crystal_fclass_2', 'sphere_fclass_1', 'sphere_fclass_2',
-          'stone_energy_wellspring'
+          'stone_energy_wellspring',
+          // Level-Arc Band E (docs/SPEC-ARC-BANDS.md): the Ascent to the Skyspire tier-85/88
+          // gear and G-Class consumables (js/data/items.js) — Frosthold Waystation still serves
+          // the whole 61-90 range, so Band E adds no new settlement and simply extends this stock.
+          'sword_spireward_blade', 'polearm_skyspire_halberd', 'knife_society_renegade_dirk',
+          'rod_anima_channeling_rod', 'hth_spireguard_gauntlets', 'shield_spireward_aegis',
+          'light_body_skysilk_shroud', 'light_head_skysilk_hood',
+          'medium_body_spireguard_brigandine', 'medium_legs_spireguard_greaves',
+          'heavy_body_spireward_plate', 'heavy_head_spireward_helm',
+          'light_legs_stormline_leggings', 'medium_feet_stormline_boots', 'heavy_legs_stormline_legguards',
+          'crystal_gclass_1', 'crystal_gclass_2', 'sphere_gclass_1', 'sphere_gclass_2',
+          'stone_energy_skyspire'
         ]
       },
       { type: 'inn' },
@@ -635,6 +646,50 @@ Game.Data.areas = [
     lair: { monsterId: 'estari_warden_prime', minLevel: 80, name: "The Warden-Prime's Sanctum" },
     facilities: [],
     desc: "The taboo itself: a raw seam of Anima the Estari sealed away rather than mine to exhaustion, exactly as the Council of Three's ban demanded (Prelude.md). Somebody — or something — has cracked that seal again, and the Estari Warden-Prime that answers to the wellspring's own old wards has started treating anything that moves, hero included, as the trespass the ban was written to prevent."
+  },
+
+  // =====================================================================
+  // Level-Arc Band E (docs/SPEC-ARC-BANDS.md, F2/F3): Ascent to the Skyspire, levels 81-90 — the
+  // story climbs out of the Estari depths and north to Kastengard, then up Eidas's own Skyspire
+  // itself (DESIGN.md §2 lore: renegade runologist Eidas reformed the Society of Modern Magic at
+  // Kastengard, built the Skyspire, and departed for the red moon to found a "divine race" —
+  // archived, Prelude.md/Chapter I). Eidas is long gone, but the Society's last remnant never
+  // left, and neither did whatever anima-horrors it built or awakened while its master's back was
+  // turned. Two overlapping hunting bands (Skyspire Lower Spans 81-84, Skyspire Upper Spans
+  // 86-89; gap of 2 levels, under the archived ±5 XP/loot cutoff, BALANCE.XP_LOOT_CUTOFF_LEVELS)
+  // plus the band's lair boss. NO new settlement — Frosthold Waystation (Band C) already serves
+  // the whole 61-90 range. Same travel-reachability note as Bands A/B/C/D: js/ui/screens.js
+  // renderExplore lists ALL of Game.Data.areas as destinations, gated only by
+  // Game.World.travelTo's level check — no separate adjacency graph.
+  // =====================================================================
+
+  // ---------- Skyspire Lower Spans: level 81-84 hunting ----------
+  {
+    id: 'skyspire_lower_spans',
+    name: 'Skyspire Lower Spans',
+    type: 'hunting',
+    minLevel: 81,
+    // The lowest ring of Eidas's tower, its wardens never stood down after their maker left for
+    // the red moon — patrolled now by the last remnant of the Society of Modern Magic and the
+    // raw-Anima horrors it never managed to fully leash.
+    monsters: ['skyspire_lower_warden', 'society_remnant_battlemage', 'anima_horror_stalker'],
+    facilities: [],
+    desc: "Eidas's Skyspire rises straight out of Kastengard's own rooftops, its lower spans still held by ward-constructs that answer to no one now — and by the Society of Modern Magic's last remnant, holed up in the tower its master abandoned for the red moon. Higher up, past the spans still open to the sky, the Society's own inner sanctum waits."
+  },
+
+  // ---------- Skyspire Upper Spans: level 86-89 hunting + lair boss ----------
+  {
+    id: 'skyspire_upper_spans',
+    name: 'Skyspire Upper Spans',
+    type: 'hunting',
+    minLevel: 86,
+    monsters: ['skyspire_upper_sentinel', 'society_arcanist_prime', 'anima_horror_ravager'],
+    // The boss is a separate "Lair" entry, fightable only once the party is closer to its own
+    // level (invented gate, matches the majiku_warlord/majiku_ridge_chieftain/ukai_deep_dweller/
+    // estari_warden_prime precedent).
+    lair: { monsterId: 'society_anima_horror', minLevel: 90, name: "The Society's Last Sanctum" },
+    facilities: [],
+    desc: "The spans thin out this high, open on every side to the wind and to whatever the Society of Modern Magic was still working on when Eidas sailed for the red moon without them. Something down in the tower's own sanctum has outgrown every leash the Society ever put on it — Anima given shape and hunger, exactly the outcome the Council of Three's old ban was written to prevent."
   }
 ];
 

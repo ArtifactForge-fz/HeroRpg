@@ -122,9 +122,9 @@ function makeCharacter(opts) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: data sanity (monsters reference real items/techs) ===');
-assert(Game.Data.monsters.length === 73, '73 monsters defined (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss + 6 Level-Arc Band D regulars + 1 Band D boss), got ' + Game.Data.monsters.length);
+assert(Game.Data.monsters.length === 80, '80 monsters defined (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss + 6 Level-Arc Band D regulars + 1 Band D boss + 6 Level-Arc Band E regulars + 1 Band E boss), got ' + Game.Data.monsters.length);
 var bosses = Game.Data.monsters.filter(function (m) { return m.boss; });
-assert(bosses.length === 9, 'exactly 9 bosses defined (Phase 6b adds 4 to the original estari_ruin_warden, Level-Arc Band A adds majiku_warlord, Band B adds majiku_ridge_chieftain, Band C adds ukai_deep_dweller, Band D adds estari_warden_prime), got ' + bosses.length);
+assert(bosses.length === 10, 'exactly 10 bosses defined (Phase 6b adds 4 to the original estari_ruin_warden, Level-Arc Band A adds majiku_warlord, Band B adds majiku_ridge_chieftain, Band C adds ukai_deep_dweller, Band D adds estari_warden_prime, Band E adds society_anima_horror), got ' + bosses.length);
 var badRefs = [];
 Game.Data.monsters.forEach(function (m) {
   (m.drops || []).forEach(function (d) {
@@ -2126,6 +2126,180 @@ console.log('estari_warden_prime sim results over ' + WARDEN_PRIME_SIM_COUNT + '
 // Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
 assert(ewpWinRate >= 0.6, 'estari_warden_prime is reliably beatable by a geared level-80 warrior (win rate ' + (ewpWinRate * 100).toFixed(1) + '%, want >= 60%)');
 assert(ewpAvgHpLeft <= 0.85 || ewpAvgConsumed >= 1, 'estari_warden_prime extracts a real cost on wins (avg HP left ' + (ewpAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + ewpAvgConsumed.toFixed(1) + ')');
+
+// =================== Test 42: Level-Arc Band E (Ascent to the Skyspire) monster formulas + boss premiums ===================
+console.log('\n=== Test 42: Band E regulars match the header formulas; society_anima_horror carries the F1 boss premiums ===');
+var bandERegularIds = [
+  'skyspire_lower_warden', 'society_remnant_battlemage', 'anima_horror_stalker',
+  'skyspire_upper_sentinel', 'society_arcanist_prime', 'anima_horror_ravager'
+];
+assert(bandERegularIds.length === 6, 'sanity: 6 Band E regular monster ids listed in this test');
+bandERegularIds.forEach(function (id) {
+  var m = Game.Battle.getMonsterDef(id);
+  assert(!!m, 'Band E regular monster exists: ' + id);
+  if (!m) return;
+  assert(m.hp === BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * m.level, id + ' hp matches the header formula exactly');
+  assert(m.damage === BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * m.level, id + ' damage matches the header formula exactly');
+  assert(m.energy === BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * m.level, id + ' energy matches the header formula exactly');
+  assert(m.xp === BALANCE.MONSTER_XP(m.level), id + ' xp matches BALANCE.MONSTER_XP(level)');
+});
+// Two thematic anima-horror monsters carry the v1.2 Curse mechanic (phase brief).
+['anima_horror_stalker', 'anima_horror_ravager'].forEach(function (id) {
+  var m = Game.Battle.getMonsterDef(id);
+  assert(m.curseChance === BALANCE.CURSE_APPLY_CHANCE, id + ' carries curseChance BALANCE.CURSE_APPLY_CHANCE');
+});
+
+var animaHorror = Game.Battle.getMonsterDef('society_anima_horror');
+assert(!!animaHorror && animaHorror.boss === true, 'society_anima_horror exists and is a boss');
+assert(animaHorror.level === 90, 'society_anima_horror is level 90');
+var sahBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 90;
+var sahBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 90;
+assert(animaHorror.hp === sahBaseHp + 12 * 90, 'society_anima_horror hp carries the +12*level boss premium (' + sahBaseHp + ' + 1080 = ' + (sahBaseHp + 1080) + '), got ' + animaHorror.hp);
+assert(animaHorror.damage === sahBaseDmg + Math.round(1.5 * 90 + 10), 'society_anima_horror damage carries the F1 round(1.5*level+10) boss premium (' + sahBaseDmg + ' + 145 = ' + (sahBaseDmg + 145) + '), got ' + animaHorror.damage);
+assert(animaHorror.xp === BALANCE.MONSTER_XP(90) * 3, 'society_anima_horror xp carries the x3 boss premium');
+
+// =================== Test 43: Level-Arc Band E weapon damage is TAPERED, not literal ===================
+console.log('\n=== Test 43: Band E levelReq-85/88 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
+var band85WeaponIds = [
+  'sword_spireward_blade', 'polearm_skyspire_halberd', 'knife_society_renegade_dirk',
+  'rod_anima_channeling_rod', 'hth_spireguard_gauntlets'
+];
+var literalDamage85 = 3 + 2 * 85; // 173 -- what a NON-tapered literal read would give
+var taperedDamage85 = 3 + 2 * taperedEffectiveLevelReq(85); // 143
+assert(taperedDamage85 === 143, 'sanity: the band-85 TAPERED damage value is 143, per the phase brief, got ' + taperedDamage85);
+band85WeaponIds.forEach(function (id) {
+  var it = Game.Inventory.getItem(id);
+  assert(!!it, 'Band E tier-85 weapon exists: ' + id);
+  if (!it) return;
+  assert(it.damage === taperedDamage85, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage85);
+  assert(it.damage !== literalDamage85, id + ' damage is NOT the literal-formula value ' + literalDamage85 + ' (the F1 taper must be applied)');
+});
+// Armor tapers the same way (round(1 + effectiveLevelReq)).
+var literalArmor85 = 1 + 85; // 86 -- literal read
+var taperedArmor85 = Math.round(1 + taperedEffectiveLevelReq(85)); // 71
+['light_body_skysilk_shroud', 'medium_body_spireguard_brigandine', 'heavy_body_spireward_plate', 'shield_spireward_aegis'].forEach(function (id) {
+  var it = Game.Inventory.getItem(id);
+  assert(!!it, 'Band E tier-85 armor/shield exists: ' + id);
+  if (!it) return;
+  assert(it.armor === taperedArmor85, id + ' armor (' + it.armor + ') equals the TAPERED value ' + taperedArmor85);
+  assert(it.armor !== literalArmor85, id + ' armor is NOT the literal-formula value ' + literalArmor85);
+});
+// Sub-tier (levelReq 88) tapers to a DIFFERENT value than the main tier (levelReq 85), confirming
+// the taper is re-derived per levelReq rather than a fixed band-wide constant.
+var literalArmor88 = 1 + 88; // 89 -- literal read
+var taperedArmor88 = Math.round(1 + taperedEffectiveLevelReq(88)); // 73
+['light_legs_stormline_leggings', 'medium_feet_stormline_boots', 'heavy_legs_stormline_legguards'].forEach(function (id) {
+  var it = Game.Inventory.getItem(id);
+  assert(!!it, 'Band E sub-tier-88 armor exists: ' + id);
+  if (!it) return;
+  assert(it.armor === taperedArmor88, id + ' armor (' + it.armor + ') equals the TAPERED sub-tier value ' + taperedArmor88);
+  assert(it.armor !== literalArmor88, id + ' armor is NOT the literal-formula value ' + literalArmor88);
+  assert(it.armor !== taperedArmor85, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier tapered value ' + taperedArmor85 + ' (taper is re-derived per levelReq)');
+});
+
+// =================== Test 44: society_anima_horror lair fight — winnable but costly (real RNG sim) ===================
+console.log('\n=== Test 44: society_anima_horror (Band E lair boss) is winnable-but-costly for a geared level-90 warrior ===');
+function buildLevel90SkyspireWarrior() {
+  var skillPoints = {};
+  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
+  skillPoints['Swords'] = 3;
+  skillPoints['Heavy Armor'] = 2;
+  var c = Game.Character.create({
+    race: 'Human',
+    name: 'AnimaHorrorTester',
+    gender: 'Male',
+    skillPoints: skillPoints
+  });
+  c.level = 90;
+  c.xp = BALANCE.XP_TO_LEVEL(90);
+  // 89 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
+  // (same split style as buildLevel80WellspringWarrior above).
+  c.statPoints = 89 * BALANCE.LEVELUP_STAT_POINTS;
+  var totalPoints90 = c.statPoints;
+  for (var i = 0; i < totalPoints90; i++) {
+    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
+    Game.Character.spendStatPoint(c, stat);
+  }
+  var gearIds90 = ['sword_spireward_blade', 'heavy_body_spireward_plate', 'shield_spireward_aegis'];
+  gearIds90.forEach(function (id) {
+    Game.Inventory.addItem(c, id);
+    var res = Game.Inventory.equip(c, id);
+    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
+  });
+  for (i = 0; i < 6; i++) {
+    Game.Inventory.addItem(c, 'sphere_gclass_1');
+    Game.Inventory.addItem(c, 'crystal_gclass_1');
+  }
+  Game.Character.recalcDerived(c);
+  c.hitPoints = c.hitPointsMax;
+  c.energy = c.energyMax;
+  return c;
+}
+
+function countBandEConsumables(c) {
+  var n = 0;
+  for (var i = 0; i < c.inventory.length; i++) {
+    if (c.inventory[i] === 'sphere_gclass_1' || c.inventory[i] === 'crystal_gclass_1') n++;
+  }
+  return n;
+}
+
+function simulateAnimaHorrorBattle() {
+  var c = buildLevel90SkyspireWarrior();
+  Game.state.character = c;
+  Game.state.battle = null;
+  Game.Battle._rng = Math.random; // real RNG for this sim
+
+  var consumablesBefore = countBandEConsumables(c);
+  var battle = Game.Battle.start('society_anima_horror');
+  var rounds = 0;
+  var MAX_ROUNDS = 500;
+  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
+    rounds++;
+    if (!Game.Battle.canAct(battle)) {
+      var crystalIdx = c.inventory.indexOf('crystal_gclass_1');
+      if (crystalIdx !== -1) {
+        Game.Battle.useItem('crystal_gclass_1');
+        continue;
+      }
+    }
+    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_gclass_1') !== -1) {
+      Game.Battle.useItem('sphere_gclass_1');
+      continue;
+    }
+    Game.Battle.attack();
+  }
+  var consumablesAfter = countBandEConsumables(c);
+  return {
+    phase: battle.phase,
+    hpLeftFrac: c.hitPoints / c.hitPointsMax,
+    consumablesConsumed: consumablesBefore - consumablesAfter
+  };
+}
+
+var ANIMA_HORROR_SIM_COUNT = 30;
+var sahWins = 0;
+var sahOutcomes = {};
+var sahHpLeftSum = 0;
+var sahConsumedSum = 0;
+for (var sahRun = 0; sahRun < ANIMA_HORROR_SIM_COUNT; sahRun++) {
+  var sahResult = simulateAnimaHorrorBattle();
+  sahOutcomes[sahResult.phase] = (sahOutcomes[sahResult.phase] || 0) + 1;
+  if (sahResult.phase === 'won') {
+    sahWins++;
+    sahHpLeftSum += sahResult.hpLeftFrac;
+    sahConsumedSum += sahResult.consumablesConsumed;
+  }
+}
+var sahWinRate = sahWins / ANIMA_HORROR_SIM_COUNT;
+var sahAvgHpLeft = sahWins ? sahHpLeftSum / sahWins : 0;
+var sahAvgConsumed = sahWins ? sahConsumedSum / sahWins : 0;
+console.log('society_anima_horror sim results over ' + ANIMA_HORROR_SIM_COUNT + ' battles: ' + JSON.stringify(sahOutcomes) +
+  ' — win rate ' + (sahWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (sahAvgHpLeft * 100).toFixed(0) +
+  '%, avg consumables spent ' + sahAvgConsumed.toFixed(1));
+// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
+assert(sahWinRate >= 0.6, 'society_anima_horror is reliably beatable by a geared level-90 warrior (win rate ' + (sahWinRate * 100).toFixed(1) + '%, want >= 60%)');
+assert(sahAvgHpLeft <= 0.85 || sahAvgConsumed >= 1, 'society_anima_horror extracts a real cost on wins (avg HP left ' + (sahAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + sahAvgConsumed.toFixed(1) + ')');
 
 // =================== Summary ===================
 console.log('\n===================================');

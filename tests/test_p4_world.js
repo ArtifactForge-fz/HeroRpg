@@ -118,10 +118,10 @@ function makeCharacter(opts) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: areas/monsters/items data sanity ===');
-assert(Game.Data.areas.length === 24, '24 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A + Level-Arc Band A\'s kuraan_fringe_woods/deep_kuraan/kuraan_reclamation_camp + Band B\'s majiku_border_steppe/highland_war_camps, NO new Band B settlement + Band C\'s glacial_approach/ukai_undercaverns/frosthold_waystation + Band D\'s estari_sublevels/anima_wellspring, NO new Band D settlement, per SPEC-ARC-BANDS.md), got ' + Game.Data.areas.length);
+assert(Game.Data.areas.length === 26, '26 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A + Level-Arc Band A\'s kuraan_fringe_woods/deep_kuraan/kuraan_reclamation_camp + Band B\'s majiku_border_steppe/highland_war_camps, NO new Band B settlement + Band C\'s glacial_approach/ukai_undercaverns/frosthold_waystation + Band D\'s estari_sublevels/anima_wellspring, NO new Band D settlement + Band E\'s skyspire_lower_spans/skyspire_upper_spans, NO new Band E settlement, per SPEC-ARC-BANDS.md), got ' + Game.Data.areas.length);
 var townCount = Game.Data.areas.filter(function (a) { return a.type === 'town'; }).length;
-assert(townCount === 7, '7 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp + Kuraan Reclamation Camp + Frosthold Waystation — Bands B and D add no new town, Band C adds Frosthold Waystation), got ' + townCount);
-assert(Game.Data.monsters.length === 73, '73 monsters (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss + 6 Level-Arc Band D regulars + 1 Band D boss), got ' + Game.Data.monsters.length);
+assert(townCount === 7, '7 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp + Kuraan Reclamation Camp + Frosthold Waystation — Bands B, D and E add no new town, Band C adds Frosthold Waystation), got ' + townCount);
+assert(Game.Data.monsters.length === 80, '80 monsters (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss + 6 Level-Arc Band D regulars + 1 Band D boss + 6 Level-Arc Band E regulars + 1 Band E boss), got ' + Game.Data.monsters.length);
 var gares = Game.World.getArea('gares_riverbanks');
 assert(gares && gares.monsters.length === 7, 'Gares Riverbanks lists 7 monsters (4 original + 3 enemy-variety-pass)');
 gares.monsters.forEach(function (mid) {
@@ -372,6 +372,54 @@ assert(connToWellspringBlocked.ok === false, 'level 71 cannot yet reach The Anim
 connCheckD.level = 76;
 var connToWellspring = Game.World.travelTo('anima_wellspring');
 assert(connToWellspring.ok === true, 'level 76 reaches The Anima Wellspring directly from Estari Sublevels');
+
+// =================== Test 0h: Level-Arc Band E — Ascent to the Skyspire (docs/SPEC-ARC-BANDS.md) ===================
+console.log('\n=== Test 0h: Skyspire Lower Spans / Skyspire Upper Spans exist, level-gated, huntable, travel-reachable ===');
+var skyspireLowerSpans = Game.World.getArea('skyspire_lower_spans');
+var skyspireUpperSpans = Game.World.getArea('skyspire_upper_spans');
+assert(!!skyspireLowerSpans && skyspireLowerSpans.type === 'hunting', 'Skyspire Lower Spans exists as a hunting area');
+assert(skyspireLowerSpans.minLevel === 81, 'Skyspire Lower Spans gates travel at minLevel 81');
+assert(!!skyspireUpperSpans && skyspireUpperSpans.type === 'hunting', 'Skyspire Upper Spans exists as a hunting area');
+assert(skyspireUpperSpans.minLevel === 86, 'Skyspire Upper Spans gates travel at minLevel 86');
+assert(!!skyspireUpperSpans.lair && skyspireUpperSpans.lair.monsterId === 'society_anima_horror' && skyspireUpperSpans.lair.minLevel === 90, 'Skyspire Upper Spans carries the society_anima_horror lair gated at minLevel 90');
+// No new settlement for Band E — Frosthold Waystation (Band C) still serves the 61-90 range.
+['shop', 'inn', 'vault', 'academy', 'shrine', 'tavern'].forEach(function (t) {
+  assert(!!Game.World.getFacility(frostholdWaystation, t), 'Frosthold Waystation still has facility: ' + t);
+});
+// No gap wider than the archived ±5 XP/loot cutoff between the two hunting bands' monster levels.
+var lowerSpansLevels = skyspireLowerSpans.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var upperSpansLevels = skyspireUpperSpans.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var maxLowerSpansLevel = Math.max.apply(null, lowerSpansLevels);
+var minUpperSpansLevel = Math.min.apply(null, upperSpansLevels);
+assert(minUpperSpansLevel - maxLowerSpansLevel < BALANCE.XP_LOOT_CUTOFF_LEVELS, 'no gap wider than the ±5 XP/loot cutoff between Skyspire Lower Spans (max lvl ' + maxLowerSpansLevel + ') and Skyspire Upper Spans (min lvl ' + minUpperSpansLevel + ')');
+// Also no gap wider than the cutoff versus the PRIOR band's top hunting area (The Anima
+// Wellspring, max lvl 79), confirming continuous coverage across the Band D/E seam.
+var wellspringLevelsForGap = Game.World.getArea('anima_wellspring').monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var maxWellspringLevel = Math.max.apply(null, wellspringLevelsForGap);
+var minLowerSpansLevel = Math.min.apply(null, lowerSpansLevels);
+assert(minLowerSpansLevel - maxWellspringLevel < BALANCE.XP_LOOT_CUTOFF_LEVELS, 'no gap wider than the ±5 XP/loot cutoff between The Anima Wellspring (max lvl ' + maxWellspringLevel + ') and Skyspire Lower Spans (min lvl ' + minLowerSpansLevel + ')');
+// Frosthold Waystation's shop stocks Band E's tapered gear/consumables.
+var frostholdShopE = Game.World.getFacility(frostholdWaystation, 'shop');
+['sword_spireward_blade', 'shield_spireward_aegis', 'crystal_gclass_1', 'sphere_gclass_1', 'stone_energy_skyspire'].forEach(function (iid) {
+  assert(frostholdShopE.stock.indexOf(iid) !== -1, 'Frosthold Waystation shop stocks Band E gear/consumable: ' + iid);
+  assert(!!Game.Inventory.getItem(iid), 'Band E shop stock item resolves: ' + iid);
+});
+// Travel connectivity: same mechanism as Bands A/B/C/D (js/ui/screens.js renderExplore lists ALL
+// areas, gated only by Game.World.travelTo's level check) — a level-81 character standing
+// anywhere must be able to reach Skyspire Lower Spans directly.
+var connCheckE = makeCharacter({ name: 'ConnectivityTestE' });
+connCheckE.level = 80;
+var connBlockedE = Game.World.travelTo('skyspire_lower_spans');
+assert(connBlockedE.ok === false, 'a level-80 character cannot yet reach Skyspire Lower Spans');
+connCheckE.level = 81;
+var connAllowedE = Game.World.travelTo('skyspire_lower_spans');
+assert(connAllowedE.ok === true, 'a fresh level-81 character reaches Skyspire Lower Spans directly (no adjacency graph): ' + connAllowedE.message);
+assert(connCheckE.currentLocation === 'skyspire_lower_spans', 'currentLocation updated to Skyspire Lower Spans');
+var connToUpperSpansBlocked = Game.World.travelTo('skyspire_upper_spans');
+assert(connToUpperSpansBlocked.ok === false, 'level 81 cannot yet reach Skyspire Upper Spans (minLevel 86)');
+connCheckE.level = 86;
+var connToUpperSpans = Game.World.travelTo('skyspire_upper_spans');
+assert(connToUpperSpans.ok === true, 'level 86 reaches Skyspire Upper Spans directly from Skyspire Lower Spans');
 
 // =================== Test 1: new character starts by race (v1.2 Phase 3 Content-A) ===================
 console.log('\n=== Test 1: new character defaults (Human -> Eldor, Arkan -> Saratus) ===');

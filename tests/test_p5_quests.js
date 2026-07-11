@@ -129,7 +129,7 @@ function winBattle(monsterId) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: quest/story data sanity ===');
-assert(Game.Data.quests.length === 37, '37 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end + Band B\'s break_the_majiku_host/storms_over_the_ridge/the_chieftains_reckoning + Band C\'s win_passage_from_the_ukai/what_slips_through_the_ice/the_deep_dwellers_reckoning + Band D\'s the_taboo_wellspring/what_the_wellspring_woke/the_warden_primes_reckoning), got ' + Game.Data.quests.length);
+assert(Game.Data.quests.length === 40, '40 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end + Band B\'s break_the_majiku_host/storms_over_the_ridge/the_chieftains_reckoning + Band C\'s win_passage_from_the_ukai/what_slips_through_the_ice/the_deep_dwellers_reckoning + Band D\'s the_taboo_wellspring/what_the_wellspring_woke/the_warden_primes_reckoning + Band E\'s the_skyspire_ascent/what_the_society_grew/the_societys_last_stand), got ' + Game.Data.quests.length);
 assert(Game.Data.story.length === 3, '3 story chapters, got ' + Game.Data.story.length);
 ['prelude', 'chapter_1', 'chapter_2'].forEach(function (id) {
   var found = Game.Data.story.some(function (ch) { return ch.id === id; });
@@ -851,6 +851,61 @@ var res29b = Game.Quests.turnIn('the_warden_primes_reckoning');
 assert(res29b.ok === true, 'the_warden_primes_reckoning turn-in succeeds: ' + res29b.message);
 assert(c29.quests['the_warden_primes_reckoning'].status === 'completed', 'the_warden_primes_reckoning marked completed');
 assert(Game.Quests.inventoryCount(c29, 'heavy_head_warden_helm') >= 1, 'the_warden_primes_reckoning grants the Warden Helm');
+
+// =================== Test 22: Level-Arc Band E quests (accept -> progress -> turn-in) ===================
+console.log('\n=== Test 22: Band E quests — the_skyspire_ascent / what_the_society_grew / the_societys_last_stand ===');
+
+// 22a) main-spine quest: accept at Frosthold Waystation, force-satisfy its kill/collect/visit
+// steps, turn in for the full multi-reward (mirrors Test 21a's pattern).
+var c30 = makeCharacter({ name: 'BandEMainTest' });
+grantVitalityForLevel(c30, 81);
+Game.World.travelTo('frosthold_waystation');
+var res30a = Game.Quests.accept('the_skyspire_ascent');
+assert(res30a.ok === true, 'the_skyspire_ascent accepted at Frosthold Waystation: ' + res30a.message);
+assert(Game.Quests.canTurnIn('the_skyspire_ascent') === false, 'the_skyspire_ascent not yet turn-in-able (steps unsatisfied)');
+Game._debug.completeQuestStep('the_skyspire_ascent');
+assert(Game.Quests.canTurnIn('the_skyspire_ascent') === true, 'the_skyspire_ascent steps force-satisfied (5x kill + 3x collect + visit skyspire_upper_spans)');
+var gold30a = Game.Character.goldTotalAsGold(c30);
+var xp30a = c30.xp;
+var tp30a = c30.trainingPoints;
+var res30b = Game.Quests.turnIn('the_skyspire_ascent');
+assert(res30b.ok === true, 'the_skyspire_ascent turn-in succeeds: ' + res30b.message);
+assert(Game.Character.goldTotalAsGold(c30) === gold30a + 1700, 'the_skyspire_ascent grants +1700 gold');
+assert(c30.xp === xp30a + 2600, 'the_skyspire_ascent grants +2600 xp');
+assert(c30.trainingPoints === tp30a + 3, 'the_skyspire_ascent grants +3 Training Points');
+assert(Game.Quests.inventoryCount(c30, 'sword_spireward_blade') >= 1, 'the_skyspire_ascent grants a Spireward Blade');
+assert(c30.quests['the_skyspire_ascent'].status === 'completed', 'the_skyspire_ascent marked completed');
+
+// 22b) side quest: REAL kill progress (not force-satisfied) via winBattle against Skyspire Upper
+// Spans regulars, same pattern as Test 21b's hunt-quest loop.
+var c31 = makeCharacter({ name: 'BandESideTest' });
+grantVitalityForLevel(c31, 86);
+Game.World.travelTo('frosthold_waystation');
+var res31a = Game.Quests.accept('what_the_society_grew');
+assert(res31a.ok === true, 'what_the_society_grew accepted: ' + res31a.message);
+Game.World.travelTo('skyspire_upper_spans');
+for (var w22 = 0; w22 < 4; w22++) winBattle('anima_horror_ravager');
+assert(c31.quests['what_the_society_grew'].progress.kills['anima_horror_ravager'] === 4, 'real kill progress reached 4/4 via winBattle against anima_horror_ravager');
+assert(Game.Quests.canTurnIn('what_the_society_grew') === true, 'what_the_society_grew turn-in-able after 4 real kills');
+Game.World.travelTo('frosthold_waystation');
+var res31b = Game.Quests.turnIn('what_the_society_grew');
+assert(res31b.ok === true, 'what_the_society_grew turn-in succeeds: ' + res31b.message);
+assert(Game.Quests.inventoryCount(c31, 'sphere_gclass_2') >= 1, 'what_the_society_grew grants a G-Class Sphere II');
+
+// 22c) boss-kill side quest: REAL kill via winBattle against the Band E lair boss itself.
+var c32 = makeCharacter({ name: 'BandEBossTest' });
+grantVitalityForLevel(c32, 90);
+Game.World.travelTo('frosthold_waystation');
+var res32a = Game.Quests.accept('the_societys_last_stand');
+assert(res32a.ok === true, 'the_societys_last_stand accepted: ' + res32a.message);
+Game.World.travelTo('skyspire_upper_spans');
+winBattle('society_anima_horror');
+assert(c32.quests['the_societys_last_stand'].progress.kills['society_anima_horror'] === 1, 'society_anima_horror kill recorded via winBattle (lair fight, same Game.Battle.start call as the Explore screen\'s lair button)');
+Game.World.travelTo('frosthold_waystation');
+var res32b = Game.Quests.turnIn('the_societys_last_stand');
+assert(res32b.ok === true, 'the_societys_last_stand turn-in succeeds: ' + res32b.message);
+assert(c32.quests['the_societys_last_stand'].status === 'completed', 'the_societys_last_stand marked completed');
+assert(Game.Quests.inventoryCount(c32, 'heavy_head_spireward_helm') >= 1, 'the_societys_last_stand grants the Spireward Helm');
 
 // =================== Summary ===================
 console.log('\n===================================');

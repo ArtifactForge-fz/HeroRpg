@@ -2945,6 +2945,348 @@ Game.Data.items = [
     tags: ['unique'],
     // boss signature: estari_warden_prime (js/data/monsters.js), the Band D lair boss.
     desc: "A blade struck whole from the Warden-Prime's own core-plating, still humming with the same ancient enforcement-ward that has guarded the Anima Wellspring since before the Council of Three's ban was ever needed."
+  },
+
+  // =====================================================================
+  // Level-Arc Band E (docs/SPEC-ARC-BANDS.md, F2/F3): Ascent to the Skyspire, levels 81-90.
+  // Weapon/armor damage and armor values below are TAPERED per the F1 CONVENTION NOTES block in
+  // js/balance.js (mandatory past band 35): effectiveLevelReq = 35 + 0.7*(levelReq-35). Main tier
+  // at levelReq 85 (effectiveLevelReq 35+0.7*50=70 -> damage 3+2*70=143, armor round(1+70)=71 —
+  // NOT the literal 3+2*85=173 / 1+85=86); a levelReq-88 sub-tier (effectiveLevelReq
+  // 35+0.7*53=72.1 -> armor round(1+72.1)=73). Bands <=35 are unchanged (kept literal, per the F1
+  // note). statReqs continue the levelReq+9-ish weapon/shield trend and levelReq+3-ish
+  // heavy-armor trend established at tier 45/55/65/75 (js/data/items.js Band A/B/C/D headers);
+  // value is an invented economy continuation of the existing per-tier growth curve (a steady
+  // +440-500 per 10 levelReq — no archived value formula survived, see this file's header comment).
+  // =====================================================================
+
+  // ---------- Weapons: tier (levelReq 85), one per weapon skill ----------
+  {
+    id: 'sword_spireward_blade',
+    name: 'Spireward Blade',
+    slot: 'weapon',
+    skill: 'Swords',
+    damage: 143, // TAPERED: effectiveLevelReq 35+0.7*50=70 -> 3+2*70=143 (F1 finding; NOT the literal 3+2*85=173)
+    weight: 7,
+    levelReq: 85,
+    statReqs: { strength: 94 },
+    value: 3540,
+    tags: [],
+    desc: "A heavy blade forged from a fallen Skyspire warden's own ward-plating, tuned by Frosthold's smiths to strike where a Society remnant's own hexwork runs thinnest."
+  },
+  {
+    id: 'polearm_skyspire_halberd',
+    name: 'Skyspire Halberd',
+    slot: 'weapon',
+    skill: 'Polearms',
+    damage: 143, // TAPERED, see header comment above
+    weight: 9,
+    levelReq: 85,
+    statReqs: { strength: 94 },
+    value: 3540,
+    tags: [],
+    desc: "A long halberd weighted to punch clean through a sentinel's reforged plating, its haft warded against the sanctum's own stray discharge."
+  },
+  {
+    id: 'knife_society_renegade_dirk',
+    name: "Society Renegade's Dirk",
+    slot: 'weapon',
+    skill: 'Knives',
+    damage: 143, // TAPERED, see header comment above
+    weight: 3,
+    levelReq: 85,
+    statReqs: { dexterity: 94 },
+    value: 3540,
+    tags: [],
+    desc: "A curved blade taken off a battlemage who never followed Eidas to the red moon, favored by scouts working the Skyspire's tighter spans."
+  },
+  {
+    id: 'rod_anima_channeling_rod',
+    name: 'Anima-Channeling Rod',
+    slot: 'weapon',
+    skill: 'Rods',
+    damage: 143, // TAPERED, see header comment above
+    weight: 4,
+    levelReq: 85,
+    statReqs: { intelligence: 94 },
+    value: 3540,
+    tags: [],
+    desc: "A captured arcanist's own ward-core, unpicked and reforged by Arkan battlemages into a conduit that draws on the Skyspire's stray Anima without repeating the Society's own mistakes."
+  },
+  {
+    id: 'hth_spireguard_gauntlets',
+    name: 'Spireguard Gauntlets',
+    slot: 'weapon',
+    skill: 'Hand to Hand',
+    damage: 143, // TAPERED, see header comment above
+    weight: 4,
+    levelReq: 85,
+    statReqs: { strength: 94 },
+    value: 3540,
+    tags: [],
+    desc: "Banded gauntlets cast from a lower warden's own broken fists, heavy enough to crack a sentinel's plating in a single blow."
+  },
+
+  // ---------- Offhand: Shield (levelReq 85) ----------
+  {
+    id: 'shield_spireward_aegis',
+    name: 'Spireward Aegis',
+    slot: 'offhand',
+    skill: 'Shields',
+    armor: 71, // TAPERED: round(1+70)=71
+    magicArmor: 22,
+    weight: 8,
+    levelReq: 85,
+    statReqs: { strength: 94 },
+    value: 3700,
+    tags: [],
+    desc: "A broad shield banded with reforged construct plating, warded against both the spans' crushing blows and the sanctum's own stray Anima discharge."
+  },
+
+  // ---------- Armor: tier (levelReq 85) — light/medium/heavy ----------
+  {
+    id: 'light_body_skysilk_shroud',
+    name: 'Skysilk Shroud',
+    slot: 'body',
+    skill: 'Light Armor',
+    armor: 71, // TAPERED, see header comment above
+    magicArmor: 22,
+    weight: 3,
+    levelReq: 85,
+    value: 3710,
+    tags: [],
+    desc: 'A ward-weave cut for scouts moving quietly through the Skyspire\'s lower spans ahead of the waystation column.'
+  },
+  {
+    id: 'light_head_skysilk_hood',
+    name: 'Skysilk Hood',
+    slot: 'head',
+    skill: 'Light Armor',
+    armor: 71,
+    magicArmor: 22,
+    weight: 2,
+    levelReq: 85,
+    value: 3680,
+    tags: [],
+    desc: "A matching hood to the Skysilk Shroud, its warding thread tuned against the Society remnant's own hexwork."
+  },
+  {
+    id: 'medium_body_spireguard_brigandine',
+    name: 'Spireguard Brigandine',
+    slot: 'body',
+    skill: 'Medium Armor',
+    armor: 71,
+    weight: 6,
+    levelReq: 85,
+    value: 3710,
+    tags: [],
+    desc: 'Boiled leather and salvaged construct-plate rivets, standard issue to every hero pushing onto the Skyspire\'s lower spans.'
+  },
+  {
+    id: 'medium_legs_spireguard_greaves',
+    name: 'Spireguard Greaves',
+    slot: 'legs',
+    skill: 'Medium Armor',
+    armor: 71,
+    weight: 6,
+    levelReq: 85,
+    value: 3690,
+    tags: [],
+    desc: 'Greaves fitted for the long climb up the Skyspire\'s lower spans toward the Society\'s last sanctum.'
+  },
+  {
+    id: 'heavy_body_spireward_plate',
+    name: 'Spireward Plate',
+    slot: 'body',
+    skill: 'Heavy Armor',
+    armor: 71,
+    weight: 10,
+    levelReq: 85,
+    statReqs: { strength: 88 },
+    value: 3820,
+    tags: [],
+    desc: "Heavy plate hammered at Frosthold's own forge from salvaged ward-plating, thick enough to stand a sentinel's own charge."
+  },
+  {
+    id: 'heavy_head_spireward_helm',
+    name: 'Spireward Helm',
+    slot: 'head',
+    skill: 'Heavy Armor',
+    armor: 71,
+    weight: 10,
+    levelReq: 85,
+    statReqs: { strength: 88 },
+    value: 3770,
+    tags: [],
+    desc: 'A war-helm forged for the officers leading the climb up the Skyspire toward the Society\'s last sanctum.'
+  },
+
+  // ---------- Armor: sub-tier (levelReq 88) ----------
+  {
+    id: 'light_legs_stormline_leggings',
+    name: 'Stormline Leggings',
+    slot: 'legs',
+    skill: 'Light Armor',
+    armor: 73, // TAPERED: effectiveLevelReq 35+0.7*53=72.1 -> round(1+72.1)=73
+    magicArmor: 23,
+    weight: 3,
+    levelReq: 88,
+    value: 3900,
+    tags: [],
+    desc: 'Warded leggings woven for the highest approach, where the spans finally open onto the Society\'s own upper sanctum.'
+  },
+  {
+    id: 'medium_feet_stormline_boots',
+    name: 'Stormline Boots',
+    slot: 'feet',
+    skill: 'Medium Armor',
+    armor: 73,
+    weight: 6,
+    levelReq: 88,
+    value: 3850,
+    tags: [],
+    desc: 'Sturdy boots re-soled at Frosthold for heroes ranging into the Skyspire\'s upper spans.'
+  },
+  {
+    id: 'heavy_legs_stormline_legguards',
+    name: 'Stormline Legguards',
+    slot: 'legs',
+    skill: 'Heavy Armor',
+    armor: 73,
+    weight: 10,
+    levelReq: 88,
+    statReqs: { strength: 90 },
+    value: 3980,
+    tags: [],
+    desc: "Massive plate legguards salvaged and reforged from a fallen Skyspire sentinel's own armor."
+  },
+
+  // ---------- Consumables: G-Class Crystal/Sphere + Energy Stone, extending the graded line
+  // (F-Class I-II, levelReq 71-76) into Band E ----------
+  {
+    id: 'crystal_gclass_1',
+    name: 'G-Class Crystal I',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 81,
+    value: 1290,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 620,
+    desc: "A denser grade of Anima crystal cut from the Skyspire's own lower spans, restoring more Energy than any F-Class grade."
+  },
+  {
+    id: 'crystal_gclass_2',
+    name: 'G-Class Crystal II',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 86,
+    value: 1560,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 660,
+    desc: "The deeper-grade G-Class Crystal, cut only from seams within the Society's own upper sanctum."
+  },
+  {
+    id: 'sphere_gclass_1',
+    name: 'G-Class Sphere I',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 81,
+    value: 1360,
+    tags: [],
+    combatUsable: true,
+    heal: 1080,
+    desc: 'A denser grade of Anima sphere, closing wounds faster than any F-Class grade.'
+  },
+  {
+    id: 'sphere_gclass_2',
+    name: 'G-Class Sphere II',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 86,
+    value: 1520,
+    tags: [],
+    combatUsable: true,
+    heal: 1140,
+    desc: "The deeper-grade G-Class Sphere, mended from Anima drawn only from the Society's own upper sanctum."
+  },
+  {
+    id: 'stone_energy_skyspire',
+    name: 'Skyspire Energy Stone',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 85,
+    value: 820,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 560,
+    desc: 'A dependable Energy Stone sold at Frosthold Waystation for heroes climbing the Skyspire\'s spans.'
+  },
+
+  // ---------- Band E quest material ----------
+  {
+    id: 'quest_society_cipher_page',
+    name: 'Society Cipher Page',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 1,
+    value: 12,
+    tags: ['no-trade'],
+    desc: "A page torn from the Society of Modern Magic's own ciphered ledgers, dropped by a lower warden or arcanist alike. Cipher-Adept Rennick wants every page she can get, hoping to piece together what Eidas's last remnant was really working on."
+  },
+
+  // ---------- Band E unique equipment (monster-drop only; tag 'unique', +15-25% over the
+  // tapered tier per CLAUDE.md / SPEC-ARC-BANDS.md — never sold, never a synthesis input/output) ----------
+  {
+    id: 'light_body_anima_scoured_wraps',
+    name: 'Anima-Scoured Wraps',
+    slot: 'body',
+    skill: 'Light Armor',
+    armor: 85, // +20% over the tapered tier-85 body armor (71)
+    damage: 10, // hybrid: armor granting a weapon-like Damage bonus, matching the estari_anima_shroud/ashmantle precedent
+    weight: 3,
+    levelReq: 85,
+    value: 4260,
+    tags: ['unique'],
+    // boss-adjacent drop: anima_horror_stalker (js/data/monsters.js).
+    desc: "Wraps scoured raw by the same unleashed Anima that gave the stalker wearing them its shape, its ash-dark weave sharp enough to cut on contact this high above the lower spans."
+  },
+  {
+    id: 'rod_anima_horrors_core',
+    name: "Anima-Horror's Core",
+    slot: 'weapon',
+    skill: 'Rods',
+    damage: 176, // +20% over the tapered levelReq-88 weapon-equivalent damage (~147)
+    armor: 11, // hybrid: a weapon carrying +Armor, a stat shop rods never have
+    weight: 4,
+    levelReq: 88,
+    statReqs: { intelligence: 98 },
+    value: 4340,
+    tags: ['unique'],
+    // boss-adjacent drop: anima_horror_ravager (js/data/monsters.js).
+    desc: "A rod grown whole from the ravager's own core, warding its wielder even as it channels the same unleashed Anima the Society of Modern Magic could never fully leash."
+  },
+  {
+    id: 'sword_anima_horrors_edge',
+    name: "The Anima-Horror's Edge",
+    slot: 'weapon',
+    skill: 'Swords',
+    damage: 177, // +24% over the tapered levelReq-85 damage (143)
+    magicArmor: 20, // hybrid: a weapon carrying +Magic Armor
+    weight: 7,
+    levelReq: 85,
+    statReqs: { strength: 98 },
+    value: 4480,
+    tags: ['unique'],
+    // boss signature: society_anima_horror (js/data/monsters.js), the Band E lair boss.
+    desc: "A blade struck whole from the Anima-Horror's own hide, still humming with the same raw, uncategorized Anima that the Society of Modern Magic spent itself trying and failing to control."
   }
 ];
 

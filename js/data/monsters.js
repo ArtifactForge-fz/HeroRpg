@@ -2026,6 +2026,211 @@ Game.Data.monsters = [
       { itemId: 'sword_warden_primes_relic', chance: 0.05 }
     ],
     desc: "The Estari's own last answer to anyone who would break the Council of Three's ban: an ancient ward-construct grown huge and merciless at the Wellspring's own heart, unable to tell a careless excavator from a hero who never meant to mine a single seam. It does not negotiate. It only enforces."
+  },
+
+  // =====================================================================
+  // Level-Arc Band E (docs/SPEC-ARC-BANDS.md, F2/F3): Ascent to the Skyspire, levels 81-90 —
+  // Skyspire Lower Spans / Skyspire Upper Spans (js/data/areas.js). Same header formulas,
+  // unchanged: hp = 20+12*level, damage = 3+2*level, energy = 40+10*level, xp =
+  // BALANCE.MONSTER_XP(level); armor varied per archetype, capped well under a same-level
+  // warrior's expected hit (per the estari_loose_rubble milestone-gate retune). goldMin/goldMax
+  // continue the Band A/B/C/D linear trend (goldMin = 50+2*(level-41), goldMax = 2*goldMin);
+  // shardChance continues the same 0.32+0.02*(level-41) trend, but that formula now exceeds 1.0
+  // for every Band E level (>=81), so every regular here is capped at 0.95 (the same cap Band D
+  // introduced once the raw formula first crossed 1.0 around level 75). Two thematic
+  // Society-remnant/anima-horror monsters carry curseChance (v1.2 Curse mechanic,
+  // BALANCE.CURSE_APPLY_CHANCE), continuing Bands A/B/C/D's coverage; monster techs reuse the
+  // existing mon_* roster (js/data/techs.js), including mon_anima_lance — explicitly credited
+  // there as "the signature strike of the Society of Modern Magic's constructs and remnants at
+  // Kastengard", which is exactly the Society remnant garrisoning the Skyspire itself.
+  // =====================================================================
+
+  // ---------- Skyspire Lower Spans (level 81-84) ----------
+  {
+    id: 'skyspire_lower_warden',
+    name: 'Skyspire Lower Warden',
+    level: 81,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 81,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 81,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 81,
+    armor: 86, // tank profile: level+5, a ward-construct guardian, same profile as estari_sublevel_warden/ukai_cave_warden's tank kin
+    magicArmor: 18,
+    element: null,
+    resistances: {},
+    techs: ['mon_stone_slam'],
+    xp: BALANCE.MONSTER_XP(81),
+    goldMin: 130,
+    goldMax: 260,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'sword_spireward_blade', chance: 0.03 },
+      { itemId: 'crystal_gclass_1', chance: 0.08 },
+      { itemId: 'quest_society_cipher_page', chance: 0.5 }
+    ],
+    desc: "A ward-construct set to guard the Skyspire's lowest span since before Eidas ever sailed for the red moon, still hammering intruders with the same crushing purpose it was built for."
+  },
+
+  // ---------- Level 82 ----------
+  {
+    id: 'society_remnant_battlemage',
+    name: 'Society Remnant Battlemage',
+    level: 82,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 82,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 82,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 82,
+    armor: 68, // glass cannon: level-14, same profile as estari_anima_conduit/highland_ridgehawk
+    magicArmor: 10,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.3 },
+    techs: ['mon_dark_hex'],
+    xp: BALANCE.MONSTER_XP(82),
+    goldMin: 132,
+    goldMax: 264,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'knife_society_renegade_dirk', chance: 0.03 },
+      { itemId: 'sphere_gclass_1', chance: 0.08 }
+    ],
+    desc: "A battlemage who never followed Eidas to the red moon, left behind to hold the Skyspire's lower wards with whatever Dark-grade Anima the Society ever managed to master."
+  },
+
+  // ---------- Level 84 (curse-flavored anima/undead) ----------
+  {
+    id: 'anima_horror_stalker',
+    name: 'Anima-Horror Stalker',
+    level: 84,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 84,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 84,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 84,
+    armor: 72, // spell-wall profile: level-12, thin hide, magicArmor well above armor
+    magicArmor: 112,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Star: -0.3 },
+    // v1.2 Curse mechanic (BALANCE.CURSE_APPLY_CHANCE), continuing Band A/B/C/D's anima-scarred
+    // lineage — here raw Anima given a shape and a hunger, prowling the lower spans for
+    // whatever the Society's own remnant hasn't already claimed.
+    curseChance: BALANCE.CURSE_APPLY_CHANCE,
+    techs: ['mon_dark_hex', 'mon_anima_lance'],
+    xp: BALANCE.MONSTER_XP(84),
+    goldMin: 136,
+    goldMax: 272,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'crystal_gclass_1', chance: 0.08 },
+      // Band E unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'light_body_anima_scoured_wraps', chance: 0.02 }
+    ],
+    desc: "Raw Anima given shape and hunger the instant something cracked the Skyspire's own lower wards, kin to the anima-horrors of the Wellspring but hungrier still, stalking anything that moves along the lower spans."
+  },
+
+  // ---------- Skyspire Upper Spans (level 86-89) ----------
+  {
+    id: 'skyspire_upper_sentinel',
+    name: 'Skyspire Upper Sentinel',
+    level: 86,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 86,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 86,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 86,
+    armor: 93, // tank profile: level+7, the sanctum's own vanguard, same profile as estari_ruin_vanguard/ukai_deep_vanguard
+    magicArmor: 26,
+    element: null,
+    resistances: {},
+    techs: ['mon_hunters_mark', 'mon_earthen_crush'],
+    xp: BALANCE.MONSTER_XP(86),
+    goldMin: 140,
+    goldMax: 280,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'stone_energy_skyspire', chance: 0.08 },
+      { itemId: 'quest_society_cipher_page', chance: 0.5 }
+    ],
+    desc: "One of the Skyspire's own upper sentinels, held at the threshold of the Society's last sanctum to answer for anything the lower wards and stalking horrors fail to turn back."
+  },
+
+  // ---------- Level 87 ----------
+  {
+    id: 'society_arcanist_prime',
+    name: 'Society Arcanist Prime',
+    level: 87,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 87,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 87,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 87,
+    armor: 73, // glass cannon: level-14, same profile as society_remnant_battlemage/estari_anima_conduit
+    magicArmor: 12,
+    element: 'Star',
+    resistances: { Star: 0.5, Earth: -0.3 },
+    techs: ['mon_static_arc'],
+    xp: BALANCE.MONSTER_XP(87),
+    goldMin: 142,
+    goldMax: 284,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'rod_anima_channeling_rod', chance: 0.03 },
+      { itemId: 'sphere_gclass_2', chance: 0.08 }
+    ],
+    desc: "The senior-most of the Society's last remnant still willing to speak Eidas's name, arcing raw Star-grade Anima at anything that reaches the upper spans uninvited."
+  },
+
+  // ---------- Level 89 (curse-flavored anima/undead) ----------
+  {
+    id: 'anima_horror_ravager',
+    name: 'Anima-Horror Ravager',
+    level: 89,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 89,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 89,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 89,
+    armor: 77, // spell-wall profile: level-12
+    magicArmor: 116,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Star: -0.3 },
+    // v1.2 Curse mechanic (BALANCE.CURSE_APPLY_CHANCE) — Band E's second thematic curse
+    // carrier, grown huge on whatever raw Anima the Society's sanctum has been leaking since
+    // Eidas left, previewing the boss's own scale.
+    curseChance: BALANCE.CURSE_APPLY_CHANCE,
+    techs: ['mon_anima_lance', 'mon_dark_hex'],
+    xp: BALANCE.MONSTER_XP(89),
+    goldMin: 146,
+    goldMax: 292,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'sphere_gclass_2', chance: 0.08 },
+      // Band E unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'rod_anima_horrors_core', chance: 0.02 }
+    ],
+    desc: "Something the sanctum grew rather than leashed — raw Anima given a ravager's shape and an appetite to match, the last and largest thing standing between the upper spans and whatever the Society is still hiding at the top."
+  },
+
+  // ---------- Lair boss: Society Anima-Horror (level 90) ----------
+  // invented Band E capstone (docs/SPEC-ARC-BANDS.md): flat hp/damage premiums per the F1
+  // CONVENTION NOTES block (js/balance.js) — hp premium +12*level (matches the majiku_warlord/
+  // majiku_ridge_chieftain/ukai_deep_dweller/estari_warden_prime pattern), damage premium
+  // round(1.5*level+10) = round(145) = 145 (F1's sim-tuned starting ballpark for a real level-90
+  // boss), xp premium x3. "Winnable but costly" per the difficulty contract, CLAUDE.md.
+  {
+    id: 'society_anima_horror',
+    name: 'Society Anima-Horror',
+    level: 90,
+    boss: true,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 90 + 12 * 90, // 1100 + 1080 = 2180
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 90,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 90 + Math.round(1.5 * 90 + 10), // 183 + 145 = 328
+    armor: 62,
+    magicArmor: 60,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.25 },
+    techs: ['mon_dark_hex', 'mon_hunters_mark', 'mon_earthen_crush', 'mon_anima_lance'],
+    xp: BALANCE.MONSTER_XP(90) * 3, // invented: boss XP premium
+    goldMin: 380,
+    goldMax: 620,
+    shardChance: 0.75,
+    drops: [
+      { itemId: 'heavy_head_spireward_helm', chance: 0.1 },
+      { itemId: 'quest_society_cipher_page', chance: 0.6 },
+      // Band E unique equipment (js/data/items.js) — boss signature. Appended last so prior loot
+      // rates (including the guaranteed-ish page above) are unchanged.
+      { itemId: 'sword_anima_horrors_edge', chance: 0.05 }
+    ],
+    desc: "The last thing the Society of Modern Magic ever built, or the first thing it stopped being able to control — raw Anima given a shape vast enough to fill the sanctum Eidas left behind. It does not remember the Council of Three's ban, or the Society's own founding purpose. It only remembers that it is hungry, and that the Skyspire is its own."
   }
 ];
 
