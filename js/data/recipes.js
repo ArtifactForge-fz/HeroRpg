@@ -138,6 +138,26 @@ Game.Data.recipes = [
     gold: 400,
     output: 'crystal_cclass_2',
     desc: 'Fuse two C-Class Crystal Is into a single, denser C-Class Crystal II.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band B (docs/SPEC-ARC-BANDS.md, F2/F3): two synthesis recipes for the Majiku
+  // Highlands band — a gear-tier reforge using a Band B quest material, and a graded-consumable
+  // progression recipe matching the synth_cclass_crystal_2 precedent above.
+  // =====================================================================
+  {
+    id: 'synth_majiku_hostbreaker',
+    inputs: ['sword_kuraan_reclaimers_blade', 'quest_majiku_host_standard'],
+    gold: 750,
+    output: 'sword_majiku_hostbreaker',
+    desc: "Reforge a Reclaimer's Blade around a captured Majiku Host Standard to strike a fresh Hostbreaker Blade."
+  },
+  {
+    id: 'synth_dclass_crystal_2',
+    inputs: ['crystal_dclass_1', 'crystal_dclass_1'],
+    gold: 450,
+    output: 'crystal_dclass_2',
+    desc: 'Fuse two D-Class Crystal Is into a single, denser D-Class Crystal II.'
   }
 ];
 

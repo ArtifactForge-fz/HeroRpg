@@ -1924,6 +1924,346 @@ Game.Data.items = [
     tags: ['unique'],
     // boss signature: majiku_warlord (js/data/monsters.js), the Band A lair boss.
     desc: "The Majiku Warlord's own blade, snapped from its haft and reforged whole — the oath it was sworn on broken along with its wielder."
+  },
+
+  // =====================================================================
+  // Level-Arc Band B (docs/SPEC-ARC-BANDS.md, F2/F3): Majiku Highlands, levels 51-60. Weapon/armor
+  // damage and armor values below are TAPERED per the F1 CONVENTION NOTES block in js/balance.js
+  // (mandatory past band 35): effectiveLevelReq = 35 + 0.7*(levelReq-35). Main tier at levelReq 55
+  // (effectiveLevelReq 35+0.7*20=49 -> damage 3+2*49=101, armor 1+49=50 — NOT the literal
+  // 3+2*55=113 / 1+55=56); a levelReq-58 sub-tier (effectiveLevelReq 35+0.7*23=51.1 -> damage
+  // ~105, armor ~52). Bands <=35 are unchanged (kept literal, per the F1 note). statReqs continue
+  // the levelReq+9-ish weapon/shield trend and levelReq+3-ish heavy-armor trend established at
+  // tier 45 (js/data/items.js Band A header); value is an invented economy continuation of the
+  // existing per-tier growth curve (~1.25x per 10 levelReq, matching 1400->1750 tier35->45 — no
+  // archived value formula survived, see this file's header comment).
+  // =====================================================================
+
+  // ---------- Weapons: tier (levelReq 55), one per weapon skill ----------
+  {
+    id: 'sword_majiku_hostbreaker',
+    name: 'Hostbreaker Blade',
+    slot: 'weapon',
+    skill: 'Swords',
+    damage: 101, // TAPERED: effectiveLevelReq 35+0.7*20=49 -> 3+2*49=101 (F1 finding; NOT the literal 3+2*55=113)
+    weight: 7,
+    levelReq: 55,
+    statReqs: { strength: 64 },
+    value: 2190,
+    tags: [],
+    desc: 'A heavy reforged blade carried by the column pushing north into the Majiku\'s own border steppe, meant to break the host one lancer at a time.'
+  },
+  {
+    id: 'polearm_ridgewar_pike',
+    name: 'Ridgewar Pike',
+    slot: 'weapon',
+    skill: 'Polearms',
+    damage: 101, // TAPERED, see header comment above
+    weight: 9,
+    levelReq: 55,
+    statReqs: { strength: 64 },
+    value: 2190,
+    tags: [],
+    desc: 'A long Arkan-forged pike updated for the ridgeline fighting north of Kuraan, its head weighted to punch through Majiku hostguard plate.'
+  },
+  {
+    id: 'knife_steppewind_edge',
+    name: 'Steppewind Edge',
+    slot: 'weapon',
+    skill: 'Knives',
+    damage: 101, // TAPERED, see header comment above
+    weight: 3,
+    levelReq: 55,
+    statReqs: { dexterity: 64 },
+    value: 2190,
+    tags: [],
+    desc: 'A curved knife shaped from a Ridgehawk\'s own talon, favored by scouts ranging the open border steppe.'
+  },
+  {
+    id: 'rod_hostcallers_ruin',
+    name: "Hostcaller's Ruin",
+    slot: 'weapon',
+    skill: 'Rods',
+    damage: 101, // TAPERED, see header comment above
+    weight: 4,
+    levelReq: 55,
+    statReqs: { intelligence: 64 },
+    value: 2190,
+    tags: [],
+    desc: "A captured hostcaller shaman's own binding-rod, unpicked and reforged by Arkan battlemages into a conduit that turns the host's own ritual-craft back on it."
+  },
+  {
+    id: 'hth_ridgeguard_knuckles',
+    name: 'Ridgeguard Knuckles',
+    slot: 'weapon',
+    skill: 'Hand to Hand',
+    damage: 101, // TAPERED, see header comment above
+    weight: 4,
+    levelReq: 55,
+    statReqs: { strength: 64 },
+    value: 2190,
+    tags: [],
+    desc: 'Banded knuckles issued to the column\'s front-line brawlers, heavy enough to break a hostguard shield-wall on the ridgeline.'
+  },
+
+  // ---------- Offhand: Shield (levelReq 55) ----------
+  {
+    id: 'shield_highland_bulwark',
+    name: 'Highland Bulwark',
+    slot: 'offhand',
+    skill: 'Shields',
+    armor: 50, // TAPERED: 1+49=50
+    magicArmor: 16,
+    weight: 8,
+    levelReq: 55,
+    statReqs: { strength: 64 },
+    value: 2300,
+    tags: [],
+    desc: 'A broad shield banded with reclaimed Arkan wardplate, warded against both Majiku steel and hostcaller hexcraft alike.'
+  },
+
+  // ---------- Armor: tier (levelReq 55) — light/medium/heavy ----------
+  {
+    id: 'light_body_steppewind_mantle',
+    name: 'Steppewind Mantle',
+    slot: 'body',
+    skill: 'Light Armor',
+    armor: 50, // TAPERED, see header comment above
+    magicArmor: 16,
+    weight: 3,
+    levelReq: 55,
+    value: 2310,
+    tags: [],
+    desc: 'A wind-cut, ward-threaded mantle for scouts ranging the open border steppe ahead of the column.'
+  },
+  {
+    id: 'light_head_steppewind_cowl',
+    name: 'Steppewind Cowl',
+    slot: 'head',
+    skill: 'Light Armor',
+    armor: 50,
+    magicArmor: 16,
+    weight: 2,
+    levelReq: 55,
+    value: 2280,
+    tags: [],
+    desc: "A matching cowl to the Steppewind Mantle, its warding thread tuned against the host's own hostcaller curses."
+  },
+  {
+    id: 'medium_body_hostguard_brigandine',
+    name: 'Hostguard Brigandine',
+    slot: 'body',
+    skill: 'Medium Armor',
+    armor: 50,
+    weight: 6,
+    levelReq: 55,
+    value: 2310,
+    tags: [],
+    desc: 'Riveted brigandine standard-issue to every hero mustered against the Majiku host, patterned on captured hostguard plate.'
+  },
+  {
+    id: 'medium_legs_hostguard_greaves',
+    name: 'Hostguard Greaves',
+    slot: 'legs',
+    skill: 'Medium Armor',
+    armor: 50,
+    weight: 6,
+    levelReq: 55,
+    value: 2290,
+    tags: [],
+    desc: 'Greaves fitted for long marches across the open steppe and the colder ridgelines beyond it.'
+  },
+  {
+    id: 'heavy_body_ridgeplate_cuirass',
+    name: 'Ridgeplate Cuirass',
+    slot: 'body',
+    skill: 'Heavy Armor',
+    armor: 50,
+    weight: 10,
+    levelReq: 55,
+    statReqs: { strength: 58 },
+    value: 2380,
+    tags: [],
+    desc: "Heavy plate hammered at the reclamation camp's forge from Majiku ridgeline steel, thick enough to stand a Ridge-Chieftain's charge."
+  },
+  {
+    id: 'heavy_head_ridgeplate_helm',
+    name: 'Ridgeplate Helm',
+    slot: 'head',
+    skill: 'Heavy Armor',
+    armor: 50,
+    weight: 10,
+    levelReq: 55,
+    statReqs: { strength: 58 },
+    value: 2350,
+    tags: [],
+    desc: 'A war-helm forged for the officers leading the push into the Majiku Highlands proper.'
+  },
+
+  // ---------- Armor: sub-tier (levelReq 58) ----------
+  {
+    id: 'light_legs_steppewind_leggings',
+    name: 'Steppewind Leggings',
+    slot: 'legs',
+    skill: 'Light Armor',
+    armor: 52, // TAPERED: effectiveLevelReq 35+0.7*23=51.1 -> 1+51.1=52.1
+    magicArmor: 17,
+    weight: 3,
+    levelReq: 58,
+    value: 2440,
+    tags: [],
+    desc: 'Warded leggings woven for the higher ridgelines, where the border steppe gives way to the Majiku host\'s own war-camps.'
+  },
+  {
+    id: 'medium_feet_hostguard_boots',
+    name: 'Hostguard Boots',
+    slot: 'feet',
+    skill: 'Medium Armor',
+    armor: 52,
+    weight: 6,
+    levelReq: 58,
+    value: 2410,
+    tags: [],
+    desc: 'Sturdy boots re-soled at the reclamation camp for heroes ranging deep into the war-camps.'
+  },
+  {
+    id: 'heavy_legs_ridgeplate_legguards',
+    name: 'Ridgeplate Legguards',
+    slot: 'legs',
+    skill: 'Heavy Armor',
+    armor: 52,
+    weight: 10,
+    levelReq: 58,
+    statReqs: { strength: 60 },
+    value: 2500,
+    tags: [],
+    desc: "Massive plate legguards salvaged and reforged from a fallen hostguard vanguard's own armor."
+  },
+
+  // ---------- Consumables: D-Class Crystal/Sphere + Energy Stone, extending the graded line
+  // (C-Class I-II, levelReq 41-46) into Band B ----------
+  {
+    id: 'crystal_dclass_1',
+    name: 'D-Class Crystal I',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 51,
+    value: 810,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 380,
+    desc: 'A denser grade of Anima crystal mined from the Majiku border steppe, restoring more Energy than any C-Class grade.'
+  },
+  {
+    id: 'crystal_dclass_2',
+    name: 'D-Class Crystal II',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 56,
+    value: 975,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 420,
+    desc: 'The deeper-grade D-Class Crystal, cut from seams found only in the Highland War-Camps themselves.'
+  },
+  {
+    id: 'sphere_dclass_1',
+    name: 'D-Class Sphere I',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 51,
+    value: 850,
+    tags: [],
+    combatUsable: true,
+    heal: 720,
+    desc: 'A denser grade of Anima sphere, closing wounds faster than any C-Class grade.'
+  },
+  {
+    id: 'sphere_dclass_2',
+    name: 'D-Class Sphere II',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 56,
+    value: 950,
+    tags: [],
+    combatUsable: true,
+    heal: 780,
+    desc: 'The deeper-grade D-Class Sphere, mended from Anima found only in the Highland War-Camps.'
+  },
+  {
+    id: 'stone_energy_majiku',
+    name: 'Majiku Energy Stone',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 55,
+    value: 520,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 380,
+    desc: 'A dependable Energy Stone sold at the Kuraan Reclamation Camp for heroes pushing north into the Majiku Highlands.'
+  },
+
+  // ---------- Band B quest material ----------
+  {
+    id: 'quest_majiku_host_standard',
+    name: 'Majiku Host Standard',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 1,
+    value: 12,
+    tags: ['no-trade'],
+    desc: "A war-standard torn from a Majiku host regiment falling back into the highlands. Camp Marshal Serath wants a count of how many the host still has flying."
+  },
+
+  // ---------- Band B unique equipment (monster-drop only; tag 'unique', +15-25% over the
+  // tapered tier per CLAUDE.md / SPEC-ARC-BANDS.md — never sold, never a synthesis input/output) ----------
+  {
+    id: 'light_body_highland_ashmantle',
+    name: 'Highland Ashmantle',
+    slot: 'body',
+    skill: 'Light Armor',
+    armor: 60, // +20% over the tapered tier-55 body armor (50)
+    damage: 6, // hybrid: armor granting a weapon-like Damage bonus, matching the kuraan_ashcloak precedent
+    weight: 3,
+    levelReq: 55,
+    value: 2750,
+    tags: ['unique'],
+    desc: "A mantle burned grey by whatever anima-scarred the Highlander that wore it, its ash-dark weave sharp enough to cut on contact."
+  },
+  {
+    id: 'rod_stormwraiths_core',
+    name: "Stormwraith's Core",
+    slot: 'weapon',
+    skill: 'Rods',
+    damage: 126, // +20% over the tapered levelReq-58 damage (~105)
+    armor: 7, // hybrid: a weapon carrying +Armor, a stat shop rods never have
+    weight: 4,
+    levelReq: 58,
+    statReqs: { intelligence: 70 },
+    value: 3130,
+    tags: ['unique'],
+    desc: "A rod grown from the Hollow Stormwraith's own crackling core, warding its wielder even as it channels the same storm-anima that hollowed the wraith out."
+  },
+  {
+    id: 'polearm_chieftains_warpike',
+    name: "The Chieftain's Warpike",
+    slot: 'weapon',
+    skill: 'Polearms',
+    damage: 125, // +24% over the tapered levelReq-55 damage (101)
+    magicArmor: 14, // hybrid: a weapon carrying +Magic Armor
+    weight: 9,
+    levelReq: 55,
+    statReqs: { strength: 68 },
+    value: 3250,
+    tags: ['unique'],
+    // boss signature: majiku_ridge_chieftain (js/data/monsters.js), the Band B lair boss.
+    desc: "The Majiku Ridge-Chieftain's own warpike, wrenched from the ridgeline camp's standard-pole — proof the host's own commander could not hold this ground."
   }
 ];
 

@@ -122,9 +122,9 @@ function makeCharacter(opts) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: data sanity (monsters reference real items/techs) ===');
-assert(Game.Data.monsters.length === 52, '52 monsters defined (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss), got ' + Game.Data.monsters.length);
+assert(Game.Data.monsters.length === 59, '59 monsters defined (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss), got ' + Game.Data.monsters.length);
 var bosses = Game.Data.monsters.filter(function (m) { return m.boss; });
-assert(bosses.length === 6, 'exactly 6 bosses defined (Phase 6b adds 4 to the original estari_ruin_warden, Level-Arc Band A adds majiku_warlord), got ' + bosses.length);
+assert(bosses.length === 7, 'exactly 7 bosses defined (Phase 6b adds 4 to the original estari_ruin_warden, Level-Arc Band A adds majiku_warlord, Band B adds majiku_ridge_chieftain), got ' + bosses.length);
 var badRefs = [];
 Game.Data.monsters.forEach(function (m) {
   (m.drops || []).forEach(function (d) {
@@ -1605,6 +1605,179 @@ console.log('majiku_warlord sim results over ' + WARLORD_SIM_COUNT + ' battles: 
 // Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
 assert(wlWinRate >= 0.6, 'majiku_warlord is reliably beatable by a geared level-50 warrior (win rate ' + (wlWinRate * 100).toFixed(1) + '%, want >= 60%)');
 assert(wlAvgHpLeft <= 0.85 || wlAvgConsumed >= 1, 'majiku_warlord extracts a real cost on wins (avg HP left ' + (wlAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + wlAvgConsumed.toFixed(1) + ')');
+
+// =================== Test 33: Level-Arc Band B (Majiku Highlands) monster formulas + boss premiums ===================
+console.log('\n=== Test 33: Band B regulars match the header formulas; majiku_ridge_chieftain carries the F1 boss premiums ===');
+var bandBRegularIds = [
+  'majiku_steppe_lancer', 'highland_ridgehawk', 'anima_scarred_highlander',
+  'majiku_hostcaller_shaman', 'highland_hollow_stormwraith', 'majiku_hostguard_vanguard'
+];
+assert(bandBRegularIds.length === 6, 'sanity: 6 Band B regular monster ids listed in this test');
+bandBRegularIds.forEach(function (id) {
+  var m = Game.Battle.getMonsterDef(id);
+  assert(!!m, 'Band B regular monster exists: ' + id);
+  if (!m) return;
+  assert(m.hp === BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * m.level, id + ' hp matches the header formula exactly');
+  assert(m.damage === BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * m.level, id + ' damage matches the header formula exactly');
+  assert(m.energy === BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * m.level, id + ' energy matches the header formula exactly');
+  assert(m.xp === BALANCE.MONSTER_XP(m.level), id + ' xp matches BALANCE.MONSTER_XP(level)');
+});
+// Two thematic undead/anima monsters carry the v1.2 Curse mechanic (phase brief).
+['anima_scarred_highlander', 'highland_hollow_stormwraith'].forEach(function (id) {
+  var m = Game.Battle.getMonsterDef(id);
+  assert(m.curseChance === BALANCE.CURSE_APPLY_CHANCE, id + ' carries curseChance BALANCE.CURSE_APPLY_CHANCE');
+});
+
+var chieftain = Game.Battle.getMonsterDef('majiku_ridge_chieftain');
+assert(!!chieftain && chieftain.boss === true, 'majiku_ridge_chieftain exists and is a boss');
+assert(chieftain.level === 60, 'majiku_ridge_chieftain is level 60');
+var mrcBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 60;
+var mrcBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 60;
+assert(chieftain.hp === mrcBaseHp + 12 * 60, 'majiku_ridge_chieftain hp carries the +12*level boss premium (' + mrcBaseHp + ' + 720 = ' + (mrcBaseHp + 720) + '), got ' + chieftain.hp);
+assert(chieftain.damage === mrcBaseDmg + Math.round(1.5 * 60 + 10), 'majiku_ridge_chieftain damage carries the F1 round(1.5*level+10) boss premium (' + mrcBaseDmg + ' + 100 = ' + (mrcBaseDmg + 100) + '), got ' + chieftain.damage);
+assert(chieftain.xp === BALANCE.MONSTER_XP(60) * 3, 'majiku_ridge_chieftain xp carries the x3 boss premium');
+
+// =================== Test 34: Level-Arc Band B weapon damage is TAPERED, not literal ===================
+console.log('\n=== Test 34: Band B levelReq-55/58 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
+var band55WeaponIds = [
+  'sword_majiku_hostbreaker', 'polearm_ridgewar_pike', 'knife_steppewind_edge',
+  'rod_hostcallers_ruin', 'hth_ridgeguard_knuckles'
+];
+var literalDamage55 = 3 + 2 * 55; // 113 -- what a NON-tapered literal read would give
+var taperedDamage55 = 3 + 2 * taperedEffectiveLevelReq(55); // 101
+band55WeaponIds.forEach(function (id) {
+  var it = Game.Inventory.getItem(id);
+  assert(!!it, 'Band B tier-55 weapon exists: ' + id);
+  if (!it) return;
+  assert(it.damage === taperedDamage55, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage55);
+  assert(it.damage !== literalDamage55, id + ' damage is NOT the literal-formula value ' + literalDamage55 + ' (the F1 taper must be applied)');
+});
+// Armor tapers the same way (1 + effectiveLevelReq).
+var literalArmor55 = 1 + 55; // 56 -- literal read
+var taperedArmor55 = Math.round(1 + taperedEffectiveLevelReq(55)); // 50
+['light_body_steppewind_mantle', 'medium_body_hostguard_brigandine', 'heavy_body_ridgeplate_cuirass', 'shield_highland_bulwark'].forEach(function (id) {
+  var it = Game.Inventory.getItem(id);
+  assert(!!it, 'Band B tier-55 armor/shield exists: ' + id);
+  if (!it) return;
+  assert(it.armor === taperedArmor55, id + ' armor (' + it.armor + ') equals the TAPERED value ' + taperedArmor55);
+  assert(it.armor !== literalArmor55, id + ' armor is NOT the literal-formula value ' + literalArmor55);
+});
+// Sub-tier (levelReq 58) tapers to a DIFFERENT value than the main tier (levelReq 55), confirming
+// the taper is re-derived per levelReq rather than a fixed band-wide constant.
+var literalArmor58 = 1 + 58; // 59 -- literal read
+var taperedArmor58 = Math.round(1 + taperedEffectiveLevelReq(58)); // 52
+['light_legs_steppewind_leggings', 'medium_feet_hostguard_boots', 'heavy_legs_ridgeplate_legguards'].forEach(function (id) {
+  var it = Game.Inventory.getItem(id);
+  assert(!!it, 'Band B sub-tier-58 armor exists: ' + id);
+  if (!it) return;
+  assert(it.armor === taperedArmor58, id + ' armor (' + it.armor + ') equals the TAPERED sub-tier value ' + taperedArmor58);
+  assert(it.armor !== literalArmor58, id + ' armor is NOT the literal-formula value ' + literalArmor58);
+  assert(it.armor !== taperedArmor55, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier tapered value ' + taperedArmor55 + ' (taper is re-derived per levelReq)');
+});
+
+// =================== Test 35: majiku_ridge_chieftain lair fight — winnable but costly (real RNG sim) ===================
+console.log('\n=== Test 35: majiku_ridge_chieftain (Band B lair boss) is winnable-but-costly for a geared level-60 warrior ===');
+function buildLevel60MajikuWarrior() {
+  var skillPoints = {};
+  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
+  skillPoints['Swords'] = 3;
+  skillPoints['Heavy Armor'] = 2;
+  var c = Game.Character.create({
+    race: 'Human',
+    name: 'ChieftainTester',
+    gender: 'Male',
+    skillPoints: skillPoints
+  });
+  c.level = 60;
+  c.xp = BALANCE.XP_TO_LEVEL(60);
+  // 59 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
+  // (same split style as buildLevel50KuraanWarrior above / the eidas_echo debug-warrior build).
+  c.statPoints = 59 * BALANCE.LEVELUP_STAT_POINTS;
+  var totalPoints60 = c.statPoints;
+  for (var i = 0; i < totalPoints60; i++) {
+    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
+    Game.Character.spendStatPoint(c, stat);
+  }
+  var gearIds60 = ['sword_majiku_hostbreaker', 'heavy_body_ridgeplate_cuirass', 'shield_highland_bulwark'];
+  gearIds60.forEach(function (id) {
+    Game.Inventory.addItem(c, id);
+    var res = Game.Inventory.equip(c, id);
+    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
+  });
+  for (i = 0; i < 6; i++) {
+    Game.Inventory.addItem(c, 'sphere_dclass_1');
+    Game.Inventory.addItem(c, 'crystal_dclass_1');
+  }
+  Game.Character.recalcDerived(c);
+  c.hitPoints = c.hitPointsMax;
+  c.energy = c.energyMax;
+  return c;
+}
+
+function countBandBConsumables(c) {
+  var n = 0;
+  for (var i = 0; i < c.inventory.length; i++) {
+    if (c.inventory[i] === 'sphere_dclass_1' || c.inventory[i] === 'crystal_dclass_1') n++;
+  }
+  return n;
+}
+
+function simulateChieftainBattle() {
+  var c = buildLevel60MajikuWarrior();
+  Game.state.character = c;
+  Game.state.battle = null;
+  Game.Battle._rng = Math.random; // real RNG for this sim
+
+  var consumablesBefore = countBandBConsumables(c);
+  var battle = Game.Battle.start('majiku_ridge_chieftain');
+  var rounds = 0;
+  var MAX_ROUNDS = 500;
+  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
+    rounds++;
+    if (!Game.Battle.canAct(battle)) {
+      var crystalIdx = c.inventory.indexOf('crystal_dclass_1');
+      if (crystalIdx !== -1) {
+        Game.Battle.useItem('crystal_dclass_1');
+        continue;
+      }
+    }
+    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_dclass_1') !== -1) {
+      Game.Battle.useItem('sphere_dclass_1');
+      continue;
+    }
+    Game.Battle.attack();
+  }
+  var consumablesAfter = countBandBConsumables(c);
+  return {
+    phase: battle.phase,
+    hpLeftFrac: c.hitPoints / c.hitPointsMax,
+    consumablesConsumed: consumablesBefore - consumablesAfter
+  };
+}
+
+var CHIEFTAIN_SIM_COUNT = 30;
+var mrcWins = 0;
+var mrcOutcomes = {};
+var mrcHpLeftSum = 0;
+var mrcConsumedSum = 0;
+for (var mrcRun = 0; mrcRun < CHIEFTAIN_SIM_COUNT; mrcRun++) {
+  var mrcResult = simulateChieftainBattle();
+  mrcOutcomes[mrcResult.phase] = (mrcOutcomes[mrcResult.phase] || 0) + 1;
+  if (mrcResult.phase === 'won') {
+    mrcWins++;
+    mrcHpLeftSum += mrcResult.hpLeftFrac;
+    mrcConsumedSum += mrcResult.consumablesConsumed;
+  }
+}
+var mrcWinRate = mrcWins / CHIEFTAIN_SIM_COUNT;
+var mrcAvgHpLeft = mrcWins ? mrcHpLeftSum / mrcWins : 0;
+var mrcAvgConsumed = mrcWins ? mrcConsumedSum / mrcWins : 0;
+console.log('majiku_ridge_chieftain sim results over ' + CHIEFTAIN_SIM_COUNT + ' battles: ' + JSON.stringify(mrcOutcomes) +
+  ' — win rate ' + (mrcWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (mrcAvgHpLeft * 100).toFixed(0) +
+  '%, avg consumables spent ' + mrcAvgConsumed.toFixed(1));
+// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
+assert(mrcWinRate >= 0.6, 'majiku_ridge_chieftain is reliably beatable by a geared level-60 warrior (win rate ' + (mrcWinRate * 100).toFixed(1) + '%, want >= 60%)');
+assert(mrcAvgHpLeft <= 0.85 || mrcAvgConsumed >= 1, 'majiku_ridge_chieftain extracts a real cost on wins (avg HP left ' + (mrcAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + mrcAvgConsumed.toFixed(1) + ')');
 
 // =================== Summary ===================
 console.log('\n===================================');

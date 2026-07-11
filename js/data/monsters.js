@@ -1428,6 +1428,202 @@ Game.Data.monsters = [
       { itemId: 'sword_warlords_broken_oath', chance: 0.05 }
     ],
     desc: 'The Majiku commander who has held the Forests of Kuraan for a generation, dug into a deep camp behind wardframes and ironclad vanguard alike. Breaking him is the whole reason the Reclamation Camp exists — costly, but not, at last, impossible.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band B (docs/SPEC-ARC-BANDS.md, F2/F3): Majiku Highlands, levels 51-60 — Majiku
+  // Border Steppe / Highland War-Camps (js/data/areas.js). Same header formulas, unchanged:
+  // hp = 20+12*level, damage = 3+2*level, energy = 40+10*level, xp = BALANCE.MONSTER_XP(level);
+  // armor ~= level (varied per archetype, capped well under a same-level warrior's expected hit,
+  // per the estari_loose_rubble milestone-gate retune). goldMin/goldMax/shardChance continue the
+  // Band A linear trend (goldMin = 50+2*(level-41), goldMax = 2*goldMin, shardChance =
+  // 0.32+0.02*(level-41)). Two thematic undead/anima monsters carry curseChance (v1.2 Curse
+  // mechanic, BALANCE.CURSE_APPLY_CHANCE), continuing Band A's coverage.
+  // =====================================================================
+
+  // ---------- Majiku Border Steppe (level 51-54) ----------
+  {
+    id: 'majiku_steppe_lancer',
+    name: 'Majiku Steppe Lancer',
+    level: 51,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 51,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 51,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 51,
+    armor: 56, // tank profile: level+5, a Majiku officer riding patrol for the host, same profile as majiku_reclaimer_knight
+    magicArmor: 14,
+    element: null,
+    resistances: {},
+    techs: ['mon_hunters_mark'],
+    xp: BALANCE.MONSTER_XP(51),
+    goldMin: 70,
+    goldMax: 140,
+    shardChance: 0.52,
+    drops: [
+      { itemId: 'sword_majiku_hostbreaker', chance: 0.03 },
+      { itemId: 'crystal_dclass_1', chance: 0.08 },
+      { itemId: 'quest_majiku_host_standard', chance: 0.5 }
+    ],
+    desc: 'A Majiku lancer riding patrol along the border steppe, still carrying the host\'s own orders to hold this ground no matter how far the fringe has fallen.'
+  },
+
+  // ---------- Level 52 ----------
+  {
+    id: 'highland_ridgehawk',
+    name: 'Highland Ridgehawk',
+    level: 52,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 52,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 52,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 52,
+    armor: 38, // glass cannon: level-14, same profile as kuraan_bramble_stalker
+    magicArmor: 6,
+    element: 'Wind',
+    resistances: { Wind: 0.5, Earth: -0.25 },
+    techs: ['mon_wind_buffet'],
+    xp: BALANCE.MONSTER_XP(52),
+    goldMin: 72,
+    goldMax: 144,
+    shardChance: 0.54,
+    drops: [
+      { itemId: 'knife_steppewind_edge', chance: 0.03 },
+      { itemId: 'sphere_dclass_1', chance: 0.08 }
+    ],
+    desc: 'A ridge-nesting raptor grown huge and vicious on the high steppe wind, diving on the border patrols before they ever see it coming.'
+  },
+
+  // ---------- Level 54 (curse-flavored anima/undead) ----------
+  {
+    id: 'anima_scarred_highlander',
+    name: 'Anima-Scarred Highlander',
+    level: 54,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 54,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 54,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 54,
+    armor: 42, // spell-wall profile: level-12, thin hide, magicArmor well above armor
+    magicArmor: 68,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.3 },
+    // v1.2 Curse mechanic (BALANCE.CURSE_APPLY_CHANCE), continuing Band A's anima_scarred_revenant
+    // coverage one band north.
+    curseChance: BALANCE.CURSE_APPLY_CHANCE,
+    techs: ['mon_dark_hex', 'mon_anima_lance'],
+    xp: BALANCE.MONSTER_XP(54),
+    goldMin: 76,
+    goldMax: 152,
+    shardChance: 0.58,
+    drops: [
+      { itemId: 'sphere_dclass_1', chance: 0.08 },
+      // Band B unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'light_body_highland_ashmantle', chance: 0.02 }
+    ],
+    desc: 'A border-steppe rider left for dead long enough that stray Anima scarred itself into the corpse — kin to the anima-scarred revenants of Kuraan, but hardened by highland cold instead of fringe rot.'
+  },
+
+  // ---------- Highland War-Camps (level 56-59) ----------
+  {
+    id: 'majiku_hostcaller_shaman',
+    name: 'Majiku Hostcaller Shaman',
+    level: 56,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 56,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 56,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 56,
+    armor: 44, // spell-wall profile: level-12, magicArmor well above armor
+    magicArmor: 74,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.25 },
+    techs: ['mon_dark_hex', 'mon_static_arc'],
+    xp: BALANCE.MONSTER_XP(56),
+    goldMin: 80,
+    goldMax: 160,
+    shardChance: 0.62,
+    drops: [
+      { itemId: 'rod_hostcallers_ruin', chance: 0.03 },
+      { itemId: 'crystal_dclass_2', chance: 0.08 }
+    ],
+    desc: "A war-shaman who calls the whole host to muster from her ridgeline camp, drawing on ancestral spirits older and angrier than any the border steppe riders answer to."
+  },
+
+  // ---------- Level 58 (curse-flavored anima/undead) ----------
+  {
+    id: 'highland_hollow_stormwraith',
+    name: 'Highland Hollow Stormwraith',
+    level: 58,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 58,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 58,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 58,
+    armor: 46,
+    magicArmor: 78,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Star: -0.3 },
+    // v1.2 Curse mechanic (BALANCE.CURSE_APPLY_CHANCE) — Band B's second thematic curse carrier.
+    curseChance: BALANCE.CURSE_APPLY_CHANCE,
+    techs: ['mon_anima_lance', 'mon_dark_hex'],
+    xp: BALANCE.MONSTER_XP(58),
+    goldMin: 84,
+    goldMax: 168,
+    shardChance: 0.66,
+    drops: [
+      { itemId: 'sphere_dclass_2', chance: 0.08 },
+      // Band B unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'rod_stormwraiths_core', chance: 0.02 }
+    ],
+    desc: "A Hostcaller Shaman's own failed ritual, hollowed out by the highland storm-anima it tried to bind rather than empowered by it — kin to Deep Kuraan's hollow wraiths, but crackling with ridgeline static."
+  },
+
+  // ---------- Level 59 ----------
+  {
+    id: 'majiku_hostguard_vanguard',
+    name: 'Majiku Hostguard Vanguard',
+    level: 59,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 59,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 59,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 59,
+    armor: 66, // tank profile: level+7, the Ridge-Chieftain's own vanguard, same profile as majiku_ironclad_vanguard
+    magicArmor: 20,
+    element: null,
+    resistances: {},
+    techs: ['mon_hunters_mark', 'mon_earthen_crush'],
+    xp: BALANCE.MONSTER_XP(59),
+    goldMin: 86,
+    goldMax: 172,
+    shardChance: 0.68,
+    drops: [
+      { itemId: 'stone_energy_majiku', chance: 0.08 },
+      { itemId: 'quest_majiku_host_standard', chance: 0.5 }
+    ],
+    desc: "One of the Ridge-Chieftain's own hostguard vanguard, held behind the war-camp's palisade to answer for anything the border steppe riders and shamans fail to turn back."
+  },
+
+  // ---------- Lair boss: Majiku Ridge-Chieftain (level 60) ----------
+  // invented Band B capstone (docs/SPEC-ARC-BANDS.md): flat hp/damage premiums per the F1
+  // CONVENTION NOTES block (js/balance.js) — hp premium +12*level (matches the majiku_warlord/
+  // estari_ruin_warden/eidas_echo pattern), damage premium round(1.5*level+10) = round(100) = 100
+  // (F1's sim-tuned starting ballpark for a real level-60 boss), xp premium x3. "Winnable but
+  // costly" per the difficulty contract, CLAUDE.md.
+  {
+    id: 'majiku_ridge_chieftain',
+    name: 'The Majiku Ridge-Chieftain',
+    level: 60,
+    boss: true,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 60 + 12 * 60, // 740 + 720 = 1460
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 60,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 60 + Math.round(1.5 * 60 + 10), // 123 + 100 = 223
+    armor: 52,
+    magicArmor: 50,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.25 },
+    techs: ['mon_dark_hex', 'mon_hunters_mark', 'mon_earthen_crush', 'mon_anima_lance'],
+    xp: BALANCE.MONSTER_XP(60) * 3, // invented: boss XP premium
+    goldMin: 260,
+    goldMax: 440,
+    shardChance: 0.6,
+    drops: [
+      { itemId: 'heavy_head_ridgeplate_helm', chance: 0.1 },
+      { itemId: 'quest_majiku_host_standard', chance: 0.6 },
+      // Band B unique equipment (js/data/items.js) — boss signature. Appended last so prior loot
+      // rates (including the guaranteed-ish standard above) are unchanged.
+      { itemId: 'polearm_chieftains_warpike', chance: 0.05 }
+    ],
+    desc: 'The Majiku commander who holds the whole host together from the ridgeline war-camps, dug in behind shamans, hostguard vanguard, and the highland cold itself. Breaking him breaks the host — the whole reason Serath\'s column pushed this far north.'
   }
 ];
 

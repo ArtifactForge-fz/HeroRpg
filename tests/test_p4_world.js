@@ -118,10 +118,10 @@ function makeCharacter(opts) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: areas/monsters/items data sanity ===');
-assert(Game.Data.areas.length === 17, '17 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A + Level-Arc Band A\'s kuraan_fringe_woods/deep_kuraan/kuraan_reclamation_camp), got ' + Game.Data.areas.length);
+assert(Game.Data.areas.length === 19, '19 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A + Level-Arc Band A\'s kuraan_fringe_woods/deep_kuraan/kuraan_reclamation_camp + Band B\'s majiku_border_steppe/highland_war_camps, NO new Band B settlement per SPEC-ARC-BANDS.md), got ' + Game.Data.areas.length);
 var townCount = Game.Data.areas.filter(function (a) { return a.type === 'town'; }).length;
-assert(townCount === 6, '6 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp + Kuraan Reclamation Camp), got ' + townCount);
-assert(Game.Data.monsters.length === 52, '52 monsters (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss), got ' + Game.Data.monsters.length);
+assert(townCount === 6, '6 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp + Kuraan Reclamation Camp — Band B adds no new town, it reuses the Reclamation Camp), got ' + townCount);
+assert(Game.Data.monsters.length === 59, '59 monsters (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss), got ' + Game.Data.monsters.length);
 var gares = Game.World.getArea('gares_riverbanks');
 assert(gares && gares.monsters.length === 7, 'Gares Riverbanks lists 7 monsters (4 original + 3 enemy-variety-pass)');
 gares.monsters.forEach(function (mid) {
@@ -225,6 +225,50 @@ assert(connToCamp2.ok === true, 'level 44 reaches Kuraan Reclamation Camp direct
 connCheck.level = 46;
 var connToDeep = Game.World.travelTo('deep_kuraan');
 assert(connToDeep.ok === true, 'level 46 reaches Deep Kuraan directly from the camp');
+
+// =================== Test 0e: Level-Arc Band B — Majiku Highlands (docs/SPEC-ARC-BANDS.md) ===================
+console.log('\n=== Test 0e: Majiku Border Steppe / Highland War-Camps exist, level-gated, huntable, travel-reachable (NO new settlement) ===');
+var borderSteppe = Game.World.getArea('majiku_border_steppe');
+var warCamps = Game.World.getArea('highland_war_camps');
+assert(!!borderSteppe && borderSteppe.type === 'hunting', 'Majiku Border Steppe exists as a hunting area');
+assert(borderSteppe.minLevel === 51, 'Majiku Border Steppe gates travel at minLevel 51');
+assert(!!warCamps && warCamps.type === 'hunting', 'Highland War-Camps exists as a hunting area');
+assert(warCamps.minLevel === 56, 'Highland War-Camps gates travel at minLevel 56');
+assert(!!warCamps.lair && warCamps.lair.monsterId === 'majiku_ridge_chieftain' && warCamps.lair.minLevel === 60, 'Highland War-Camps carries the majiku_ridge_chieftain lair gated at minLevel 60');
+// No gap wider than the archived ±5 XP/loot cutoff between the two hunting bands' monster levels.
+var steppeLevels = borderSteppe.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var campsLevels = warCamps.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var maxSteppeLevel = Math.max.apply(null, steppeLevels);
+var minCampsLevel = Math.min.apply(null, campsLevels);
+assert(minCampsLevel - maxSteppeLevel < BALANCE.XP_LOOT_CUTOFF_LEVELS, 'no gap wider than the ±5 XP/loot cutoff between Majiku Border Steppe (max lvl ' + maxSteppeLevel + ') and Highland War-Camps (min lvl ' + minCampsLevel + ')');
+// Also no gap wider than the cutoff versus the PRIOR band's top hunting area (Deep Kuraan,
+// max lvl 49), confirming continuous coverage across the Band A/B seam.
+var deepKuraanLevelsForGap = Game.World.getArea('deep_kuraan').monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var maxDeepKuraanLevel = Math.max.apply(null, deepKuraanLevelsForGap);
+assert(borderSteppe.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; }).reduce(function (a, b) { return Math.min(a, b); }) - maxDeepKuraanLevel < BALANCE.XP_LOOT_CUTOFF_LEVELS, 'no gap wider than the ±5 XP/loot cutoff between Deep Kuraan (max lvl ' + maxDeepKuraanLevel + ') and Majiku Border Steppe');
+// NO new settlement this band (per SPEC-ARC-BANDS.md) — Band B's gear/consumables are stocked at
+// the existing Kuraan Reclamation Camp instead of a new town.
+var campShopB = Game.World.getFacility(Game.World.getArea('kuraan_reclamation_camp'), 'shop');
+['sword_majiku_hostbreaker', 'shield_highland_bulwark', 'crystal_dclass_1', 'sphere_dclass_1', 'stone_energy_majiku'].forEach(function (iid) {
+  assert(campShopB.stock.indexOf(iid) !== -1, 'Kuraan Reclamation Camp shop stocks Band B gear/consumable: ' + iid);
+  assert(!!Game.Inventory.getItem(iid), 'Band B shop stock item resolves: ' + iid);
+});
+// Travel connectivity: same mechanism as Band A (js/ui/screens.js renderExplore lists ALL areas,
+// gated only by Game.World.travelTo's level check) — a level-51 character standing anywhere must
+// be able to reach Majiku Border Steppe directly.
+var connCheckB = makeCharacter({ name: 'ConnectivityTestB' });
+connCheckB.level = 50;
+var connBlockedB = Game.World.travelTo('majiku_border_steppe');
+assert(connBlockedB.ok === false, 'a level-50 character cannot yet reach Majiku Border Steppe');
+connCheckB.level = 51;
+var connAllowedB = Game.World.travelTo('majiku_border_steppe');
+assert(connAllowedB.ok === true, 'a fresh level-51 character reaches Majiku Border Steppe directly (no adjacency graph): ' + connAllowedB.message);
+assert(connCheckB.currentLocation === 'majiku_border_steppe', 'currentLocation updated to Majiku Border Steppe');
+var connToCampsBlocked = Game.World.travelTo('highland_war_camps');
+assert(connToCampsBlocked.ok === false, 'level 51 cannot yet reach Highland War-Camps (minLevel 56)');
+connCheckB.level = 56;
+var connToCampsB = Game.World.travelTo('highland_war_camps');
+assert(connToCampsB.ok === true, 'level 56 reaches Highland War-Camps directly from Majiku Border Steppe');
 
 // =================== Test 1: new character starts by race (v1.2 Phase 3 Content-A) ===================
 console.log('\n=== Test 1: new character defaults (Human -> Eldor, Arkan -> Saratus) ===');

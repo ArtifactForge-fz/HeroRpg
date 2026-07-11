@@ -698,6 +698,57 @@ Game.Data.quests = [
     ],
     rewards: { gold: 1800, xp: 2600, items: ['heavy_head_kuraan_warhelm'], trainingPoints: 4 },
     completionText: 'Serath turns the Warlord\'s own broken oath over in her hands, and for a long moment says nothing at all. "A generation, hero. He held these woods for a generation, and you ended it in one season. The Forests of Kuraan are Arkan ground again — for the first time since before either of us was born. Whatever comes next out of the Majiku Highlands, we\'ll meet it from here, not from behind a fringe-line trench."'
+  },
+
+  // =====================================================================
+  // Level-Arc Band B (docs/SPEC-ARC-BANDS.md, F2/F3): Majiku Highlands, levels 51-60 — the story
+  // beat "Break the Majiku host," one band north of Kuraan. NO new settlement this band (per the
+  // phase brief); all three quests are given at the existing Kuraan Reclamation Camp
+  // (js/data/areas.js), which is spec'd to cover the whole 41-60 range.
+  // =====================================================================
+
+  // ---------- Band B main-spine quest ----------
+  {
+    id: 'break_the_majiku_host',
+    name: 'Break the Majiku Host',
+    giver: { areaId: 'kuraan_reclamation_camp', npc: 'Camp Marshal Serath' },
+    levelMin: 51,
+    intro: 'Serath has a new map pinned up beside the old one, the border steppe inked in north of the fringe line. "The Kuraan reclamation was only ever the opening move, hero. The Majiku host itself is dug into the highlands proper now — lancers riding the steppe, war-camps mustering on the ridgelines behind them. Break their steppe lancers, recover their host standards so I know how many regiments are still flying them, and get eyes on the Highland War-Camps. Whoever commands that host from up there is the reason this war hasn\'t ended."',
+    steps: [
+      { kind: 'kill', monsterId: 'majiku_steppe_lancer', count: 5 },
+      { kind: 'collect', itemId: 'quest_majiku_host_standard', count: 3 },
+      { kind: 'visit', areaId: 'highland_war_camps' }
+    ],
+    rewards: { gold: 1100, xp: 1700, items: ['sword_majiku_hostbreaker'], trainingPoints: 3 },
+    completionText: 'Serath spreads the standards across her new map, counting under her breath just as she did with the sigils. "Three fewer regiments, five fewer lancers, and you\'ve seen the war-camps with your own eyes. The host is dug in deep up there — deeper than Kuraan ever was. But now we know exactly how far north this goes. Take the blade; you\'ve more than earned it."'
+  },
+
+  // ---------- Band B side quest 1: Highland War-Camps hunt ----------
+  {
+    id: 'storms_over_the_ridge',
+    name: 'Storms Over the Ridge',
+    giver: { areaId: 'kuraan_reclamation_camp', npc: 'Anima-Warden Yulei' },
+    levelMin: 56,
+    intro: 'Yulei has traded her careful distance from raw Anima for something closer to alarm. "It\'s happening again, hero — worse, this time. The Highland War-Camps are shedding hollow stormwraiths, the same ritual-work-gone-wrong I saw in Deep Kuraan, but crackling with ridgeline static this time. Put down four of them before one drifts far enough south to find the Reclamation Camp itself."',
+    steps: [
+      { kind: 'kill', monsterId: 'highland_hollow_stormwraith', count: 4 }
+    ],
+    rewards: { gold: 900, xp: 1400, items: ['sphere_dclass_2'] },
+    completionText: 'Yulei exhales, the alarm easing but not quite gone. "Four less hollow things crackling through the war-camps. Whatever the hostcallers are trying to bind up there, it\'s worse than what the deepwood witches were doing. I\'d still rather we never find out firsthand what it was supposed to become."'
+  },
+
+  // ---------- Band B side quest 2: Majiku Ridge-Chieftain boss kill ----------
+  {
+    id: 'the_chieftains_reckoning',
+    name: "The Chieftain's Reckoning",
+    giver: { areaId: 'kuraan_reclamation_camp', npc: 'Camp Marshal Serath' },
+    levelMin: 60,
+    intro: 'Serath doesn\'t look up from the map this time either. "You\'ve seen the war-camps with your own eyes, hero. The Majiku Ridge-Chieftain commands the whole host from up there — every lancer, every hostcaller, every hostguard vanguard we\'ve broken answers to him first, same as the Warlord did for Kuraan. End him, and the host doesn\'t just fall back. It breaks."',
+    steps: [
+      { kind: 'kill', monsterId: 'majiku_ridge_chieftain', count: 1 }
+    ],
+    rewards: { gold: 2200, xp: 3100, items: ['heavy_head_ridgeplate_helm'], trainingPoints: 4 },
+    completionText: 'Serath turns the Chieftain\'s own warpike over in her hands, and this time she does look up. "The Warlord held Kuraan for a generation, and you ended him in a season. The Chieftain held the whole host together — and you\'ve just ended that too. The Majiku Highlands aren\'t won yet, hero, but the host that was supposed to hold them is broken. Whatever comes next out of the Frozen Reaches, we\'ll meet it standing on ground we actually hold."'
   }
 ];
 

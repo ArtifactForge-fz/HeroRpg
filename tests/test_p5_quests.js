@@ -129,7 +129,7 @@ function winBattle(monsterId) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: quest/story data sanity ===');
-assert(Game.Data.quests.length === 28, '28 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end), got ' + Game.Data.quests.length);
+assert(Game.Data.quests.length === 31, '31 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end + Band B\'s break_the_majiku_host/storms_over_the_ridge/the_chieftains_reckoning), got ' + Game.Data.quests.length);
 assert(Game.Data.story.length === 3, '3 story chapters, got ' + Game.Data.story.length);
 ['prelude', 'chapter_1', 'chapter_2'].forEach(function (id) {
   var found = Game.Data.story.some(function (ch) { return ch.id === id; });
@@ -686,6 +686,61 @@ var res20b = Game.Quests.turnIn('the_warlords_end');
 assert(res20b.ok === true, 'the_warlords_end turn-in succeeds: ' + res20b.message);
 assert(c20.quests['the_warlords_end'].status === 'completed', 'the_warlords_end marked completed');
 assert(Game.Quests.inventoryCount(c20, 'heavy_head_kuraan_warhelm') >= 1, 'the_warlords_end grants the Kuraan Warhelm');
+
+// =================== Test 19: Level-Arc Band B quests (accept -> progress -> turn-in) ===================
+console.log('\n=== Test 19: Band B quests — break_the_majiku_host / storms_over_the_ridge / the_chieftains_reckoning ===');
+
+// 19a) main-spine quest: accept at the (reused) camp, force-satisfy its kill/collect/visit steps,
+// turn in for the full multi-reward (mirrors Test 18a's reclaim_the_fringe pattern).
+var c21 = makeCharacter({ name: 'BandBMainTest' });
+grantVitalityForLevel(c21, 51);
+Game.World.travelTo('kuraan_reclamation_camp');
+var res21a = Game.Quests.accept('break_the_majiku_host');
+assert(res21a.ok === true, 'break_the_majiku_host accepted at Kuraan Reclamation Camp: ' + res21a.message);
+assert(Game.Quests.canTurnIn('break_the_majiku_host') === false, 'break_the_majiku_host not yet turn-in-able (steps unsatisfied)');
+Game._debug.completeQuestStep('break_the_majiku_host');
+assert(Game.Quests.canTurnIn('break_the_majiku_host') === true, 'break_the_majiku_host steps force-satisfied (5x kill + 3x collect + visit highland_war_camps)');
+var gold21a = Game.Character.goldTotalAsGold(c21);
+var xp21a = c21.xp;
+var tp21a = c21.trainingPoints;
+var res21b = Game.Quests.turnIn('break_the_majiku_host');
+assert(res21b.ok === true, 'break_the_majiku_host turn-in succeeds: ' + res21b.message);
+assert(Game.Character.goldTotalAsGold(c21) === gold21a + 1100, 'break_the_majiku_host grants +1100 gold');
+assert(c21.xp === xp21a + 1700, 'break_the_majiku_host grants +1700 xp');
+assert(c21.trainingPoints === tp21a + 3, 'break_the_majiku_host grants +3 Training Points');
+assert(Game.Quests.inventoryCount(c21, 'sword_majiku_hostbreaker') >= 1, 'break_the_majiku_host grants a Hostbreaker Blade');
+assert(c21.quests['break_the_majiku_host'].status === 'completed', 'break_the_majiku_host marked completed');
+
+// 19b) side quest: REAL kill progress (not force-satisfied) via winBattle against the Highland
+// War-Camps regulars, same pattern as Test 18b's wraiths_of_the_deepwood loop.
+var c22 = makeCharacter({ name: 'BandBSideTest' });
+grantVitalityForLevel(c22, 56);
+Game.World.travelTo('kuraan_reclamation_camp');
+var res22a = Game.Quests.accept('storms_over_the_ridge');
+assert(res22a.ok === true, 'storms_over_the_ridge accepted: ' + res22a.message);
+Game.World.travelTo('highland_war_camps');
+for (var w19 = 0; w19 < 4; w19++) winBattle('highland_hollow_stormwraith');
+assert(c22.quests['storms_over_the_ridge'].progress.kills['highland_hollow_stormwraith'] === 4, 'real kill progress reached 4/4 via winBattle against highland_hollow_stormwraith');
+assert(Game.Quests.canTurnIn('storms_over_the_ridge') === true, 'storms_over_the_ridge turn-in-able after 4 real kills');
+Game.World.travelTo('kuraan_reclamation_camp');
+var res22b = Game.Quests.turnIn('storms_over_the_ridge');
+assert(res22b.ok === true, 'storms_over_the_ridge turn-in succeeds: ' + res22b.message);
+assert(Game.Quests.inventoryCount(c22, 'sphere_dclass_2') >= 1, 'storms_over_the_ridge grants a D-Class Sphere II');
+
+// 19c) boss-kill side quest: REAL kill via winBattle against the Band B lair boss itself.
+var c23 = makeCharacter({ name: 'BandBBossTest' });
+grantVitalityForLevel(c23, 60);
+Game.World.travelTo('kuraan_reclamation_camp');
+var res23a = Game.Quests.accept('the_chieftains_reckoning');
+assert(res23a.ok === true, 'the_chieftains_reckoning accepted: ' + res23a.message);
+Game.World.travelTo('highland_war_camps');
+winBattle('majiku_ridge_chieftain');
+assert(c23.quests['the_chieftains_reckoning'].progress.kills['majiku_ridge_chieftain'] === 1, 'majiku_ridge_chieftain kill recorded via winBattle (lair fight, same Game.Battle.start call as the Explore screen\'s lair button)');
+Game.World.travelTo('kuraan_reclamation_camp');
+var res23b = Game.Quests.turnIn('the_chieftains_reckoning');
+assert(res23b.ok === true, 'the_chieftains_reckoning turn-in succeeds: ' + res23b.message);
+assert(c23.quests['the_chieftains_reckoning'].status === 'completed', 'the_chieftains_reckoning marked completed');
+assert(Game.Quests.inventoryCount(c23, 'heavy_head_ridgeplate_helm') >= 1, 'the_chieftains_reckoning grants the Ridgeplate Helm');
 
 // =================== Summary ===================
 console.log('\n===================================');

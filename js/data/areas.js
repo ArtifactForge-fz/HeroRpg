@@ -421,6 +421,10 @@ Game.Data.areas = [
         // Band A's tapered levelReq-45/48 gear (js/data/items.js) plus its own C-Class Crystal/
         // Sphere/Energy Stone consumables, alongside a couple of the prior band's top items for a
         // smooth handoff (established pattern — every town shop mixes in at least one older item).
+        // Level-Arc Band B (Majiku Highlands, levels 51-60) has NO new settlement (per
+        // docs/SPEC-ARC-BANDS.md — this camp covers the whole 41-60 range) — its tapered
+        // levelReq-55/58 gear and D-Class Crystal/Sphere/Energy Stone consumables are appended
+        // here rather than opening a second shop.
         stock: [
           'sword_kuraan_reclaimers_blade', 'polearm_arkan_vanguard_lance', 'knife_fringewood_fang',
           'rod_majiku_wardbreaker', 'hth_reclaimers_gauntlets',
@@ -432,7 +436,16 @@ Game.Data.areas = [
           'tent_expedition_pavilion',
           'potion_vault_reserve',
           'crystal_cclass_1', 'crystal_cclass_2', 'sphere_cclass_1', 'sphere_cclass_2',
-          'stone_energy_kuraan', 'stone_energy_greater'
+          'stone_energy_kuraan', 'stone_energy_greater',
+          'sword_majiku_hostbreaker', 'polearm_ridgewar_pike', 'knife_steppewind_edge',
+          'rod_hostcallers_ruin', 'hth_ridgeguard_knuckles',
+          'shield_highland_bulwark',
+          'light_body_steppewind_mantle', 'light_head_steppewind_cowl',
+          'medium_body_hostguard_brigandine', 'medium_legs_hostguard_greaves',
+          'heavy_body_ridgeplate_cuirass', 'heavy_head_ridgeplate_helm',
+          'light_legs_steppewind_leggings', 'medium_feet_hostguard_boots', 'heavy_legs_ridgeplate_legguards',
+          'crystal_dclass_1', 'crystal_dclass_2', 'sphere_dclass_1', 'sphere_dclass_2',
+          'stone_energy_majiku'
         ]
       },
       { type: 'inn' },
@@ -443,6 +456,46 @@ Game.Data.areas = [
       { type: 'tavern' }
     ],
     desc: 'A fortified muster point on the Kuraan fringe, thrown up by the Crown and Academy once the reclamation push began in earnest. Camp Marshal Serath commands the column from here — Inn, Vault, Academy, and a well-stocked Shop selling the reclamation\'s own reforged gear.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band B (docs/SPEC-ARC-BANDS.md, F2/F3): Majiku Highlands, levels 51-60 — the story
+  // pushes past the reclaimed Kuraan fringe into the Majiku's own northern tribal war-lands
+  // (DESIGN.md §2), breaking the host that has been staging its counter-attacks from up here. NO
+  // new settlement this band (per SPEC-ARC-BANDS.md — Kuraan Reclamation Camp, js/data/areas.js
+  // above, is spec'd to cover the whole 41-60 range); quest givers and shop stock are added to
+  // that existing camp instead. Two overlapping hunting bands (Majiku Border Steppe 51-54,
+  // Highland War-Camps 56-59; gap of 2 levels, under the archived ±5 XP/loot cutoff,
+  // BALANCE.XP_LOOT_CUTOFF_LEVELS) plus the band's lair boss. Same travel-reachability note as
+  // Band A: js/ui/screens.js renderExplore lists ALL of Game.Data.areas as destinations, gated
+  // only by Game.World.travelTo's level check — no separate adjacency graph to satisfy.
+  // =====================================================================
+
+  // ---------- Majiku Border Steppe: level 51-54 hunting ----------
+  {
+    id: 'majiku_border_steppe',
+    name: 'Majiku Border Steppe',
+    type: 'hunting',
+    minLevel: 51,
+    // archived region: the Majiku's own northern tribal war-lands (DESIGN.md §2), the open
+    // highland steppe north of the Forests of Kuraan the reclamation push has just cleared.
+    monsters: ['majiku_steppe_lancer', 'highland_ridgehawk', 'anima_scarred_highlander'],
+    facilities: [],
+    desc: 'Windswept high steppe north of the reclaimed Kuraan fringe, where Majiku lancers still ride patrol for a host that has not yet accepted the fringe is lost. Further north, dug into the ridgelines proper, the Highland War-Camps still muster in force.'
+  },
+
+  // ---------- Highland War-Camps: level 56-59 hunting + lair boss ----------
+  {
+    id: 'highland_war_camps',
+    name: 'Highland War-Camps',
+    type: 'hunting',
+    minLevel: 56,
+    monsters: ['majiku_hostcaller_shaman', 'highland_hollow_stormwraith', 'majiku_hostguard_vanguard'],
+    // The boss is a separate "Lair" entry, fightable only once the party is closer to its own
+    // level (invented gate, matches the majiku_warlord/estari_ruin_warden precedent).
+    lair: { monsterId: 'majiku_ridge_chieftain', minLevel: 60, name: "The Ridge-Chieftain's Camp" },
+    facilities: [],
+    desc: "The Majiku host's own ridgeline war-camps, dug into the highlands proper — shamans, vanguards, and worse held in reserve behind palisade and ward alike. The Majiku Ridge-Chieftain who commands the whole host still holds this ground, and means to keep it."
   }
 ];
 

@@ -89,3 +89,28 @@ every other icon in this directory (verified programmatically against the full `
 set, not just against each other). The lead's real-DCSS-tile pass at the end of the Level-Arc work
 (`docs/SPEC-ARC-BANDS.md` "Phasing" section) should replace these 35 placeholders the same way the
 P5 pass replaced the v1.2 ones above.
+
+## Level-Arc Band B icons — procedural placeholders (pending the lead's real-tile pass)
+
+The 35 new ids introduced by Level-Arc Band B (Majiku Highlands, levels 51-60 —
+`docs/SPEC-ARC-BANDS.md`) use hand-generated procedural placeholder tiles, not real Dungeon Crawl
+art: 7 new monsters (`majiku_steppe_lancer`, `highland_ridgehawk`, `anima_scarred_highlander`,
+`majiku_hostcaller_shaman`, `highland_hollow_stormwraith`, `majiku_hostguard_vanguard`,
+`majiku_ridge_chieftain`), 6 weapons/shield (`sword_majiku_hostbreaker`, `polearm_ridgewar_pike`,
+`knife_steppewind_edge`, `rod_hostcallers_ruin`, `hth_ridgeguard_knuckles`,
+`shield_highland_bulwark`), 9 armor pieces (`light_body_steppewind_mantle`,
+`light_head_steppewind_cowl`, `medium_body_hostguard_brigandine`, `medium_legs_hostguard_greaves`,
+`heavy_body_ridgeplate_cuirass`, `heavy_head_ridgeplate_helm`, `light_legs_steppewind_leggings`,
+`medium_feet_hostguard_boots`, `heavy_legs_ridgeplate_legguards`), 5 consumables
+(`crystal_dclass_1`, `crystal_dclass_2`, `sphere_dclass_1`, `sphere_dclass_2`,
+`stone_energy_majiku`), 1 quest material (`quest_majiku_host_standard`), 3 unique items
+(`light_body_highland_ashmantle`, `rod_stormwraiths_core`, `polearm_chieftains_warpike`), and 4
+techs (`tech_firebolt_5`, `tech_mend_wounds_5`, `tech_cleave_5`, `tech_impale_5`).
+
+Generated with the same hand-rolled per-id-hash placeholder approach as Band A above (deterministic
+fill/accent colors + one of 5 patterns + a corner mark); the PNG container itself is built with
+Node's `zlib.deflateSync`/manual chunk+CRC32 writer, guaranteeing a structurally valid stream. All
+35 were verified programmatically as valid 32x32 RGBA PNGs and byte-hash-distinct from every other
+icon in `assets/icons/` (269 files total, zero duplicate hashes) — not just against each other. The
+lead's real-DCSS-tile pass at the end of the Level-Arc work should replace these 35 placeholders
+the same way the P5 pass replaced the v1.2 ones and Band A's are slated to be replaced.

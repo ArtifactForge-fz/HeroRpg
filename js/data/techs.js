@@ -939,6 +939,75 @@ Game.Data.techs = [
     trainingCost: 6,
     skillReq: 20,
     desc: 'The Kuraan-era form of Impale, taught only once a polearm-wielder has proven the first three ranks. Requires Impale III and Polearms 20.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band B (docs/SPEC-ARC-BANDS.md, F2/F3): one further rank into the same two magic-
+  // school chains and two weapon-tech chains Band A extended, gated by skill level per the
+  // existing Academy chain model (js/core/world.js previousRankId/canLearn — rank>1 requires the
+  // previous rank known AND the governing skill >= skillReq). skillReq 30 is comfortably inside a
+  // level 51+ character's skill cap (BALANCE.SKILL_CAP(51) = 103) for anyone who has actually
+  // trained the skill. Numeric progressions (power/powerMult/energyCost/trainingCost) continue
+  // each chain's existing rank-to-rank deltas (e.g. Firebolt's power deltas 12/14/16 -> +18 here).
+  // =====================================================================
+  {
+    id: 'tech_firebolt_5',
+    name: 'Firebolt V',
+    chain: 'Firebolt',
+    rank: 5,
+    skill: 'Evocation',
+    grade: 'Fire',
+    energyCost: 36,
+    power: 74,
+    effect: 'damage',
+    trainingCost: 8,
+    skillReq: 30,
+    desc: 'The Majiku-Highlands-era form of Firebolt, taught only to Evocation adepts who have proven the first four ranks. Requires Firebolt IV and Evocation 30.'
+  },
+  {
+    id: 'tech_mend_wounds_5',
+    name: 'Mend Wounds V',
+    chain: 'Mend Wounds',
+    rank: 5,
+    skill: 'Abjuration',
+    grade: 'Light',
+    energyCost: 34,
+    power: 110,
+    effect: 'heal',
+    trainingCost: 8,
+    skillReq: 30,
+    desc: 'A Majiku-Highlands-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds IV and Abjuration 30. Unaffected by Fear (Fear.md).'
+  },
+  {
+    id: 'tech_cleave_5',
+    name: 'Cleave V',
+    chain: 'Cleave',
+    rank: 5,
+    skill: 'Swords',
+    grade: null,
+    weaponTech: true,
+    powerMult: 2.9, // invented (user-directed)
+    energyCost: 30,
+    effect: 'damage',
+    trainingCost: 8,
+    skillReq: 30,
+    desc: 'The Majiku-Highlands-era form of Cleave, taught only once a swordsman has proven the first four ranks. Requires Cleave IV and Swords 30.'
+  },
+  {
+    id: 'tech_impale_5',
+    name: 'Impale V',
+    chain: 'Impale',
+    rank: 5,
+    skill: 'Polearms',
+    grade: null,
+    weaponTech: true,
+    powerMult: 2.8, // invented (user-directed)
+    armorPierce: 0.35, // invented (user-directed)
+    energyCost: 30,
+    effect: 'damage',
+    trainingCost: 8,
+    skillReq: 30,
+    desc: 'The Majiku-Highlands-era form of Impale, taught only once a polearm-wielder has proven the first four ranks. Requires Impale IV and Polearms 30.'
   }
 ];
 
