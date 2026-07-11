@@ -35,20 +35,59 @@ Game.Quests = (function () {
   // Quests offered at areaId: giver is here and the quest has never been accepted (active or
   // completed). Level-window failures are NOT filtered out here — the Tavern UI greys those out
   // with the reason instead (phase brief), so this returns { quest, eligible, reason } records.
+  //
+  // v1.4 P1 (G5, docs/SPEC-V1.4-GAMEPLAY.md §2): two additions, both TAVERN OVERLOAD fixes —
+  //   1. requiresQuest chain gating: a quest whose prerequisite is not yet 'completed' is skipped
+  //      ENTIRELY (not even a greyed record) — chained content simply doesn't clutter the offer
+  //      list before its turn comes. Contrast with the level-window case just below, which still
+  //      returns a record so the Tavern can grey it out with a reason.
+  //   2. active-quest cap: once the hero already has BALANCE.MAX_ACTIVE_QUESTS active quests, any
+  //      quest that would otherwise be eligible (giver here, never accepted, level window OK) is
+  //      marked ineligible with a cap reason instead. Per the phase brief, level-window
+  //      ineligibility keeps PRIORITY over the cap reason when both would apply — a player under
+  //      the level requirement should be told that, not told the journal is full, since the level
+  //      reason is the more fundamental one (it won't resolve by finishing another quest).
   function availableAt(areaId) {
     var c = Game.state.character;
     if (!c) return [];
     if (!c.quests) c.quests = {};
     var list = Game.Data.quests || [];
     var out = [];
+    var atCap = activeQuestCount(c) >= BALANCE.MAX_ACTIVE_QUESTS;
     for (var i = 0; i < list.length; i++) {
       var q = list[i];
       if (q.giver.areaId !== areaId) continue;
       if (c.quests[q.id]) continue; // already active or completed
+      // Chain gating (NEW, v1.4 P1): hidden entirely until the prerequisite is completed.
+      if (q.requiresQuest) {
+        var prereq = c.quests[q.requiresQuest];
+        if (!prereq || prereq.status !== 'completed') continue;
+      }
       var lvl = levelCheck(c, q);
-      out.push({ quest: q, eligible: lvl.ok, reason: lvl.reason });
+      if (!lvl.ok) {
+        out.push({ quest: q, eligible: false, reason: lvl.reason });
+      } else if (atCap) {
+        out.push({
+          quest: q,
+          eligible: false,
+          reason: 'Your journal is full (' + activeQuestCount(c) + '/' + BALANCE.MAX_ACTIVE_QUESTS + ' active).'
+        });
+      } else {
+        out.push({ quest: q, eligible: true, reason: null });
+      }
     }
     return out;
+  }
+
+  // Count of currently-active quest entries (NEW, v1.4 P1 G5) — shared by accept()'s cap refusal,
+  // availableAt()'s cap reason, and the Journal's "Active (n/3)" header.
+  function activeQuestCount(c) {
+    if (!c.quests) return 0;
+    var n = 0;
+    for (var qid in c.quests) {
+      if (c.quests.hasOwnProperty(qid) && c.quests[qid].status === 'active') n++;
+    }
+    return n;
   }
 
   // Level-window check shared by accept() and turnIn() (archived: the Oruk quest enforces a
@@ -73,6 +112,17 @@ Game.Quests = (function () {
     if (!quest) return { ok: false, message: 'Unknown quest.' };
     if (!c.quests) c.quests = {};
     if (c.quests[questId]) return { ok: false, message: 'You have already accepted or completed this quest.' };
+
+    // NEW (v1.4 P1, G5 active-quest cap, docs/SPEC-V1.4-GAMEPLAY.md §2): checked right after the
+    // already-accepted check and BEFORE the location/level checks below — a full journal is the
+    // clearest possible refusal, so the player learns it immediately rather than traveling to the
+    // giver (or leveling up) only to be turned away for an unrelated reason. Backward compatible:
+    // a save that already carries more than MAX_ACTIVE_QUESTS actives (e.g. from before this
+    // patch) keeps them all — this only blocks NEW accepts, cancel() is the relief valve.
+    if (activeQuestCount(c) >= BALANCE.MAX_ACTIVE_QUESTS) {
+      return { ok: false, message: 'Your journal is full — finish or abandon a quest first.' };
+    }
+
     if (c.currentLocation !== quest.giver.areaId) {
       var giverArea = Game.World.getArea(quest.giver.areaId);
       return { ok: false, message: 'You must be with ' + quest.giver.npc + ' in ' + (giverArea ? giverArea.name : quest.giver.areaId) + ' to accept this quest.' };
@@ -112,6 +162,18 @@ Game.Quests = (function () {
         ok: false,
         message: 'This calling belongs to the ' + quest.requiresRace + ' alone — your people have their own path.'
       };
+    }
+
+    // NEW (v1.4 P1, G5 quest chains, docs/SPEC-V1.4-GAMEPLAY.md §2): requiresQuest is enforced
+    // here too, in DEFENSE IN DEPTH — availableAt() already hides a chained quest from the Tavern
+    // list entirely until its prerequisite is completed, but that's a UI-layer omission, not a
+    // guarantee (e.g. Game._debug.acceptQuest bypasses accept() on purpose for test/debug use).
+    // A lore-neutral refusal message (no NPC-specific flavor) since any quest can carry this field.
+    if (quest.requiresQuest) {
+      var prereqEntry = c.quests[quest.requiresQuest];
+      if (!prereqEntry || prereqEntry.status !== 'completed') {
+        return { ok: false, message: 'You are not ready for this task yet.' };
+      }
     }
 
     // Delivery-style quests hand over items on accept (quest.acceptItems). All of them must fit
@@ -479,10 +541,27 @@ Game.Quests = (function () {
     // Progress is retained on the completed entry (harmless, useful for debugging); only
     // status is consulted from here on.
 
+    // NEW (v1.4 P1, G5 quest chains, docs/SPEC-V1.4-GAMEPLAY.md §2): follow-ups. Any quest whose
+    // requiresQuest names the quest JUST completed, given by an NPC in the area the hero is
+    // standing in right now (turn-in already requires c.currentLocation === quest.giver.areaId,
+    // checked above), surfaces immediately so hand-in flows straight into the next chapter. NOT
+    // filtered by cap/level here — per the phase brief, a follow-up is never silently lost; if the
+    // hero is at the cap or under-leveled it still shows (greyed, with reason) via the very next
+    // availableAt() call, which is what the Tavern UI renders from.
+    var followUps = [];
+    var allQuests = Game.Data.quests || [];
+    for (var fu = 0; fu < allQuests.length; fu++) {
+      var candidate = allQuests[fu];
+      if (candidate.requiresQuest === questId && candidate.giver.areaId === c.currentLocation) {
+        followUps.push(candidate.id);
+      }
+    }
+
     if (Game.persist) Game.persist();
     return {
       ok: true,
-      message: 'Quest complete: ' + quest.name + '.' + (parts.length ? ' Rewards: ' + parts.join(', ') + '.' : '')
+      message: 'Quest complete: ' + quest.name + '.' + (parts.length ? ' Rewards: ' + parts.join(', ') + '.' : ''),
+      followUps: followUps
     };
   }
 
@@ -491,6 +570,7 @@ Game.Quests = (function () {
     entry: entry,
     availableAt: availableAt,
     levelCheck: levelCheck,
+    activeQuestCount: activeQuestCount,
     accept: accept,
     cancel: cancel,
     recordKill: recordKill,

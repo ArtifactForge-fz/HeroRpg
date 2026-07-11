@@ -127,6 +127,26 @@ function winBattle(monsterId) {
   Game.Battle.endBattle();
 }
 
+// G5 quest chains (docs/SPEC-V1.4-GAMEPLAY.md §2, this phase): marks questId AND every ancestor in
+// its requiresQuest chain as 'completed', directly on c.quests, WITHOUT running their accept/
+// turnIn flows. accept()'s requiresQuest gate and availableAt()'s chain-hiding both only consult
+// `status === 'completed'` — they don't care HOW a quest got there — so this is a legitimate
+// test-only shortcut for satisfying a band test's own prerequisite. Deliberately does NOT call the
+// real Game.Quests.turnIn() for the ancestors: that would ALSO grant their real gold/xp/item
+// rewards, which cascades into unrelated failures further down the chain (extra xp crossing a
+// level-up boundary mid-test and granting surprise Training Points; extra reward items pushing
+// inventory weight over capacity for a LATER quest's own reward) — none of which the calling test
+// is actually trying to exercise (each ancestor's own accept/progress/turn-in flow already has its
+// own dedicated test elsewhere in this suite).
+function satisfyChain(questId) {
+  var c = Game.state.character;
+  var quest = Game.Quests.getQuest(questId);
+  if (!quest) throw new Error('satisfyChain: unknown quest ' + questId);
+  if (quest.requiresQuest) satisfyChain(quest.requiresQuest);
+  if (!c.quests) c.quests = {};
+  c.quests[questId] = { status: 'completed', progress: { kills: {}, touched: {}, visited: {} } };
+}
+
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: quest/story data sanity ===');
 assert(Game.Data.quests.length === 43, '43 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end + Band B\'s break_the_majiku_host/storms_over_the_ridge/the_chieftains_reckoning + Band C\'s win_passage_from_the_ukai/what_slips_through_the_ice/the_deep_dwellers_reckoning + Band D\'s the_taboo_wellspring/what_the_wellspring_woke/the_warden_primes_reckoning + Band E\'s the_skyspire_ascent/what_the_society_grew/the_societys_last_stand + Band F\'s the_red_moon_crossing/what_rennick_deciphered/the_ascendants_fall -- THE ARC FINALE), got ' + Game.Data.quests.length);
@@ -213,6 +233,13 @@ Game.World.travelTo('kuraan_border_woods');
 winBattle('majiku_forest_scout'); // kill BEFORE accepting
 assert(!c3.quests['veteran_of_averast'], 'no quest entry before accept (pre-accept kill ignored)');
 Game.World.travelTo('jumak_village');
+// G5 quest chain (docs/SPEC-V1.4-GAMEPLAY.md §2, this phase): veteran_of_averast now requiresQuest
+// the_oruk (Dorwen's own chain, data pass below) — satisfy it first via the debug backdoor so this
+// test still isolates veteran_of_averast's OWN accept/kill-progress behavior (already covered by
+// Test 2 above).
+Game.Quests.accept('the_oruk');
+Game._debug.completeQuestStep('the_oruk');
+Game.Quests.turnIn('the_oruk');
 var res3a = Game.Quests.accept('veteran_of_averast');
 assert(res3a.ok === true, 'veteran quest accepted');
 assert((c3.quests['veteran_of_averast'].progress.kills['majiku_forest_scout'] || 0) === 0, 'progress starts at 0 despite earlier kill');
@@ -269,6 +296,12 @@ assert(Game.Character.goldTotalAsGold(c5) === goldBefore5 + 90, 'collect quest g
 // =================== Test 6: touch quest (Standing Stones) ===================
 console.log('\n=== Test 6: touch only in token area; cancel resets stones; re-accept starts clean ===');
 var c6 = makeCharacter({ name: 'StonesTest' });
+// G5 quest chain (docs/SPEC-V1.4-GAMEPLAY.md §2, this phase): standing_stones now requiresQuest
+// tutorial_first_blood (Rosalind's own chain, data pass below) — satisfy it first so accept()
+// below is exercising the REAL post-chain-unlock path, not a bypass.
+Game.Quests.accept('tutorial_first_blood');
+Game._debug.completeQuestStep('tutorial_first_blood');
+Game.Quests.turnIn('tutorial_first_blood');
 var res6a = Game.Quests.accept('standing_stones');
 assert(res6a.ok === true, 'Standing Stones accepted in Eldor');
 var res6b = Game.Quests.touch('standing_stones', 0); // plains stone, but we are in Eldor
@@ -343,6 +376,16 @@ assert(Game.Quests.canTurnIn('ruin_warden_boss') === true, 'boss quest complete 
 console.log('\n=== Test 9: delivery — crate granted on accept, reclaimed on cancel, visit satisfies ===');
 var c9 = makeCharacter({ name: 'DeliveryTest' });
 c9.level = 6;
+// G5 quest chain (docs/SPEC-V1.4-GAMEPLAY.md §2, this phase): delivery_to_jumak now requiresQuest
+// standing_stones, which itself requiresQuest tutorial_first_blood (Rosalind's chain) — satisfy
+// both first via the debug backdoor (completeQuestStep force-touches every Standing Stones token
+// regardless of location, so no travel is needed to clear this prerequisite).
+Game.Quests.accept('tutorial_first_blood');
+Game._debug.completeQuestStep('tutorial_first_blood');
+Game.Quests.turnIn('tutorial_first_blood');
+Game.Quests.accept('standing_stones');
+Game._debug.completeQuestStep('standing_stones');
+Game.Quests.turnIn('standing_stones');
 var res9a = Game.Quests.accept('delivery_to_jumak');
 assert(res9a.ok === true, 'delivery quest accepted');
 assert(Game.Quests.inventoryCount(c9, 'quest_sealed_supply_crate') === 1, 'crate handed over on accept');
@@ -453,13 +496,19 @@ try {
 
 // Journal Turn In button appears when ready at giver; Cancel via Journal resets stones.
 try {
-  Game.Quests.accept('standing_stones');
+  // G5 quest chain (docs/SPEC-V1.4-GAMEPLAY.md §2, this phase): standing_stones now requiresQuest
+  // tutorial_first_blood. c11 has tutorial_first_blood ACTIVE (not completed) at this point in the
+  // test on purpose (the Journal Active-tab assertions above rely on it staying active with 0/3
+  // kill progress) — so this specific accept uses the debug backdoor, which bypasses accept()'s
+  // gates entirely (documented in js/debug.js), same as the pre-existing Explore-touch test below.
+  Game._debug.acceptQuest('standing_stones');
   Game.World.travelTo('plains_of_averast');
   Game.Quests.touch('standing_stones', 0);
   Game.Screens.navigate('journal');
-  // journalTab persists across navigations (module state) — switch back to Active first.
+  // journalTab persists across navigations (module state) — switch back to Active first. The
+  // Active tab's own label now carries the "(n/3)" cap count (v1.4 P1, G5), so match by prefix.
   var tabsBack = document.getElementById('maincontent').queryAllByClass('infobox-tab');
-  tabsBack.filter(function (t) { return t.textContent === 'Active'; })[0].click();
+  tabsBack.filter(function (t) { return /^Active/.test(t.textContent); })[0].click();
   var stonesText = document.getElementById('maincontent').textContent;
   assert(/\[x\] Weathered Standing Stone/.test(stonesText), 'Journal shows touched stone checked');
   assert(/\[ \] Cracked Standing Stone/.test(stonesText), 'Journal shows untouched stone unchecked');
@@ -483,7 +532,10 @@ try {
   var townText = document.getElementById('maincontent').textContent;
   assert(/First Blood/.test(townText), 'Tavern lists the level-1 tutorial quest');
   assert(/Rosalind/.test(townText), 'Tavern shows the giver NPC');
-  assert(/The Standing Stones/.test(townText), 'Tavern lists Standing Stones');
+  // G5 quest chain (docs/SPEC-V1.4-GAMEPLAY.md §2, this phase): standing_stones now requiresQuest
+  // tutorial_first_blood — for a fresh character it's hidden ENTIRELY (not even greyed), the whole
+  // point of the chain mechanic (a giver no longer dumps its whole quest list at once).
+  assert(!/The Standing Stones/.test(townText), 'Standing Stones hidden before tutorial_first_blood is completed (G5 chain)');
   assert(/The Warden of the Ruins/.test(townText), 'Tavern lists the boss quest (greyed at level 1)');
   assert(/Requires Level 8/.test(townText), 'ineligible quest shows the level reason');
   // Accept via the Tavern UI
@@ -493,6 +545,26 @@ try {
   assert(c12.quests['tutorial_first_blood'] && c12.quests['tutorial_first_blood'].status === 'active', 'Accept click accepts the tutorial quest');
   var townText2 = document.getElementById('maincontent').textContent;
   assert(/Already accepted/.test(townText2), 'accepted quest now shown greyed with reason');
+
+  // G5 follow-up banner (docs/SPEC-V1.4-GAMEPLAY.md §2): completing tutorial_first_blood unlocks
+  // standing_stones (same giver, Rosalind) — force-satisfy, then turn in via an ACTUAL Journal
+  // "Turn In" button click (not a direct Game.Quests.turnIn() call) so the Tavern's one-shot
+  // pendingFollowUpNotice gets armed exactly the way a real playthrough would (it's set inside the
+  // UI click handler, js/ui/screens.js noteFollowUps), then re-open the Tavern.
+  Game._debug.completeQuestStep('tutorial_first_blood');
+  Game.Screens.navigate('journal');
+  var journalTabs12 = document.getElementById('maincontent').queryAllByClass('infobox-tab');
+  journalTabs12.filter(function (t) { return /^Active/.test(t.textContent); })[0].click();
+  var turnInBtns12 = document.getElementById('maincontent').queryAllByTag('button').filter(function (b) { return b.textContent === 'Turn In'; });
+  assert(turnInBtns12.length === 1, 'exactly one Turn In button (tutorial_first_blood)');
+  turnInBtns12[0].click();
+  assert(c12.quests['tutorial_first_blood'].status === 'completed', 'tutorial_first_blood completed via the Journal Turn In button');
+  // townOpenFacility (module state) is still 'tavern' from the earlier header click, so the panel
+  // re-renders already-open — clicking the header again here would TOGGLE IT CLOSED instead.
+  Game.Screens.navigate('town');
+  var townText3 = document.getElementById('maincontent').textContent;
+  assert(/Rosalind has more work for you/.test(townText3), 'Tavern shows the follow-up banner after turn-in');
+  assert(/The Standing Stones/.test(townText3), 'Standing Stones now listed (chain unlocked)');
 } catch (e) { failures++; console.error('FAIL: tavern panel threw: ' + e.stack); }
 
 // =================== Test 13: touch-token link on the Explore screen ===================
@@ -663,6 +735,7 @@ function grantVitalityForLevel(c, level) {
 var c19 = makeCharacter({ name: 'BandASideTest' });
 grantVitalityForLevel(c19, 46);
 Game.World.travelTo('kuraan_reclamation_camp');
+satisfyChain('reclaim_the_fringe'); // G5 chain: wraiths_of_the_deepwood requiresQuest reclaim_the_fringe
 var res19a = Game.Quests.accept('wraiths_of_the_deepwood');
 assert(res19a.ok === true, 'wraiths_of_the_deepwood accepted: ' + res19a.message);
 Game.World.travelTo('deep_kuraan');
@@ -678,6 +751,7 @@ assert(Game.Quests.inventoryCount(c19, 'sphere_cclass_2') >= 1, 'wraiths_of_the_
 var c20 = makeCharacter({ name: 'BandABossTest' });
 grantVitalityForLevel(c20, 50);
 Game.World.travelTo('kuraan_reclamation_camp');
+satisfyChain('reclaim_the_fringe'); // G5 chain: the_warlords_end requiresQuest reclaim_the_fringe
 var res20a = Game.Quests.accept('the_warlords_end');
 assert(res20a.ok === true, 'the_warlords_end accepted: ' + res20a.message);
 Game.World.travelTo('deep_kuraan');
@@ -697,6 +771,7 @@ console.log('\n=== Test 19: Band B quests — break_the_majiku_host / storms_ove
 var c21 = makeCharacter({ name: 'BandBMainTest' });
 grantVitalityForLevel(c21, 51);
 Game.World.travelTo('kuraan_reclamation_camp');
+satisfyChain('reclaim_the_fringe'); // G5 chain: break_the_majiku_host requiresQuest reclaim_the_fringe (spine-behind-spine, never behind Band A's own side/boss quests)
 var res21a = Game.Quests.accept('break_the_majiku_host');
 assert(res21a.ok === true, 'break_the_majiku_host accepted at Kuraan Reclamation Camp: ' + res21a.message);
 assert(Game.Quests.canTurnIn('break_the_majiku_host') === false, 'break_the_majiku_host not yet turn-in-able (steps unsatisfied)');
@@ -718,6 +793,7 @@ assert(c21.quests['break_the_majiku_host'].status === 'completed', 'break_the_ma
 var c22 = makeCharacter({ name: 'BandBSideTest' });
 grantVitalityForLevel(c22, 56);
 Game.World.travelTo('kuraan_reclamation_camp');
+satisfyChain('break_the_majiku_host'); // G5 chain: storms_over_the_ridge requiresQuest break_the_majiku_host (recursively satisfies reclaim_the_fringe too)
 var res22a = Game.Quests.accept('storms_over_the_ridge');
 assert(res22a.ok === true, 'storms_over_the_ridge accepted: ' + res22a.message);
 Game.World.travelTo('highland_war_camps');
@@ -733,6 +809,7 @@ assert(Game.Quests.inventoryCount(c22, 'sphere_dclass_2') >= 1, 'storms_over_the
 var c23 = makeCharacter({ name: 'BandBBossTest' });
 grantVitalityForLevel(c23, 60);
 Game.World.travelTo('kuraan_reclamation_camp');
+satisfyChain('break_the_majiku_host'); // G5 chain: the_chieftains_reckoning requiresQuest break_the_majiku_host
 var res23a = Game.Quests.accept('the_chieftains_reckoning');
 assert(res23a.ok === true, 'the_chieftains_reckoning accepted: ' + res23a.message);
 Game.World.travelTo('highland_war_camps');
@@ -752,6 +829,7 @@ console.log('\n=== Test 20: Band C quests — win_passage_from_the_ukai / what_s
 var c24 = makeCharacter({ name: 'BandCMainTest' });
 grantVitalityForLevel(c24, 65); // Frosthold Waystation gates travel at minLevel 65 (quest levelMin is 61)
 Game.World.travelTo('frosthold_waystation');
+satisfyChain('break_the_majiku_host'); // G5 chain: win_passage_from_the_ukai requiresQuest break_the_majiku_host (spine-behind-spine, crosses from Kuraan Reclamation Camp to Frosthold Waystation)
 var res24a = Game.Quests.accept('win_passage_from_the_ukai');
 assert(res24a.ok === true, 'win_passage_from_the_ukai accepted at Frosthold Waystation: ' + res24a.message);
 assert(Game.Quests.canTurnIn('win_passage_from_the_ukai') === false, 'win_passage_from_the_ukai not yet turn-in-able (steps unsatisfied)');
@@ -773,6 +851,7 @@ assert(c24.quests['win_passage_from_the_ukai'].status === 'completed', 'win_pass
 var c25 = makeCharacter({ name: 'BandCSideTest' });
 grantVitalityForLevel(c25, 66);
 Game.World.travelTo('frosthold_waystation');
+satisfyChain('win_passage_from_the_ukai'); // G5 chain: what_slips_through_the_ice requiresQuest win_passage_from_the_ukai
 var res25a = Game.Quests.accept('what_slips_through_the_ice');
 assert(res25a.ok === true, 'what_slips_through_the_ice accepted: ' + res25a.message);
 Game.World.travelTo('ukai_undercaverns');
@@ -788,6 +867,7 @@ assert(Game.Quests.inventoryCount(c25, 'sphere_eclass_2') >= 1, 'what_slips_thro
 var c26 = makeCharacter({ name: 'BandCBossTest' });
 grantVitalityForLevel(c26, 70);
 Game.World.travelTo('frosthold_waystation');
+satisfyChain('win_passage_from_the_ukai'); // G5 chain: the_deep_dwellers_reckoning requiresQuest win_passage_from_the_ukai
 var res26a = Game.Quests.accept('the_deep_dwellers_reckoning');
 assert(res26a.ok === true, 'the_deep_dwellers_reckoning accepted: ' + res26a.message);
 Game.World.travelTo('ukai_undercaverns');
@@ -807,6 +887,7 @@ console.log('\n=== Test 21: Band D quests — the_taboo_wellspring / what_the_we
 var c27 = makeCharacter({ name: 'BandDMainTest' });
 grantVitalityForLevel(c27, 71);
 Game.World.travelTo('frosthold_waystation');
+satisfyChain('win_passage_from_the_ukai'); // G5 chain: the_taboo_wellspring requiresQuest win_passage_from_the_ukai (spine-behind-spine, never behind Band C's own side/boss quests)
 var res27a = Game.Quests.accept('the_taboo_wellspring');
 assert(res27a.ok === true, 'the_taboo_wellspring accepted at Frosthold Waystation: ' + res27a.message);
 assert(Game.Quests.canTurnIn('the_taboo_wellspring') === false, 'the_taboo_wellspring not yet turn-in-able (steps unsatisfied)');
@@ -828,6 +909,7 @@ assert(c27.quests['the_taboo_wellspring'].status === 'completed', 'the_taboo_wel
 var c28 = makeCharacter({ name: 'BandDSideTest' });
 grantVitalityForLevel(c28, 76);
 Game.World.travelTo('frosthold_waystation');
+satisfyChain('the_taboo_wellspring'); // G5 chain: what_the_wellspring_woke requiresQuest the_taboo_wellspring
 var res28a = Game.Quests.accept('what_the_wellspring_woke');
 assert(res28a.ok === true, 'what_the_wellspring_woke accepted: ' + res28a.message);
 Game.World.travelTo('anima_wellspring');
@@ -843,6 +925,7 @@ assert(Game.Quests.inventoryCount(c28, 'sphere_fclass_2') >= 1, 'what_the_wellsp
 var c29 = makeCharacter({ name: 'BandDBossTest' });
 grantVitalityForLevel(c29, 80);
 Game.World.travelTo('frosthold_waystation');
+satisfyChain('the_taboo_wellspring'); // G5 chain: the_warden_primes_reckoning requiresQuest the_taboo_wellspring
 var res29a = Game.Quests.accept('the_warden_primes_reckoning');
 assert(res29a.ok === true, 'the_warden_primes_reckoning accepted: ' + res29a.message);
 Game.World.travelTo('anima_wellspring');
@@ -862,6 +945,7 @@ console.log('\n=== Test 22: Band E quests — the_skyspire_ascent / what_the_soc
 var c30 = makeCharacter({ name: 'BandEMainTest' });
 grantVitalityForLevel(c30, 81);
 Game.World.travelTo('frosthold_waystation');
+satisfyChain('the_taboo_wellspring'); // G5 chain: the_skyspire_ascent requiresQuest the_taboo_wellspring (spine-behind-spine, never behind Band D's own side/boss quests)
 var res30a = Game.Quests.accept('the_skyspire_ascent');
 assert(res30a.ok === true, 'the_skyspire_ascent accepted at Frosthold Waystation: ' + res30a.message);
 assert(Game.Quests.canTurnIn('the_skyspire_ascent') === false, 'the_skyspire_ascent not yet turn-in-able (steps unsatisfied)');
@@ -883,6 +967,7 @@ assert(c30.quests['the_skyspire_ascent'].status === 'completed', 'the_skyspire_a
 var c31 = makeCharacter({ name: 'BandESideTest' });
 grantVitalityForLevel(c31, 86);
 Game.World.travelTo('frosthold_waystation');
+satisfyChain('the_skyspire_ascent'); // G5 chain: what_the_society_grew requiresQuest the_skyspire_ascent
 var res31a = Game.Quests.accept('what_the_society_grew');
 assert(res31a.ok === true, 'what_the_society_grew accepted: ' + res31a.message);
 Game.World.travelTo('skyspire_upper_spans');
@@ -898,6 +983,7 @@ assert(Game.Quests.inventoryCount(c31, 'sphere_gclass_2') >= 1, 'what_the_societ
 var c32 = makeCharacter({ name: 'BandEBossTest' });
 grantVitalityForLevel(c32, 90);
 Game.World.travelTo('frosthold_waystation');
+satisfyChain('the_skyspire_ascent'); // G5 chain: the_societys_last_stand requiresQuest the_skyspire_ascent
 var res32a = Game.Quests.accept('the_societys_last_stand');
 assert(res32a.ok === true, 'the_societys_last_stand accepted: ' + res32a.message);
 Game.World.travelTo('skyspire_upper_spans');
@@ -917,6 +1003,7 @@ console.log('\n=== Test 23: Band F quests — the_red_moon_crossing / what_renni
 var c33 = makeCharacter({ name: 'BandFMainTest' });
 grantVitalityForLevel(c33, 91);
 Game.World.travelTo('frosthold_waystation');
+satisfyChain('the_skyspire_ascent'); // G5 chain: the_red_moon_crossing requiresQuest the_skyspire_ascent (spine-behind-spine, never behind Band E's own side/boss quests)
 var res33a = Game.Quests.accept('the_red_moon_crossing');
 assert(res33a.ok === true, 'the_red_moon_crossing accepted at Frosthold Waystation: ' + res33a.message);
 assert(Game.Quests.canTurnIn('the_red_moon_crossing') === false, 'the_red_moon_crossing not yet turn-in-able (steps unsatisfied)');
@@ -938,6 +1025,7 @@ assert(c33.quests['the_red_moon_crossing'].status === 'completed', 'the_red_moon
 var c34 = makeCharacter({ name: 'BandFSideTest' });
 grantVitalityForLevel(c34, 96);
 Game.World.travelTo('frosthold_waystation');
+satisfyChain('the_red_moon_crossing'); // G5 chain: what_rennick_deciphered requiresQuest the_red_moon_crossing
 var res34a = Game.Quests.accept('what_rennick_deciphered');
 assert(res34a.ok === true, 'what_rennick_deciphered accepted: ' + res34a.message);
 Game.World.travelTo('eidas_sanctum');
@@ -954,6 +1042,7 @@ assert(Game.Quests.inventoryCount(c34, 'sphere_hclass_2') >= 1, 'what_rennick_de
 var c35 = makeCharacter({ name: 'BandFFinaleTest' });
 grantVitalityForLevel(c35, 100);
 Game.World.travelTo('frosthold_waystation');
+satisfyChain('the_red_moon_crossing'); // G5 chain: the_ascendants_fall (THE FINALE) requiresQuest the_red_moon_crossing — spine-behind-spine only, never behind what_rennick_deciphered (side content)
 var res35a = Game.Quests.accept('the_ascendants_fall');
 assert(res35a.ok === true, 'the_ascendants_fall accepted: ' + res35a.message);
 Game.World.travelTo('eidas_sanctum');
@@ -975,6 +1064,165 @@ assert(Game.Character.goldTotalAsGold(c35) === gold35a + 4000, 'the_ascendants_f
 assert(c35.xp === xp35a, 'the_ascendants_fall\'s xp reward is a no-op at BALANCE.LEVEL_CAP (addXp\'s cap guard, js/core/character.js) -- xp stays at the capped value');
 assert(c35.trainingPoints === tp35a + 5, 'the_ascendants_fall grants +5 Training Points (uncapped, unlike combat/quest XP at LEVEL_CAP)');
 assert(Game.Quests.inventoryCount(c35, 'heavy_head_redmoon_helm') >= 1, 'the_ascendants_fall grants the Redmoon Helm');
+
+// =================== Test 24: G5 active-quest cap (docs/SPEC-V1.4-GAMEPLAY.md §2) ===================
+console.log('\n=== Test 24: active-quest cap — 4th accept refused, cancel frees a slot, accept succeeds ===');
+var c24cap = makeCharacter({ name: 'CapTest' });
+c24cap.level = 10; // clears every Eldor head quest's own levelMin (max is ruin_warden_boss/synthesis_supplies at 8/9)
+var cap24a = Game.Quests.accept('tutorial_first_blood');
+var cap24b = Game.Quests.accept('eldor_dr_ferrier');
+var cap24c = Game.Quests.accept('ruin_warden_boss');
+assert(cap24a.ok && cap24b.ok && cap24c.ok, 'three quests accepted, filling BALANCE.MAX_ACTIVE_QUESTS (3)');
+assert(Game.Quests.activeQuestCount(c24cap) === 3, 'activeQuestCount reports 3');
+var cap24d = Game.Quests.accept('synthesis_supplies');
+assert(cap24d.ok === false && cap24d.message === 'Your journal is full — finish or abandon a quest first.',
+  '4th accept refused with the journal-full message: ' + cap24d.message);
+assert(!c24cap.quests['synthesis_supplies'], 'no quest entry created for the capped refusal');
+var cancel24 = Game.Quests.cancel('eldor_dr_ferrier');
+assert(cancel24.ok === true, 'cancel frees a slot: ' + cancel24.message);
+assert(Game.Quests.activeQuestCount(c24cap) === 2, 'activeQuestCount back down to 2 after cancel');
+var cap24e = Game.Quests.accept('synthesis_supplies');
+assert(cap24e.ok === true, 'accept succeeds once back under the cap: ' + cap24e.message);
+
+// =================== Test 25: G5 availableAt() cap reason + level-window priority ===================
+console.log('\n=== Test 25: availableAt() — cap reason when otherwise eligible; level reason wins when both apply ===');
+var c25cap = makeCharacter({ name: 'CapAvailTest' });
+c25cap.level = 9; // clears tutorial_first_blood/eldor_dr_ferrier/first_calling AND ruin_warden_boss(8)/synthesis_supplies(9)
+Game.Quests.accept('tutorial_first_blood');
+Game.Quests.accept('eldor_dr_ferrier');
+Game.Quests.accept('first_calling');
+assert(Game.Quests.activeQuestCount(c25cap) === 3, 'three actives, at the cap');
+var avail25 = Game.Quests.availableAt('eldor');
+var ruinRec25 = avail25.filter(function (r) { return r.quest.id === 'ruin_warden_boss'; })[0];
+assert(!!ruinRec25 && ruinRec25.eligible === false && ruinRec25.reason === 'Your journal is full (3/3 active).',
+  'ruin_warden_boss (level satisfied, 8<=9) shows the cap reason built from BALANCE.MAX_ACTIVE_QUESTS: ' + (ruinRec25 && ruinRec25.reason));
+var synthRec25 = avail25.filter(function (r) { return r.quest.id === 'synthesis_supplies'; })[0];
+assert(!!synthRec25 && synthRec25.eligible === false && /journal is full/.test(synthRec25.reason),
+  'synthesis_supplies (level satisfied, 9<=9) also shows the cap reason');
+var trialsRec25 = avail25.filter(function (r) { return r.quest.id === 'trials_of_eldor'; })[0];
+assert(!!trialsRec25 && trialsRec25.eligible === false && /Requires Level 30/.test(trialsRec25.reason),
+  'trials_of_eldor (level 30 unmet AND at cap) shows the LEVEL reason, not the cap reason — level-window priority wins: ' + (trialsRec25 && trialsRec25.reason));
+
+// =================== Test 26: G5 requiresQuest chain — hide/reveal + accept() defense-in-depth ===================
+console.log('\n=== Test 26: requiresQuest — hidden before prereq completes, listed after, accept() refuses directly ===');
+var c26chain = makeCharacter({ name: 'ChainTest' });
+var avail26a = Game.Quests.availableAt('eldor');
+assert(!avail26a.some(function (r) { return r.quest.id === 'standing_stones'; }), 'standing_stones hidden entirely before tutorial_first_blood completes (not even greyed)');
+var acceptChain26a = Game.Quests.accept('standing_stones');
+assert(acceptChain26a.ok === false && acceptChain26a.message === 'You are not ready for this task yet.',
+  'accept() refuses standing_stones directly (defense in depth): ' + acceptChain26a.message);
+Game.Quests.accept('tutorial_first_blood');
+Game._debug.completeQuestStep('tutorial_first_blood');
+Game.Quests.turnIn('tutorial_first_blood');
+var avail26b = Game.Quests.availableAt('eldor');
+var standingRec26 = avail26b.filter(function (r) { return r.quest.id === 'standing_stones'; })[0];
+assert(!!standingRec26 && standingRec26.eligible === true, 'standing_stones now listed and eligible once tutorial_first_blood is completed');
+var acceptChain26b = Game.Quests.accept('standing_stones');
+assert(acceptChain26b.ok === true, 'accept() now succeeds: ' + acceptChain26b.message);
+
+// =================== Test 27: G5 turnIn() followUps — same-area present, different-area absent ===================
+console.log('\n=== Test 27: turnIn().followUps — same-giver-area follow-ups present, cross-area follow-up absent ===');
+var c27fu = makeCharacter({ name: 'FollowUpTest' });
+grantVitalityForLevel(c27fu, 51);
+Game.World.travelTo('kuraan_reclamation_camp');
+satisfyChain('reclaim_the_fringe');
+var acceptBmh27 = Game.Quests.accept('break_the_majiku_host');
+assert(acceptBmh27.ok === true, 'break_the_majiku_host accepted: ' + acceptBmh27.message);
+Game._debug.completeQuestStep('break_the_majiku_host');
+var turnInBmh27 = Game.Quests.turnIn('break_the_majiku_host');
+assert(turnInBmh27.ok === true, 'break_the_majiku_host turned in: ' + turnInBmh27.message);
+assert(Array.isArray(turnInBmh27.followUps), 'turnIn() result carries a followUps array');
+assert(turnInBmh27.followUps.indexOf('storms_over_the_ridge') !== -1, 'same-area follow-up storms_over_the_ridge present (Yulei, kuraan_reclamation_camp)');
+assert(turnInBmh27.followUps.indexOf('the_chieftains_reckoning') !== -1, 'same-area follow-up the_chieftains_reckoning present (Serath, kuraan_reclamation_camp)');
+assert(turnInBmh27.followUps.indexOf('win_passage_from_the_ukai') === -1, 'cross-area follow-up win_passage_from_the_ukai (frosthold_waystation) absent — it will surface via availableAt() once the hero travels there');
+// A quest with no follow-ups at all reports an empty array, not undefined.
+var c27empty = makeCharacter({ name: 'NoFollowUpTest' });
+Game.Quests.accept('eldor_dr_ferrier');
+for (var g27 = 0; g27 < 4; g27++) Game.Inventory.addItem(c27empty, 'quest_majiku_venom_gland');
+var turnInEmpty27 = Game.Quests.turnIn('eldor_dr_ferrier');
+assert(turnInEmpty27.ok === true && Array.isArray(turnInEmpty27.followUps) && turnInEmpty27.followUps.length === 0, 'a quest with no chained dependents reports followUps: []');
+
+// =================== Test 28: G5 quest-chain graph — reachability, cycles, gate-compatibility ===================
+console.log('\n=== Test 28: requiresQuest graph — no cycles, all targets resolve, every quest reachable from a head, gates compatible ===');
+(function () {
+  var quests = Game.Data.quests;
+  var byId = {};
+  quests.forEach(function (q) { byId[q.id] = q; });
+
+  // 1. Every requiresQuest target must name a real quest id (catches typos).
+  var dangling = [];
+  quests.forEach(function (q) {
+    if (q.requiresQuest && !byId[q.requiresQuest]) dangling.push(q.id + ' -> ' + q.requiresQuest);
+  });
+  assert(dangling.length === 0, 'no dangling requiresQuest targets' + (dangling.length ? ': ' + dangling.join(', ') : ''));
+
+  // 2. No cycles: walk each quest's ancestry chain; revisiting a node means a cycle.
+  var cyclic = [];
+  quests.forEach(function (q) {
+    var seen = {};
+    var cur = q;
+    var guard = 0;
+    while (cur && cur.requiresQuest && guard < 200) {
+      if (seen[cur.id]) { cyclic.push(q.id); break; }
+      seen[cur.id] = true;
+      cur = byId[cur.requiresQuest];
+      guard++;
+    }
+  });
+  assert(cyclic.length === 0, 'no requiresQuest cycles' + (cyclic.length ? ': ' + cyclic.join(', ') : ''));
+
+  // 3. Every quest reaches a chain HEAD (a quest with no requiresQuest at all) by walking backward
+  // — this is what "no quest becomes unreachable" (phase brief) actually guarantees mechanically:
+  // a fresh playthrough can always start from a head and work forward to any quest in the graph.
+  var unreachable = [];
+  quests.forEach(function (q) {
+    var cur = q;
+    var guard = 0;
+    while (cur && cur.requiresQuest && guard < 200) {
+      cur = byId[cur.requiresQuest];
+      guard++;
+    }
+    if (!cur) unreachable.push(q.id); // only possible via a dangling target, already caught above
+  });
+  assert(unreachable.length === 0, 'every quest reaches a chain head' + (unreachable.length ? ': ' + unreachable.join(', ') : ''));
+
+  // 4. Gate compatibility (§7 guardrail, generalized from requiresRace to all three gate fields):
+  // a quest's requiresQuest prerequisite must never carry a STRICTER
+  // requiresRace/requiresBaseClass/requiresAdvancedClass gate than the quest itself — an
+  // Arkan-only (or base/advanced-class-only) prerequisite must never be the sole gateway to
+  // content without that same gate. Equal gates (both sides the same value) are fine.
+  var gateFields = ['requiresRace', 'requiresBaseClass', 'requiresAdvancedClass'];
+  var gateViolations = [];
+  quests.forEach(function (q) {
+    if (!q.requiresQuest) return;
+    var prereq = byId[q.requiresQuest];
+    if (!prereq) return;
+    gateFields.forEach(function (field) {
+      if (prereq[field] && prereq[field] !== q[field]) {
+        gateViolations.push(q.id + ' (' + field + '=' + q[field] + ') chained behind ' + prereq.id + ' (' + field + '=' + prereq[field] + ')');
+      }
+    });
+  });
+  assert(gateViolations.length === 0, 'no gate-compatibility violations in the chain graph' + (gateViolations.length ? ': ' + gateViolations.join('; ') : ''));
+
+  // 5. Level-window sanity: a chain member's levelMin should be >= its prerequisite's levelMin —
+  // never force out-of-window backtracking (phase brief).
+  var levelViolations = [];
+  quests.forEach(function (q) {
+    if (!q.requiresQuest) return;
+    var prereq = byId[q.requiresQuest];
+    if (!prereq) return;
+    var ownMin = typeof q.levelMin === 'number' ? q.levelMin : 0;
+    var prereqMin = typeof prereq.levelMin === 'number' ? prereq.levelMin : 0;
+    if (ownMin < prereqMin) levelViolations.push(q.id + ' (levelMin ' + ownMin + ') behind ' + prereq.id + ' (levelMin ' + prereqMin + ')');
+  });
+  assert(levelViolations.length === 0, 'no chain member has a lower levelMin than its prerequisite' + (levelViolations.length ? ': ' + levelViolations.join('; ') : ''));
+
+  // 6. The single highest-stakes link in the whole graph (§7 guardrail): THE FINALE must chain
+  // behind the Band F main-spine quest, never behind the side quest (What Rennick Deciphered).
+  assert(byId['the_ascendants_fall'].requiresQuest === 'the_red_moon_crossing',
+    'THE FINALE (the_ascendants_fall) chains behind the Band F spine quest the_red_moon_crossing, never behind side content');
+})();
 
 // =================== Summary ===================
 console.log('\n===================================');

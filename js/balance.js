@@ -388,4 +388,7 @@ var BALANCE = {
   //    hand-rolled boss-test fixtures to a fuller gear loadout so a larger divisor becomes safe)
   //    rather than solved here by further nerfing consumables, Mend Wounds, or monster stats (all
   //    out of this fix's scope).
+
+  // ==================== v1.4 P1: G5 quest pacing (docs/SPEC-V1.4-GAMEPLAY.md §2) ====================
+  MAX_ACTIVE_QUESTS: 3 // [revised] user-directed pacing override (docs/SPEC-V1.4-GAMEPLAY.md §2, 2026-07-11); the original documents no cap
 };

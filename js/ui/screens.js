@@ -1517,23 +1517,65 @@ Game.Screens = (function () {
     }
   }
 
+  // NEW (v1.4 P1, G5 quest chains, docs/SPEC-V1.4-GAMEPLAY.md §2): set right after a successful
+  // turnIn() that returned a non-empty followUps array (see the Journal turn-in handlers below),
+  // consumed exactly once by the next renderTavernPanel() call for the matching area — surfaces
+  // "<npc> has more work for you…" above each newly-unlocked follow-up row, then clears itself so
+  // it doesn't reappear on later, unrelated visits to the same tavern.
+  var pendingFollowUpNotice = null; // { areaId, ids: [questId, ...] } | null
+
   // ---- Tavern sub-panel (Phase 5; archived quest source — New_Player_Guide.md §5.1.5,
   // Recent_Updates.md 2007-05-15 "Added a new quest to the tavern in Eldor"). Lists every quest
-  // whose giver is this town: available+eligible get an Accept button; ineligible (level window)
-  // and already-accepted/completed quests are shown greyed with the reason. ----
+  // whose giver is this town: available+eligible get an Accept button; ineligible (level window
+  // or, NEW v1.4 P1, the active-quest cap) and already-accepted/completed quests are shown greyed
+  // with the reason. A quest whose requiresQuest prerequisite isn't complete is OMITTED entirely
+  // (Game.Quests.availableAt() already drops it — chain-hidden content never clutters this list,
+  // the whole point of G5's chain mechanic) rather than greyed. ----
   function renderTavernPanel(body, c, area) {
-    var quests = (Game.Data.quests || []).filter(function (q) { return q.giver.areaId === area.id; });
-    if (!quests.length) {
+    var allQuests = (Game.Data.quests || []).filter(function (q) { return q.giver.areaId === area.id; });
+    if (!allQuests.length) {
       body.appendChild(el('div', { class: 'smallfont mt4' }, ['No one here has work for you.']));
       return;
     }
-    quests.forEach(function (quest, idx) {
+
+    // Not-yet-accepted/completed quests route through availableAt() so the cap reason and
+    // requiresQuest chain-hiding are computed in exactly ONE place (js/core/quests.js) instead of
+    // being re-derived here; already-accepted/completed quests keep the pre-existing greyed
+    // display (availableAt() itself omits those, since they're no longer "offered").
+    var records = {};
+    Game.Quests.availableAt(area.id).forEach(function (rec) { records[rec.quest.id] = rec; });
+
+    var displayList = [];
+    allQuests.forEach(function (quest) {
       var qEntry = Game.Quests.entry(c, quest.id);
-      var lvl = Game.Quests.levelCheck(c, quest);
-      var unavailableReason = null;
-      if (qEntry && qEntry.status === 'completed') unavailableReason = 'Completed.';
-      else if (qEntry && qEntry.status === 'active') unavailableReason = 'Already accepted — see your Journal.';
-      else if (!lvl.ok) unavailableReason = lvl.reason;
+      if (qEntry) {
+        displayList.push({
+          quest: quest,
+          eligible: false,
+          reason: qEntry.status === 'completed' ? 'Completed.' : 'Already accepted — see your Journal.'
+        });
+      } else if (records[quest.id]) {
+        displayList.push(records[quest.id]);
+      }
+      // else: hidden by the requiresQuest chain gate — not shown at all, per G5.
+    });
+
+    if (!displayList.length) {
+      body.appendChild(el('div', { class: 'smallfont mt4' }, ['No one here has work for you right now.']));
+      return;
+    }
+
+    var showFollowUpBanner = pendingFollowUpNotice && pendingFollowUpNotice.areaId === area.id;
+
+    displayList.forEach(function (rec, idx) {
+      var quest = rec.quest;
+      var unavailableReason = rec.eligible ? null : rec.reason;
+
+      if (showFollowUpBanner && pendingFollowUpNotice.ids.indexOf(quest.id) !== -1) {
+        body.appendChild(el('div', { class: 'smallfont mt8', style: 'font-style:italic;' }, [
+          quest.giver.npc + ' has more work for you…'
+        ]));
+      }
 
       var row = el('div', { class: 'mt8' + (unavailableReason ? ' greyed' : '') });
       row.appendChild(el('div', {}, [
@@ -1556,8 +1598,22 @@ Game.Screens = (function () {
         ]));
       }
       body.appendChild(row);
-      if (idx < quests.length - 1) body.appendChild(el('div', { class: 'tcat2 mt8' }, ['']));
+      if (idx < displayList.length - 1) body.appendChild(el('div', { class: 'tcat2 mt8' }, ['']));
     });
+
+    // One-shot: the banner only announces the follow-up(s) from the turn-in that just happened.
+    if (showFollowUpBanner) pendingFollowUpNotice = null;
+  }
+
+  // NEW (v1.4 P1, G5 quest chains): called from the Journal's turn-in handlers right after a
+  // successful Game.Quests.turnIn() — arms the one-shot Tavern banner (see pendingFollowUpNotice
+  // above) if the turn-in produced any follow-ups. Turn-in already requires standing at the
+  // giver's area, so every followUps entry shares c.currentLocation; that's the area whose next
+  // Tavern render should carry the banner.
+  function noteFollowUps(res) {
+    if (res && res.followUps && res.followUps.length) {
+      pendingFollowUpNotice = { areaId: Game.state.character.currentLocation, ids: res.followUps };
+    }
   }
 
   // ---------- Journal screen (Phase 5; DESIGN.md §7 — archived: Journal with active/completed
@@ -1584,8 +1640,12 @@ Game.Screens = (function () {
     var panel = el('div', { class: 'panel' });
 
     // ---- Tabs ----
+    // NEW (v1.4 P1, G5 active-quest cap, docs/SPEC-V1.4-GAMEPLAY.md §2): the Active tab's own
+    // label carries the "n/MAX" count so the cap is visible at a glance, built from
+    // BALANCE.MAX_ACTIVE_QUESTS (never hardcode the 3).
+    var activeLabel = 'Active (' + Game.Quests.activeQuestCount(c) + '/' + BALANCE.MAX_ACTIVE_QUESTS + ')';
     var tabs = el('div', { class: 'techset-tabs' });
-    [['active', 'Active'], ['completed', 'Completed'], ['story', 'Story']].forEach(function (pair) {
+    [['active', activeLabel], ['completed', 'Completed'], ['story', 'Story']].forEach(function (pair) {
       tabs.appendChild(el('span', {
         class: 'infobox-tab' + (journalTab === pair[0] ? ' active' : ''),
         onclick: function () { journalTab = pair[0]; refreshJournalScreen(); }
@@ -1668,6 +1728,7 @@ Game.Screens = (function () {
               if (res.ok) {
                 var q = Game.Quests.getQuest(quest.id);
                 if (q && q.completionText) alert(q.completionText);
+                noteFollowUps(res);
               }
               refreshJournalScreen();
             }
@@ -1682,6 +1743,7 @@ Game.Screens = (function () {
             if (res.ok) {
               var q = Game.Quests.getQuest(quest.id);
               if (q && q.completionText) alert(q.completionText);
+              noteFollowUps(res);
             }
             refreshJournalScreen();
           }

@@ -21,6 +21,17 @@
 //   is refused with a clear message (mirrors requiresBaseClass/requiresAdvancedClass's style of
 //   gate). Used by the Arkan questline (arkan_first_rite / arkan_battlemage_trial /
 //   arkan_red_moon_whispers) so it stays unavailable to Human heroes.
+//   requiresQuest (NEW, v1.4 P1, G5 quest chains, docs/SPEC-V1.4-GAMEPLAY.md §2): names another
+//   quest id that must be `status === 'completed'` in c.quests before this one is offered or
+//   accepted. Unlike the level-window check (which still LISTS an ineligible quest, greyed, with
+//   a reason), Game.Quests.availableAt() drops a requiresQuest-gated quest ENTIRELY until its
+//   prerequisite completes — the fix for a tavern/giver dumping its whole quest list on the player
+//   at once. js/core/quests.js accept() enforces it again as defense in depth. Every quest below
+//   that carries this field has an inline comment explaining WHY that specific chain link was
+//   chosen (rule of thumb: story-spine quests chain only behind other spine quests, in natural
+//   level order; side quests chain behind their own region/band's spine entry; a gated quest
+//   (requiresRace/requiresBaseClass/requiresAdvancedClass) may only sit behind a prerequisite with
+//   an equal-or-looser gate, never a stricter one).
 //   rewards.classChoice: either a fixed array of class ids (first_calling: the base trio;
 //   vaultbreakers_reckoning: a single-entry array) or a sentinel string — 'advanced'
 //   (trials_of_eldor, resolved via Game.Classes.advancedOptionsFor(c)) or 'tier3' (masters_calling,
@@ -73,6 +84,13 @@ Game.Data.quests = [
     name: 'The Standing Stones',
     giver: { areaId: 'eldor', npc: 'Tavern Keeper Rosalind' },
     levelMin: 1,
+    // G5 chain (v1.4 P1, docs/SPEC-V1.4-GAMEPLAY.md §2): Rosalind gives 5 quests herself
+    // (tutorial_first_blood, standing_stones, delivery_to_jumak, scouting_kuraan, first_calling) —
+    // without chaining, a fresh hero sees all 5 at once. tutorial_first_blood is the natural first
+    // stop (New_Player_Guide.md-style earliest quest), so the rest chain in a line behind it;
+    // first_calling stays an independent head since it's the story-spine quest (never gated
+    // behind side content, per the phase brief).
+    requiresQuest: 'tutorial_first_blood',
     intro: 'An old surveyor nurses his ale beside the hearth. "Three stones stand scattered across ' +
       'Averast — plains, ruin, and border wood — older than Eldor itself, carved by hands that ' +
       'weren\'t human or Arkan. Touch all three and tell me what you feel. Mind you: give up partway, ' +
@@ -166,6 +184,9 @@ Game.Data.quests = [
     name: 'Eyes on the Border',
     giver: { areaId: 'eldor', npc: 'Tavern Keeper Rosalind' },
     levelMin: 5,
+    // G5 chain (v1.4 P1): last in Rosalind's line, after delivery_to_jumak — see standing_stones's
+    // own comment for why the whole line exists.
+    requiresQuest: 'delivery_to_jumak',
     intro: 'Rosalind lowers her voice. "Merchants coming down from Ju`Mak say the Kuraan border woods ' +
       'have gone quiet — too quiet. The Crown wants eyes out there, not swords. Just travel out, see ' +
       'what\'s moving among the trees, and report back."',
@@ -185,6 +206,9 @@ Game.Data.quests = [
     name: 'A Sealed Crate',
     giver: { areaId: 'eldor', npc: 'Tavern Keeper Rosalind' },
     levelMin: 3,
+    // G5 chain (v1.4 P1): next in Rosalind's line after standing_stones — see that quest's own
+    // comment for why the whole line exists.
+    requiresQuest: 'standing_stones',
     intro: 'Rosalind hefts a heavy crate onto the bar, sealed with the merchant guild\'s wax stamp. ' +
       '"This needs to reach the shopkeep in Ju`Mak Village, and the roads aren\'t what they used to ' +
       'be. Carry it there yourself and I\'ll make sure you\'re compensated for the trouble."',
@@ -228,6 +252,9 @@ Game.Data.quests = [
     name: 'Trouble on the Delta, Part I',
     giver: { areaId: 'jumak_village', npc: 'Militia Captain Dorwen' },
     levelMin: 9,
+    // G5 chain (v1.4 P1): next in Dorwen's line after veteran_of_averast — see the_oruk's own
+    // comment for why the whole line exists.
+    requiresQuest: 'veteran_of_averast',
     intro: 'Dorwen unrolls a damp map of the river delta. "Trade barges keep getting dragged under at ' +
       'the Gares Riverbanks — River Stalkers, mostly, but the river\'s stirred up something worse ' +
       'lately too. Start by clearing out the Stalkers so my barge crews can breathe."',
@@ -248,6 +275,10 @@ Game.Data.quests = [
     name: 'Trouble on the Delta, Part II',
     giver: { areaId: 'jumak_village', npc: 'Militia Captain Dorwen' },
     levelMin: 11,
+    // G5 chain (v1.4 P1): last in Dorwen's line, after gares_riverbanks_1 — already implied by
+    // this quest's own intro text ("come back when you're ready to hear the rest"); see the_oruk's
+    // comment for why the whole line exists.
+    requiresQuest: 'gares_riverbanks_1',
     intro: 'Dorwen\'s voice drops. "Current Wraiths. Drowned souls, the old-timers call them — Majiku ' +
       'raiders who drank deep of raw Anima runoff and never came back right. Put down three of them ' +
       'and maybe the river will let my barges through in peace."',
@@ -287,6 +318,11 @@ Game.Data.quests = [
     name: 'Veteran of Averast',
     giver: { areaId: 'jumak_village', npc: 'Militia Captain Dorwen' },
     levelMin: 6,
+    // G5 chain (v1.4 P1, docs/SPEC-V1.4-GAMEPLAY.md §2): Dorwen gives 4 quests himself (the_oruk,
+    // veteran_of_averast, gares_riverbanks_1, gares_riverbanks_2) — without chaining, a fresh
+    // Ju`Mak visitor sees all 4 at once. the_oruk is the archived, earliest-level entry (the band
+    // 5-10), so the rest chain in a line behind it, in level order.
+    requiresQuest: 'the_oruk',
     intro: 'Dorwen looks you over, appraising. "You\'ve got the look of someone who\'s survived a few ' +
       'fights. Prove it — put down six Majiku Scouts prowling the border woods, and the militia ' +
       'trainers will see you\'re worth teaching properly. We\'ll even throw in a decent tent; you look ' +
@@ -468,6 +504,12 @@ Game.Data.quests = [
     name: 'The Matriarch of the High Camp',
     giver: { areaId: 'saratus', npc: 'Tavern Keeper Anje' },
     levelMin: 18,
+    // G5 chain (v1.4 P1, docs/SPEC-V1.4-GAMEPLAY.md §2): Anje gives 4 quests herself
+    // (saratus_foothills_intro, foothills_matriarch_boss, juneros_settlements_1,
+    // juneros_leviathan_boss) — without chaining, a fresh Saratus visitor sees all 4 at once. They
+    // already form a natural narrative line (foothills -> matriarch -> Juneros settlements ->
+    // Leviathan), so they chain in that order, one unlock at a time.
+    requiresQuest: 'saratus_foothills_intro',
     intro: 'Anje leans in, voice low. "There\'s an old pack-mother up in the high camp who\'s held the ' +
       'western passes against every hunting party for a generation. Nothing gets past her — not us, ' +
       'not whatever\'s coming down from the barrier. Bring her down, and maybe we finally learn ' +
@@ -488,6 +530,9 @@ Game.Data.quests = [
     name: 'Small Settlements, Small Mercies',
     giver: { areaId: 'saratus', npc: 'Tavern Keeper Anje' },
     levelMin: 19,
+    // G5 chain (v1.4 P1): next in Anje's line after foothills_matriarch_boss — see that quest's
+    // own comment for why the whole line exists; its own completionText is what introduces Juneros.
+    requiresQuest: 'foothills_matriarch_boss',
     intro: 'Anje unrolls a salt-stained chart of the inland sea. "The isle of Juneros has held on with ' +
       'a scatter of small human settlements since before anyone can remember (Averast.md, or so the ' +
       'scholars tell me). Something\'s been dragging their dead into the tide instead of letting them ' +
@@ -507,6 +552,9 @@ Game.Data.quests = [
     name: 'The Deep Shoal',
     giver: { areaId: 'saratus', npc: 'Tavern Keeper Anje' },
     levelMin: 25,
+    // G5 chain (v1.4 P1): last in Anje's line, after juneros_settlements_1 — see
+    // foothills_matriarch_boss's comment for why the whole line exists.
+    requiresQuest: 'juneros_settlements_1',
     intro: 'Anje\'s chart is marked now with a single heavy circle, far past the settlements\' oldest ' +
       'fishing grounds. "That\'s the Leviathan. Water-graded, they say, and old enough to have been ' +
       'guarding that shoal since before Saratus was a city. The settlements can\'t fish those grounds ' +
@@ -621,6 +669,10 @@ Game.Data.quests = [
     giver: { areaId: 'saratus', npc: 'Battlemage Instructor Renjiro' },
     levelMin: 6,
     requiresRace: 'Arkan', // NEW (v1.2 Phase 3 Content-A): enforced at accept()
+    // G5 chain (v1.4 P1, docs/SPEC-V1.4-GAMEPLAY.md §2): second in the Arkan line, after
+    // arkan_first_rite — both carry the SAME requiresRace: 'Arkan' gate, so the gate-compatibility
+    // rule (a prerequisite may not be stricter than its dependent) is trivially satisfied.
+    requiresQuest: 'arkan_first_rite',
     intro: 'Battlemage Instructor Renjiro traces a rune in the air, and for a moment it holds its ' +
       'own pale light. "White and black magic, drawn from the study of runes — that is how we ' +
       'reinforce the front, hero (Arkan.md holds as much). But a battlemage is untested until ' +
@@ -640,6 +692,9 @@ Game.Data.quests = [
     giver: { areaId: 'saratus', npc: 'Rune-Archivist Kaida' },
     levelMin: 8,
     requiresRace: 'Arkan', // NEW (v1.2 Phase 3 Content-A): enforced at accept()
+    // G5 chain (v1.4 P1): third and last in the Arkan line, after arkan_battlemage_trial — same
+    // requiresRace: 'Arkan' gate as its prerequisite, so gate-compatibility holds.
+    requiresQuest: 'arkan_battlemage_trial',
     intro: 'Rune-Archivist Kaida keeps her voice low, as if the archive itself were listening. ' +
       '"Our own runic study owes more to the Society of Modern Magic than most Arkan care to admit ' +
       '— and the stray Anima wisps drifting down from the Skyspire into Kuraan\'s border woods ' +
@@ -682,6 +737,10 @@ Game.Data.quests = [
     name: 'What the Anima Left Behind',
     giver: { areaId: 'kuraan_reclamation_camp', npc: 'Anima-Warden Yulei' },
     levelMin: 46,
+    // G5 chain (v1.4 P1, docs/SPEC-V1.4-GAMEPLAY.md §2): side quest chains behind Band A's own
+    // main-spine entry (reclaim_the_fringe) — a side quest never gates the spine, only the other
+    // way around, per the phase brief.
+    requiresQuest: 'reclaim_the_fringe',
     intro: 'Anima-Warden Yulei keeps a careful distance from the camp\'s own supply of raw Anima. "Deep Kuraan is shedding hollow wraiths again — Majiku ritual-work gone wrong, more likely than not, the Anima taking more than it gave back. They\'re dangerous to leave wandering near the fringe line. Put down four of them before one drifts far enough south to find the camp itself."',
     steps: [
       { kind: 'kill', monsterId: 'kuraan_hollow_wraith', count: 4 }
@@ -696,6 +755,10 @@ Game.Data.quests = [
     name: "The Warlord's End",
     giver: { areaId: 'kuraan_reclamation_camp', npc: 'Camp Marshal Serath' },
     levelMin: 50,
+    // G5 chain (v1.4 P1): Band A boss-kill side quest chains behind Band A's own main-spine entry
+    // (reclaim_the_fringe), same rule as wraiths_of_the_deepwood above — NOT behind
+    // break_the_majiku_host (Band B's spine), so finishing Band A never depends on starting Band B.
+    requiresQuest: 'reclaim_the_fringe',
     intro: 'Serath finally looks up from the map. "You\'ve seen his deep camp with your own eyes by now, hero. The Majiku Warlord has held Kuraan for a generation — every knight, every witch, every ironclad vanguard we\'ve broken answers to him first. End him, and the fringe doesn\'t just get quieter. It gets ours again."',
     steps: [
       { kind: 'kill', monsterId: 'majiku_warlord', count: 1 }
@@ -717,6 +780,12 @@ Game.Data.quests = [
     name: 'Break the Majiku Host',
     giver: { areaId: 'kuraan_reclamation_camp', npc: 'Camp Marshal Serath' },
     levelMin: 51,
+    // G5 chain (v1.4 P1, docs/SPEC-V1.4-GAMEPLAY.md §2 + §7 guardrail): Band B's main-spine quest
+    // chains behind Band A's own main-spine quest (reclaim_the_fringe), NEVER behind Band A's
+    // side/boss quests (wraiths_of_the_deepwood / the_warlords_end) — story-spine quests only ever
+    // gate behind OTHER spine quests, per the phase brief's guardrail. Both givers reuse the same
+    // camp (js/data/areas.js), so this doesn't cross areas.
+    requiresQuest: 'reclaim_the_fringe',
     intro: 'Serath has a new map pinned up beside the old one, the border steppe inked in north of the fringe line. "The Kuraan reclamation was only ever the opening move, hero. The Majiku host itself is dug into the highlands proper now — lancers riding the steppe, war-camps mustering on the ridgelines behind them. Break their steppe lancers, recover their host standards so I know how many regiments are still flying them, and get eyes on the Highland War-Camps. Whoever commands that host from up there is the reason this war hasn\'t ended."',
     steps: [
       { kind: 'kill', monsterId: 'majiku_steppe_lancer', count: 5 },
@@ -733,6 +802,9 @@ Game.Data.quests = [
     name: 'Storms Over the Ridge',
     giver: { areaId: 'kuraan_reclamation_camp', npc: 'Anima-Warden Yulei' },
     levelMin: 56,
+    // G5 chain (v1.4 P1): side quest chains behind Band B's own main-spine entry
+    // (break_the_majiku_host) — same pattern as Band A's wraiths_of_the_deepwood.
+    requiresQuest: 'break_the_majiku_host',
     intro: 'Yulei has traded her careful distance from raw Anima for something closer to alarm. "It\'s happening again, hero — worse, this time. The Highland War-Camps are shedding hollow stormwraiths, the same ritual-work-gone-wrong I saw in Deep Kuraan, but crackling with ridgeline static this time. Put down four of them before one drifts far enough south to find the Reclamation Camp itself."',
     steps: [
       { kind: 'kill', monsterId: 'highland_hollow_stormwraith', count: 4 }
@@ -747,6 +819,10 @@ Game.Data.quests = [
     name: "The Chieftain's Reckoning",
     giver: { areaId: 'kuraan_reclamation_camp', npc: 'Camp Marshal Serath' },
     levelMin: 60,
+    // G5 chain (v1.4 P1): Band B boss-kill side quest chains behind Band B's own main-spine entry
+    // (break_the_majiku_host) — NOT behind win_passage_from_the_ukai (Band C's spine), same rule
+    // as Band A's the_warlords_end.
+    requiresQuest: 'break_the_majiku_host',
     intro: 'Serath doesn\'t look up from the map this time either. "You\'ve seen the war-camps with your own eyes, hero. The Majiku Ridge-Chieftain commands the whole host from up there — every lancer, every hostcaller, every hostguard vanguard we\'ve broken answers to him first, same as the Warlord did for Kuraan. End him, and the host doesn\'t just fall back. It breaks."',
     steps: [
       { kind: 'kill', monsterId: 'majiku_ridge_chieftain', count: 1 }
@@ -767,6 +843,13 @@ Game.Data.quests = [
     name: 'Passage From the Ukai',
     giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
     levelMin: 61,
+    // G5 chain (v1.4 P1, docs/SPEC-V1.4-GAMEPLAY.md §2 + §7 guardrail): Band C's main-spine quest
+    // chains behind Band B's own main-spine quest (break_the_majiku_host), NEVER behind Band B's
+    // side/boss quests (storms_over_the_ridge / the_chieftains_reckoning) — spine only ever gates
+    // behind spine. This is also the first chain link to cross areas (Kuraan Reclamation Camp ->
+    // Frosthold Waystation): availableAt()'s requiresQuest check only reads c.quests completion
+    // status, not the giver's area, so a cross-area prerequisite works exactly like a same-area one.
+    requiresQuest: 'break_the_majiku_host',
     intro: 'Waystation Commander Thessaly doesn\'t bother pretending the ice-fields are the real obstacle. "The Ukai are too proud of their cavernous home to think twice about an outsider column, hero — the old lore says as much, and three centuries hasn\'t softened them any. We won\'t so much as reach the undercaverns\' gate while Majiku exiles are still raiding the approach. Break their frost-exiles, recover their deep-runes so I know what the ice is actually hiding, and get eyes on the Ukai Undercaverns themselves. After that, it\'s between us and them."',
     steps: [
       { kind: 'kill', monsterId: 'majiku_frost_exile', count: 5 },
@@ -783,6 +866,9 @@ Game.Data.quests = [
     name: 'What Slips Through the Ice',
     giver: { areaId: 'frosthold_waystation', npc: 'Anima-Warden Yulei' },
     levelMin: 66,
+    // G5 chain (v1.4 P1): side quest chains behind Band C's own main-spine entry
+    // (win_passage_from_the_ukai) — same pattern as every prior band's hunt-quest.
+    requiresQuest: 'win_passage_from_the_ukai',
     intro: 'Anima-Warden Yulei has followed the column all the way north, and likes what she\'s found even less than Deep Kuraan or the Highland War-Camps. "It\'s happening again, hero — a Ukai warden\'s own ward-rite gone wrong, same as the deepwood witches and hostcaller shamans before them, the Anima taking more than it gave back. The undercaverns are shedding hollow deeplings now. Put down four of them before one drifts far enough south to find the waystation itself."',
     steps: [
       { kind: 'kill', monsterId: 'ukai_hollow_deepling', count: 4 }
@@ -797,6 +883,9 @@ Game.Data.quests = [
     name: "The Deep-Dweller's Reckoning",
     giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
     levelMin: 70,
+    // G5 chain (v1.4 P1): Band C boss-kill side quest chains behind Band C's own main-spine entry
+    // (win_passage_from_the_ukai) — NOT behind the_taboo_wellspring (Band D's spine).
+    requiresQuest: 'win_passage_from_the_ukai',
     intro: 'Thessaly has a third map pinned up now, the undercaverns inked in north of the ice-fields. "You\'ve stood at the gate, hero — you\'ve seen what the Ukai keep at the heart of it. The Deep-Dweller is the only argument their elders have ever respected, from what little of the old lore survived. End it, and passage stops being something we\'re asking for. It becomes something we\'ve won."',
     steps: [
       { kind: 'kill', monsterId: 'ukai_deep_dweller', count: 1 }
@@ -817,6 +906,9 @@ Game.Data.quests = [
     name: 'The Taboo Wellspring',
     giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
     levelMin: 71,
+    // G5 chain (v1.4 P1 + §7 guardrail): Band D's main-spine quest chains behind Band C's own
+    // main-spine quest (win_passage_from_the_ukai), never behind Band C's side/boss quests.
+    requiresQuest: 'win_passage_from_the_ukai',
     intro: 'Waystation Commander Thessaly has a fourth map pinned up now, and this one worries her more than the undercaverns ever did. "Tremors out of the Estari sublevels, hero — the ones sealed since before the Ukai\'s own lore remembers. The old story says the Estari found something down there called Anima and the Council of Three banned anyone from ever mining it, on pain of killing the world itself. Something\'s woken the sublevel wardens regardless. Break them, bring me samples of whatever they\'re leaking, and get eyes on the Wellspring the Estari sealed it all to protect."',
     steps: [
       { kind: 'kill', monsterId: 'estari_sublevel_warden', count: 5 },
@@ -833,6 +925,9 @@ Game.Data.quests = [
     name: 'What the Wellspring Woke',
     giver: { areaId: 'frosthold_waystation', npc: 'Anima-Warden Yulei' },
     levelMin: 76,
+    // G5 chain (v1.4 P1): side quest chains behind Band D's own main-spine entry
+    // (the_taboo_wellspring) — same pattern as every prior band's hunt-quest.
+    requiresQuest: 'the_taboo_wellspring',
     intro: 'Anima-Warden Yulei has spread the taint samples across Thessaly\'s table, and none of it sits right with her. "It\'s never been like this, hero — not the deepwood witches, not the hostcaller shamans, not even the Ukai\'s own hollow deeplings. This is raw Anima given shape and hunger straight out of the seam itself, no scarred victim in between. The Wellspring is growing them now. Put down four Raw Anima-Horrors before one drifts far enough to reach Frosthold."',
     steps: [
       { kind: 'kill', monsterId: 'raw_anima_horror', count: 4 }
@@ -847,6 +942,9 @@ Game.Data.quests = [
     name: "The Warden-Prime's Reckoning",
     giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
     levelMin: 80,
+    // G5 chain (v1.4 P1): Band D boss-kill side quest chains behind Band D's own main-spine entry
+    // (the_taboo_wellspring) — NOT behind the_skyspire_ascent (Band E's spine).
+    requiresQuest: 'the_taboo_wellspring',
     intro: 'Thessaly has a fifth map now, the Wellspring itself inked in past the sublevels. "You\'ve seen the taint, hero, and you\'ve seen what it\'s growing. The Warden-Prime is the last thing standing between us and whoever cracked that seal — the Estari built it to enforce the Council of Three\'s ban against anyone, and right now that includes us. End it, and the Wellspring finally answers to someone who isn\'t trying to mine it to exhaustion."',
     steps: [
       { kind: 'kill', monsterId: 'estari_warden_prime', count: 1 }
@@ -868,6 +966,9 @@ Game.Data.quests = [
     name: 'The Skyspire Ascent',
     giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
     levelMin: 81,
+    // G5 chain (v1.4 P1 + §7 guardrail): Band E's main-spine quest chains behind Band D's own
+    // main-spine quest (the_taboo_wellspring), never behind Band D's side/boss quests.
+    requiresQuest: 'the_taboo_wellspring',
     intro: 'Waystation Commander Thessaly has a sixth map pinned up now, and this one points somewhere she never expected to send anyone: straight up Eidas\'s own Skyspire. "The Wellspring was the Estari\'s taboo, hero, but the Skyspire is Kastengard\'s. Eidas reformed his Society there, built that tower, and sailed for the red moon to found his \'divine race\' without ever standing it down. His last remnant never left — and neither did whatever anima-horrors they\'ve been growing since. Break the lower wardens, gather what pages of the Society\'s own ciphers you can carry, and get eyes on the upper spans."',
     steps: [
       { kind: 'kill', monsterId: 'skyspire_lower_warden', count: 5 },
@@ -884,6 +985,10 @@ Game.Data.quests = [
     name: 'What the Society Grew',
     giver: { areaId: 'frosthold_waystation', npc: 'Cipher-Adept Rennick' },
     levelMin: 86,
+    // G5 chain (v1.4 P1): side quest chains behind Band E's own main-spine entry
+    // (the_skyspire_ascent) — same pattern as every prior band's hunt-quest, even though this one
+    // has a different giver NPC (Rennick, not Thessaly) from the spine quest.
+    requiresQuest: 'the_skyspire_ascent',
     intro: 'Cipher-Adept Rennick has every cipher page spread across a borrowed table, and none of it sits right with her. "The Society never stopped, hero — not when Eidas left, not when the Council of Three\'s old ban should have scared anyone else off Anima for good. These pages talk about \'ravagers,\' shaped and grown right there in the sanctum. Put down four Anima-Horror Ravagers before one grows large enough to come down off the spans on its own."',
     steps: [
       { kind: 'kill', monsterId: 'anima_horror_ravager', count: 4 }
@@ -898,6 +1003,9 @@ Game.Data.quests = [
     name: "The Society's Last Stand",
     giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
     levelMin: 90,
+    // G5 chain (v1.4 P1): Band E boss-kill side quest chains behind Band E's own main-spine entry
+    // (the_skyspire_ascent) — NOT behind the_red_moon_crossing (Band F's spine).
+    requiresQuest: 'the_skyspire_ascent',
     intro: 'Thessaly has a seventh map now, the Skyspire\'s own sanctum inked in past the upper spans. "You\'ve seen the pages, hero, and you\'ve seen what they grew. The Anima-Horror is the last thing the Society of Modern Magic ever built, or the last thing it lost control of — either way, it\'s standing between us and whatever\'s left of Eidas\'s own tower. End it, and the Skyspire finally answers to someone who isn\'t chasing a dead man to the red moon."',
     steps: [
       { kind: 'kill', monsterId: 'society_anima_horror', count: 1 }
@@ -921,6 +1029,9 @@ Game.Data.quests = [
     name: 'The Red Moon Crossing',
     giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
     levelMin: 91,
+    // G5 chain (v1.4 P1 + §7 guardrail): Band F's main-spine quest chains behind Band E's own
+    // main-spine quest (the_skyspire_ascent), never behind Band E's side/boss quests.
+    requiresQuest: 'the_skyspire_ascent',
     intro: 'Waystation Commander Thessaly leads you past the Skyspire\'s own highest platform to a span of rune-stone that has no business existing — arcing up and out, past the sky, toward the red moon itself. "This is as far as any of my scouts have gone and come back, hero. Eidas built this bridge three centuries ago and never came down it again. Break his sentinels, gather what sigil-shards you can carry off them, and get your own eyes on his sanctum. After that, it isn\'t my map anymore."',
     steps: [
       { kind: 'kill', monsterId: 'moonbridge_ward_sentinel', count: 5 },
@@ -937,6 +1048,10 @@ Game.Data.quests = [
     name: 'What Rennick Deciphered',
     giver: { areaId: 'frosthold_waystation', npc: 'Cipher-Adept Rennick' },
     levelMin: 96,
+    // G5 chain (v1.4 P1): side quest chains behind Band F's own main-spine entry
+    // (the_red_moon_crossing) — same pattern as every prior band's hunt-quest. Deliberately NOT a
+    // prerequisite for the_ascendants_fall (the FINALE, spine) — see that quest's own comment.
+    requiresQuest: 'the_red_moon_crossing',
     intro: 'Cipher-Adept Rennick has every page and every shard laid out edge to edge, and for the first time since Kastengard she looks less like a scholar than someone who wishes she\'d been wrong. "It\'s all one hand, hero — the Society\'s ciphers, the sigil-shards, all of it Eidas\'s own work, decades apart but never abandoned. The \'divine race\' wasn\'t a failure. It\'s out there, growing, in the thing the sanctum calls a Devourer. Put down four Moon-Anima Devourers and bring me back proof it can still be killed."',
     steps: [
       { kind: 'kill', monsterId: 'moon_anima_devourer', count: 4 }
@@ -951,6 +1066,12 @@ Game.Data.quests = [
     name: "The Ascendant's Fall",
     giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
     levelMin: 100,
+    // G5 chain (v1.4 P1 + §7 guardrail): THE FINALE chains behind Band F's own main-spine entry
+    // (the_red_moon_crossing) — deliberately NOT behind what_rennick_deciphered (side content):
+    // the phase brief is explicit that spine quests never gate behind side quests, even a
+    // thematically-relevant one, and this is the single most important link in the whole graph to
+    // get right (it would strand the arc's own finale behind an optional detour otherwise).
+    requiresQuest: 'the_red_moon_crossing',
     intro: 'Thessaly has no map left to pin up. Everything Frosthold has sent north for the last forty levels — the Kuraan fringe, the Majiku highlands, the Ukai passage, the Wellspring, the Skyspire, and now this bridge to the red moon itself — has been pointing at the same place, and the same name. "The Warlord, the Chieftain, the Deep-Dweller, the Warden-Prime, the Society\'s last horror — every one of them was only ever guarding the road to Eidas, hero, whether they knew it or not. He\'s waiting at the heart of his own sanctum, ascended and unhurried, three centuries into a plan nobody else ever got to see finished. Finish it for him. End Eidas Ascendant, and end the arc that\'s carried you from Kuraan to the red moon."',
     steps: [
       { kind: 'kill', monsterId: 'eidas_ascendant', count: 1 }
