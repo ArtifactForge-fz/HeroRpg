@@ -22,5 +22,11 @@ build/
 # Local save data / scratch
 *.local
 
+# Deploy credentials — real secrets live in .env (gitignored); .env.example is the
+# committed template. NEVER commit .env.
+.env
+.env.*
+!.env.example
+
 # Generated online-artifact bundle (rebuilt by tools/git-hooks/post-commit)
 tools/herorpg_artifact.html

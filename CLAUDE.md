@@ -107,10 +107,15 @@ Local git repo on branch `main` (no remote). `.gitignore`/`.gitattributes` are c
 
 ## Deployment
 
-**Target (planned, user-led):** a self-hosted domain + static web server (setup pending as of
-2026-07-10). The game is a pure static site — serving the repo root as-is (`index.html` + `js/`
-+ `css/` + `assets/`) is the primary deploy; on a real origin `localStorage` works natively, so
-no bundling step is needed there.
+**LIVE (2026-07-11): self-hosted on Strato SFTP webspace.** The game is a pure static site, so the
+deploy is just the repo's static files (`index.html` + `js/` + `css/` + `assets/`) uploaded as-is;
+on a real origin `localStorage` works natively (no bundling needed). Deploy with:
+`sh tools/deploy.sh --check` (connectivity/auth/remote-dir test, read-only) then `sh tools/deploy.sh`
+(uploads the site in one curl SFTP connection, creating remote dirs). Credentials live in **`.env`**
+(gitignored — SFTP host/user/password or key + remote dir; template `.env.example` is committed).
+`tools/deploy.sh` parses `.env` WITHOUT sourcing it (passwords contain shell-special chars) and
+passes creds via a temp curl config (never on the command line). It uploads only the static site —
+NOT `reference/`, `docs/`, `tests/`, `tools/`, or `.env`. Re-run it after any release to push HEAD.
 
 **claude.ai Artifact publishing is ON HOLD.** The previously-used URL
 (`1c21f461-a113-44e3-a681-ff938a8ffc4a`, favicon ⚔️) is owned by a different org and cannot be
