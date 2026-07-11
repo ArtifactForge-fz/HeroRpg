@@ -129,7 +129,7 @@ function winBattle(monsterId) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: quest/story data sanity ===');
-assert(Game.Data.quests.length === 31, '31 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end + Band B\'s break_the_majiku_host/storms_over_the_ridge/the_chieftains_reckoning), got ' + Game.Data.quests.length);
+assert(Game.Data.quests.length === 34, '34 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end + Band B\'s break_the_majiku_host/storms_over_the_ridge/the_chieftains_reckoning + Band C\'s win_passage_from_the_ukai/what_slips_through_the_ice/the_deep_dwellers_reckoning), got ' + Game.Data.quests.length);
 assert(Game.Data.story.length === 3, '3 story chapters, got ' + Game.Data.story.length);
 ['prelude', 'chapter_1', 'chapter_2'].forEach(function (id) {
   var found = Game.Data.story.some(function (ch) { return ch.id === id; });
@@ -741,6 +741,61 @@ var res23b = Game.Quests.turnIn('the_chieftains_reckoning');
 assert(res23b.ok === true, 'the_chieftains_reckoning turn-in succeeds: ' + res23b.message);
 assert(c23.quests['the_chieftains_reckoning'].status === 'completed', 'the_chieftains_reckoning marked completed');
 assert(Game.Quests.inventoryCount(c23, 'heavy_head_ridgeplate_helm') >= 1, 'the_chieftains_reckoning grants the Ridgeplate Helm');
+
+// =================== Test 20: Level-Arc Band C quests (accept -> progress -> turn-in) ===================
+console.log('\n=== Test 20: Band C quests — win_passage_from_the_ukai / what_slips_through_the_ice / the_deep_dwellers_reckoning ===');
+
+// 20a) main-spine quest: accept at Frosthold Waystation, force-satisfy its kill/collect/visit
+// steps, turn in for the full multi-reward (mirrors Test 18a/19a's pattern).
+var c24 = makeCharacter({ name: 'BandCMainTest' });
+grantVitalityForLevel(c24, 65); // Frosthold Waystation gates travel at minLevel 65 (quest levelMin is 61)
+Game.World.travelTo('frosthold_waystation');
+var res24a = Game.Quests.accept('win_passage_from_the_ukai');
+assert(res24a.ok === true, 'win_passage_from_the_ukai accepted at Frosthold Waystation: ' + res24a.message);
+assert(Game.Quests.canTurnIn('win_passage_from_the_ukai') === false, 'win_passage_from_the_ukai not yet turn-in-able (steps unsatisfied)');
+Game._debug.completeQuestStep('win_passage_from_the_ukai');
+assert(Game.Quests.canTurnIn('win_passage_from_the_ukai') === true, 'win_passage_from_the_ukai steps force-satisfied (5x kill + 3x collect + visit ukai_undercaverns)');
+var gold24a = Game.Character.goldTotalAsGold(c24);
+var xp24a = c24.xp;
+var tp24a = c24.trainingPoints;
+var res24b = Game.Quests.turnIn('win_passage_from_the_ukai');
+assert(res24b.ok === true, 'win_passage_from_the_ukai turn-in succeeds: ' + res24b.message);
+assert(Game.Character.goldTotalAsGold(c24) === gold24a + 1300, 'win_passage_from_the_ukai grants +1300 gold');
+assert(c24.xp === xp24a + 2000, 'win_passage_from_the_ukai grants +2000 xp');
+assert(c24.trainingPoints === tp24a + 3, 'win_passage_from_the_ukai grants +3 Training Points');
+assert(Game.Quests.inventoryCount(c24, 'sword_frosthold_vanguard_blade') >= 1, 'win_passage_from_the_ukai grants a Frosthold Vanguard Blade');
+assert(c24.quests['win_passage_from_the_ukai'].status === 'completed', 'win_passage_from_the_ukai marked completed');
+
+// 20b) side quest: REAL kill progress (not force-satisfied) via winBattle against the Ukai
+// Undercaverns regulars, same pattern as Test 18b/19b's hunt-quest loop.
+var c25 = makeCharacter({ name: 'BandCSideTest' });
+grantVitalityForLevel(c25, 66);
+Game.World.travelTo('frosthold_waystation');
+var res25a = Game.Quests.accept('what_slips_through_the_ice');
+assert(res25a.ok === true, 'what_slips_through_the_ice accepted: ' + res25a.message);
+Game.World.travelTo('ukai_undercaverns');
+for (var w20 = 0; w20 < 4; w20++) winBattle('ukai_hollow_deepling');
+assert(c25.quests['what_slips_through_the_ice'].progress.kills['ukai_hollow_deepling'] === 4, 'real kill progress reached 4/4 via winBattle against ukai_hollow_deepling');
+assert(Game.Quests.canTurnIn('what_slips_through_the_ice') === true, 'what_slips_through_the_ice turn-in-able after 4 real kills');
+Game.World.travelTo('frosthold_waystation');
+var res25b = Game.Quests.turnIn('what_slips_through_the_ice');
+assert(res25b.ok === true, 'what_slips_through_the_ice turn-in succeeds: ' + res25b.message);
+assert(Game.Quests.inventoryCount(c25, 'sphere_eclass_2') >= 1, 'what_slips_through_the_ice grants an E-Class Sphere II');
+
+// 20c) boss-kill side quest: REAL kill via winBattle against the Band C lair boss itself.
+var c26 = makeCharacter({ name: 'BandCBossTest' });
+grantVitalityForLevel(c26, 70);
+Game.World.travelTo('frosthold_waystation');
+var res26a = Game.Quests.accept('the_deep_dwellers_reckoning');
+assert(res26a.ok === true, 'the_deep_dwellers_reckoning accepted: ' + res26a.message);
+Game.World.travelTo('ukai_undercaverns');
+winBattle('ukai_deep_dweller');
+assert(c26.quests['the_deep_dwellers_reckoning'].progress.kills['ukai_deep_dweller'] === 1, 'ukai_deep_dweller kill recorded via winBattle (lair fight, same Game.Battle.start call as the Explore screen\'s lair button)');
+Game.World.travelTo('frosthold_waystation');
+var res26b = Game.Quests.turnIn('the_deep_dwellers_reckoning');
+assert(res26b.ok === true, 'the_deep_dwellers_reckoning turn-in succeeds: ' + res26b.message);
+assert(c26.quests['the_deep_dwellers_reckoning'].status === 'completed', 'the_deep_dwellers_reckoning marked completed');
+assert(Game.Quests.inventoryCount(c26, 'heavy_head_glacial_warhelm') >= 1, 'the_deep_dwellers_reckoning grants the Glacial Warhelm');
 
 // =================== Summary ===================
 console.log('\n===================================');

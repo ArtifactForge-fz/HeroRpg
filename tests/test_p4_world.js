@@ -118,10 +118,10 @@ function makeCharacter(opts) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: areas/monsters/items data sanity ===');
-assert(Game.Data.areas.length === 19, '19 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A + Level-Arc Band A\'s kuraan_fringe_woods/deep_kuraan/kuraan_reclamation_camp + Band B\'s majiku_border_steppe/highland_war_camps, NO new Band B settlement per SPEC-ARC-BANDS.md), got ' + Game.Data.areas.length);
+assert(Game.Data.areas.length === 22, '22 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A + Level-Arc Band A\'s kuraan_fringe_woods/deep_kuraan/kuraan_reclamation_camp + Band B\'s majiku_border_steppe/highland_war_camps, NO new Band B settlement + Band C\'s glacial_approach/ukai_undercaverns/frosthold_waystation per SPEC-ARC-BANDS.md), got ' + Game.Data.areas.length);
 var townCount = Game.Data.areas.filter(function (a) { return a.type === 'town'; }).length;
-assert(townCount === 6, '6 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp + Kuraan Reclamation Camp — Band B adds no new town, it reuses the Reclamation Camp), got ' + townCount);
-assert(Game.Data.monsters.length === 59, '59 monsters (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss), got ' + Game.Data.monsters.length);
+assert(townCount === 7, '7 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp + Kuraan Reclamation Camp + Frosthold Waystation — Band B adds no new town, Band C adds Frosthold Waystation), got ' + townCount);
+assert(Game.Data.monsters.length === 66, '66 monsters (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss), got ' + Game.Data.monsters.length);
 var gares = Game.World.getArea('gares_riverbanks');
 assert(gares && gares.monsters.length === 7, 'Gares Riverbanks lists 7 monsters (4 original + 3 enemy-variety-pass)');
 gares.monsters.forEach(function (mid) {
@@ -269,6 +269,61 @@ assert(connToCampsBlocked.ok === false, 'level 51 cannot yet reach Highland War-
 connCheckB.level = 56;
 var connToCampsB = Game.World.travelTo('highland_war_camps');
 assert(connToCampsB.ok === true, 'level 56 reaches Highland War-Camps directly from Majiku Border Steppe');
+
+// =================== Test 0f: Level-Arc Band C — The Frozen Reaches / Ukai approach (docs/SPEC-ARC-BANDS.md) ===================
+console.log('\n=== Test 0f: Glacial Approach / Ukai Undercaverns / Frosthold Waystation exist, level-gated, huntable, travel-reachable ===');
+var glacialApproach = Game.World.getArea('glacial_approach');
+var ukaiUndercaverns = Game.World.getArea('ukai_undercaverns');
+var frostholdWaystation = Game.World.getArea('frosthold_waystation');
+assert(!!glacialApproach && glacialApproach.type === 'hunting', 'Glacial Approach exists as a hunting area');
+assert(glacialApproach.minLevel === 61, 'Glacial Approach gates travel at minLevel 61');
+assert(!!ukaiUndercaverns && ukaiUndercaverns.type === 'hunting', 'Ukai Undercaverns exists as a hunting area');
+assert(ukaiUndercaverns.minLevel === 66, 'Ukai Undercaverns gates travel at minLevel 66');
+assert(!!ukaiUndercaverns.lair && ukaiUndercaverns.lair.monsterId === 'ukai_deep_dweller' && ukaiUndercaverns.lair.minLevel === 70, 'Ukai Undercaverns carries the ukai_deep_dweller lair gated at minLevel 70');
+assert(!!frostholdWaystation && frostholdWaystation.type === 'town', 'Frosthold Waystation exists as a town');
+assert(frostholdWaystation.minLevel === 65, 'Frosthold Waystation gates travel at minLevel 65');
+['shop', 'inn', 'vault', 'academy', 'shrine', 'tavern'].forEach(function (t) {
+  assert(!!Game.World.getFacility(frostholdWaystation, t), 'Frosthold Waystation has facility: ' + t);
+});
+// No gap wider than the archived ±5 XP/loot cutoff between the two hunting bands' monster levels.
+var glacialLevels = glacialApproach.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var undercavernsLevels = ukaiUndercaverns.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var maxGlacialLevel = Math.max.apply(null, glacialLevels);
+var minUndercavernsLevel = Math.min.apply(null, undercavernsLevels);
+assert(minUndercavernsLevel - maxGlacialLevel < BALANCE.XP_LOOT_CUTOFF_LEVELS, 'no gap wider than the ±5 XP/loot cutoff between Glacial Approach (max lvl ' + maxGlacialLevel + ') and Ukai Undercaverns (min lvl ' + minUndercavernsLevel + ')');
+// Also no gap wider than the cutoff versus the PRIOR band's top hunting area (Highland
+// War-Camps, max lvl 59), confirming continuous coverage across the Band B/C seam.
+var warCampsLevelsForGap = Game.World.getArea('highland_war_camps').monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var maxWarCampsLevel = Math.max.apply(null, warCampsLevelsForGap);
+var minGlacialLevel = Math.min.apply(null, glacialLevels);
+assert(minGlacialLevel - maxWarCampsLevel < BALANCE.XP_LOOT_CUTOFF_LEVELS, 'no gap wider than the ±5 XP/loot cutoff between Highland War-Camps (max lvl ' + maxWarCampsLevel + ') and Glacial Approach (min lvl ' + minGlacialLevel + ')');
+// Frosthold Waystation's shop stocks Band C's tapered gear/consumables.
+var frostholdShop = Game.World.getFacility(frostholdWaystation, 'shop');
+['sword_frosthold_vanguard_blade', 'shield_frosthold_bulwark', 'crystal_eclass_1', 'sphere_eclass_1', 'stone_energy_frosthold'].forEach(function (iid) {
+  assert(frostholdShop.stock.indexOf(iid) !== -1, 'Frosthold Waystation shop stocks Band C gear/consumable: ' + iid);
+  assert(!!Game.Inventory.getItem(iid), 'Band C shop stock item resolves: ' + iid);
+});
+// Travel connectivity: same mechanism as Bands A/B (js/ui/screens.js renderExplore lists ALL
+// areas, gated only by Game.World.travelTo's level check) — a level-61 character standing
+// anywhere must be able to reach Glacial Approach directly.
+var connCheckC = makeCharacter({ name: 'ConnectivityTestC' });
+connCheckC.level = 60;
+var connBlockedC = Game.World.travelTo('glacial_approach');
+assert(connBlockedC.ok === false, 'a level-60 character cannot yet reach Glacial Approach');
+connCheckC.level = 61;
+var connAllowedC = Game.World.travelTo('glacial_approach');
+assert(connAllowedC.ok === true, 'a fresh level-61 character reaches Glacial Approach directly (no adjacency graph): ' + connAllowedC.message);
+assert(connCheckC.currentLocation === 'glacial_approach', 'currentLocation updated to Glacial Approach');
+var connToWaystationBlocked = Game.World.travelTo('frosthold_waystation');
+assert(connToWaystationBlocked.ok === false, 'level 61 cannot yet reach Frosthold Waystation (minLevel 65)');
+connCheckC.level = 65;
+var connToWaystation = Game.World.travelTo('frosthold_waystation');
+assert(connToWaystation.ok === true, 'level 65 reaches Frosthold Waystation directly from Glacial Approach');
+var connToUndercavernsBlocked = Game.World.travelTo('ukai_undercaverns');
+assert(connToUndercavernsBlocked.ok === false, 'level 65 cannot yet reach Ukai Undercaverns (minLevel 66)');
+connCheckC.level = 66;
+var connToUndercaverns = Game.World.travelTo('ukai_undercaverns');
+assert(connToUndercaverns.ok === true, 'level 66 reaches Ukai Undercaverns directly from Frosthold Waystation');
 
 // =================== Test 1: new character starts by race (v1.2 Phase 3 Content-A) ===================
 console.log('\n=== Test 1: new character defaults (Human -> Eldor, Arkan -> Saratus) ===');

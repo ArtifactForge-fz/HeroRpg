@@ -114,3 +114,30 @@ Node's `zlib.deflateSync`/manual chunk+CRC32 writer, guaranteeing a structurally
 icon in `assets/icons/` (269 files total, zero duplicate hashes) — not just against each other. The
 lead's real-DCSS-tile pass at the end of the Level-Arc work should replace these 35 placeholders
 the same way the P5 pass replaced the v1.2 ones and Band A's are slated to be replaced.
+
+## Level-Arc Band C icons — procedural placeholders (pending the lead's real-tile pass)
+
+The 35 new ids introduced by Level-Arc Band C (The Frozen Reaches / Ukai approach, levels 61-70 —
+`docs/SPEC-ARC-BANDS.md`) use hand-generated procedural placeholder tiles, not real Dungeon Crawl
+art: 7 new monsters (`majiku_frost_exile`, `glacial_frost_stalker`, `anima_scarred_frostwalker`,
+`ukai_cave_warden`, `ukai_hollow_deepling`, `ukai_deep_vanguard`, `ukai_deep_dweller`),
+6 weapons/shield (`sword_frosthold_vanguard_blade`, `polearm_glacial_warpike`, `knife_icebound_fang`,
+`rod_ukai_wardstone`, `hth_frostbound_knuckles`, `shield_frosthold_bulwark`), 9 armor pieces
+(`light_body_frosthold_veilcloak`, `light_head_frosthold_veilhood`, `medium_body_waystation_hauberk`,
+`medium_legs_waystation_greaves`, `heavy_body_glacial_bulwark_plate`, `heavy_head_glacial_warhelm`,
+`light_legs_frosthold_ward_leggings`, `medium_feet_waystation_boots`,
+`heavy_legs_glacial_greatplate_legguards`), 5 consumables (`crystal_eclass_1`, `crystal_eclass_2`,
+`sphere_eclass_1`, `sphere_eclass_2`, `stone_energy_frosthold`), 1 quest material
+(`quest_ukai_deep_rune`), 3 unique items (`light_body_frostwalkers_shroud`, `rod_deeplings_core`,
+`hth_deep_dwellers_claw`), and 4 techs (`tech_firebolt_6`, `tech_mend_wounds_6`, `tech_cleave_6`,
+`tech_impale_6`).
+
+Generated with the same hand-rolled per-id-hash placeholder approach as Bands A/B above
+(deterministic fill/accent colors + one of 5 patterns — border ring, diagonal stripes, checker
+quadrants, cross, or concentric ring — plus a small corner mark); the PNG container itself is built
+with Node's `zlib.deflateSync`/manual chunk+CRC32 writer, guaranteeing a structurally valid stream.
+All 35 were verified programmatically as valid 32x32 RGBA PNGs and byte-hash-distinct from every
+other icon in `assets/icons/` (304 files total, zero duplicate hashes) — not just against each
+other. The lead's real-DCSS-tile pass at the end of the Level-Arc work should replace these 35
+placeholders the same way the P5 pass replaced the v1.2 ones and Bands A/B's are slated to be
+replaced.

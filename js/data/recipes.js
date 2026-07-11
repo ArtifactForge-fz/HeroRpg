@@ -158,6 +158,26 @@ Game.Data.recipes = [
     gold: 450,
     output: 'crystal_dclass_2',
     desc: 'Fuse two D-Class Crystal Is into a single, denser D-Class Crystal II.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band C (docs/SPEC-ARC-BANDS.md, F2/F3): two synthesis recipes for the Frozen
+  // Reaches / Ukai approach band — a gear-tier reforge using a Band C quest material, and a
+  // graded-consumable progression recipe matching the synth_dclass_crystal_2 precedent above.
+  // =====================================================================
+  {
+    id: 'synth_frosthold_vanguard_blade',
+    inputs: ['sword_majiku_hostbreaker', 'quest_ukai_deep_rune'],
+    gold: 800,
+    output: 'sword_frosthold_vanguard_blade',
+    desc: "Reforge a Hostbreaker Blade around a captured Ukai Deep-Rune to strike a fresh Frosthold Vanguard Blade."
+  },
+  {
+    id: 'synth_eclass_crystal_2',
+    inputs: ['crystal_eclass_1', 'crystal_eclass_1'],
+    gold: 500,
+    output: 'crystal_eclass_2',
+    desc: 'Fuse two E-Class Crystal Is into a single, denser E-Class Crystal II.'
   }
 ];
 

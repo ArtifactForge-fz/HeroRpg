@@ -1624,6 +1624,203 @@ Game.Data.monsters = [
       { itemId: 'polearm_chieftains_warpike', chance: 0.05 }
     ],
     desc: 'The Majiku commander who holds the whole host together from the ridgeline war-camps, dug in behind shamans, hostguard vanguard, and the highland cold itself. Breaking him breaks the host — the whole reason Serath\'s column pushed this far north.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band C (docs/SPEC-ARC-BANDS.md, F2/F3): The Frozen Reaches / Ukai approach, levels
+  // 61-70 — Glacial Approach / Ukai Undercaverns (js/data/areas.js). Same header formulas,
+  // unchanged: hp = 20+12*level, damage = 3+2*level, energy = 40+10*level, xp =
+  // BALANCE.MONSTER_XP(level); armor ~= level (varied per archetype, capped well under a
+  // same-level warrior's expected hit, per the estari_loose_rubble milestone-gate retune).
+  // goldMin/goldMax/shardChance continue the Band A/B linear trend (goldMin = 50+2*(level-41),
+  // goldMax = 2*goldMin, shardChance = 0.32+0.02*(level-41)). Two thematic undead/anima monsters
+  // carry curseChance (v1.2 Curse mechanic, BALANCE.CURSE_APPLY_CHANCE), continuing Band A/B's
+  // coverage.
+  // =====================================================================
+
+  // ---------- Glacial Approach (level 61-64) ----------
+  {
+    id: 'majiku_frost_exile',
+    name: 'Majiku Frost-Exile',
+    level: 61,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 61,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 61,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 61,
+    armor: 66, // tank profile: level+5, a Majiku officer surviving on the ice rather than answering for the Chieftain's defeat, same profile as majiku_reclaimer_knight/majiku_steppe_lancer
+    magicArmor: 14,
+    element: null,
+    resistances: {},
+    techs: ['mon_hunters_mark'],
+    xp: BALANCE.MONSTER_XP(61),
+    goldMin: 90,
+    goldMax: 180,
+    shardChance: 0.72,
+    drops: [
+      { itemId: 'sword_frosthold_vanguard_blade', chance: 0.03 },
+      { itemId: 'crystal_eclass_1', chance: 0.08 },
+      { itemId: 'quest_ukai_deep_rune', chance: 0.5 }
+    ],
+    desc: 'A Majiku officer cast out onto the ice rather than face the reckoning for the Ridge-Chieftain\'s fall, holding what remains of his own honor guard together against the cold and worse.'
+  },
+
+  // ---------- Level 62 ----------
+  {
+    id: 'glacial_frost_stalker',
+    name: 'Glacial Frost Stalker',
+    level: 62,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 62,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 62,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 62,
+    armor: 48, // glass cannon: level-14, same profile as kuraan_bramble_stalker/highland_ridgehawk
+    magicArmor: 6,
+    element: 'Water',
+    resistances: { Water: 0.5, Fire: -0.3 },
+    techs: ['mon_water_torrent'],
+    xp: BALANCE.MONSTER_XP(62),
+    goldMin: 92,
+    goldMax: 184,
+    shardChance: 0.74,
+    drops: [
+      { itemId: 'knife_icebound_fang', chance: 0.03 },
+      { itemId: 'sphere_eclass_1', chance: 0.08 }
+    ],
+    desc: 'A predator grown huge and near-invisible against the ice-fields, striking from a snowdrift before a column ever sees it move.'
+  },
+
+  // ---------- Level 64 (curse-flavored anima/undead) ----------
+  {
+    id: 'anima_scarred_frostwalker',
+    name: 'Anima-Scarred Frostwalker',
+    level: 64,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 64,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 64,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 64,
+    armor: 52, // spell-wall profile: level-12, thin hide, magicArmor well above armor
+    magicArmor: 86,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.3 },
+    // v1.2 Curse mechanic (BALANCE.CURSE_APPLY_CHANCE), continuing Band A/B's anima-scarred
+    // lineage one band further north.
+    curseChance: BALANCE.CURSE_APPLY_CHANCE,
+    techs: ['mon_dark_hex', 'mon_anima_lance'],
+    xp: BALANCE.MONSTER_XP(64),
+    goldMin: 96,
+    goldMax: 192,
+    shardChance: 0.78,
+    drops: [
+      { itemId: 'sphere_eclass_1', chance: 0.08 },
+      // Band C unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'light_body_frostwalkers_shroud', chance: 0.02 }
+    ],
+    desc: 'A Majiku exile left for dead on the ice long enough that stray Anima scarred itself into the corpse — kin to the anima-scarred revenants of Kuraan and highlanders of the steppe, but hardened by glacial cold instead of fringe rot.'
+  },
+
+  // ---------- Ukai Undercaverns (level 66-69) ----------
+  {
+    id: 'ukai_cave_warden',
+    name: 'Ukai Cave Warden',
+    level: 66,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 66,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 66,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 66,
+    armor: 54, // spell-wall profile: level-12, magicArmor well above armor
+    magicArmor: 88,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.25 },
+    techs: ['mon_dark_hex', 'mon_static_arc'],
+    xp: BALANCE.MONSTER_XP(66),
+    goldMin: 100,
+    goldMax: 200,
+    shardChance: 0.82,
+    drops: [
+      { itemId: 'rod_ukai_wardstone', chance: 0.03 },
+      { itemId: 'crystal_eclass_2', chance: 0.08 }
+    ],
+    desc: 'A Ukai warden set to hold the outer undercaverns, drawing on ward-craft the proud cavern-dwellers have never once shared with an outsider column.'
+  },
+
+  // ---------- Level 68 (curse-flavored anima/undead) ----------
+  {
+    id: 'ukai_hollow_deepling',
+    name: 'Ukai Hollow Deepling',
+    level: 68,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 68,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 68,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 68,
+    armor: 56, // spell-wall profile: level-12
+    magicArmor: 92,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Star: -0.3 },
+    // v1.2 Curse mechanic (BALANCE.CURSE_APPLY_CHANCE) — Band C's second thematic curse carrier.
+    curseChance: BALANCE.CURSE_APPLY_CHANCE,
+    techs: ['mon_anima_lance', 'mon_dark_hex'],
+    xp: BALANCE.MONSTER_XP(68),
+    goldMin: 104,
+    goldMax: 208,
+    shardChance: 0.86,
+    drops: [
+      { itemId: 'sphere_eclass_2', chance: 0.08 },
+      // Band C unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'rod_deeplings_core', chance: 0.02 }
+    ],
+    desc: 'A Ukai Cave Warden\'s own failed ward-rite, hollowed out by the deep-cavern Anima it tried to bind rather than empowered by it — kin to Deep Kuraan\'s hollow wraiths and the Highland War-Camps\' stormwraiths, but colder and quieter than either.'
+  },
+
+  // ---------- Level 69 ----------
+  {
+    id: 'ukai_deep_vanguard',
+    name: 'Ukai Deep Vanguard',
+    level: 69,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 69,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 69,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 69,
+    armor: 76, // tank profile: level+7, the Deep-Dweller's own vanguard, same profile as majiku_ironclad_vanguard/majiku_hostguard_vanguard
+    magicArmor: 22,
+    element: null,
+    resistances: {},
+    techs: ['mon_hunters_mark', 'mon_earthen_crush'],
+    xp: BALANCE.MONSTER_XP(69),
+    goldMin: 106,
+    goldMax: 212,
+    shardChance: 0.88,
+    drops: [
+      { itemId: 'stone_energy_frosthold', chance: 0.08 },
+      { itemId: 'quest_ukai_deep_rune', chance: 0.5 }
+    ],
+    desc: 'One of the Ukai Deep-Dweller\'s own vanguard, held at the undercaverns\' heart to answer for anything the cave wardens and hollow deeplings fail to turn back.'
+  },
+
+  // ---------- Lair boss: Ukai Deep-Dweller (level 70) ----------
+  // invented Band C capstone (docs/SPEC-ARC-BANDS.md): flat hp/damage premiums per the F1
+  // CONVENTION NOTES block (js/balance.js) — hp premium +12*level (matches the majiku_warlord/
+  // majiku_ridge_chieftain pattern), damage premium round(1.5*level+10) = round(115) = 115 (F1's
+  // sim-tuned starting ballpark for a real level-70 boss), xp premium x3. "Winnable but costly"
+  // per the difficulty contract, CLAUDE.md.
+  {
+    id: 'ukai_deep_dweller',
+    name: 'The Ukai Deep-Dweller',
+    level: 70,
+    boss: true,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 70 + 12 * 70, // 860 + 840 = 1700
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 70,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 70 + Math.round(1.5 * 70 + 10), // 143 + 115 = 258
+    armor: 58,
+    magicArmor: 56,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Light: -0.25 },
+    techs: ['mon_dark_hex', 'mon_hunters_mark', 'mon_earthen_crush', 'mon_anima_lance'],
+    xp: BALANCE.MONSTER_XP(70) * 3, // invented: boss XP premium
+    goldMin: 300,
+    goldMax: 500,
+    shardChance: 0.65,
+    drops: [
+      { itemId: 'heavy_head_glacial_warhelm', chance: 0.1 },
+      { itemId: 'quest_ukai_deep_rune', chance: 0.6 },
+      // Band C unique equipment (js/data/items.js) — boss signature. Appended last so prior loot
+      // rates (including the guaranteed-ish rune above) are unchanged.
+      { itemId: 'hth_deep_dwellers_claw', chance: 0.05 }
+    ],
+    desc: 'Whatever the Ukai actually mean by "Deep-Dweller" — something old, cave-shaped, and utterly unimpressed by an outsider column, held in reserve at the undercaverns\' heart for exactly this kind of trespass. Breaking it, per every Ukai elder who will still speak to outsiders, is the only argument the cavern-dwellers have ever respected. Costly, but not, at last, impossible.'
   }
 ];
 

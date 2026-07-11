@@ -1008,6 +1008,75 @@ Game.Data.techs = [
     trainingCost: 8,
     skillReq: 30,
     desc: 'The Majiku-Highlands-era form of Impale, taught only once a polearm-wielder has proven the first four ranks. Requires Impale IV and Polearms 30.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band C (docs/SPEC-ARC-BANDS.md, F2/F3): one further rank into the same two magic-
+  // school chains and two weapon-tech chains Bands A/B extended, gated by skill level per the
+  // existing Academy chain model (js/core/world.js previousRankId/canLearn — rank>1 requires the
+  // previous rank known AND the governing skill >= skillReq). skillReq 40 is comfortably inside a
+  // level 61+ character's skill cap (BALANCE.SKILL_CAP(61) = 123) for anyone who has actually
+  // trained the skill. Numeric progressions (power/powerMult/energyCost/trainingCost) continue
+  // each chain's existing rank-to-rank deltas (e.g. Firebolt's power deltas 12/14/16/18 -> +18 here).
+  // =====================================================================
+  {
+    id: 'tech_firebolt_6',
+    name: 'Firebolt VI',
+    chain: 'Firebolt',
+    rank: 6,
+    skill: 'Evocation',
+    grade: 'Fire',
+    energyCost: 42,
+    power: 92,
+    effect: 'damage',
+    trainingCost: 10,
+    skillReq: 40,
+    desc: 'The Frozen-Reaches-era form of Firebolt, taught only to Evocation adepts who have proven the first five ranks. Requires Firebolt V and Evocation 40.'
+  },
+  {
+    id: 'tech_mend_wounds_6',
+    name: 'Mend Wounds VI',
+    chain: 'Mend Wounds',
+    rank: 6,
+    skill: 'Abjuration',
+    grade: 'Light',
+    energyCost: 40,
+    power: 136,
+    effect: 'heal',
+    trainingCost: 10,
+    skillReq: 40,
+    desc: 'A Frozen-Reaches-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds V and Abjuration 40. Unaffected by Fear (Fear.md).'
+  },
+  {
+    id: 'tech_cleave_6',
+    name: 'Cleave VI',
+    chain: 'Cleave',
+    rank: 6,
+    skill: 'Swords',
+    grade: null,
+    weaponTech: true,
+    powerMult: 3.2, // invented (user-directed)
+    energyCost: 34,
+    effect: 'damage',
+    trainingCost: 10,
+    skillReq: 40,
+    desc: 'The Frozen-Reaches-era form of Cleave, taught only once a swordsman has proven the first five ranks. Requires Cleave V and Swords 40.'
+  },
+  {
+    id: 'tech_impale_6',
+    name: 'Impale VI',
+    chain: 'Impale',
+    rank: 6,
+    skill: 'Polearms',
+    grade: null,
+    weaponTech: true,
+    powerMult: 3.1, // invented (user-directed)
+    armorPierce: 0.35, // invented (user-directed)
+    energyCost: 34,
+    effect: 'damage',
+    trainingCost: 10,
+    skillReq: 40,
+    desc: 'The Frozen-Reaches-era form of Impale, taught only once a polearm-wielder has proven the first five ranks. Requires Impale V and Polearms 40.'
   }
 ];
 

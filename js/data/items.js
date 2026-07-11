@@ -2264,6 +2264,347 @@ Game.Data.items = [
     tags: ['unique'],
     // boss signature: majiku_ridge_chieftain (js/data/monsters.js), the Band B lair boss.
     desc: "The Majiku Ridge-Chieftain's own warpike, wrenched from the ridgeline camp's standard-pole — proof the host's own commander could not hold this ground."
+  },
+
+  // =====================================================================
+  // Level-Arc Band C (docs/SPEC-ARC-BANDS.md, F2/F3): The Frozen Reaches / Ukai approach, levels
+  // 61-70. Weapon/armor damage and armor values below are TAPERED per the F1 CONVENTION NOTES
+  // block in js/balance.js (mandatory past band 35): effectiveLevelReq = 35 + 0.7*(levelReq-35).
+  // Main tier at levelReq 65 (effectiveLevelReq 35+0.7*30=56 -> damage 3+2*56=115, armor
+  // round(1+56)=57 — NOT the literal 3+2*65=133 / 1+65=66); a levelReq-68 sub-tier
+  // (effectiveLevelReq 35+0.7*33=58.1 -> damage ~119, armor round(1+58.1)=59). Bands <=35 are
+  // unchanged (kept literal, per the F1 note). statReqs continue the levelReq+9-ish
+  // weapon/shield trend and levelReq+3-ish heavy-armor trend established at tier 45/55
+  // (js/data/items.js Band A/B headers); value is an invented economy continuation of the
+  // existing per-tier growth curve (~1.2x per 10 levelReq, matching 2190->2630 tier55->65 — no
+  // archived value formula survived, see this file's header comment).
+  // =====================================================================
+
+  // ---------- Weapons: tier (levelReq 65), one per weapon skill ----------
+  {
+    id: 'sword_frosthold_vanguard_blade',
+    name: 'Frosthold Vanguard Blade',
+    slot: 'weapon',
+    skill: 'Swords',
+    damage: 115, // TAPERED: effectiveLevelReq 35+0.7*30=56 -> 3+2*56=115 (F1 finding; NOT the literal 3+2*65=133)
+    weight: 7,
+    levelReq: 65,
+    statReqs: { strength: 74 },
+    value: 2630,
+    tags: [],
+    desc: 'A heavy blade forged for the waystation garrison holding the last Crown ground before the ice-fields give way to the Ukai\'s own undercaverns.'
+  },
+  {
+    id: 'polearm_glacial_warpike',
+    name: 'Glacial Warpike',
+    slot: 'weapon',
+    skill: 'Polearms',
+    damage: 115, // TAPERED, see header comment above
+    weight: 9,
+    levelReq: 65,
+    statReqs: { strength: 74 },
+    value: 2630,
+    tags: [],
+    desc: 'A long pike updated for fighting on open ice, its head weighted to punch through a frost-exile\'s banded plate.'
+  },
+  {
+    id: 'knife_icebound_fang',
+    name: 'Icebound Fang',
+    slot: 'weapon',
+    skill: 'Knives',
+    damage: 115, // TAPERED, see header comment above
+    weight: 3,
+    levelReq: 65,
+    statReqs: { dexterity: 74 },
+    value: 2630,
+    tags: [],
+    desc: 'A curved knife shaped from a glacial stalker\'s own frozen talon, favored by scouts ranging the open ice-fields.'
+  },
+  {
+    id: 'rod_ukai_wardstone',
+    name: 'Ukai Wardstone Rod',
+    slot: 'weapon',
+    skill: 'Rods',
+    damage: 115, // TAPERED, see header comment above
+    weight: 4,
+    levelReq: 65,
+    statReqs: { intelligence: 74 },
+    value: 2630,
+    tags: [],
+    desc: "A captured Ukai cave warden's own ward-stone, unpicked and reforged by Arkan battlemages into a conduit that turns the cavern-dwellers' pride back on them."
+  },
+  {
+    id: 'hth_frostbound_knuckles',
+    name: 'Frostbound Knuckles',
+    slot: 'weapon',
+    skill: 'Hand to Hand',
+    damage: 115, // TAPERED, see header comment above
+    weight: 4,
+    levelReq: 65,
+    statReqs: { strength: 74 },
+    value: 2630,
+    tags: [],
+    desc: 'Banded knuckles issued to the waystation\'s front-line brawlers, heavy enough to crack a frost-exile\'s shield-wall on the ice.'
+  },
+
+  // ---------- Offhand: Shield (levelReq 65) ----------
+  {
+    id: 'shield_frosthold_bulwark',
+    name: 'Frosthold Bulwark',
+    slot: 'offhand',
+    skill: 'Shields',
+    armor: 57, // TAPERED: round(1+56)=57
+    magicArmor: 18,
+    weight: 8,
+    levelReq: 65,
+    statReqs: { strength: 74 },
+    value: 2760,
+    tags: [],
+    desc: 'A broad shield banded with reforged Majiku ridgeplate, warded against both frost-exile steel and Ukai ward-craft alike.'
+  },
+
+  // ---------- Armor: tier (levelReq 65) — light/medium/heavy ----------
+  {
+    id: 'light_body_frosthold_veilcloak',
+    name: 'Frosthold Veilcloak',
+    slot: 'body',
+    skill: 'Light Armor',
+    armor: 57, // TAPERED, see header comment above
+    magicArmor: 18,
+    weight: 3,
+    levelReq: 65,
+    value: 2770,
+    tags: [],
+    desc: 'A wind-and-ward weave cut for scouts moving quietly across the open ice ahead of the waystation garrison.'
+  },
+  {
+    id: 'light_head_frosthold_veilhood',
+    name: 'Frosthold Veilhood',
+    slot: 'head',
+    skill: 'Light Armor',
+    armor: 57,
+    magicArmor: 18,
+    weight: 2,
+    levelReq: 65,
+    value: 2740,
+    tags: [],
+    desc: "A matching hood to the Veilcloak, its warding thread tuned against the frostwalkers' own anima-scarred curse."
+  },
+  {
+    id: 'medium_body_waystation_hauberk',
+    name: 'Waystation Hauberk',
+    slot: 'body',
+    skill: 'Medium Armor',
+    armor: 57,
+    weight: 6,
+    levelReq: 65,
+    value: 2770,
+    tags: [],
+    desc: 'Boiled leather and iron rivets, standard issue to every hero mustered at Frosthold Waystation.'
+  },
+  {
+    id: 'medium_legs_waystation_greaves',
+    name: 'Waystation Greaves',
+    slot: 'legs',
+    skill: 'Medium Armor',
+    armor: 57,
+    weight: 6,
+    levelReq: 65,
+    value: 2750,
+    tags: [],
+    desc: "Greaves fitted for long marches across the open ice-fields toward the Ukai's own cave-mouths."
+  },
+  {
+    id: 'heavy_body_glacial_bulwark_plate',
+    name: 'Glacial Bulwark Plate',
+    slot: 'body',
+    skill: 'Heavy Armor',
+    armor: 57,
+    weight: 10,
+    levelReq: 65,
+    statReqs: { strength: 68 },
+    value: 2860,
+    tags: [],
+    desc: "Heavy plate hammered at Frosthold's own forge, thick enough to stand a Deep-Dweller's own vanguard."
+  },
+  {
+    id: 'heavy_head_glacial_warhelm',
+    name: 'Glacial Warhelm',
+    slot: 'head',
+    skill: 'Heavy Armor',
+    armor: 57,
+    weight: 10,
+    levelReq: 65,
+    statReqs: { strength: 68 },
+    value: 2820,
+    tags: [],
+    desc: 'A war-helm forged for the officers leading the push across the ice toward the Ukai Undercaverns.'
+  },
+
+  // ---------- Armor: sub-tier (levelReq 68) ----------
+  {
+    id: 'light_legs_frosthold_ward_leggings',
+    name: 'Frosthold Ward-Leggings',
+    slot: 'legs',
+    skill: 'Light Armor',
+    armor: 59, // TAPERED: effectiveLevelReq 35+0.7*33=58.1 -> round(1+58.1)=59
+    magicArmor: 19,
+    weight: 3,
+    levelReq: 68,
+    value: 2930,
+    tags: [],
+    desc: 'Warded leggings woven for the deeper approach, where the open ice gives way to the Ukai\'s own cave-mouths.'
+  },
+  {
+    id: 'medium_feet_waystation_boots',
+    name: 'Waystation Boots',
+    slot: 'feet',
+    skill: 'Medium Armor',
+    armor: 59,
+    weight: 6,
+    levelReq: 68,
+    value: 2890,
+    tags: [],
+    desc: 'Sturdy boots re-soled at Frosthold for heroes ranging into the undercaverns proper.'
+  },
+  {
+    id: 'heavy_legs_glacial_greatplate_legguards',
+    name: 'Glacial Greatplate Legguards',
+    slot: 'legs',
+    skill: 'Heavy Armor',
+    armor: 59,
+    weight: 10,
+    levelReq: 68,
+    statReqs: { strength: 70 },
+    value: 3000,
+    tags: [],
+    desc: "Massive plate legguards salvaged and reforged from a fallen Ukai deep vanguard's own armor."
+  },
+
+  // ---------- Consumables: E-Class Crystal/Sphere + Energy Stone, extending the graded line
+  // (D-Class I-II, levelReq 51-56) into Band C ----------
+  {
+    id: 'crystal_eclass_1',
+    name: 'E-Class Crystal I',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 61,
+    value: 970,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 460,
+    desc: 'A denser grade of Anima crystal mined from the Glacial Approach\'s ice-fields, restoring more Energy than any D-Class grade.'
+  },
+  {
+    id: 'crystal_eclass_2',
+    name: 'E-Class Crystal II',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 66,
+    value: 1170,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 500,
+    desc: 'The deeper-grade E-Class Crystal, cut from seams found only in the Ukai Undercaverns themselves.'
+  },
+  {
+    id: 'sphere_eclass_1',
+    name: 'E-Class Sphere I',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 61,
+    value: 1020,
+    tags: [],
+    combatUsable: true,
+    heal: 840,
+    desc: 'A denser grade of Anima sphere, closing wounds faster than any D-Class grade.'
+  },
+  {
+    id: 'sphere_eclass_2',
+    name: 'E-Class Sphere II',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 66,
+    value: 1140,
+    tags: [],
+    combatUsable: true,
+    heal: 900,
+    desc: 'The deeper-grade E-Class Sphere, mended from Anima found only in the Ukai Undercaverns.'
+  },
+  {
+    id: 'stone_energy_frosthold',
+    name: 'Frosthold Energy Stone',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 65,
+    value: 620,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 440,
+    desc: 'A dependable Energy Stone sold at Frosthold Waystation for heroes pushing into the Ukai\'s frozen approach.'
+  },
+
+  // ---------- Band C quest material ----------
+  {
+    id: 'quest_ukai_deep_rune',
+    name: 'Ukai Deep-Rune',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 1,
+    value: 12,
+    tags: ['no-trade'],
+    desc: 'A ward-rune torn from an Ukai vanguard or a Majiku exile alike, its script unreadable to anyone Waystation Commander Thessaly has asked. She wants a tally regardless.'
+  },
+
+  // ---------- Band C unique equipment (monster-drop only; tag 'unique', +15-25% over the
+  // tapered tier per CLAUDE.md / SPEC-ARC-BANDS.md — never sold, never a synthesis input/output) ----------
+  {
+    id: 'light_body_frostwalkers_shroud',
+    name: "Frostwalker's Shroud",
+    slot: 'body',
+    skill: 'Light Armor',
+    armor: 68, // +19% over the tapered tier-65 body armor (57)
+    damage: 7, // hybrid: armor granting a weapon-like Damage bonus, matching the ashcloak/ashmantle precedent
+    weight: 3,
+    levelReq: 65,
+    value: 3300,
+    tags: ['unique'],
+    desc: "A shroud burned grey by whatever anima-scarred the Frostwalker that wore it, its ash-dark weave sharp enough to cut on contact even through the cold."
+  },
+  {
+    id: 'rod_deeplings_core',
+    name: "Deepling's Core",
+    slot: 'weapon',
+    skill: 'Rods',
+    damage: 143, // +20% over the tapered levelReq-68 damage (~119)
+    armor: 8, // hybrid: a weapon carrying +Armor, a stat shop rods never have
+    weight: 4,
+    levelReq: 68,
+    statReqs: { intelligence: 80 },
+    value: 3760,
+    tags: ['unique'],
+    desc: "A rod grown from the Hollow Deepling's own frozen core, warding its wielder even as it channels the same deep-cavern Anima that hollowed the deepling out."
+  },
+  {
+    id: 'hth_deep_dwellers_claw',
+    name: "The Deep-Dweller's Claw",
+    slot: 'weapon',
+    skill: 'Hand to Hand',
+    damage: 143, // +24% over the tapered levelReq-65 damage (115)
+    magicArmor: 16, // hybrid: a weapon carrying +Magic Armor
+    weight: 4,
+    levelReq: 65,
+    statReqs: { strength: 78 },
+    value: 3900,
+    tags: ['unique'],
+    // boss signature: ukai_deep_dweller (js/data/monsters.js), the Band C lair boss.
+    desc: "A claw wrenched whole from the Deep-Dweller itself, still cold enough to numb the hand that wields it — proof even the Ukai's own proudest guardian could not hold its hollow."
   }
 ];
 

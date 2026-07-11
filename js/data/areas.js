@@ -496,6 +496,90 @@ Game.Data.areas = [
     lair: { monsterId: 'majiku_ridge_chieftain', minLevel: 60, name: "The Ridge-Chieftain's Camp" },
     facilities: [],
     desc: "The Majiku host's own ridgeline war-camps, dug into the highlands proper — shamans, vanguards, and worse held in reserve behind palisade and ward alike. The Majiku Ridge-Chieftain who commands the whole host still holds this ground, and means to keep it."
+  },
+
+  // =====================================================================
+  // Level-Arc Band C (docs/SPEC-ARC-BANDS.md, F2/F3): The Frozen Reaches / Ukai approach, levels
+  // 61-70 — the story descends from the broken Majiku Highlands into the frozen north, toward the
+  // cavern-dwelling Ukai (DESIGN.md §2; archived, Prelude.md: "the Ukai are too proud of their
+  // cavernous home to think about anything else"). The Majiku host's remnants fled this far north
+  // after Band B; the Ukai themselves, proud and territorial, will not simply let a column pass
+  // into their undercaverns — passage has to be won. Two overlapping hunting bands (Glacial
+  // Approach 61-64, Ukai Undercaverns 66-69; gap of 2 levels, under the archived ±5 XP/loot
+  // cutoff, BALANCE.XP_LOOT_CUTOFF_LEVELS) plus the band's lair boss, and a new settlement,
+  // Frosthold Waystation (the 2nd and last new settlement per SPEC-ARC-BANDS.md, serving the whole
+  // 61-90 range). Same travel-reachability note as Bands A/B: js/ui/screens.js renderExplore
+  // lists ALL of Game.Data.areas as destinations, gated only by Game.World.travelTo's level check
+  // — no separate adjacency graph to satisfy.
+  // =====================================================================
+
+  // ---------- Glacial Approach: level 61-64 hunting ----------
+  {
+    id: 'glacial_approach',
+    name: 'Glacial Approach',
+    type: 'hunting',
+    minLevel: 61,
+    // The open ice-fields north of the broken Majiku Highlands, where the host's own remnants
+    // have scattered to survive rather than surrender.
+    monsters: ['majiku_frost_exile', 'glacial_frost_stalker', 'anima_scarred_frostwalker'],
+    facilities: [],
+    desc: 'The windswept ice-fields north of the Majiku Highlands, where the host\'s broken remnants have fled to freeze or die free rather than answer for the Chieftain\'s defeat. Further north the ice gives way to bare rock and the first cave-mouths of the Ukai Undercaverns — ground the Ukai have never once let an outsider column cross uninvited.'
+  },
+
+  // ---------- Ukai Undercaverns: level 66-69 hunting + lair boss ----------
+  {
+    id: 'ukai_undercaverns',
+    name: 'Ukai Undercaverns',
+    type: 'hunting',
+    minLevel: 66,
+    monsters: ['ukai_cave_warden', 'ukai_hollow_deepling', 'ukai_deep_vanguard'],
+    // The boss is a separate "Lair" entry, fightable only once the party is closer to its own
+    // level (invented gate, matches the majiku_warlord/majiku_ridge_chieftain precedent).
+    lair: { monsterId: 'ukai_deep_dweller', minLevel: 70, name: "The Deep-Dweller's Hollow" },
+    facilities: [],
+    desc: 'The Ukai\'s own cavern-halls, warded and guarded exactly as proudly as the old lore said they would be (Prelude.md). Something the cavern-dwellers call the Deep-Dweller keeps its own hollow at the undercaverns\' heart — and until it answers for the column at the gate, no Ukai elder will so much as discuss passage north.'
+  },
+
+  // ---------- Frosthold Waystation: level 65 settlement ----------
+  {
+    id: 'frosthold_waystation',
+    name: 'Frosthold Waystation',
+    type: 'town',
+    minLevel: 65, // invented: opens partway through the Glacial Approach band, before Ukai Undercaverns (66) — same gating shape as Kuraan Reclamation Camp (44, before Deep Kuraan's 46)
+    monsters: [],
+    facilities: [
+      {
+        type: 'shop',
+        // Band C's tapered levelReq-65/68 gear (js/data/items.js) plus its own E-Class Crystal/
+        // Sphere/Energy Stone consumables. Established pattern: every town shop mixes in at least
+        // one older item for a smooth handoff — here, a couple of Band B's top items.
+        stock: [
+          'sword_frosthold_vanguard_blade', 'polearm_glacial_warpike', 'knife_icebound_fang',
+          'rod_ukai_wardstone', 'hth_frostbound_knuckles',
+          'shield_frosthold_bulwark',
+          'light_body_frosthold_veilcloak', 'light_head_frosthold_veilhood',
+          'medium_body_waystation_hauberk', 'medium_legs_waystation_greaves',
+          'heavy_body_glacial_bulwark_plate', 'heavy_head_glacial_warhelm',
+          'light_legs_frosthold_ward_leggings', 'medium_feet_waystation_boots', 'heavy_legs_glacial_greatplate_legguards',
+          'tent_expedition_pavilion',
+          'potion_vault_reserve',
+          'crystal_eclass_1', 'crystal_eclass_2', 'sphere_eclass_1', 'sphere_eclass_2',
+          'stone_energy_frosthold',
+          'sword_majiku_hostbreaker', 'shield_highland_bulwark'
+        ]
+      },
+      { type: 'inn' },
+      { type: 'vault' },
+      { type: 'academy' },
+      // archived: Anima_Shards.md / Cursed.md Spirit Shrine services — Frosthold is the first
+      // Level-Arc settlement to carry one (Kuraan Reclamation Camp did not), matching the
+      // per-band brief's facility list for the 61-90 range's waystation.
+      { type: 'shrine' },
+      // archived: New_Player_Guide.md §5.1.5 "Tavern" (quest source), same as every other
+      // quest-giving settlement (Eldor/Ju`Mak/Saratus/Laik/Kuraan Reclamation Camp).
+      { type: 'tavern' }
+    ],
+    desc: 'A wind-scoured waystation thrown up at the edge of the ice-fields, the last Crown-held ground before the Ukai\'s own undercaverns. Waystation Commander Thessaly holds the line here — Inn, Vault, Academy, Spirit Shrine, and a well-stocked Shop selling gear fit for the frozen approach.'
   }
 ];
 

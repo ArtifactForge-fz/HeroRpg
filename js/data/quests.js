@@ -749,6 +749,56 @@ Game.Data.quests = [
     ],
     rewards: { gold: 2200, xp: 3100, items: ['heavy_head_ridgeplate_helm'], trainingPoints: 4 },
     completionText: 'Serath turns the Chieftain\'s own warpike over in her hands, and this time she does look up. "The Warlord held Kuraan for a generation, and you ended him in a season. The Chieftain held the whole host together — and you\'ve just ended that too. The Majiku Highlands aren\'t won yet, hero, but the host that was supposed to hold them is broken. Whatever comes next out of the Frozen Reaches, we\'ll meet it standing on ground we actually hold."'
+  },
+
+  // =====================================================================
+  // Level-Arc Band C (docs/SPEC-ARC-BANDS.md, F2/F3): The Frozen Reaches / Ukai approach, levels
+  // 61-70 — the story beat "Descend to the cavern Ukai for passage north." Main-spine quest + two
+  // side quests, all given at the new settlement, Frosthold Waystation (js/data/areas.js).
+  // =====================================================================
+
+  // ---------- Band C main-spine quest ----------
+  {
+    id: 'win_passage_from_the_ukai',
+    name: 'Passage From the Ukai',
+    giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
+    levelMin: 61,
+    intro: 'Waystation Commander Thessaly doesn\'t bother pretending the ice-fields are the real obstacle. "The Ukai are too proud of their cavernous home to think twice about an outsider column, hero — the old lore says as much, and three centuries hasn\'t softened them any. We won\'t so much as reach the undercaverns\' gate while Majiku exiles are still raiding the approach. Break their frost-exiles, recover their deep-runes so I know what the ice is actually hiding, and get eyes on the Ukai Undercaverns themselves. After that, it\'s between us and them."',
+    steps: [
+      { kind: 'kill', monsterId: 'majiku_frost_exile', count: 5 },
+      { kind: 'collect', itemId: 'quest_ukai_deep_rune', count: 3 },
+      { kind: 'visit', areaId: 'ukai_undercaverns' }
+    ],
+    rewards: { gold: 1300, xp: 2000, items: ['sword_frosthold_vanguard_blade'], trainingPoints: 3 },
+    completionText: 'Thessaly spreads the deep-runes across her table, turning one over to catch the light. "Five fewer exiles, three runes neither of us can read, and you\'ve stood at the undercaverns\' own gate. Whatever the Ukai make of that, hero, they can\'t claim we didn\'t knock first. Take the blade; you\'ve more than earned it out on that ice."'
+  },
+
+  // ---------- Band C side quest 1: Ukai Undercaverns hunt ----------
+  {
+    id: 'what_slips_through_the_ice',
+    name: 'What Slips Through the Ice',
+    giver: { areaId: 'frosthold_waystation', npc: 'Anima-Warden Yulei' },
+    levelMin: 66,
+    intro: 'Anima-Warden Yulei has followed the column all the way north, and likes what she\'s found even less than Deep Kuraan or the Highland War-Camps. "It\'s happening again, hero — a Ukai warden\'s own ward-rite gone wrong, same as the deepwood witches and hostcaller shamans before them, the Anima taking more than it gave back. The undercaverns are shedding hollow deeplings now. Put down four of them before one drifts far enough south to find the waystation itself."',
+    steps: [
+      { kind: 'kill', monsterId: 'ukai_hollow_deepling', count: 4 }
+    ],
+    rewards: { gold: 1100, xp: 1700, items: ['sphere_eclass_2'] },
+    completionText: 'Yulei exhales, the alarm easing but not quite gone. "Four less hollow things drifting the undercaverns. Deepwood witches, hostcaller shamans, cave wardens — whatever they\'re each called, it\'s the same mistake every time. I\'d still rather we never find out firsthand what it was supposed to become."'
+  },
+
+  // ---------- Band C side quest 2: Ukai Deep-Dweller boss kill ----------
+  {
+    id: 'the_deep_dwellers_reckoning',
+    name: "The Deep-Dweller's Reckoning",
+    giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
+    levelMin: 70,
+    intro: 'Thessaly has a third map pinned up now, the undercaverns inked in north of the ice-fields. "You\'ve stood at the gate, hero — you\'ve seen what the Ukai keep at the heart of it. The Deep-Dweller is the only argument their elders have ever respected, from what little of the old lore survived. End it, and passage stops being something we\'re asking for. It becomes something we\'ve won."',
+    steps: [
+      { kind: 'kill', monsterId: 'ukai_deep_dweller', count: 1 }
+    ],
+    rewards: { gold: 2600, xp: 3600, items: ['heavy_head_glacial_warhelm'], trainingPoints: 4 },
+    completionText: 'Thessaly turns the Deep-Dweller\'s own claw over in her hands, and for a long moment says nothing at all. "The Warlord held Kuraan for a generation. The Chieftain held the whole Majiku host. And the Ukai held this cave since before either of them were born — and you\'ve just ended that too. Whatever waits past the undercaverns, hero, we\'re not asking the Ukai for anything. We\'re walking through."'
   }
 ];
 

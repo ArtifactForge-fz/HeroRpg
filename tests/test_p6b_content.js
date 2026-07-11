@@ -414,7 +414,7 @@ assert(topTent.tentQuality === Math.max.apply(null, allTentQualities), 'tent_exp
 console.log('\n=== Part 2c: unique equipment integrity (dropped once, never shopped/synthesized, has an icon) ===');
 
 var uniqueItems = Game.Data.items.filter(function (it) { return it.tags && it.tags.indexOf('unique') !== -1; });
-assert(uniqueItems.length === 18, 'sanity: 18 unique items defined in items.js (12 pre-Level-Arc + Band A\'s light_body_kuraan_ashcloak/rod_ashenbrand_conduit/sword_warlords_broken_oath + Band B\'s light_body_highland_ashmantle/rod_stormwraiths_core/polearm_chieftains_warpike), got ' + uniqueItems.length);
+assert(uniqueItems.length === 21, 'sanity: 21 unique items defined in items.js (12 pre-Level-Arc + Band A\'s light_body_kuraan_ashcloak/rod_ashenbrand_conduit/sword_warlords_broken_oath + Band B\'s light_body_highland_ashmantle/rod_stormwraiths_core/polearm_chieftains_warpike + Band C\'s light_body_frostwalkers_shroud/rod_deeplings_core/hth_deep_dwellers_claw), got ' + uniqueItems.length);
 
 // ---- every unique item is dropped by EXACTLY ONE monster ----
 (function () {
