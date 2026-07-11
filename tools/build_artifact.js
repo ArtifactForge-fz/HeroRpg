@@ -10,7 +10,9 @@ const path = require('path');
 const ROOT = 'D:/Claude - collection folder/HeroRPG';
 const OUT = path.join(__dirname, 'herorpg_artifact.html');
 
-const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+// Normalize CRLF: the repo stores LF but a core.autocrlf checkout materializes CRLF, which
+// broke the boot-script regex below (it anchors on '<script>\n').
+const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').replace(/\r\n/g, '\n');
 
 // Shell markup: everything between <body> and the first <script
 const bodyStart = indexHtml.indexOf('<body>') + '<body>'.length;
