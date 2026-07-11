@@ -261,6 +261,10 @@ body {
 }
 
 .statbar-fill {
+  /* Fills are <span>s (index.html barRow); inline spans ignore width, so without this the
+     top HP/Energy/XP bars rendered zero-width (no color). Battle bars only worked because
+     screens.js sets display:block inline on the same class. */
+  display: block;
   height: 100%;
 }
 
