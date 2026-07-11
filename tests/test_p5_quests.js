@@ -129,7 +129,7 @@ function winBattle(monsterId) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: quest/story data sanity ===');
-assert(Game.Data.quests.length === 40, '40 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end + Band B\'s break_the_majiku_host/storms_over_the_ridge/the_chieftains_reckoning + Band C\'s win_passage_from_the_ukai/what_slips_through_the_ice/the_deep_dwellers_reckoning + Band D\'s the_taboo_wellspring/what_the_wellspring_woke/the_warden_primes_reckoning + Band E\'s the_skyspire_ascent/what_the_society_grew/the_societys_last_stand), got ' + Game.Data.quests.length);
+assert(Game.Data.quests.length === 43, '43 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end + Band B\'s break_the_majiku_host/storms_over_the_ridge/the_chieftains_reckoning + Band C\'s win_passage_from_the_ukai/what_slips_through_the_ice/the_deep_dwellers_reckoning + Band D\'s the_taboo_wellspring/what_the_wellspring_woke/the_warden_primes_reckoning + Band E\'s the_skyspire_ascent/what_the_society_grew/the_societys_last_stand + Band F\'s the_red_moon_crossing/what_rennick_deciphered/the_ascendants_fall -- THE ARC FINALE), got ' + Game.Data.quests.length);
 assert(Game.Data.story.length === 3, '3 story chapters, got ' + Game.Data.story.length);
 ['prelude', 'chapter_1', 'chapter_2'].forEach(function (id) {
   var found = Game.Data.story.some(function (ch) { return ch.id === id; });
@@ -906,6 +906,73 @@ var res32b = Game.Quests.turnIn('the_societys_last_stand');
 assert(res32b.ok === true, 'the_societys_last_stand turn-in succeeds: ' + res32b.message);
 assert(c32.quests['the_societys_last_stand'].status === 'completed', 'the_societys_last_stand marked completed');
 assert(Game.Quests.inventoryCount(c32, 'heavy_head_spireward_helm') >= 1, 'the_societys_last_stand grants the Spireward Helm');
+
+// =================== Test 23: Level-Arc Band F quests (accept -> progress -> turn-in) — THE ARC FINALE ===================
+console.log('\n=== Test 23: Band F quests — the_red_moon_crossing / what_rennick_deciphered / the_ascendants_fall ===');
+
+// 23a) main-spine quest: accept at Frosthold Waystation, force-satisfy its kill/collect/visit
+// steps, turn in for the full multi-reward (mirrors Test 22a's pattern).
+var c33 = makeCharacter({ name: 'BandFMainTest' });
+grantVitalityForLevel(c33, 91);
+Game.World.travelTo('frosthold_waystation');
+var res33a = Game.Quests.accept('the_red_moon_crossing');
+assert(res33a.ok === true, 'the_red_moon_crossing accepted at Frosthold Waystation: ' + res33a.message);
+assert(Game.Quests.canTurnIn('the_red_moon_crossing') === false, 'the_red_moon_crossing not yet turn-in-able (steps unsatisfied)');
+Game._debug.completeQuestStep('the_red_moon_crossing');
+assert(Game.Quests.canTurnIn('the_red_moon_crossing') === true, 'the_red_moon_crossing steps force-satisfied (5x kill + 3x collect + visit eidas_sanctum)');
+var gold33a = Game.Character.goldTotalAsGold(c33);
+var xp33a = c33.xp;
+var tp33a = c33.trainingPoints;
+var res33b = Game.Quests.turnIn('the_red_moon_crossing');
+assert(res33b.ok === true, 'the_red_moon_crossing turn-in succeeds: ' + res33b.message);
+assert(Game.Character.goldTotalAsGold(c33) === gold33a + 1900, 'the_red_moon_crossing grants +1900 gold');
+assert(c33.xp === xp33a + 2900, 'the_red_moon_crossing grants +2900 xp');
+assert(c33.trainingPoints === tp33a + 3, 'the_red_moon_crossing grants +3 Training Points');
+assert(Game.Quests.inventoryCount(c33, 'sword_redmoon_blade') >= 1, 'the_red_moon_crossing grants a Redmoon Blade');
+assert(c33.quests['the_red_moon_crossing'].status === 'completed', 'the_red_moon_crossing marked completed');
+
+// 23b) side quest: REAL kill progress (not force-satisfied) via winBattle against Eidas's
+// Sanctum regulars, same pattern as Test 22b's hunt-quest loop.
+var c34 = makeCharacter({ name: 'BandFSideTest' });
+grantVitalityForLevel(c34, 96);
+Game.World.travelTo('frosthold_waystation');
+var res34a = Game.Quests.accept('what_rennick_deciphered');
+assert(res34a.ok === true, 'what_rennick_deciphered accepted: ' + res34a.message);
+Game.World.travelTo('eidas_sanctum');
+for (var w23 = 0; w23 < 4; w23++) winBattle('moon_anima_devourer');
+assert(c34.quests['what_rennick_deciphered'].progress.kills['moon_anima_devourer'] === 4, 'real kill progress reached 4/4 via winBattle against moon_anima_devourer');
+assert(Game.Quests.canTurnIn('what_rennick_deciphered') === true, 'what_rennick_deciphered turn-in-able after 4 real kills');
+Game.World.travelTo('frosthold_waystation');
+var res34b = Game.Quests.turnIn('what_rennick_deciphered');
+assert(res34b.ok === true, 'what_rennick_deciphered turn-in succeeds: ' + res34b.message);
+assert(Game.Quests.inventoryCount(c34, 'sphere_hclass_2') >= 1, 'what_rennick_deciphered grants an H-Class Sphere II');
+
+// 23c) THE FINALE quest: REAL kill via winBattle against eidas_ascendant, the arc's FINAL lair
+// boss — the quest that culminates the entire 41->100 level arc.
+var c35 = makeCharacter({ name: 'BandFFinaleTest' });
+grantVitalityForLevel(c35, 100);
+Game.World.travelTo('frosthold_waystation');
+var res35a = Game.Quests.accept('the_ascendants_fall');
+assert(res35a.ok === true, 'the_ascendants_fall accepted: ' + res35a.message);
+Game.World.travelTo('eidas_sanctum');
+winBattle('eidas_ascendant');
+assert(c35.quests['the_ascendants_fall'].progress.kills['eidas_ascendant'] === 1, 'eidas_ascendant kill recorded via winBattle (lair fight, same Game.Battle.start call as the Explore screen\'s lair button) -- THE FINALE quest gate');
+Game.World.travelTo('frosthold_waystation');
+var gold35a = Game.Character.goldTotalAsGold(c35);
+var xp35a = c35.xp;
+var tp35a = c35.trainingPoints;
+var res35b = Game.Quests.turnIn('the_ascendants_fall');
+assert(res35b.ok === true, 'the_ascendants_fall turn-in succeeds: ' + res35b.message);
+assert(c35.quests['the_ascendants_fall'].status === 'completed', 'the_ascendants_fall marked completed -- THE ARC FINALE is complete');
+assert(Game.Character.goldTotalAsGold(c35) === gold35a + 4000, 'the_ascendants_fall grants +4000 gold');
+// c35 is already at BALANCE.LEVEL_CAP (100) -- Game.Character.addXp is a deliberate no-op once at
+// the cap (js/core/character.js, F1 balance-to-100 decision: "further combat XP has nowhere to
+// go"). The quest's xp:5000 reward is still authored (matching every other boss-kill quest's
+// reward shape) for a player who turns it in a level below 100, but a level-100 turn-in absorbs
+// it as a no-op rather than growing c.xp unbounded past the cap.
+assert(c35.xp === xp35a, 'the_ascendants_fall\'s xp reward is a no-op at BALANCE.LEVEL_CAP (addXp\'s cap guard, js/core/character.js) -- xp stays at the capped value');
+assert(c35.trainingPoints === tp35a + 5, 'the_ascendants_fall grants +5 Training Points (uncapped, unlike combat/quest XP at LEVEL_CAP)');
+assert(Game.Quests.inventoryCount(c35, 'heavy_head_redmoon_helm') >= 1, 'the_ascendants_fall grants the Redmoon Helm');
 
 // =================== Summary ===================
 console.log('\n===================================');

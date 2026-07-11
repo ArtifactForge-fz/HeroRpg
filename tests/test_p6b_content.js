@@ -414,7 +414,7 @@ assert(topTent.tentQuality === Math.max.apply(null, allTentQualities), 'tent_exp
 console.log('\n=== Part 2c: unique equipment integrity (dropped once, never shopped/synthesized, has an icon) ===');
 
 var uniqueItems = Game.Data.items.filter(function (it) { return it.tags && it.tags.indexOf('unique') !== -1; });
-assert(uniqueItems.length === 27, 'sanity: 27 unique items defined in items.js (12 pre-Level-Arc + Band A\'s light_body_kuraan_ashcloak/rod_ashenbrand_conduit/sword_warlords_broken_oath + Band B\'s light_body_highland_ashmantle/rod_stormwraiths_core/polearm_chieftains_warpike + Band C\'s light_body_frostwalkers_shroud/rod_deeplings_core/hth_deep_dwellers_claw + Band D\'s light_body_estari_anima_shroud/rod_wellspring_heartcore/sword_warden_primes_relic + Band E\'s light_body_anima_scoured_wraps/rod_anima_horrors_core/sword_anima_horrors_edge), got ' + uniqueItems.length);
+assert(uniqueItems.length === 30, 'sanity: 30 unique items defined in items.js (12 pre-Level-Arc + Band A\'s light_body_kuraan_ashcloak/rod_ashenbrand_conduit/sword_warlords_broken_oath + Band B\'s light_body_highland_ashmantle/rod_stormwraiths_core/polearm_chieftains_warpike + Band C\'s light_body_frostwalkers_shroud/rod_deeplings_core/hth_deep_dwellers_claw + Band D\'s light_body_estari_anima_shroud/rod_wellspring_heartcore/sword_warden_primes_relic + Band E\'s light_body_anima_scoured_wraps/rod_anima_horrors_core/sword_anima_horrors_edge + Band F\'s light_body_voidmoon_wraps/rod_devourers_core/sword_ascendants_judgment -- THE ARC FINALE\'s capstone drop), got ' + uniqueItems.length);
 
 // ---- every unique item is dropped by EXACTLY ONE monster ----
 (function () {

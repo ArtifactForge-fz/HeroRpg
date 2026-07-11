@@ -3287,6 +3287,349 @@ Game.Data.items = [
     tags: ['unique'],
     // boss signature: society_anima_horror (js/data/monsters.js), the Band E lair boss.
     desc: "A blade struck whole from the Anima-Horror's own hide, still humming with the same raw, uncategorized Anima that the Society of Modern Magic spent itself trying and failing to control."
+  },
+
+  // =====================================================================
+  // Level-Arc Band F (docs/SPEC-ARC-BANDS.md, F2/F3): The Red Moon / Eidas's Sanctum, levels
+  // 91-100 — THE ARC FINALE. Weapon/armor damage and armor values below are TAPERED per the F1
+  // CONVENTION NOTES block in js/balance.js (mandatory past band 35): effectiveLevelReq =
+  // 35 + 0.7*(levelReq-35). Main tier at levelReq 95 (effectiveLevelReq 35+0.7*60=77 -> damage
+  // 3+2*77=157, armor round(1+77)=78 — NOT the literal 3+2*95=193 / 1+95=96); a levelReq-98
+  // sub-tier (effectiveLevelReq 35+0.7*63=79.1 -> armor round(1+79.1)=80). Bands <=35 are
+  // unchanged (kept literal, per the F1 note). statReqs continue the levelReq+9-ish weapon/shield
+  // trend and levelReq+3-ish heavy-armor trend established at tier 45/55/65/75/85 (js/data/
+  // items.js Band A/B/C/D/E headers); value is an invented economy continuation of the existing
+  // per-tier growth curve (no archived value formula survived, see this file's header comment).
+  // =====================================================================
+
+  // ---------- Weapons: tier (levelReq 95), one per weapon skill ----------
+  {
+    id: 'sword_redmoon_blade',
+    name: 'Redmoon Blade',
+    slot: 'weapon',
+    skill: 'Swords',
+    damage: 157, // TAPERED: effectiveLevelReq 35+0.7*60=77 -> 3+2*77=157 (F1 finding; NOT the literal 3+2*95=193)
+    weight: 7,
+    levelReq: 95,
+    statReqs: { strength: 104 },
+    value: 4040,
+    tags: [],
+    desc: "A heavy blade re-forged at Frosthold from a moon-bridge sentinel's own ward-plating, its edge tuned to bite where Eidas's divine-race servitors run thinnest."
+  },
+  {
+    id: 'polearm_moonbridge_halberd',
+    name: 'Moonbridge Halberd',
+    slot: 'weapon',
+    skill: 'Polearms',
+    damage: 157, // TAPERED, see header comment above
+    weight: 9,
+    levelReq: 95,
+    statReqs: { strength: 104 },
+    value: 4040,
+    tags: [],
+    desc: "A long halberd weighted for the crossing itself, its haft warded against whatever the red moon's own light does to ordinary steel."
+  },
+  {
+    id: 'knife_sanctum_fang',
+    name: 'Sanctum Fang',
+    slot: 'weapon',
+    skill: 'Knives',
+    damage: 157, // TAPERED, see header comment above
+    weight: 3,
+    levelReq: 95,
+    statReqs: { dexterity: 104 },
+    value: 4040,
+    tags: [],
+    desc: "A curved blade taken off a divine-race initiate, favored by scouts working the sanctum's tighter passages."
+  },
+  {
+    id: 'rod_lunar_conduit',
+    name: 'Lunar Conduit',
+    slot: 'weapon',
+    skill: 'Rods',
+    damage: 157, // TAPERED, see header comment above
+    weight: 4,
+    levelReq: 95,
+    statReqs: { intelligence: 104 },
+    value: 4040,
+    tags: [],
+    desc: "A captured exemplar's own ward-core, unpicked and reforged by Arkan battlemages into a conduit that draws on the red moon's own light without repeating Eidas's mistake."
+  },
+  {
+    id: 'hth_sanctum_gauntlets',
+    name: 'Sanctum Gauntlets',
+    slot: 'weapon',
+    skill: 'Hand to Hand',
+    damage: 157, // TAPERED, see header comment above
+    weight: 4,
+    levelReq: 95,
+    statReqs: { strength: 104 },
+    value: 4040,
+    tags: [],
+    desc: "Banded gauntlets cast from a ward-colossus's own broken fists, heavy enough to crack a sentinel's plating in a single blow."
+  },
+
+  // ---------- Offhand: Shield (levelReq 95) ----------
+  {
+    id: 'shield_redmoon_aegis',
+    name: 'Redmoon Aegis',
+    slot: 'offhand',
+    skill: 'Shields',
+    armor: 78, // TAPERED: round(1+77)=78
+    magicArmor: 24,
+    weight: 8,
+    levelReq: 95,
+    statReqs: { strength: 104 },
+    value: 4200,
+    tags: [],
+    desc: "A broad shield banded with reforged construct plating, warded against both the bridge's crushing blows and the sanctum's own stray Anima discharge."
+  },
+
+  // ---------- Armor: tier (levelReq 95) — light/medium/heavy ----------
+  {
+    id: 'light_body_moonveil_shroud',
+    name: 'Moonveil Shroud',
+    slot: 'body',
+    skill: 'Light Armor',
+    armor: 78, // TAPERED, see header comment above
+    magicArmor: 24,
+    weight: 3,
+    levelReq: 95,
+    value: 4210,
+    tags: [],
+    desc: 'A ward-weave cut for scouts crossing the Moon-Bridge ahead of the waystation column.'
+  },
+  {
+    id: 'light_head_moonveil_hood',
+    name: 'Moonveil Hood',
+    slot: 'head',
+    skill: 'Light Armor',
+    armor: 78,
+    magicArmor: 24,
+    weight: 2,
+    levelReq: 95,
+    value: 4160,
+    tags: [],
+    desc: "A matching hood to the Moonveil Shroud, its warding thread tuned against a divine-race initiate's own hexwork."
+  },
+  {
+    id: 'medium_body_sanctum_brigandine',
+    name: 'Sanctum Brigandine',
+    slot: 'body',
+    skill: 'Medium Armor',
+    armor: 78,
+    weight: 6,
+    levelReq: 95,
+    value: 4210,
+    tags: [],
+    desc: 'Boiled leather and salvaged construct-plate rivets, standard issue to every hero pushing onto the Moon-Bridge.'
+  },
+  {
+    id: 'medium_legs_sanctum_greaves',
+    name: 'Sanctum Greaves',
+    slot: 'legs',
+    skill: 'Medium Armor',
+    armor: 78,
+    weight: 6,
+    levelReq: 95,
+    value: 4170,
+    tags: [],
+    desc: "Greaves fitted for the long crossing toward Eidas's own sanctum."
+  },
+  {
+    id: 'heavy_body_redmoon_plate',
+    name: 'Redmoon Plate',
+    slot: 'body',
+    skill: 'Heavy Armor',
+    armor: 78,
+    weight: 10,
+    levelReq: 95,
+    statReqs: { strength: 98 },
+    value: 4300,
+    tags: [],
+    desc: "Heavy plate hammered at Frosthold's own forge from salvaged ward-plating, thick enough to stand a colossus's own charge."
+  },
+  {
+    id: 'heavy_head_redmoon_helm',
+    name: 'Redmoon Helm',
+    slot: 'head',
+    skill: 'Heavy Armor',
+    armor: 78,
+    weight: 10,
+    levelReq: 95,
+    statReqs: { strength: 98 },
+    value: 4250,
+    tags: [],
+    desc: 'A war-helm forged for the officers leading the crossing toward the red moon.'
+  },
+
+  // ---------- Armor: sub-tier (levelReq 98) ----------
+  {
+    id: 'light_legs_moonveil_leggings',
+    name: 'Moonveil Leggings',
+    slot: 'legs',
+    skill: 'Light Armor',
+    armor: 80, // TAPERED: effectiveLevelReq 35+0.7*63=79.1 -> round(1+79.1)=80
+    magicArmor: 25,
+    weight: 3,
+    levelReq: 98,
+    value: 4380,
+    tags: [],
+    desc: "Warded leggings woven for the last approach, where the bridge finally gives way to Eidas's own sanctum."
+  },
+  {
+    id: 'medium_feet_sanctum_boots',
+    name: 'Sanctum Boots',
+    slot: 'feet',
+    skill: 'Medium Armor',
+    armor: 80,
+    weight: 6,
+    levelReq: 98,
+    value: 4330,
+    tags: [],
+    desc: 'Sturdy boots re-soled at Frosthold for heroes ranging into the sanctum itself.'
+  },
+  {
+    id: 'heavy_legs_redmoon_legguards',
+    name: 'Redmoon Legguards',
+    slot: 'legs',
+    skill: 'Heavy Armor',
+    armor: 80,
+    weight: 10,
+    levelReq: 98,
+    statReqs: { strength: 100 },
+    value: 4460,
+    tags: [],
+    desc: "Massive plate legguards salvaged and reforged from a fallen ward-colossus's own armor."
+  },
+
+  // ---------- Consumables: H-Class Crystal/Sphere + Energy Stone, extending the graded line
+  // (G-Class I-II, levelReq 81-86) into Band F — the top class of the whole arc ----------
+  {
+    id: 'crystal_hclass_1',
+    name: 'H-Class Crystal I',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 91,
+    value: 1450,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 700,
+    desc: "A denser grade of Anima crystal cut from the Moon-Bridge itself, restoring more Energy than any G-Class grade."
+  },
+  {
+    id: 'crystal_hclass_2',
+    name: 'H-Class Crystal II',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 96,
+    value: 1755,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 740,
+    desc: "The deepest-grade Anima crystal ever cut, drawn only from seams within Eidas's own sanctum."
+  },
+  {
+    id: 'sphere_hclass_1',
+    name: 'H-Class Sphere I',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 91,
+    value: 1530,
+    tags: [],
+    combatUsable: true,
+    heal: 1200,
+    desc: 'A denser grade of Anima sphere, closing wounds faster than any G-Class grade.'
+  },
+  {
+    id: 'sphere_hclass_2',
+    name: 'H-Class Sphere II',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 96,
+    value: 1710,
+    tags: [],
+    combatUsable: true,
+    heal: 1260,
+    desc: "The deepest-grade Anima sphere ever worked, mended from Anima drawn only from Eidas's own sanctum."
+  },
+  {
+    id: 'stone_energy_moonbridge',
+    name: 'Moon-Bridge Energy Stone',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 95,
+    value: 920,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 640,
+    desc: 'A dependable Energy Stone sold at Frosthold Waystation for heroes crossing the Moon-Bridge.'
+  },
+
+  // ---------- Band F quest material ----------
+  {
+    id: 'quest_eidas_sigil_shard',
+    name: "Eidas's Sigil Shard",
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 1,
+    value: 12,
+    tags: ['no-trade'],
+    desc: "A shard of rune-inscribed ward-stone bearing Eidas's own sigil, dropped by his wardens and servitors alike. Waystation Commander Thessaly wants every shard she can get, hoping to chart exactly how far the renegade runologist's reach still extends."
+  },
+
+  // ---------- Band F unique equipment (monster-drop only; tag 'unique', +15-25% over the
+  // tapered tier per CLAUDE.md / SPEC-ARC-BANDS.md — never sold, never a synthesis input/output) ----------
+  {
+    id: 'light_body_voidmoon_wraps',
+    name: 'Voidmoon Wraps',
+    slot: 'body',
+    skill: 'Light Armor',
+    armor: 94, // +20% over the tapered tier-95 body armor (78)
+    damage: 11, // hybrid: armor granting a weapon-like Damage bonus, matching the anima_scoured_wraps/estari_anima_shroud precedent
+    weight: 3,
+    levelReq: 95,
+    value: 4620,
+    tags: ['unique'],
+    // boss-adjacent drop: moon_anima_stalker (js/data/monsters.js).
+    desc: "Wraps scoured raw by the same red-moon-warped Anima that gave the stalker wearing them its shape, its void-dark weave sharp enough to cut on contact this close to the bridge's far end."
+  },
+  {
+    id: 'rod_devourers_core',
+    name: "The Devourer's Core",
+    slot: 'weapon',
+    skill: 'Rods',
+    damage: 193, // +20% over the tapered levelReq-98 weapon-equivalent damage (~161)
+    armor: 12, // hybrid: a weapon carrying +Armor, a stat shop rods never have
+    weight: 4,
+    levelReq: 98,
+    statReqs: { intelligence: 108 },
+    value: 4620,
+    tags: ['unique'],
+    // boss-adjacent drop: moon_anima_devourer (js/data/monsters.js).
+    desc: "A rod grown whole from the devourer's own core, warding its wielder even as it channels the same red-moon-warped Anima that Eidas's divine race could never fully digest."
+  },
+  {
+    id: 'sword_ascendants_judgment',
+    name: "The Ascendant's Judgment",
+    slot: 'weapon',
+    skill: 'Swords',
+    damage: 195, // +24% over the tapered levelReq-95 damage (157)
+    magicArmor: 22, // hybrid: a weapon carrying +Magic Armor
+    weight: 7,
+    levelReq: 95,
+    statReqs: { strength: 108 },
+    value: 4760,
+    tags: ['unique'],
+    // boss signature: eidas_ascendant (js/data/monsters.js), the Band F lair boss and the arc's
+    // FINAL final boss — the capstone drop of the entire 41-100 level arc.
+    desc: "A blade struck whole from Eidas's own broken rune-plating, still humming with the same red-moon Anima he meant to remake himself with. Whatever divine race he founded out there, it never made a weapon as honest as the one that finally cut him down."
   }
 ];
 

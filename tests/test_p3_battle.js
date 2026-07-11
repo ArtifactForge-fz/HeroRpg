@@ -122,9 +122,9 @@ function makeCharacter(opts) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: data sanity (monsters reference real items/techs) ===');
-assert(Game.Data.monsters.length === 80, '80 monsters defined (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss + 6 Level-Arc Band D regulars + 1 Band D boss + 6 Level-Arc Band E regulars + 1 Band E boss), got ' + Game.Data.monsters.length);
+assert(Game.Data.monsters.length === 87, '87 monsters defined (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss + 6 Level-Arc Band D regulars + 1 Band D boss + 6 Level-Arc Band E regulars + 1 Band E boss + 6 Level-Arc Band F regulars + 1 Band F boss), got ' + Game.Data.monsters.length);
 var bosses = Game.Data.monsters.filter(function (m) { return m.boss; });
-assert(bosses.length === 10, 'exactly 10 bosses defined (Phase 6b adds 4 to the original estari_ruin_warden, Level-Arc Band A adds majiku_warlord, Band B adds majiku_ridge_chieftain, Band C adds ukai_deep_dweller, Band D adds estari_warden_prime, Band E adds society_anima_horror), got ' + bosses.length);
+assert(bosses.length === 11, 'exactly 11 bosses defined (Phase 6b adds 4 to the original estari_ruin_warden, Level-Arc Band A adds majiku_warlord, Band B adds majiku_ridge_chieftain, Band C adds ukai_deep_dweller, Band D adds estari_warden_prime, Band E adds society_anima_horror, Band F adds eidas_ascendant -- the arc\'s FINAL boss), got ' + bosses.length);
 var badRefs = [];
 Game.Data.monsters.forEach(function (m) {
   (m.drops || []).forEach(function (d) {
@@ -2300,6 +2300,196 @@ console.log('society_anima_horror sim results over ' + ANIMA_HORROR_SIM_COUNT + 
 // Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
 assert(sahWinRate >= 0.6, 'society_anima_horror is reliably beatable by a geared level-90 warrior (win rate ' + (sahWinRate * 100).toFixed(1) + '%, want >= 60%)');
 assert(sahAvgHpLeft <= 0.85 || sahAvgConsumed >= 1, 'society_anima_horror extracts a real cost on wins (avg HP left ' + (sahAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + sahAvgConsumed.toFixed(1) + ')');
+
+// =================== Test 45: Level-Arc Band F (The Red Moon / Eidas's Sanctum) monster formulas + boss premiums ===================
+console.log('\n=== Test 45: Band F regulars match the header formulas; eidas_ascendant carries the amplified FINALE boss premiums ===');
+var bandFRegularIds = [
+  'moonbridge_ward_sentinel', 'divine_race_initiate', 'moon_anima_stalker',
+  'sanctum_ward_colossus', 'divine_race_exemplar', 'moon_anima_devourer'
+];
+assert(bandFRegularIds.length === 6, 'sanity: 6 Band F regular monster ids listed in this test');
+bandFRegularIds.forEach(function (id) {
+  var m = Game.Battle.getMonsterDef(id);
+  assert(!!m, 'Band F regular monster exists: ' + id);
+  if (!m) return;
+  assert(m.hp === BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * m.level, id + ' hp matches the header formula exactly');
+  assert(m.damage === BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * m.level, id + ' damage matches the header formula exactly');
+  assert(m.energy === BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * m.level, id + ' energy matches the header formula exactly');
+  assert(m.xp === BALANCE.MONSTER_XP(m.level), id + ' xp matches BALANCE.MONSTER_XP(level)');
+});
+// Two thematic moon-anima-horror monsters carry the v1.2 Curse mechanic (phase brief).
+['moon_anima_stalker', 'moon_anima_devourer'].forEach(function (id) {
+  var m = Game.Battle.getMonsterDef(id);
+  assert(m.curseChance === BALANCE.CURSE_APPLY_CHANCE, id + ' carries curseChance BALANCE.CURSE_APPLY_CHANCE');
+});
+
+var eidasAscendant = Game.Battle.getMonsterDef('eidas_ascendant');
+assert(!!eidasAscendant && eidasAscendant.boss === true, 'eidas_ascendant exists and is a boss');
+assert(eidasAscendant.level === 100, 'eidas_ascendant is level 100 -- the arc\'s final boss');
+var eaBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 100;
+var eaBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 100;
+var eaStandardHpPremium = 12 * 100; // the F1 CONVENTION NOTES starting ballpark every other Level-Arc boss uses
+var eaAmplifiedHpPremium = Math.round(12 * 100 * 1.4); // Band F's deliberate FINALE amplification
+assert(eidasAscendant.hp === eaBaseHp + eaAmplifiedHpPremium, 'eidas_ascendant hp carries the amplified 1.4x hp premium (' + eaBaseHp + ' + ' + eaAmplifiedHpPremium + ' = ' + (eaBaseHp + eaAmplifiedHpPremium) + '), got ' + eidasAscendant.hp);
+assert(eidasAscendant.hp > eaBaseHp + eaStandardHpPremium, 'eidas_ascendant hp premium (' + eaAmplifiedHpPremium + ') exceeds the standard +12*level premium (' + eaStandardHpPremium + ') other Level-Arc bosses use -- the FINALE is deliberately tougher');
+assert(eidasAscendant.damage === eaBaseDmg + Math.round(1.5 * 100 + 10), 'eidas_ascendant damage carries the F1 round(1.5*level+10) boss premium (' + eaBaseDmg + ' + 160 = ' + (eaBaseDmg + 160) + '), got ' + eidasAscendant.damage);
+assert(eidasAscendant.xp === BALANCE.MONSTER_XP(100) * 3, 'eidas_ascendant xp carries the x3 boss premium');
+assert(eidasAscendant.curseChance === BALANCE.CURSE_APPLY_CHANCE, 'eidas_ascendant carries curseChance BALANCE.CURSE_APPLY_CHANCE, matching his moon-anima-horror creations');
+// The signature tech (mon_red_moons_judgment) is unique to this boss: no other monster in the
+// game knows it, and its power is far above the shared mon_* tech ceiling (~26) used by every
+// other monster tech in the game (those are shared flavor moves spanning the whole 1-100 range).
+var redMoonsJudgment = Game.Battle.getTech ? Game.Battle.getTech('mon_red_moons_judgment') : Game.Data.techs.filter(function (t) { return t.id === 'mon_red_moons_judgment'; })[0];
+assert(!!redMoonsJudgment, 'mon_red_moons_judgment tech exists');
+assert(redMoonsJudgment.power > 200, 'mon_red_moons_judgment power (' + redMoonsJudgment.power + ') is a real signature-strike spike, not a shared flavor move (want > 200)');
+assert(eidasAscendant.techs.indexOf('mon_red_moons_judgment') !== -1, 'eidas_ascendant knows its own signature tech mon_red_moons_judgment');
+Game.Data.monsters.forEach(function (m) {
+  if (m.id === 'eidas_ascendant') return;
+  assert((m.techs || []).indexOf('mon_red_moons_judgment') === -1, 'mon_red_moons_judgment is exclusive to eidas_ascendant, not known by ' + m.id);
+});
+
+// =================== Test 46: Level-Arc Band F weapon damage is TAPERED, not literal ===================
+console.log('\n=== Test 46: Band F levelReq-95/98 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
+var band95WeaponIds = [
+  'sword_redmoon_blade', 'polearm_moonbridge_halberd', 'knife_sanctum_fang',
+  'rod_lunar_conduit', 'hth_sanctum_gauntlets'
+];
+var literalDamage95 = 3 + 2 * 95; // 193 -- what a NON-tapered literal read would give
+var taperedDamage95 = 3 + 2 * taperedEffectiveLevelReq(95); // 157
+assert(taperedDamage95 === 157, 'sanity: the band-95 TAPERED damage value is 157, per the phase brief, got ' + taperedDamage95);
+band95WeaponIds.forEach(function (id) {
+  var it = Game.Inventory.getItem(id);
+  assert(!!it, 'Band F tier-95 weapon exists: ' + id);
+  if (!it) return;
+  assert(it.damage === taperedDamage95, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage95);
+  assert(it.damage !== literalDamage95, id + ' damage is NOT the literal-formula value ' + literalDamage95 + ' (the F1 taper must be applied)');
+});
+// Armor tapers the same way (round(1 + effectiveLevelReq)).
+var literalArmor95 = 1 + 95; // 96 -- literal read
+var taperedArmor95 = Math.round(1 + taperedEffectiveLevelReq(95)); // 78
+['light_body_moonveil_shroud', 'medium_body_sanctum_brigandine', 'heavy_body_redmoon_plate', 'shield_redmoon_aegis'].forEach(function (id) {
+  var it = Game.Inventory.getItem(id);
+  assert(!!it, 'Band F tier-95 armor/shield exists: ' + id);
+  if (!it) return;
+  assert(it.armor === taperedArmor95, id + ' armor (' + it.armor + ') equals the TAPERED value ' + taperedArmor95);
+  assert(it.armor !== literalArmor95, id + ' armor is NOT the literal-formula value ' + literalArmor95);
+});
+// Sub-tier (levelReq 98) tapers to a DIFFERENT value than the main tier (levelReq 95), confirming
+// the taper is re-derived per levelReq rather than a fixed band-wide constant.
+var literalArmor98 = 1 + 98; // 99 -- literal read
+var taperedArmor98 = Math.round(1 + taperedEffectiveLevelReq(98)); // 80
+['light_legs_moonveil_leggings', 'medium_feet_sanctum_boots', 'heavy_legs_redmoon_legguards'].forEach(function (id) {
+  var it = Game.Inventory.getItem(id);
+  assert(!!it, 'Band F sub-tier-98 armor exists: ' + id);
+  if (!it) return;
+  assert(it.armor === taperedArmor98, id + ' armor (' + it.armor + ') equals the TAPERED sub-tier value ' + taperedArmor98);
+  assert(it.armor !== literalArmor98, id + ' armor is NOT the literal-formula value ' + literalArmor98);
+  assert(it.armor !== taperedArmor95, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier tapered value ' + taperedArmor95 + ' (taper is re-derived per levelReq)');
+});
+
+// =================== Test 47: eidas_ascendant lair fight — THE ARC FINALE, winnable but the costliest fight in the game (real RNG sim) ===================
+console.log('\n=== Test 47: eidas_ascendant (Band F FINAL lair boss) is winnable but the costliest fight in the game for a geared level-100 warrior ===');
+function buildLevel100RedMoonWarrior() {
+  var skillPoints = {};
+  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
+  skillPoints['Swords'] = 3;
+  skillPoints['Heavy Armor'] = 2;
+  var c = Game.Character.create({
+    race: 'Human',
+    name: 'EidasAscendantTester',
+    gender: 'Male',
+    skillPoints: skillPoints
+  });
+  c.level = 100;
+  c.xp = BALANCE.XP_TO_LEVEL(100);
+  // 99 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
+  // (same split style as buildLevel90SkyspireWarrior above).
+  c.statPoints = 99 * BALANCE.LEVELUP_STAT_POINTS;
+  var totalPoints100 = c.statPoints;
+  for (var i = 0; i < totalPoints100; i++) {
+    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
+    Game.Character.spendStatPoint(c, stat);
+  }
+  var gearIds100 = ['sword_redmoon_blade', 'heavy_body_redmoon_plate', 'shield_redmoon_aegis'];
+  gearIds100.forEach(function (id) {
+    Game.Inventory.addItem(c, id);
+    var res = Game.Inventory.equip(c, id);
+    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
+  });
+  for (i = 0; i < 8; i++) {
+    Game.Inventory.addItem(c, 'sphere_hclass_1');
+    Game.Inventory.addItem(c, 'crystal_hclass_1');
+  }
+  Game.Character.recalcDerived(c);
+  c.hitPoints = c.hitPointsMax;
+  c.energy = c.energyMax;
+  return c;
+}
+
+function countBandFConsumables(c) {
+  var n = 0;
+  for (var i = 0; i < c.inventory.length; i++) {
+    if (c.inventory[i] === 'sphere_hclass_1' || c.inventory[i] === 'crystal_hclass_1') n++;
+  }
+  return n;
+}
+
+function simulateEidasAscendantBattle() {
+  var c = buildLevel100RedMoonWarrior();
+  Game.state.character = c;
+  Game.state.battle = null;
+  Game.Battle._rng = Math.random; // real RNG for this sim
+
+  var consumablesBefore = countBandFConsumables(c);
+  var battle = Game.Battle.start('eidas_ascendant');
+  var rounds = 0;
+  var MAX_ROUNDS = 800;
+  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
+    rounds++;
+    if (!Game.Battle.canAct(battle)) {
+      var crystalIdx = c.inventory.indexOf('crystal_hclass_1');
+      if (crystalIdx !== -1) {
+        Game.Battle.useItem('crystal_hclass_1');
+        continue;
+      }
+    }
+    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_hclass_1') !== -1) {
+      Game.Battle.useItem('sphere_hclass_1');
+      continue;
+    }
+    Game.Battle.attack();
+  }
+  var consumablesAfter = countBandFConsumables(c);
+  return {
+    phase: battle.phase,
+    hpLeftFrac: c.hitPoints / c.hitPointsMax,
+    consumablesConsumed: consumablesBefore - consumablesAfter
+  };
+}
+
+var EIDAS_ASCENDANT_SIM_COUNT = 60;
+var eaWins = 0;
+var eaOutcomes = {};
+var eaHpLeftSum = 0;
+var eaConsumedSum = 0;
+for (var eaRun = 0; eaRun < EIDAS_ASCENDANT_SIM_COUNT; eaRun++) {
+  var eaResult = simulateEidasAscendantBattle();
+  eaOutcomes[eaResult.phase] = (eaOutcomes[eaResult.phase] || 0) + 1;
+  if (eaResult.phase === 'won') {
+    eaWins++;
+    eaHpLeftSum += eaResult.hpLeftFrac;
+    eaConsumedSum += eaResult.consumablesConsumed;
+  }
+}
+var eaWinRate = eaWins / EIDAS_ASCENDANT_SIM_COUNT;
+var eaAvgHpLeft = eaWins ? eaHpLeftSum / eaWins : 0;
+var eaAvgConsumed = eaWins ? eaConsumedSum / eaWins : 0;
+console.log('eidas_ascendant sim results over ' + EIDAS_ASCENDANT_SIM_COUNT + ' battles: ' + JSON.stringify(eaOutcomes) +
+  ' — win rate ' + (eaWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (eaAvgHpLeft * 100).toFixed(0) +
+  '%, avg consumables spent ' + eaAvgConsumed.toFixed(1));
+// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables --
+// but as the FINALE, eidas_ascendant should be the COSTLIEST fight in the game (not unwinnable).
+assert(eaWinRate >= 0.6, 'eidas_ascendant is winnable by a geared level-100 warrior (win rate ' + (eaWinRate * 100).toFixed(1) + '%, want >= 60%, per the difficulty contract\'s "not unwinnable" floor)');
+assert(eaAvgConsumed >= 2, 'eidas_ascendant extracts a heavier cost than a normal band boss (avg consumables spent ' + eaAvgConsumed.toFixed(1) + ', want >= 2 -- society_anima_horror\'s Band E sim spent ~1.4)');
 
 // =================== Summary ===================
 console.log('\n===================================');

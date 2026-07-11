@@ -587,7 +587,19 @@ Game.Data.areas = [
           'heavy_body_spireward_plate', 'heavy_head_spireward_helm',
           'light_legs_stormline_leggings', 'medium_feet_stormline_boots', 'heavy_legs_stormline_legguards',
           'crystal_gclass_1', 'crystal_gclass_2', 'sphere_gclass_1', 'sphere_gclass_2',
-          'stone_energy_skyspire'
+          'stone_energy_skyspire',
+          // Level-Arc Band F (docs/SPEC-ARC-BANDS.md): the Red Moon / Eidas's Sanctum tier-95/98
+          // gear and H-Class consumables (js/data/items.js) — THE ARC FINALE. Frosthold Waystation
+          // is still the last hub before the final push, so Band F adds no new settlement and
+          // simply extends this stock one last time.
+          'sword_redmoon_blade', 'polearm_moonbridge_halberd', 'knife_sanctum_fang',
+          'rod_lunar_conduit', 'hth_sanctum_gauntlets', 'shield_redmoon_aegis',
+          'light_body_moonveil_shroud', 'light_head_moonveil_hood',
+          'medium_body_sanctum_brigandine', 'medium_legs_sanctum_greaves',
+          'heavy_body_redmoon_plate', 'heavy_head_redmoon_helm',
+          'light_legs_moonveil_leggings', 'medium_feet_sanctum_boots', 'heavy_legs_redmoon_legguards',
+          'crystal_hclass_1', 'crystal_hclass_2', 'sphere_hclass_1', 'sphere_hclass_2',
+          'stone_energy_moonbridge'
         ]
       },
       { type: 'inn' },
@@ -690,6 +702,48 @@ Game.Data.areas = [
     lair: { monsterId: 'society_anima_horror', minLevel: 90, name: "The Society's Last Sanctum" },
     facilities: [],
     desc: "The spans thin out this high, open on every side to the wind and to whatever the Society of Modern Magic was still working on when Eidas sailed for the red moon without them. Something down in the tower's own sanctum has outgrown every leash the Society ever put on it — Anima given shape and hunger, exactly the outcome the Council of Three's old ban was written to prevent."
+  },
+
+  // =====================================================================
+  // Level-Arc Band F (docs/SPEC-ARC-BANDS.md, F2/F3): The Red Moon / Eidas's Sanctum, levels
+  // 91-100 — THE ARC FINALE. From the Skyspire's own uppermost spans, the story finally crosses:
+  // whatever bridged the gap between Exos and the red moon, Eidas built it, and it's still there
+  // (DESIGN.md §2 lore: renegade runologist Eidas departed for the red moon to found a "divine
+  // race" — archived, Prelude.md/Chapter I). Two overlapping hunting bands (The Moon-Bridge
+  // 91-94, Eidas's Sanctum 96-99; gap of 2 levels, under the archived ±5 XP/loot cutoff,
+  // BALANCE.XP_LOOT_CUTOFF_LEVELS) plus the arc's FINAL lair boss. NO new settlement — Frosthold
+  // Waystation (Band C) already serves the whole 61-90 range and is the last hub before the final
+  // push (players stock up there one last time). Same travel-reachability note as Bands A-E:
+  // js/ui/screens.js renderExplore lists ALL of Game.Data.areas as destinations, gated only by
+  // Game.World.travelTo's level check — no separate adjacency graph.
+  // =====================================================================
+
+  // ---------- The Moon-Bridge: level 91-94 hunting ----------
+  {
+    id: 'moon_bridge',
+    name: 'The Moon-Bridge',
+    type: 'hunting',
+    minLevel: 91,
+    // The crossing itself: whatever Eidas built to reach the red moon, still standing, still
+    // guarded by his own ward-constructs and the first of his "divine race" progeny.
+    monsters: ['moonbridge_ward_sentinel', 'divine_race_initiate', 'moon_anima_stalker'],
+    facilities: [],
+    desc: "A span of rune-inscribed stone that should not exist, arcing up off the Skyspire's highest platform and out past the sky itself, straight toward the red moon hanging fat and close on the horizon. Eidas built this, three centuries gone, and never came back down it. His ward-sentinels never stood down either — and neither did whatever his 'divine race' has become since."
+  },
+
+  // ---------- Eidas's Sanctum: level 96-99 hunting + lair boss ----------
+  {
+    id: 'eidas_sanctum',
+    name: "Eidas's Sanctum",
+    type: 'hunting',
+    minLevel: 96,
+    monsters: ['sanctum_ward_colossus', 'divine_race_exemplar', 'moon_anima_devourer'],
+    // The boss is a separate "Lair" entry, fightable only once the party is closer to its own
+    // level (invented gate, matches the majiku_warlord/majiku_ridge_chieftain/ukai_deep_dweller/
+    // estari_warden_prime/society_anima_horror precedent).
+    lair: { monsterId: 'eidas_ascendant', minLevel: 100, name: "The Ascendant's Chamber" },
+    facilities: [],
+    desc: "The red moon's own ground, if it can even be called that — a sanctum of rune-stone and raw Anima light, grown rather than built past a certain point. Whatever Eidas found or made out here, it answers to him alone, and it has had three centuries to grow into something the Council of Three's old ban was never written broadly enough to stop. At the sanctum's heart, the renegade runologist himself is still waiting — ascended, changed, and very much not finished."
   }
 ];
 

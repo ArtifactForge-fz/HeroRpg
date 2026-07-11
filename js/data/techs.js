@@ -1215,6 +1215,115 @@ Game.Data.techs = [
     trainingCost: 14,
     skillReq: 60,
     desc: 'The Skyspire-era form of Impale, taught only once a polearm-wielder has proven the first seven ranks. Requires Impale VII and Polearms 60.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band F (docs/SPEC-ARC-BANDS.md, F2/F3): THE ARC FINALE. One further rank into the
+  // same two magic-school chains and two weapon-tech chains Bands A-E extended, gated by skill
+  // level per the existing Academy chain model (js/core/world.js previousRankId/canLearn —
+  // rank>1 requires the previous rank known AND the governing skill >= skillReq). skillReq 70 is
+  // comfortably inside a level 91+ character's skill cap (BALANCE.SKILL_CAP(91) = 183) for anyone
+  // who has actually trained the skill. Numeric progressions (power/powerMult/energyCost/
+  // trainingCost) continue each chain's existing rank-to-rank deltas (e.g. Firebolt's power
+  // deltas 20/20/20 -> +20 here) — these are the top-tier player techs in the game.
+  // =====================================================================
+  {
+    id: 'tech_firebolt_9',
+    name: 'Firebolt IX',
+    chain: 'Firebolt',
+    rank: 9,
+    skill: 'Evocation',
+    grade: 'Fire',
+    energyCost: 60,
+    power: 152,
+    effect: 'damage',
+    trainingCost: 16,
+    skillReq: 70,
+    desc: 'The Red-Moon-era form of Firebolt, the highest rank ever taught — reserved for Evocation adepts who have proven the first eight ranks. Requires Firebolt VIII and Evocation 70.'
+  },
+  {
+    id: 'tech_mend_wounds_9',
+    name: 'Mend Wounds IX',
+    chain: 'Mend Wounds',
+    rank: 9,
+    skill: 'Abjuration',
+    grade: 'Light',
+    energyCost: 58,
+    power: 214,
+    effect: 'heal',
+    trainingCost: 16,
+    skillReq: 70,
+    desc: 'A Red-Moon-era working of Light-grade Anima, the highest rank ever taught, mending wounds no earlier rank could close. Requires Mend Wounds VIII and Abjuration 70. Unaffected by Fear (Fear.md).'
+  },
+  {
+    id: 'tech_cleave_9',
+    name: 'Cleave IX',
+    chain: 'Cleave',
+    rank: 9,
+    skill: 'Swords',
+    grade: null,
+    weaponTech: true,
+    powerMult: 4.1, // invented (user-directed)
+    energyCost: 46,
+    effect: 'damage',
+    trainingCost: 16,
+    skillReq: 70,
+    desc: 'The Red-Moon-era form of Cleave, the highest rank ever taught — reserved for swordsmen who have proven the first eight ranks. Requires Cleave VIII and Swords 70.'
+  },
+  {
+    id: 'tech_impale_9',
+    name: 'Impale IX',
+    chain: 'Impale',
+    rank: 9,
+    skill: 'Polearms',
+    grade: null,
+    weaponTech: true,
+    powerMult: 4.0, // invented (user-directed)
+    armorPierce: 0.35, // invented (user-directed)
+    energyCost: 46,
+    effect: 'damage',
+    trainingCost: 16,
+    skillReq: 70,
+    desc: 'The Red-Moon-era form of Impale, the highest rank ever taught — reserved for polearm-wielders who have proven the first eight ranks. Requires Impale VIII and Polearms 70.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band F monster-only techniques. mon_radiant_smite is a Light-grade signature strike
+  // for Eidas's "divine race" servitors (divine_race_initiate/divine_race_exemplar,
+  // js/data/monsters.js) — no prior mon_* tech carried the Light grade. mon_red_moons_judgment is
+  // eidas_ascendant's OWN signature strike (js/data/monsters.js): unlike every other mon_* tech,
+  // which is shared flavor used across the whole 1-100 level range and so caps its power around
+  // 26 (it can't scale to any one boss), this one is used ONLY by the arc's final boss, so its
+  // power is deliberately close to that boss's own premiumed basic-attack damage — the "signature
+  // high-damage tech" the Band F brief (docs/SPEC-ARC-BANDS.md) calls for, making the finale
+  // costlier without inflating the shared boss damage-premium formula every other Level-Arc boss
+  // was tuned against.
+  // =====================================================================
+  {
+    id: 'mon_radiant_smite',
+    name: 'Radiant Smite',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: 'Light',
+    energyCost: 18,
+    power: 24,
+    effect: 'damage',
+    monsterOnly: true,
+    desc: "A blinding lance of Light-grade Anima, the signature strike of Eidas's divine-race servitors."
+  },
+  {
+    id: 'mon_red_moons_judgment',
+    name: "Red Moon's Judgment",
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: 'Star',
+    energyCost: 70,
+    power: 240,
+    effect: 'damage',
+    monsterOnly: true,
+    desc: "Eidas's own working, a devastating lance of Star-grade Anima drawn straight from the red moon itself — used by nothing else in Exos."
   }
 ];
 

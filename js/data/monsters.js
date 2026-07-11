@@ -2231,6 +2231,236 @@ Game.Data.monsters = [
       { itemId: 'sword_anima_horrors_edge', chance: 0.05 }
     ],
     desc: "The last thing the Society of Modern Magic ever built, or the first thing it stopped being able to control — raw Anima given a shape vast enough to fill the sanctum Eidas left behind. It does not remember the Council of Three's ban, or the Society's own founding purpose. It only remembers that it is hungry, and that the Skyspire is its own."
+  },
+
+  // =====================================================================
+  // Level-Arc Band F (docs/SPEC-ARC-BANDS.md, F2/F3): The Red Moon / Eidas's Sanctum, levels
+  // 91-100 — THE ARC FINALE. Same header formulas, unchanged: hp = 20+12*level, damage =
+  // 3+2*level, energy = 40+10*level, xp = BALANCE.MONSTER_XP(level); armor varied per archetype,
+  // capped well under a same-level warrior's expected hit (per the estari_loose_rubble
+  // milestone-gate retune). goldMin/goldMax continue the Band A-E linear trend (goldMin =
+  // 50+2*(level-41), goldMax = 2*goldMin); shardChance continues the same 0.32+0.02*(level-41)
+  // trend, but that formula has exceeded 1.0 since around level 75 (Band D), so every regular
+  // here is capped at 0.95 (same cap Bands D/E used). Two thematic moon-anima-horror monsters
+  // carry curseChance (v1.2 Curse mechanic, BALANCE.CURSE_APPLY_CHANCE), continuing Bands A-E's
+  // coverage; monster techs mostly reuse the existing mon_* roster (js/data/techs.js), plus ONE
+  // new Light-grade monster tech (mon_radiant_smite) for Eidas's "divine race" servitors — no
+  // existing mon_* tech carried the Light grade, and Light fits the "divine race" flavor better
+  // than reusing Dark (already the moon-anima-horrors' signature grade here, same as Bands D/E's
+  // anima-horror lineage).
+  //
+  // FINALE BOSS (eidas_ascendant, level 100): this is Eidas HIMSELF, not the L36-40 "Eidas' Echo"
+  // act-break boss (js/data/monsters.js eidas_echo, kept untouched and unrenamed) — that Echo was
+  // explicitly "not Eidas himself... an Anima-projection... murmuring about a 'divine race' that
+  // never came to pass" (eidas_echo's own desc). Band F is the payoff: the divine race DID come
+  // to pass, out on the red moon, and Eidas Ascendant is what Eidas became. As the arc's capstone
+  // fight it goes past the F1 CONVENTION NOTES starting ballpark on purpose (docs/SPEC-ARC-BANDS.md
+  // Band F row: "make it the toughest fight in the game"): hp premium is 1.4x the standard
+  // +12*level pattern (round(12*100*1.4) = 1680, not the standard 1200) and it carries a NEW
+  // signature tech (mon_red_moons_judgment, grade Star, monsterOnly) whose power (240) is
+  // deliberately close to its own premiumed basic-attack damage — unlike every other mon_* tech,
+  // which caps out around power 26 because those are shared flavor moves used across the WHOLE
+  // 1-100 level range and can't scale to any one boss. The damage premium itself stays at the F1
+  // ballpark (round(1.5*100+10) = 160) so the "signature toughness" comes from HP + the signature
+  // tech's spike potential, not from inflating the convention's damage-premium formula itself.
+  // Sim-verified (tests/test_p3_battle.js): winnable but the costliest fight in the game — see
+  // that test's sim numbers.
+  // =====================================================================
+
+  // ---------- The Moon-Bridge (level 91-94) ----------
+  {
+    id: 'moonbridge_ward_sentinel',
+    name: 'Moon-Bridge Ward Sentinel',
+    level: 91,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 91,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 91,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 91,
+    armor: 96, // tank profile: level+5, a ward-construct guardian, same profile as skyspire_lower_warden/estari_sublevel_warden's tank kin
+    magicArmor: 20,
+    element: null,
+    resistances: {},
+    techs: ['mon_stone_slam'],
+    xp: BALANCE.MONSTER_XP(91),
+    goldMin: 150,
+    goldMax: 300,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'sword_redmoon_blade', chance: 0.03 },
+      { itemId: 'crystal_hclass_1', chance: 0.08 },
+      { itemId: 'quest_eidas_sigil_shard', chance: 0.5 }
+    ],
+    desc: "A ward-construct set to guard the Moon-Bridge crossing since before Eidas ever sailed for the red moon, still hammering intruders with the same crushing purpose it was built for."
+  },
+
+  // ---------- Level 92 ----------
+  {
+    id: 'divine_race_initiate',
+    name: 'Divine-Race Initiate',
+    level: 92,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 92,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 92,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 92,
+    armor: 78, // glass cannon: level-14, same profile as society_remnant_battlemage/estari_anima_conduit
+    magicArmor: 13,
+    element: 'Light',
+    resistances: { Light: 0.5, Dark: -0.3 },
+    techs: ['mon_radiant_smite'],
+    xp: BALANCE.MONSTER_XP(92),
+    goldMin: 152,
+    goldMax: 304,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'knife_sanctum_fang', chance: 0.03 },
+      { itemId: 'sphere_hclass_1', chance: 0.08 }
+    ],
+    desc: "One of the first of Eidas's 'divine race' progeny, newly touched by the red moon's own Light and set to guard the bridge he never came back across."
+  },
+
+  // ---------- Level 94 (curse-flavored anima/undead) ----------
+  {
+    id: 'moon_anima_stalker',
+    name: 'Moon-Anima Stalker',
+    level: 94,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 94,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 94,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 94,
+    armor: 82, // spell-wall profile: level-12, thin hide, magicArmor well above armor
+    magicArmor: 120,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Star: -0.3 },
+    // v1.2 Curse mechanic (BALANCE.CURSE_APPLY_CHANCE), continuing Band A-E's anima-scarred
+    // lineage — here raw Anima warped by the red moon's own light into a hunting shape.
+    curseChance: BALANCE.CURSE_APPLY_CHANCE,
+    techs: ['mon_dark_hex', 'mon_anima_lance'],
+    xp: BALANCE.MONSTER_XP(94),
+    goldMin: 156,
+    goldMax: 312,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'crystal_hclass_1', chance: 0.08 },
+      // Band F unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'light_body_voidmoon_wraps', chance: 0.02 }
+    ],
+    desc: "Raw Anima warped by the red moon's own light into a hunting shape, kin to the anima-horrors of the Skyspire sanctum but hungrier still, stalking anything that crosses the bridge."
+  },
+
+  // ---------- Eidas's Sanctum (level 96-99) ----------
+  {
+    id: 'sanctum_ward_colossus',
+    name: 'Sanctum Ward Colossus',
+    level: 96,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 96,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 96,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 96,
+    armor: 103, // tank profile: level+7, the sanctum's own vanguard, same profile as skyspire_upper_sentinel/estari_ruin_vanguard
+    magicArmor: 28,
+    element: null,
+    resistances: {},
+    techs: ['mon_hunters_mark', 'mon_earthen_crush'],
+    xp: BALANCE.MONSTER_XP(96),
+    goldMin: 160,
+    goldMax: 320,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'stone_energy_moonbridge', chance: 0.08 },
+      { itemId: 'quest_eidas_sigil_shard', chance: 0.5 }
+    ],
+    desc: "One of the sanctum's own ward-colossi, held at the threshold to answer for anything the bridge's own wardens and stalking horrors fail to turn back."
+  },
+
+  // ---------- Level 97 ----------
+  {
+    id: 'divine_race_exemplar',
+    name: 'Divine-Race Exemplar',
+    level: 97,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 97,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 97,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 97,
+    armor: 83, // glass cannon: level-14, same profile as divine_race_initiate/society_remnant_battlemage
+    magicArmor: 15,
+    element: 'Light',
+    resistances: { Light: 0.5, Dark: -0.3 },
+    techs: ['mon_radiant_smite'],
+    xp: BALANCE.MONSTER_XP(97),
+    goldMin: 162,
+    goldMax: 324,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'rod_lunar_conduit', chance: 0.03 },
+      { itemId: 'sphere_hclass_2', chance: 0.08 }
+    ],
+    desc: "A fuller-formed exemplar of Eidas's divine race, closer to whatever he truly intended it to become before the red moon changed the plan."
+  },
+
+  // ---------- Level 99 (curse-flavored anima/undead) ----------
+  {
+    id: 'moon_anima_devourer',
+    name: 'Moon-Anima Devourer',
+    level: 99,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 99,
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 99,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 99,
+    armor: 87, // spell-wall profile: level-12
+    magicArmor: 124,
+    element: 'Dark',
+    resistances: { Dark: 0.5, Star: -0.3 },
+    // v1.2 Curse mechanic (BALANCE.CURSE_APPLY_CHANCE) — Band F's second thematic curse
+    // carrier, grown huge on whatever red-moon Anima the sanctum has been leaking, previewing
+    // the boss's own scale.
+    curseChance: BALANCE.CURSE_APPLY_CHANCE,
+    techs: ['mon_anima_lance', 'mon_dark_hex'],
+    xp: BALANCE.MONSTER_XP(99),
+    goldMin: 166,
+    goldMax: 332,
+    shardChance: 0.95,
+    drops: [
+      { itemId: 'sphere_hclass_2', chance: 0.08 },
+      // Band F unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
+      { itemId: 'rod_devourers_core', chance: 0.02 }
+    ],
+    desc: "The largest thing the red moon has grown yet, its appetite scaled to match — the last and hungriest thing standing between the sanctum's outer halls and Eidas himself."
+  },
+
+  // ---------- Lair boss: Eidas Ascendant (level 100) — THE FINAL BOSS ----------
+  // invented Band F capstone (docs/SPEC-ARC-BANDS.md): the arc's FINALE, deliberately tuned
+  // ABOVE the F1 CONVENTION NOTES starting ballpark (js/balance.js) so it reads as the toughest
+  // fight in the game: hp premium is 1.4x the standard +12*level pattern (round(12*100*1.4) =
+  // 1680, not the standard 1200 every other Level-Arc boss uses), while the damage premium stays
+  // at the F1 ballpark itself (round(1.5*level+10) = round(160) = 160) — the extra difficulty
+  // comes from raw HP plus a new signature tech (mon_red_moons_judgment) rather than from
+  // inflating the shared damage-premium formula every other boss in the arc was tuned against.
+  // xp premium x3, matching every other Level-Arc boss. "Winnable but costly" per the difficulty
+  // contract, CLAUDE.md — sim-verified in tests/test_p3_battle.js as the costliest fight in the
+  // game (lower avg HP left / more consumables spent on a win than any prior band boss).
+  {
+    id: 'eidas_ascendant',
+    name: 'Eidas Ascendant',
+    level: 100,
+    boss: true,
+    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 100 + Math.round(12 * 100 * 1.4), // 1220 + 1680 = 2900
+    energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 100,
+    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 100 + Math.round(1.5 * 100 + 10), // 203 + 160 = 363
+    armor: 64,
+    magicArmor: 62,
+    element: 'Star',
+    resistances: { Star: 0.5, Earth: -0.3 },
+    // v1.2 Curse mechanic — the ascended Eidas carries it too, matching his moon-anima-horror
+    // creations and making the fight costlier still.
+    curseChance: BALANCE.CURSE_APPLY_CHANCE,
+    techs: ['mon_radiant_smite', 'mon_dark_hex', 'mon_earthen_crush', 'mon_red_moons_judgment'],
+    xp: BALANCE.MONSTER_XP(100) * 3, // invented: boss XP premium
+    goldMin: 420,
+    goldMax: 660,
+    shardChance: 0.8,
+    drops: [
+      { itemId: 'heavy_head_redmoon_helm', chance: 0.1 },
+      { itemId: 'quest_eidas_sigil_shard', chance: 0.6 },
+      // Band F unique equipment (js/data/items.js) — boss signature, the arc's FINAL capstone
+      // drop. Appended last so prior loot rates (including the guaranteed-ish shard above) are
+      // unchanged.
+      { itemId: 'sword_ascendants_judgment', chance: 0.05 }
+    ],
+    desc: "Not an echo this time. Eidas himself, three centuries gone and changed past anything Kastengard's Society ever imagined — the 'divine race' was never a failure, hero, only unfinished, and he finished it on himself first. Whatever answers you were chasing since the Skyspire, they end here, in the light of the moon he built his sanctum to reach."
   }
 ];
 

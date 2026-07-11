@@ -194,3 +194,30 @@ other icon in `assets/icons/` (374 files total, zero duplicate hashes) — not j
 other. The lead's real-DCSS-tile pass at the end of the Level-Arc work should replace these 35
 placeholders the same way the P5 pass replaced the v1.2 ones and Bands A/B/C/D's are slated to be
 replaced.
+
+## Level-Arc Band F icons — procedural placeholders (pending the lead's real-tile pass)
+
+The 35 new ids introduced by Level-Arc Band F (The Red Moon / Eidas's Sanctum, levels 91-100 —
+`docs/SPEC-ARC-BANDS.md`, THE ARC FINALE) use hand-generated procedural placeholder tiles, not real
+Dungeon Crawl art: 7 new monsters (`moonbridge_ward_sentinel`, `divine_race_initiate`,
+`moon_anima_stalker`, `sanctum_ward_colossus`, `divine_race_exemplar`, `moon_anima_devourer`,
+`eidas_ascendant` — the arc's final boss), 6 weapons/shield (`sword_redmoon_blade`,
+`polearm_moonbridge_halberd`, `knife_sanctum_fang`, `rod_lunar_conduit`, `hth_sanctum_gauntlets`,
+`shield_redmoon_aegis`), 9 armor pieces (`light_body_moonveil_shroud`, `light_head_moonveil_hood`,
+`medium_body_sanctum_brigandine`, `medium_legs_sanctum_greaves`, `heavy_body_redmoon_plate`,
+`heavy_head_redmoon_helm`, `light_legs_moonveil_leggings`, `medium_feet_sanctum_boots`,
+`heavy_legs_redmoon_legguards`), 5 consumables (`crystal_hclass_1`, `crystal_hclass_2`,
+`sphere_hclass_1`, `sphere_hclass_2`, `stone_energy_moonbridge`), 1 quest material
+(`quest_eidas_sigil_shard`), 3 unique items (`light_body_voidmoon_wraps`, `rod_devourers_core`,
+`sword_ascendants_judgment` — the arc's final capstone drop), and 4 techs (`tech_firebolt_9`,
+`tech_mend_wounds_9`, `tech_cleave_9`, `tech_impale_9`).
+
+Generated with the same hand-rolled per-id-hash placeholder approach as Bands A/B/C/D/E above
+(deterministic fill/accent colors + one of 5 patterns — border ring, diagonal stripes, checker
+quadrants, cross, or concentric ring — plus a small corner mark); the PNG container itself is built
+with Node's `zlib.deflateSync`/manual chunk+CRC32 writer, guaranteeing a structurally valid stream.
+All 35 were verified programmatically as valid 32x32 RGBA PNGs and byte-hash-distinct from every
+other icon in `assets/icons/` (409 files total, zero duplicate hashes) — not just against each
+other. The lead's real-DCSS-tile pass at the end of the Level-Arc work should replace these 35
+placeholders the same way the P5 pass replaced the v1.2 ones and Bands A/B/C/D/E's are slated to
+be replaced.

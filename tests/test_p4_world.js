@@ -118,10 +118,10 @@ function makeCharacter(opts) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: areas/monsters/items data sanity ===');
-assert(Game.Data.areas.length === 26, '26 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A + Level-Arc Band A\'s kuraan_fringe_woods/deep_kuraan/kuraan_reclamation_camp + Band B\'s majiku_border_steppe/highland_war_camps, NO new Band B settlement + Band C\'s glacial_approach/ukai_undercaverns/frosthold_waystation + Band D\'s estari_sublevels/anima_wellspring, NO new Band D settlement + Band E\'s skyspire_lower_spans/skyspire_upper_spans, NO new Band E settlement, per SPEC-ARC-BANDS.md), got ' + Game.Data.areas.length);
+assert(Game.Data.areas.length === 28, '28 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A + Level-Arc Band A\'s kuraan_fringe_woods/deep_kuraan/kuraan_reclamation_camp + Band B\'s majiku_border_steppe/highland_war_camps, NO new Band B settlement + Band C\'s glacial_approach/ukai_undercaverns/frosthold_waystation + Band D\'s estari_sublevels/anima_wellspring, NO new Band D settlement + Band E\'s skyspire_lower_spans/skyspire_upper_spans, NO new Band E settlement + Band F\'s moon_bridge/eidas_sanctum, NO new Band F settlement, per SPEC-ARC-BANDS.md), got ' + Game.Data.areas.length);
 var townCount = Game.Data.areas.filter(function (a) { return a.type === 'town'; }).length;
-assert(townCount === 7, '7 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp + Kuraan Reclamation Camp + Frosthold Waystation — Bands B, D and E add no new town, Band C adds Frosthold Waystation), got ' + townCount);
-assert(Game.Data.monsters.length === 80, '80 monsters (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss + 6 Level-Arc Band D regulars + 1 Band D boss + 6 Level-Arc Band E regulars + 1 Band E boss), got ' + Game.Data.monsters.length);
+assert(townCount === 7, '7 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp + Kuraan Reclamation Camp + Frosthold Waystation — Bands B, D, E and F add no new town, Band C adds Frosthold Waystation), got ' + townCount);
+assert(Game.Data.monsters.length === 87, '87 monsters (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss + 6 Level-Arc Band D regulars + 1 Band D boss + 6 Level-Arc Band E regulars + 1 Band E boss + 6 Level-Arc Band F regulars + 1 Band F boss), got ' + Game.Data.monsters.length);
 var gares = Game.World.getArea('gares_riverbanks');
 assert(gares && gares.monsters.length === 7, 'Gares Riverbanks lists 7 monsters (4 original + 3 enemy-variety-pass)');
 gares.monsters.forEach(function (mid) {
@@ -420,6 +420,58 @@ assert(connToUpperSpansBlocked.ok === false, 'level 81 cannot yet reach Skyspire
 connCheckE.level = 86;
 var connToUpperSpans = Game.World.travelTo('skyspire_upper_spans');
 assert(connToUpperSpans.ok === true, 'level 86 reaches Skyspire Upper Spans directly from Skyspire Lower Spans');
+
+// =================== Test 0i: Level-Arc Band F — The Red Moon / Eidas's Sanctum (THE ARC FINALE) ===================
+console.log('\n=== Test 0i: The Moon-Bridge / Eidas\'s Sanctum exist, level-gated, huntable, travel-reachable ===');
+var moonBridge = Game.World.getArea('moon_bridge');
+var eidasSanctum = Game.World.getArea('eidas_sanctum');
+assert(!!moonBridge && moonBridge.type === 'hunting', 'The Moon-Bridge exists as a hunting area');
+assert(moonBridge.minLevel === 91, 'The Moon-Bridge gates travel at minLevel 91');
+assert(!!eidasSanctum && eidasSanctum.type === 'hunting', "Eidas's Sanctum exists as a hunting area");
+assert(eidasSanctum.minLevel === 96, "Eidas's Sanctum gates travel at minLevel 96");
+assert(!!eidasSanctum.lair && eidasSanctum.lair.monsterId === 'eidas_ascendant' && eidasSanctum.lair.minLevel === 100, "Eidas's Sanctum carries the eidas_ascendant lair (THE FINAL BOSS) gated at minLevel 100");
+// No new settlement for Band F — Frosthold Waystation (Band C) is still the last hub before the
+// final push.
+['shop', 'inn', 'vault', 'academy', 'shrine', 'tavern'].forEach(function (t) {
+  assert(!!Game.World.getFacility(frostholdWaystation, t), 'Frosthold Waystation still has facility: ' + t);
+});
+// No gap wider than the archived ±5 XP/loot cutoff between the two hunting bands' monster levels.
+var moonBridgeLevels = moonBridge.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var eidasSanctumLevels = eidasSanctum.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var maxMoonBridgeLevel = Math.max.apply(null, moonBridgeLevels);
+var minEidasSanctumLevel = Math.min.apply(null, eidasSanctumLevels);
+assert(minEidasSanctumLevel - maxMoonBridgeLevel < BALANCE.XP_LOOT_CUTOFF_LEVELS, 'no gap wider than the ±5 XP/loot cutoff between The Moon-Bridge (max lvl ' + maxMoonBridgeLevel + ') and Eidas\'s Sanctum (min lvl ' + minEidasSanctumLevel + ')');
+// Also no gap wider than the cutoff versus the PRIOR band's top hunting area (Skyspire Upper
+// Spans, max lvl 89), confirming continuous coverage across the Band E/F seam, and that Band F's
+// minLevel 91 stays within ±5 of Band E's top area (Skyspire Upper Spans, minLevel 86).
+var upperSpansLevelsForGap = Game.World.getArea('skyspire_upper_spans').monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
+var maxUpperSpansLevel = Math.max.apply(null, upperSpansLevelsForGap);
+var minMoonBridgeLevel = Math.min.apply(null, moonBridgeLevels);
+assert(minMoonBridgeLevel - maxUpperSpansLevel < BALANCE.XP_LOOT_CUTOFF_LEVELS, 'no gap wider than the ±5 XP/loot cutoff between Skyspire Upper Spans (max lvl ' + maxUpperSpansLevel + ') and The Moon-Bridge (min lvl ' + minMoonBridgeLevel + ')');
+assert(moonBridge.minLevel - skyspireUpperSpans.minLevel <= BALANCE.XP_LOOT_CUTOFF_LEVELS, 'Band F\'s Moon-Bridge minLevel (91) stays within the ±5 cutoff of Band E\'s top area minLevel (Skyspire Upper Spans, 86)');
+// Frosthold Waystation's shop stocks Band F's tapered gear/consumables (the last stock refresh
+// before the final push).
+var frostholdShopF = Game.World.getFacility(frostholdWaystation, 'shop');
+['sword_redmoon_blade', 'shield_redmoon_aegis', 'crystal_hclass_1', 'sphere_hclass_1', 'stone_energy_moonbridge'].forEach(function (iid) {
+  assert(frostholdShopF.stock.indexOf(iid) !== -1, 'Frosthold Waystation shop stocks Band F gear/consumable: ' + iid);
+  assert(!!Game.Inventory.getItem(iid), 'Band F shop stock item resolves: ' + iid);
+});
+// Travel connectivity: same mechanism as Bands A-E (js/ui/screens.js renderExplore lists ALL
+// areas, gated only by Game.World.travelTo's level check) — a level-91 character standing
+// anywhere must be able to reach The Moon-Bridge directly.
+var connCheckF = makeCharacter({ name: 'ConnectivityTestF' });
+connCheckF.level = 90;
+var connBlockedF = Game.World.travelTo('moon_bridge');
+assert(connBlockedF.ok === false, 'a level-90 character cannot yet reach The Moon-Bridge');
+connCheckF.level = 91;
+var connAllowedF = Game.World.travelTo('moon_bridge');
+assert(connAllowedF.ok === true, 'a fresh level-91 character reaches The Moon-Bridge directly (no adjacency graph): ' + connAllowedF.message);
+assert(connCheckF.currentLocation === 'moon_bridge', 'currentLocation updated to The Moon-Bridge');
+var connToSanctumBlocked = Game.World.travelTo('eidas_sanctum');
+assert(connToSanctumBlocked.ok === false, "level 91 cannot yet reach Eidas's Sanctum (minLevel 96)");
+connCheckF.level = 96;
+var connToSanctum = Game.World.travelTo('eidas_sanctum');
+assert(connToSanctum.ok === true, "level 96 reaches Eidas's Sanctum directly from The Moon-Bridge");
 
 // =================== Test 1: new character starts by race (v1.2 Phase 3 Content-A) ===================
 console.log('\n=== Test 1: new character defaults (Human -> Eldor, Arkan -> Saratus) ===');

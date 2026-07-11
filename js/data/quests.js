@@ -900,6 +900,59 @@ Game.Data.quests = [
     ],
     rewards: { gold: 3200, xp: 4200, items: ['heavy_head_spireward_helm'], trainingPoints: 4 },
     completionText: 'Thessaly turns the Anima-Horror\'s own edge over in her hands, and for a long moment neither of them says a word. "The Warlord held Kuraan. The Chieftain held the highlands. The Deep-Dweller held the undercaverns. The Warden-Prime held the Wellspring. And this thing held the Society\'s own tower — the last of Eidas\'s work still standing watch since he sailed for the red moon. Whatever\'s waiting for you up there now, hero, it isn\'t a remnant anymore. It\'s him."'
+  },
+
+  // =====================================================================
+  // Level-Arc Band F (docs/SPEC-ARC-BANDS.md, F2/F3): The Red Moon / Eidas's Sanctum, levels
+  // 91-100 — THE ARC FINALE. Main-spine quest (the crossing itself) + one side quest (Rennick's
+  // cipher research pays off) + THE FINALE quest, which culminates the entire 41->100 arc and
+  // requires defeating eidas_ascendant, the arc's final lair boss. All three given at Frosthold
+  // Waystation (js/data/areas.js), the last hub before the final push — Band F adds no new
+  // settlement.
+  // =====================================================================
+
+  // ---------- Band F main-spine quest ----------
+  {
+    id: 'the_red_moon_crossing',
+    name: 'The Red Moon Crossing',
+    giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
+    levelMin: 91,
+    intro: 'Waystation Commander Thessaly leads you past the Skyspire\'s own highest platform to a span of rune-stone that has no business existing — arcing up and out, past the sky, toward the red moon itself. "This is as far as any of my scouts have gone and come back, hero. Eidas built this bridge three centuries ago and never came down it again. Break his sentinels, gather what sigil-shards you can carry off them, and get your own eyes on his sanctum. After that, it isn\'t my map anymore."',
+    steps: [
+      { kind: 'kill', monsterId: 'moonbridge_ward_sentinel', count: 5 },
+      { kind: 'collect', itemId: 'quest_eidas_sigil_shard', count: 3 },
+      { kind: 'visit', areaId: 'eidas_sanctum' }
+    ],
+    rewards: { gold: 1900, xp: 2900, items: ['sword_redmoon_blade'], trainingPoints: 3 },
+    completionText: 'Thessaly turns the sigil-shards over to Cipher-Adept Rennick without a word of protest this time. "The Society\'s pages, the Warden-Prime\'s ward-stone, and now this. Eidas\'s own sigil, cut fresh, on shards that can\'t be more than a few years old. Whatever he\'s been doing out there, hero, he never stopped. Rennick will want to know exactly what these say before you go any further."'
+  },
+
+  // ---------- Band F side quest: Rennick's cipher research pays off ----------
+  {
+    id: 'what_rennick_deciphered',
+    name: 'What Rennick Deciphered',
+    giver: { areaId: 'frosthold_waystation', npc: 'Cipher-Adept Rennick' },
+    levelMin: 96,
+    intro: 'Cipher-Adept Rennick has every page and every shard laid out edge to edge, and for the first time since Kastengard she looks less like a scholar than someone who wishes she\'d been wrong. "It\'s all one hand, hero — the Society\'s ciphers, the sigil-shards, all of it Eidas\'s own work, decades apart but never abandoned. The \'divine race\' wasn\'t a failure. It\'s out there, growing, in the thing the sanctum calls a Devourer. Put down four Moon-Anima Devourers and bring me back proof it can still be killed."',
+    steps: [
+      { kind: 'kill', monsterId: 'moon_anima_devourer', count: 4 }
+    ],
+    rewards: { gold: 1700, xp: 2300, items: ['sphere_hclass_2'] },
+    completionText: 'Rennick doesn\'t look relieved so much as resigned. "Four dead, and the sanctum barely noticed. That\'s not a remnant losing control of its own creations anymore, hero — that\'s a design working exactly as intended. There\'s only one hand left that could have intended it. You know which one."'
+  },
+
+  // ---------- Band F FINALE quest: confront Eidas Ascendant — culminates the 41->100 arc ----------
+  {
+    id: 'the_ascendants_fall',
+    name: "The Ascendant's Fall",
+    giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
+    levelMin: 100,
+    intro: 'Thessaly has no map left to pin up. Everything Frosthold has sent north for the last forty levels — the Kuraan fringe, the Majiku highlands, the Ukai passage, the Wellspring, the Skyspire, and now this bridge to the red moon itself — has been pointing at the same place, and the same name. "The Warlord, the Chieftain, the Deep-Dweller, the Warden-Prime, the Society\'s last horror — every one of them was only ever guarding the road to Eidas, hero, whether they knew it or not. He\'s waiting at the heart of his own sanctum, ascended and unhurried, three centuries into a plan nobody else ever got to see finished. Finish it for him. End Eidas Ascendant, and end the arc that\'s carried you from Kuraan to the red moon."',
+    steps: [
+      { kind: 'kill', monsterId: 'eidas_ascendant', count: 1 }
+    ],
+    rewards: { gold: 4000, xp: 5000, items: ['heavy_head_redmoon_helm'], trainingPoints: 5 },
+    completionText: 'Thessaly holds the Ascendant\'s Judgment up to the light of the very moon it was cut from, and for once she has nothing clever to say. "The Warlord held Kuraan. The Chieftain held the highlands. The Deep-Dweller held the undercaverns. The Warden-Prime held the Wellspring. The Society\'s horror held the Skyspire. And Eidas — Eidas held all of it, hero, the whole reach of his \'divine race,\' from Kastengard to the red moon and back. He doesn\'t hold any of it anymore. Whatever comes next for Exos, it starts today, and it starts because of you."'
   }
 ];
 

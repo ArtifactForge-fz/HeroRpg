@@ -218,6 +218,26 @@ Game.Data.recipes = [
     gold: 600,
     output: 'crystal_gclass_2',
     desc: 'Fuse two G-Class Crystal Is into a single, denser G-Class Crystal II.'
+  },
+
+  // =====================================================================
+  // Level-Arc Band F (docs/SPEC-ARC-BANDS.md, F2/F3): two synthesis recipes for The Red Moon /
+  // Eidas's Sanctum — a gear-tier reforge using a Band F quest material, and a graded-consumable
+  // progression recipe matching the synth_gclass_crystal_2 precedent above.
+  // =====================================================================
+  {
+    id: 'synth_redmoon_blade',
+    inputs: ['sword_spireward_blade', 'quest_eidas_sigil_shard'],
+    gold: 950,
+    output: 'sword_redmoon_blade',
+    desc: "Reforge a Spireward Blade around a deciphered Eidas Sigil Shard to strike a fresh Redmoon Blade."
+  },
+  {
+    id: 'synth_hclass_crystal_2',
+    inputs: ['crystal_hclass_1', 'crystal_hclass_1'],
+    gold: 650,
+    output: 'crystal_hclass_2',
+    desc: 'Fuse two H-Class Crystal Is into a single, denser H-Class Crystal II.'
   }
 ];
 
