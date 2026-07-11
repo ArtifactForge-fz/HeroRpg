@@ -129,6 +129,131 @@ Game.Data.story = [
       'It does not need a hero. It has not needed one in three hundred years. But something, at ' +
       'last, is stirring — and stirring things have a way of finding heroes whether the world asked ' +
       'for them or not.'
+  },
+
+  // invented continuation — level-arc F5 (docs/SPEC-FULL-LEVEL-ARC.md §6; docs/SPEC-ARC-BANDS.md
+  // Bands A-C). Chapter II ends with the ruin warden stirring beneath Averast; Chapter III picks up
+  // once the hero has broken that warden's line and pushed the Kuraan/Majiku/Ukai front all the way
+  // to the Frozen Reaches (js/data/quests.js reclaim_the_fringe / the_warlords_end /
+  // break_the_majiku_host / the_chieftains_reckoning / win_passage_from_the_ukai /
+  // the_deep_dwellers_reckoning). Never archived — [invented], consistent with the archived
+  // Arkan/Majiku/Ukai lore set up in the Prelude.
+  {
+    id: 'chapter_3',
+    title: 'Chapter III',
+    text: 'Whatever answered from beneath the Estari ruins did not hold for long once a hero actually ' +
+      'went looking for it. Word of it reached Saratus before the dust had settled, and from Saratus ' +
+      'it reached the Forests of Kuraan — Arkan ground once, Majiku-held for a generation since, and ' +
+      'the one wound on the map that every displaced Arkan elder still called by its old name. Camp ' +
+      'Marshal Serath had been holding a fringe-line trench there for longer than she cared to admit ' +
+      'when the hero arrived asking, not for permission, but for a map.\n\n' +
+      'The reclaiming went the way these things rarely do: quickly, once someone finally pushed. The ' +
+      'reclaimer knights fell, the warband sigils came back three and five at a time, and Deep Kuraan ' +
+      '— which Serath\'s scouts had circled on their maps for a decade without ever quite entering — ' +
+      'opened its own deep camp to a single stubborn visitor. At the bottom of it waited the Majiku ' +
+      'Warlord, who had commanded that occupation since before the hero was born, and who did not ' +
+      'survive being asked to stop. For the first time since the old surveys were drawn, the Forests ' +
+      'of Kuraan answered to a Crown patrol again instead of a war-camp.\n\n' +
+      'It was not, as Serath had warned, the end of it. The Majiku host itself had never lived in ' +
+      'Kuraan at all — Kuraan was only ever its forward edge. North of the fringe, the land rose into ' +
+      'the Majiku Highlands proper: steppe lancers riding picket lines, ridgeline war-camps mustering ' +
+      'behind them, and at the top of it the Majiku Ridge-Chieftain, who had held the whole host ' +
+      'together the way the Warlord alone never could. The same hero who had ended a generation\'s ' +
+      'occupation in a single season did the same to the host that had raised it, standard by ' +
+      'captured standard, until the Chieftain\'s own warpike was the only thing left of him worth ' +
+      'carrying home.\n\n' +
+      'Past the Highlands the land did not so much end as give up on being hospitable at all — ice- ' +
+      'fields, and beneath them, the undercaverns of the Ukai, who had kept to their caverns since ' +
+      'the world was younger and had never once been asked to share them. Waystation Commander ' +
+      'Thessaly built Frosthold at the edge of that ice specifically to ask anyway. The Ukai did not ' +
+      'answer with welcome — Majiku frost-exiles still raided the approach, and the Deep-Dweller that ' +
+      'the Ukai elders had always deferred to was in no hurry to be argued with — but a hero who had ' +
+      'already ended a Warlord and a Chieftain in the same year did not particularly need welcome. ' +
+      'Passage north stopped being something Frosthold was asking for. It became something it had ' +
+      'won.\n\n' +
+      'Three names, three seasons, three generations of holding undone: the Warlord\'s, the ' +
+      'Chieftain\'s, the Deep-Dweller\'s. Thessaly kept all three trophies on the same table, not as ' +
+      'decoration, but as a running tally of how far north this had already gone — and how much ' +
+      'farther the maps still pinned beside them suggested it had left to go.'
+  },
+
+  // invented continuation — level-arc F5 (docs/SPEC-FULL-LEVEL-ARC.md §6; docs/SPEC-ARC-BANDS.md
+  // Bands D-E). Anchored in the archived Anima taboo (Chapter I: "expending it would mean the death
+  // of the planet") and the archived Society of Modern Magic / Skyspire (also Chapter I). Covers the
+  // Estari Ruins Deep / Anima Wellspring arc and the Skyspire ascent (js/data/quests.js
+  // the_taboo_wellspring / the_warden_primes_reckoning / the_skyspire_ascent / the_societys_last_stand).
+  {
+    id: 'chapter_4',
+    title: 'Chapter IV',
+    text: 'The Ukai, once passage was won rather than requested, turned out to know something Frosthold ' +
+      'did not: that the tremors reaching their undercaverns from the south did not come from the ' +
+      'surface war at all. They came from deeper still, out of the Estari sublevels the old runologists ' +
+      'had sealed three centuries before — the same sublevels the Council of Three had ordered closed ' +
+      'forever, on the same day they condemned the Society of Modern Magic and swore that Anima, once ' +
+      'buried, would never be unearthed again. Someone had unearthed it anyway.\n\n' +
+      'The sublevel wardens the hero broke on the way down were built to enforce exactly that ban, and ' +
+      'the taint samples pulled from their wreckage were not Estari make at all — fresh work, done ' +
+      'recently, by someone who understood precisely what the Council had forbidden and dug into the ' +
+      'Wellspring regardless. Anima-Warden Yulei recognized the shape of what was growing down there ' +
+      'before anyone wanted her to: raw Anima given form and hunger with no scarred victim standing ' +
+      'between the seam and the surface, exactly the failure the runologists had warned of when they ' +
+      'first discovered the Anima was alive. The Estari Warden-Prime, the last ward the precursors had ' +
+      'left to guard the seal, held the line until the hero ended it — and ended, with it, any comfort ' +
+      'that the mining had already run its course. It had not. Something had only just begun it again.\n\n' +
+      'The trail from the Wellspring led north and up, past the Frozen Reaches, past the ruins, ' +
+      'further than Thessaly\'s maps had ever needed to reach before: to the Skyspire itself, the very ' +
+      'vessel Eidas and his Society had ridden off the face of Exos three centuries earlier. It had ' +
+      'never fully left. A remnant of the Society remained, cloistered in the tower\'s lower spans, ' +
+      'and it had not spent three hundred years idle — cipher pages recovered from its lower wardens ' +
+      'were written in a hand later than anything on record, describing "ravagers" grown, not found, ' +
+      'in the sanctum above.\n\n' +
+      'Cipher-Adept Rennick, who joined the column at Frosthold specifically because she could read ' +
+      'what nobody else could, put it plainer than Thessaly ever had: the Society had never stopped ' +
+      'working, Eidas or no Eidas, ban or no ban. What the hero found waiting at the top of the upper ' +
+      'spans was not a leaderless cult clinging to a dead man\'s tower. It was the Society\'s own last ' +
+      'and largest creation — a horror built or lost, nobody could say which — standing guard over ' +
+      'the one door in Van Arius that still opened onto the sky. When it fell, Thessaly did not reach ' +
+      'for another map. She only said what everyone standing there already suspected: that whatever ' +
+      'waited past that door was not a remnant anymore. It was Eidas himself.'
+  },
+
+  // invented continuation — level-arc F5 (docs/SPEC-FULL-LEVEL-ARC.md §6; docs/SPEC-ARC-BANDS.md
+  // Band F, the arc finale). The Prelude's "divine race" on the red moon and Chapter I's Skyspire
+  // departure both pay off here; capstone beat for js/data/quests.js the_red_moon_crossing /
+  // what_rennick_deciphered / the_ascendants_fall (final lair boss eidas_ascendant, level 100).
+  {
+    id: 'epilogue',
+    title: 'Epilogue',
+    text: 'Past the Skyspire\'s highest platform, the bridge Eidas left behind three centuries ago was ' +
+      'still exactly where the old stories said it would be — a span of rune-stone arcing up and out, ' +
+      'past the sky, toward the red moon that had never once been given a name. Thessaly walked the ' +
+      'hero to its foot and no further; her scouts had gone that far before and none had come back to ' +
+      'report what waited past it. The moon-bridge\'s own ward sentinels fell the way everything since ' +
+      'Kuraan had fallen, and the sigil-shards recovered from them were cut too recently to be ' +
+      'anything but current work — Eidas\'s own hand, unmistakable to Rennick now that she had every ' +
+      'page and every shard laid out together at last.\n\n' +
+      'What Rennick found in that hand was not the quiet failure the Council of Three had once hoped ' +
+      'for when they exiled the Society to Kastengard. The "divine race" Eidas had promised to found ' +
+      'on the red moon was real, and growing, in things the sanctum itself called Devourers — Anima ' +
+      'given shape on a scale the Estari runologists who first touched it could never have imagined. ' +
+      'It was not a remnant losing control of its own creations. It was a design three hundred years ' +
+      'in the making, working exactly as intended, and there was only one hand left that could have ' +
+      'intended it.\n\n' +
+      'Eidas himself waited at the heart of his own sanctum, ascended past whatever he had been when ' +
+      'he first pried a small measure of the world\'s life-force loose from Averast and never gave it ' +
+      'back. He did not flee, and he did not bargain. Three centuries is a long time to wait for an ' +
+      'ending, and he met his without surprise — only, in the last moment, something almost like ' +
+      'relief, as though being stopped had been the one outcome his plan had never quite accounted ' +
+      'for.\n\n' +
+      'The Warlord had held Kuraan. The Chieftain had held the Highlands. The Deep-Dweller had held ' +
+      'the undercaverns. The Warden-Prime had held the Wellspring. The Society\'s last horror had held ' +
+      'the Skyspire. And Eidas had held all of it — every league from Kastengard to the red moon and ' +
+      'back, every century since the runologists first learned the earth was alive — until a single ' +
+      'hero climbed the whole road he\'d built and ended it at the top. Van Arius still does not need ' +
+      'a hero, not really, not the way the old stories always insisted it did. But it had one anyway, ' +
+      'and whatever the four races make of Exos now that its oldest, quietest wound has finally ' +
+      'closed, they will tell it as the chroniclers always do: that something was stirring, and it ' +
+      'found the right person standing in its way.'
   }
 ];
 

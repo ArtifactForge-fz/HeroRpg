@@ -374,16 +374,20 @@ Game.Data.quests = [
   // mirroring trials_of_eldor's requiresBaseClass: a hero who never advanced past their base
   // class has nothing to converge from. classChoice: 'tier3' is a NEW sentinel resolved at
   // turn-in via Game.Classes.thirdTierOptionsFor(c) (js/core/quests.js turnIn), mirroring the
-  // 'advanced' sentinel exactly. Gated on the final story boss (eidas_echo, js/data/monsters.js)
-  // dead at level 38+ — the Academy's highest calling is only proven at the same threshold that
-  // closes the current story arc (js/data/quests.js echo_of_eidas); the two quests can be active
-  // and satisfied by the very same kill (recordKill increments every active matching kill-step).
+  // 'advanced' sentinel exactly. Still requires killing eidas_echo (js/data/monsters.js,
+  // shared with echo_of_eidas's levelMin-36 climax — the two quests can be active and satisfied
+  // by the very same kill, since recordKill increments every active matching kill-step), but
+  // the LEVEL gate is now level 60 (level-arc F4, docs/SPEC-ARC-BANDS.md Band B "tier-3 class
+  // re-gates here"), re-paced from the original v1.2 gate of 38 now that the story continues
+  // well past the old L36-40 act-break — the Academy's highest calling is proven only once the
+  // hero has also broken the Majiku host's hold on the Highlands (Band B), not the moment the
+  // old Skyspire-era climax closes.
   // =====================================================================
   {
     id: 'masters_calling',
     name: "The Master's Calling",
     giver: { areaId: 'eldor', npc: 'Eldor' },
-    levelMin: 38,
+    levelMin: 60,
     requiresAdvancedClass: true, // NEW (v1.2 Phase 2): must have obtained a tier-2 (advanced) class
     intro: 'Eldor sets down the same maps he pored over when you first stood before him at level ' +
       '30. "There\'s one calling higher than advancement, hero — the Academy only ever grants it to ' +

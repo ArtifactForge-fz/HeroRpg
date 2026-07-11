@@ -130,8 +130,8 @@ function winBattle(monsterId) {
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: quest/story data sanity ===');
 assert(Game.Data.quests.length === 43, '43 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end + Band B\'s break_the_majiku_host/storms_over_the_ridge/the_chieftains_reckoning + Band C\'s win_passage_from_the_ukai/what_slips_through_the_ice/the_deep_dwellers_reckoning + Band D\'s the_taboo_wellspring/what_the_wellspring_woke/the_warden_primes_reckoning + Band E\'s the_skyspire_ascent/what_the_society_grew/the_societys_last_stand + Band F\'s the_red_moon_crossing/what_rennick_deciphered/the_ascendants_fall -- THE ARC FINALE), got ' + Game.Data.quests.length);
-assert(Game.Data.story.length === 3, '3 story chapters, got ' + Game.Data.story.length);
-['prelude', 'chapter_1', 'chapter_2'].forEach(function (id) {
+assert(Game.Data.story.length === 6, '6 story chapters (level-arc F5 adds chapter_3/chapter_4/epilogue), got ' + Game.Data.story.length);
+['prelude', 'chapter_1', 'chapter_2', 'chapter_3', 'chapter_4', 'epilogue'].forEach(function (id) {
   var found = Game.Data.story.some(function (ch) { return ch.id === id; });
   assert(found, 'story chapter exists: ' + id);
 });
@@ -441,9 +441,11 @@ try {
   var storyTab = tabs11.filter(function (t) { return t.textContent === 'Story'; })[0];
   storyTab.click();
   var storyText = document.getElementById('maincontent').textContent;
-  assert(/Prelude/.test(storyText) && /Chapter I(?!I)/.test(storyText) && /Chapter II/.test(storyText), 'Story tab lists all 3 chapters');
+  assert(/Prelude/.test(storyText) && /Chapter I(?!I)/.test(storyText) && /Chapter II(?!I)/.test(storyText) &&
+    /Chapter III(?!I)/.test(storyText) && /Chapter IV/.test(storyText) && /Epilogue/.test(storyText),
+    'Story tab lists all 6 chapters (level-arc F5 adds chapter_3/chapter_4/epilogue)');
   var readButtons = document.getElementById('maincontent').queryAllByTag('button').filter(function (b) { return b.textContent === 'Read'; });
-  assert(readButtons.length === 3, 'Story tab has 3 Read buttons');
+  assert(readButtons.length === 6, 'Story tab has 6 Read buttons');
   readButtons[0].click();
   var proseText = document.getElementById('maincontent').textContent;
   assert(/Van Arius doesn't need a hero/.test(proseText), 'Prelude prose renders after Read click');

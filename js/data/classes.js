@@ -31,9 +31,11 @@
 // model above becomes THREE tiers, and Runeblade of Kuraan moves off tier 3 into a dedicated
 // Legendary slot (tier: 4) alongside two brand-new invented Legendaries, so tier 3 is exclusively
 // the archived third-branch roster:
-//   - Third tier (tier: 3) at level 38 via "The Master's Calling" (js/data/quests.js
-//     masters_calling), converging ONE PER BASE LINE from whichever tier-2 branch the hero took
-//     (arc §5 "branch convergence" — pinned decision, NOT a second branch-of-2 like tier 2):
+//   - Third tier (tier: 3) at level 60 via "The Master's Calling" (js/data/quests.js
+//     masters_calling) — re-gated from the original v1.2 unlock of level 38 to level 60
+//     (level-arc F4, docs/SPEC-ARC-BANDS.md Band B "tier-3 class re-gates here") now that
+//     content spans to 100, converging ONE PER BASE LINE from whichever tier-2 branch the hero
+//     took (arc §5 "branch convergence" — pinned decision, NOT a second branch-of-2 like tier 2):
 //       Warrior (Gladiator OR Crusader) -> Shadowknight
 //       Magician (Wizard OR Sage)       -> Magus
 //       Thief (Rogue OR Mercenary)      -> Gambit
@@ -514,8 +516,9 @@ Game.Data.classes = [
   },
 
   // =====================================================================================
-  // THIRD TIER (tier: 3) — obtained at level 38 via "The Master's Calling" (js/data/quests.js
-  // masters_calling), converging ONE PER BASE LINE from either tier-2 sibling (v1.2 Phase 2;
+  // THIRD TIER (tier: 3) — obtained at level 60 via "The Master's Calling" (js/data/quests.js
+  // masters_calling; re-gated from level 38 to level 60 by level-arc F4, docs/SPEC-ARC-BANDS.md
+  // Band B), converging ONE PER BASE LINE from either tier-2 sibling (v1.2 Phase 2;
   // docs/SPEC-V1.2.md Phase 2 "branch convergence" — pinned). baseClass is the TIER-1 line id,
   // not a tier-2 id, per Game.Classes.thirdTierOptionsFor. 3 abilities each (2 passive + 1
   // signature classOnly tech), tuned ~+20% over the stronger tier-2 sibling per effect.

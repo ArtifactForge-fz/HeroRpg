@@ -112,12 +112,13 @@ Archived balance rules (`Recent_Updates.md`):
   Warrior → **Gladiator** (offense) / **Crusader** (defense); Magician → **Wizard** (damage) /
   **Sage** (healing/support); Thief → **Rogue** (crits/dodge) / **Mercenary** (versatility)
   [all six names archived]. 4 stronger abilities each. Base class remains obtained and slottable.
-- **Tier-3 class at level 38 (v1.2)** via "The Master's Calling", converging one-per-line:
-  Warrior line → **Shadowknight** (abilities Shadow Blade / Inner Fire / Dragon's Fire), Magician
-  line → **Magus**, Thief line → **Gambit** (Lucky Coin / Dice Throw). Class names + the
+- **Tier-3 class at level 60** (shipped at level 38 in v1.2; re-gated to level 60 by the
+  level-arc's F4 phase, `docs/SPEC-ARC-BANDS.md` Band B "tier-3 class re-gates here", once
+  content spanned to 100) via "The Master's Calling", converging one-per-line: Warrior line →
+  **Shadowknight** (abilities Shadow Blade / Inner Fire / Dragon's Fire), Magician line →
+  **Magus**, Thief line → **Gambit** (Lucky Coin / Dice Throw). Class names + the
   Shadowknight/Gambit ability names are **[archived]** (`homepage_2006.md`, `forum/t-787.md`);
-  effects/numbers **[invented]**. (This realizes `docs/SPEC-FULL-LEVEL-ARC.md` §5 early; the future
-  arc re-gates tier-3 from L38 toward ~L60.)
+  effects/numbers **[invented]**.
 - **Three hidden Legendary classes (tier 4):** Runeblade of Kuraan (boss kill), Vaultbreaker
   (boss-combination quest), Heir of the Echo (relic route) — each obtained independently, one per
   save. **[invented]** beyond the archived "Legendary, one per server" concept.

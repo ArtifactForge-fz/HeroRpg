@@ -1,8 +1,9 @@
 // Phase 6a/v1.1 + v1.2 Phase 2 exit tests — four-tier class system (DESIGN.md §3 v1.1 revision;
 // docs/SPEC-V1.2.md Phase 2): Base tier (Warrior/Magician/Thief, level 5, "First Calling") ->
 // Advanced tier (Gladiator/Crusader/Wizard/Sage/Rogue/Mercenary, level 30, "Trials of Ascension")
-// -> Third tier (Shadowknight/Magus/Gambit, level 38, "The Master's Calling", ONE per base line
-// via branch convergence) -> Legendary (Runeblade of Kuraan/Vaultbreaker/Heir of the Echo, each
+// -> Third tier (Shadowknight/Magus/Gambit, level 60 (re-gated from 38 by level-arc F4), "The
+// Master's Calling", ONE per base line via branch convergence) -> Legendary (Runeblade of
+// Kuraan/Vaultbreaker/Heir of the Echo, each
 // with its own mutually-independent special unlock route). Covers obtain/activate/deactivate,
 // class XP/levels, ability purchase incl. passive + tech hooks, class-only tech battle gating,
 // advancedOptionsFor/thirdTierOptionsFor, classChoice quest turn-ins (fixed array + 'advanced'/
@@ -732,7 +733,7 @@ BASE_IDS.forEach(function (baseId) {
 // =================== Test 18: masters_calling gating + full tier-3 loop ===================
 console.log('\n=== Test 18: masters_calling accept blocked without an advanced class; full tier-3 loop (obtain -> activate -> buyAbility -> class-tech usable in battle) ===');
 var c18 = makeCharacter({ name: 'MastersCallingTester' });
-setLevel(c18, 38);
+setLevel(c18, 60); // masters_calling levelMin re-gated 38 -> 60 (level-arc F4)
 var acceptNoAdv18 = Game.Quests.accept('masters_calling');
 assert(acceptNoAdv18.ok === false, 'accept refused with no advanced class obtained: ' + acceptNoAdv18.message);
 assert(/advanced/i.test(acceptNoAdv18.message), 'refusal message explains the advanced-class requirement');
