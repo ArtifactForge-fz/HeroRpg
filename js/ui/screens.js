@@ -295,9 +295,6 @@ Game.Screens = (function () {
     levelRow.appendChild(makeInfoRow('Class', classLabel(c)));
     levelRow.appendChild(makeInfoRow('Monster Kills', String(c.monsterKills)));
     levelRow.appendChild(makeInfoRow('Deaths', String(c.deaths)));
-    levelRow.appendChild(makeInfoRow('Damage', String(Game.Character.getDamage(c))));
-    levelRow.appendChild(makeInfoRow('Armor', String(Game.Character.getArmor(c))));
-    levelRow.appendChild(makeInfoRow('Magic Armor', String(Game.Character.getMagicArmor(c))));
     top.appendChild(scrollX(levelRow));
 
     var xpNeeded = Game.Character.xpNeededForNext(c);
@@ -317,41 +314,15 @@ Game.Screens = (function () {
       el('b', {}, ['Stat Points available: ' + c.statPoints + '   Training Points: ' + c.trainingPoints])
     ]));
 
-    var statNames = [
-      ['strength', 'Strength'],
-      ['vitality', 'Vitality'],
-      ['dexterity', 'Dexterity'],
-      ['intelligence', 'Intelligence'],
-      ['endurance', 'Endurance']
-    ];
-
-    var statsBlock = el('div', { class: 'mt4' });
-    statNames.forEach(function (pair) {
-      var key = pair[0], label = pair[1];
-      var row = el('div', { class: 'stat-row' }, [
-        el('span', { class: 'stat-name' }, [label]),
-        el('span', { class: 'stat-value' }, [String(c[key])]),
-        c.statPoints > 0 ? el('button', {
-          class: 'button',
-          onclick: function () {
-            Game.Character.spendStatPoint(c, key);
-            Game.persist();
-            renderStatus(document.getElementById('maincontent'));
-            Game.renderStatusBars();
-          }
-        }, ['+']) : null
-      ]);
-      statsBlock.appendChild(row);
-    });
-    statsBlock.appendChild(el('div', { class: 'stat-row' }, [
-      el('span', { class: 'stat-name' }, ['Hit Points']),
-      el('span', { class: 'stat-value' }, [c.hitPoints + ' / ' + c.hitPointsMax])
-    ]));
-    statsBlock.appendChild(el('div', { class: 'stat-row' }, [
-      el('span', { class: 'stat-name' }, ['Energy']),
-      el('span', { class: 'stat-value' }, [c.energy + ' / ' + c.energyMax])
-    ]));
-    top.appendChild(statsBlock);
+    // v1.4 UX transparency pass (user-directed 2026-07-12): a level-up frequently lands a player
+    // on the Status screen with unspent Stat Points and no explanation of what to do with them —
+    // this banner spells it out and points at both the spend (+) and info (ⓘ) affordances below.
+    if (c.statPoints > 0) {
+      top.appendChild(el('div', { class: 'levelup-hint mt8' }, [
+        'You have ' + c.statPoints + ' unspent Stat Point' + (c.statPoints === 1 ? '' : 's') +
+        ' from leveling — click + to raise a stat, or ⓘ to see what it does.'
+      ]));
+    }
 
     var wealth = el('div', { class: 'mt8' }, [
       el('b', {}, ['Gold: ']), c.platinum + 'p ' + c.gold + 'g', '   ',
@@ -369,8 +340,90 @@ Game.Screens = (function () {
 
     root.appendChild(top);
 
+    // v1.4 UX transparency pass (user-directed 2026-07-12): "ⓘ" affordance next to a stat/pool
+    // that has a Game.Data.statInfo entry (js/data/statinfo.js) — opens Game.Infobox.openStat,
+    // which reuses the same overlay plumbing as the item/tech info windows. A plain unicode glyph
+    // (not an icon asset) per the brief, so no new assets/test_icons.js coverage is needed.
+    function statInfoGlyph(key, label) {
+      return el('span', {
+        class: 'info-btn',
+        title: 'About ' + label,
+        onclick: function (ev) {
+          if (ev && ev.stopPropagation) ev.stopPropagation();
+          Game.Infobox.openStat(key, c);
+        }
+      }, ['ⓘ']);
+    }
+
+    // ---- Two-column reflow: left = primary stats + derived stats, right = skills ----
+    // (v1.4 UX transparency pass; collapses to a single column at <=640px, see css/theme.css
+    // .status-columns — matches the existing Mobile M1 640px breakpoint.)
+    var columns = el('div', { class: 'status-columns' });
+    var leftCol = el('div', { class: 'status-col status-col-left' });
+    var rightCol = el('div', { class: 'status-col status-col-right' });
+
+    var statNames = [
+      ['strength', 'Strength'],
+      ['vitality', 'Vitality'],
+      ['dexterity', 'Dexterity'],
+      ['intelligence', 'Intelligence'],
+      ['endurance', 'Endurance']
+    ];
+
+    leftCol.appendChild(el('div', { class: 'tcat mt8' }, ['Primary Stats']));
+    var statsPanel = el('div', { class: 'panel' });
+    var statsBlock = el('div', { class: 'mt4' });
+    statNames.forEach(function (pair) {
+      var key = pair[0], label = pair[1];
+      var row = el('div', { class: 'stat-row' }, [
+        el('span', { class: 'stat-name' }, [label]),
+        el('span', { class: 'stat-value' }, [String(c[key])]),
+        statInfoGlyph(key, label),
+        c.statPoints > 0 ? el('button', {
+          class: 'button',
+          onclick: function () {
+            Game.Character.spendStatPoint(c, key);
+            Game.persist();
+            renderStatus(document.getElementById('maincontent'));
+            Game.renderStatusBars();
+          }
+        }, ['+']) : null
+      ]);
+      statsBlock.appendChild(row);
+    });
+    statsPanel.appendChild(statsBlock);
+    leftCol.appendChild(statsPanel);
+
+    leftCol.appendChild(el('div', { class: 'tcat mt8' }, ['Derived Stats']));
+    var derivedPanel = el('div', { class: 'panel' });
+    var derivedBlock = el('div', { class: 'mt4' });
+    derivedBlock.appendChild(el('div', { class: 'stat-row' }, [
+      el('span', { class: 'stat-name' }, ['Damage']),
+      el('span', { class: 'stat-value' }, [String(Game.Character.getDamage(c))])
+    ]));
+    derivedBlock.appendChild(el('div', { class: 'stat-row' }, [
+      el('span', { class: 'stat-name' }, ['Armor']),
+      el('span', { class: 'stat-value' }, [String(Game.Character.getArmor(c))])
+    ]));
+    derivedBlock.appendChild(el('div', { class: 'stat-row' }, [
+      el('span', { class: 'stat-name' }, ['Magic Armor']),
+      el('span', { class: 'stat-value' }, [String(Game.Character.getMagicArmor(c))])
+    ]));
+    derivedBlock.appendChild(el('div', { class: 'stat-row' }, [
+      el('span', { class: 'stat-name' }, ['Hit Points']),
+      el('span', { class: 'stat-value' }, [c.hitPoints + ' / ' + c.hitPointsMax]),
+      statInfoGlyph('hitPoints', 'Hit Points')
+    ]));
+    derivedBlock.appendChild(el('div', { class: 'stat-row' }, [
+      el('span', { class: 'stat-name' }, ['Energy']),
+      el('span', { class: 'stat-value' }, [c.energy + ' / ' + c.energyMax]),
+      statInfoGlyph('energy', 'Energy')
+    ]));
+    derivedPanel.appendChild(derivedBlock);
+    leftCol.appendChild(derivedPanel);
+
     // Skills table
-    root.appendChild(el('div', { class: 'tcat mt8' }, ['Skills']));
+    rightCol.appendChild(el('div', { class: 'tcat mt8' }, ['Skills']));
     var skillsPanel = el('div', { class: 'panel' });
     var cap = Game.Character.skillCap(c);
     skillsPanel.appendChild(el('div', { class: 'smallfont mt4' }, ['Skill cap at your level: ' + cap]));
@@ -389,7 +442,11 @@ Game.Screens = (function () {
       skillTable.appendChild(row);
     });
     skillsPanel.appendChild(scrollX(skillTable));
-    root.appendChild(skillsPanel);
+    rightCol.appendChild(skillsPanel);
+
+    columns.appendChild(leftCol);
+    columns.appendChild(rightCol);
+    root.appendChild(columns);
   }
 
   // ---------- Status: Classes tab (Phase 6a; DESIGN.md §3, Classes.md) ----------
@@ -1966,6 +2023,84 @@ Game.Screens = (function () {
     ]);
   }
 
+  // ---------- In-combat action info (v1.4 UX transparency pass, user-directed 2026-07-12) ----------
+  // A VISIBLE, tappable "ⓘ" affordance next to every battle action (Attack/Defend/Limit Break
+  // buttons, each filled tech slot, each item-use row) — clicking it opens an info window instead
+  // of performing the action. Tech slots use Game.Infobox.openTech and item rows use
+  // Game.Infobox.open directly (existing windows); Attack/Defend/Limit Break have no existing
+  // per-action window, so this small helper reuses Game.Infobox.openPanel (same overlay plumbing,
+  // zero new overlay code) to build one on the fly.
+  function actionInfoGlyph(onOpen, title) {
+    return el('span', {
+      class: 'info-btn',
+      title: title || 'Info',
+      onclick: function (ev) {
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        onOpen();
+      }
+    }, ['ⓘ']);
+  }
+
+  function actionInfoRow(label, value) {
+    return el('div', { class: 'stat-row' }, [
+      el('span', { class: 'stat-name' }, [label]),
+      el('span', {}, [value])
+    ]);
+  }
+
+  function openActionInfo(title, lines) {
+    Game.Infobox.openPanel(title, function (body) {
+      lines.forEach(function (line) {
+        if (typeof line === 'string') {
+          body.appendChild(el('div', { class: 'smallfont mt4' }, [line]));
+        } else {
+          body.appendChild(actionInfoRow(line[0], line[1]));
+        }
+      });
+    });
+  }
+
+  function damageRangeText(base) {
+    var lo = Math.round(base * (1 - BALANCE.DAMAGE_VARIANCE));
+    var hi = Math.round(base * (1 + BALANCE.DAMAGE_VARIANCE));
+    return lo + '–' + hi + ' (before enemy defenses)';
+  }
+
+  function openAttackInfo(c) {
+    openActionInfo('Attack', [
+      'Strike the enemy with your equipped weapon.',
+      ['Energy Cost', String(BALANCE.ATTACK_ENERGY_COST)],
+      ['Scales with', "your weapon's Damage"],
+      ['Damage', damageRangeText(Game.Character.getDamage(c))]
+    ]);
+  }
+
+  function openDefendInfo() {
+    openActionInfo('Defend', [
+      'Brace — halves the next incoming hit.',
+      ['Energy Cost', String(BALANCE.DEFEND_ENERGY_COST)]
+    ]);
+  }
+
+  // Limit Break flavor text — Game.Battle.getLimitBreak(c) only returns {id, name} (no effect
+  // string), so the short mechanical description is mirrored here from js/core/battle.js
+  // limitBreak()'s own comments/flavor riders (LIMIT_BREAKS/LIMIT_BREAK_BY_BASE_CLASS).
+  var LIMIT_BREAK_EFFECT = {
+    rage: 'A devastating weapon strike that also hardens your guard (bonus Armor for a few turns).',
+    dragon_kick: "A devastating weapon strike that cripples the enemy's footing (its Dodge falters for the rest of the fight).",
+    hurricane_blow: "A devastating weapon strike that always connects (bypasses the enemy's Dodge)."
+  };
+
+  function openLimitBreakInfo(c, lb) {
+    var base = Game.Character.getDamage(c) * BALANCE.LB_DAMAGE_MULT;
+    openActionInfo(lb.name, [
+      LIMIT_BREAK_EFFECT[lb.id] || 'A devastating class-line special attack.',
+      ['Energy Cost', '0 (consumes your Fury streak; needs Fury ' + BALANCE.LB_FURY_MIN + '+)'],
+      ['Scales with', "your weapon's Damage"],
+      ['Damage', damageRangeText(base)]
+    ]);
+  }
+
   function renderBattle(root) {
     var battle = Game.Battle.getBattle();
     root.innerHTML = '';
@@ -2036,6 +2171,7 @@ Game.Screens = (function () {
           refreshBattleScreen();
         }
       }, ['🗡 Attack']),
+      actionInfoGlyph(function () { openAttackInfo(c); }, 'About Attack'),
       el('button', {
         class: 'button battle-action',
         title: (!over && !canAct) ? outOfEnergyMsg : 'Use a combat item',
@@ -2055,6 +2191,7 @@ Game.Screens = (function () {
           refreshBattleScreen();
         }
       }, ['🛡 Defend']),
+      actionInfoGlyph(function () { openDefendInfo(); }, 'About Defend'),
       el('button', {
         class: 'button battle-action',
         // Feature A (user-directed): Escape can fail — the title shows the live percentage
@@ -2090,6 +2227,7 @@ Game.Screens = (function () {
           var item = Game.Inventory.getItem(itemId);
           itemList.appendChild(el('div', { class: 'stat-row' }, [
             el('span', { class: 'tinyfont', style: 'flex:1 1 auto;' }, [item.name]),
+            actionInfoGlyph(function () { Game.Infobox.open(item, c); }, 'About ' + item.name),
             el('button', {
               class: 'button',
               disabled: !canAct ? 'disabled' : null,
@@ -2130,6 +2268,17 @@ Game.Screens = (function () {
         var slotTitle = tech
           ? ((!over && !canAct) ? (tech.name + ' — ' + outOfEnergyMsg) : (tech.name + ' (' + tech.energyCost + ' energy)'))
           : 'Empty slot';
+        var slotChildren = [tech ? techIcon(tech) : el('span', { class: 'tinyfont' }, ['—'])];
+        if (tech) {
+          slotChildren.push(el('span', {
+            class: 'info-btn tech-slot-info',
+            title: 'About ' + tech.name,
+            onclick: function (ev) {
+              if (ev && ev.stopPropagation) ev.stopPropagation();
+              Game.Infobox.openTech(tech, c);
+            }
+          }, ['ⓘ']));
+        }
         var slot = el('div', {
           class: 'tech-slot' + (tech ? ' filled' : '') + (castable ? ' castable' : ''),
           title: slotTitle,
@@ -2140,7 +2289,7 @@ Game.Screens = (function () {
             refreshBattleScreen();
           },
           ondblclick: function () { if (tech) Game.Infobox.openTech(tech, c); }
-        }, [tech ? techIcon(tech) : el('span', { class: 'tinyfont' }, ['—'])]);
+        }, slotChildren);
         techGrid.appendChild(slot);
       })(s);
     }
@@ -2167,7 +2316,8 @@ Game.Screens = (function () {
             Game.persist();
             refreshBattleScreen();
           }
-        }, ['⚔ ' + lb.name + ' (Fury: ' + (c.fury || 0) + ')'])
+        }, ['⚔ ' + lb.name + ' (Fury: ' + (c.fury || 0) + ')']),
+        actionInfoGlyph(function () { openLimitBreakInfo(c, lb); }, 'About ' + lb.name)
       ]));
     }
 

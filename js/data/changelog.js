@@ -12,6 +12,27 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.4.1',
+    date: '2026-07-12',
+    title: 'Clearer Stats & Combat Info',
+    saveVersion: 10,
+    highlights: [
+      'Every stat on the Status screen now has an ⓘ button — click it to see exactly what that ' +
+        'stat does for your character.',
+      'When you level up, the Status screen now spells out your unspent Stat Points and what ' +
+        'they are for, so a fresh level-up is never a mystery.',
+      'The Status screen is reorganised into two easier-to-read columns — your stats (now with a ' +
+        'Derived Stats panel showing Damage, Armor, Magic Armor, Hit Points and Energy) on one ' +
+        'side, your skills on the other.',
+      'Technique info now tells you which stat a technique scales with, and shows its damage or ' +
+        'healing as a range rather than a single number.',
+      'In battle, every action — Attack, Defend, your techniques, items, and Limit Breaks — now ' +
+        'has an ⓘ you can open to see its effect, Energy cost, and damage or healing range before ' +
+        'you commit to it.'
+    ]
+  },
+
+  {
     version: 'v1.4.0',
     date: '2026-07-12',
     title: 'Advantage Points & Quest Pacing',

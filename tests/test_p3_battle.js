@@ -58,6 +58,7 @@ loadScript('data/areas.js');
 loadScript('data/shrine.js');
 loadScript('data/recipes.js');
 loadScript('data/classes.js');
+loadScript('data/statinfo.js');
 loadScript('core/character.js');
 loadScript('core/inventory.js');
 loadScript('core/battle.js');
@@ -2983,6 +2984,166 @@ setRng(fixedRng(0.99)); // clears every dodge/glancing/double-attack/gold/shard/
 Game.Battle.attack();
 assert(b62.phase === 'won', 'battle won after the Limit Break');
 assert(c62.fury === 1, 'a fresh Fury tick (+1) is still granted on the very next win after spending a Limit Break, got ' + c62.fury);
+Game.Battle.endBattle();
+
+// =================== Test 63: v1.4 UX transparency pass — statInfo data + openStat/openTech ranges ===================
+console.log('\n=== Test 63: Game.Data.statInfo presence + openStat renders + openTech damage/heal RANGES ===');
+
+var STAT_INFO_KEYS = ['strength', 'vitality', 'dexterity', 'intelligence', 'endurance', 'hitPoints', 'energy'];
+STAT_INFO_KEYS.forEach(function (key) {
+  var info = Game.Data.statInfo && Game.Data.statInfo[key];
+  assert(!!info && typeof info.name === 'string' && typeof info.summary === 'string' &&
+    Array.isArray(info.effects) && info.effects.length > 0 && typeof info.cite === 'string',
+    'Game.Data.statInfo has a complete {name, summary, effects[], cite} entry for "' + key + '"');
+});
+
+// fakedom quirk (tests/fakedom.js): the overlay div infobox.js creates is never registered via
+// document.registerId, so document.getElementById('infobox-overlay') (what the real browser DOM
+// would resolve automatically) always returns null here, and close()'s own `if (overlay)` guard
+// then makes it a harmless no-op instead of throwing. The freshest overlay is instead just the
+// last child appended to document.body (every open* call ends with document.body.appendChild).
+function lastOverlay() {
+  var kids = document.body.children;
+  return kids.length ? kids[kids.length - 1] : null;
+}
+
+function overlayRowValue(overlay, label) {
+  var rows = overlay.queryAllByClass('stat-row');
+  for (var i = 0; i < rows.length; i++) {
+    var nameSpan = rows[i].queryAllByClass('stat-name')[0];
+    if (nameSpan && nameSpan.textContent === label) {
+      var kids = rows[i].children;
+      return kids[kids.length - 1].textContent;
+    }
+  }
+  return null;
+}
+
+var c63 = makeCharacter({ name: 'InfoTest63' });
+Game.state.character = c63;
+Game.state.battle = null;
+
+try {
+  STAT_INFO_KEYS.forEach(function (key) {
+    Game.Infobox.openStat(key, c63);
+    var ov = lastOverlay();
+    var expectedName = Game.Data.statInfo[key].name;
+    assert(!!ov && ov.textContent.indexOf(expectedName) !== -1, 'openStat(' + key + ') renders its name (' + expectedName + ') without throwing');
+    Game.Infobox.close();
+  });
+  console.log('PASS: openStat renders for every statInfo key without throwing');
+} catch (e) { failures++; console.error('FAIL: openStat threw: ' + e.stack); }
+
+var RANGE_RE = /^\d+–\d+/;
+
+// weapon tech: Cleave I (tech_cleave_1, weaponTech:true) — "Scales with" cites the weapon, and
+// Effective Damage is a lo-hi range with the enemy-defenses caveat.
+Game.Infobox.openTech(Game.Battle.getTech('tech_cleave_1'), c63);
+var cleaveOverlay = lastOverlay();
+var cleaveScales = overlayRowValue(cleaveOverlay, 'Scales with');
+var cleaveDmg = overlayRowValue(cleaveOverlay, 'Effective Damage');
+assert(!!cleaveScales && cleaveScales.indexOf("weapon's Damage") !== -1, 'weapon tech "Scales with" cites the weapon\'s Damage, got "' + cleaveScales + '"');
+assert(!!cleaveDmg && RANGE_RE.test(cleaveDmg), 'weapon tech Effective Damage shows a lo–hi range, got "' + cleaveDmg + '"');
+assert(!!cleaveDmg && cleaveDmg.indexOf('(before enemy defenses)') !== -1, 'weapon tech Effective Damage notes "(before enemy defenses)", got "' + cleaveDmg + '"');
+Game.Infobox.close();
+
+// spell damage tech: Firebolt I (tech_firebolt_1) — "Scales with" is Intelligence.
+Game.Infobox.openTech(Game.Battle.getTech('tech_firebolt_1'), c63);
+var fireOverlay = lastOverlay();
+var fireScales = overlayRowValue(fireOverlay, 'Scales with');
+var fireDmg = overlayRowValue(fireOverlay, 'Effective Damage');
+assert(fireScales === 'Intelligence', 'spell tech "Scales with" is Intelligence, got "' + fireScales + '"');
+assert(!!fireDmg && RANGE_RE.test(fireDmg), 'spell tech Effective Damage shows a lo–hi range, got "' + fireDmg + '"');
+Game.Infobox.close();
+
+// healing tech: Mend Wounds I (tech_mend_wounds_1, effect:'heal') — Effective Healing is a range
+// too, but with NO "(before enemy defenses)" caveat (healing isn't mitigated).
+Game.Infobox.openTech(Game.Battle.getTech('tech_mend_wounds_1'), c63);
+var healOverlay = lastOverlay();
+var healValue = overlayRowValue(healOverlay, 'Effective Healing');
+assert(!!healValue && RANGE_RE.test(healValue), 'healing tech Effective Healing shows a lo–hi range, got "' + healValue + '"');
+assert(!!healValue && healValue.indexOf('before enemy defenses') === -1, 'healing tech range has no "before enemy defenses" caveat, got "' + healValue + '"');
+Game.Infobox.close();
+
+// =================== Test 64: v1.4 UX transparency pass — in-combat "ⓘ" affordances ===================
+console.log('\n=== Test 64: battle-screen ⓘ affordances (Attack/Defend/Limit Break/tech slot/item row) never trigger the action ===');
+var c64 = makeCharacter({ name: 'BattleInfoTest' });
+c64.dexterity = 20; // playerFirst, deterministic ordering
+Game.Character.recalcDerived(c64);
+Game.Classes.obtainClass(c64, 'warrior'); // grants the Rage limit break so its ⓘ renders too
+Game.state.character = c64;
+Game.state.battle = null;
+setRng(fixedRng(0.99));
+var b64 = Game.Battle.start('plains_field_rat');
+b64.monster.techs = [];
+Game.Screens.navigate('battle');
+
+var infoBtns64 = mc.queryAllByClass('info-btn');
+assert(infoBtns64.length > 0, 'battle screen renders at least one ⓘ info-btn');
+
+// Attack ⓘ opens an info window and does NOT spend Energy or attack the monster.
+var actionBtns64 = mc.queryAllByClass('battle-action');
+// 4 base actions (Attack/Item/Defend/Escape) + the Limit Break button (also class="battle-action",
+// unlike Test 4's classless character above) — this character obtained the warrior base class, so
+// Game.Battle.getLimitBreak renders one. Confirms the new ⓘ siblings (class "info-btn" only)
+// don't get swept into this count.
+assert(actionBtns64.length === 5, 'Attack/Item/Defend/Escape + Limit Break all render as .battle-action, got ' + actionBtns64.length);
+var actionsDiv64 = actionBtns64[0].parent;
+var attackInfoBtn = actionsDiv64.children[actionsDiv64.children.indexOf(actionBtns64[0]) + 1];
+assert(!!attackInfoBtn && attackInfoBtn.className.indexOf('info-btn') !== -1, 'Attack button is immediately followed by its ⓘ sibling');
+var energyBefore64 = c64.energy, monsterHpBefore64 = b64.monster.hp;
+attackInfoBtn.click();
+assert(c64.energy === energyBefore64 && b64.monster.hp === monsterHpBefore64, 'clicking the Attack ⓘ spent no Energy and dealt no damage');
+var attackOverlay = lastOverlay();
+assert(overlayRowValue(attackOverlay, 'Scales with') === "your weapon's Damage", 'Attack info window cites "your weapon\'s Damage"');
+var attackDmgRow = overlayRowValue(attackOverlay, 'Damage');
+assert(!!attackDmgRow && RANGE_RE.test(attackDmgRow), 'Attack info window shows a lo–hi Damage range, got "' + attackDmgRow + '"');
+Game.Infobox.close();
+
+// Defend ⓘ opens an info window and does NOT spend Energy or brace.
+var defendInfoBtn = actionsDiv64.children[actionsDiv64.children.indexOf(actionBtns64[2]) + 1];
+assert(!!defendInfoBtn && defendInfoBtn.className.indexOf('info-btn') !== -1, 'Defend button is immediately followed by its ⓘ sibling');
+var energyBeforeDefendInfo = c64.energy;
+defendInfoBtn.click();
+assert(c64.energy === energyBeforeDefendInfo && !b64.playerDefending, 'clicking the Defend ⓘ spent no Energy and did not brace');
+assert(lastOverlay().textContent.indexOf('Brace') !== -1, 'Defend info window shows the Brace description');
+Game.Infobox.close();
+
+// Tech slot ⓘ opens tech info and does NOT cast the tech.
+var slotInfoBtns64 = mc.queryAllByClass('tech-slot-info');
+assert(slotInfoBtns64.length === 1, 'exactly one filled tech slot (the starter tech) carries a ⓘ badge, got ' + slotInfoBtns64.length);
+var mHpBeforeSlotInfo = b64.monster.hp;
+slotInfoBtns64[0].click();
+assert(b64.monster.hp === mHpBeforeSlotInfo, "clicking a tech slot's ⓘ badge did not cast the tech");
+assert(lastOverlay().textContent.indexOf('Cleave') !== -1, 'tech-slot ⓘ opened Cleave I\'s info window');
+Game.Infobox.close();
+
+// Limit Break ⓘ opens an info window and does NOT consume the Fury streak.
+var lb64 = Game.Battle.getLimitBreak(c64);
+assert(!!lb64 && lb64.name === 'Rage', 'sanity: the warrior base class grants the Rage limit break');
+var lbInfoBtn = mc.queryAllByClass('info-btn').filter(function (n) { return n.title === 'About ' + lb64.name; })[0];
+assert(!!lbInfoBtn, 'Limit Break button carries a ⓘ info affordance');
+var furyBeforeLbInfo = c64.fury;
+lbInfoBtn.click();
+assert(c64.fury === furyBeforeLbInfo, 'clicking the Limit Break ⓘ did not consume the Fury streak');
+var lbDmgRow = overlayRowValue(lastOverlay(), 'Damage');
+assert(!!lbDmgRow && RANGE_RE.test(lbDmgRow), 'Limit Break info window shows a lo–hi Damage range, got "' + lbDmgRow + '"');
+Game.Infobox.close();
+
+// Item ⓘ (in the expanded combat-item list) opens the item's own info window and does NOT use it.
+actionBtns64[1].click(); // toggle the item list open (re-renders the battle screen)
+var itemRows64 = mc.queryAllByClass('stat-row').filter(function (row) {
+  return row.queryAllByTag('button').some(function (b) { return b.textContent === 'Use'; });
+});
+assert(itemRows64.length > 0, 'expanded item list renders at least one combat-usable item row');
+var itemInfoBtn = itemRows64[0].queryAllByClass('info-btn')[0];
+assert(!!itemInfoBtn, 'item row carries an ⓘ info affordance');
+var energyBeforeItemInfo = c64.energy;
+itemInfoBtn.click();
+assert(c64.energy === energyBeforeItemInfo, "clicking an item row's ⓘ did not use the item (Energy unchanged)");
+var itemOverlayHasTabs = lastOverlay().queryAllByClass('infobox-tabs').length > 0;
+assert(itemOverlayHasTabs, 'item ⓘ opened the item info window (Info/Reqs tabs — Game.Infobox.open, not openPanel/openTech)');
+Game.Infobox.close();
 Game.Battle.endBattle();
 
 // =================== Summary ===================

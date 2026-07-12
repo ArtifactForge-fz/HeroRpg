@@ -527,6 +527,7 @@ body {
 }
 
 .tech-slot {
+  position: relative;
   width: 32px;
   height: 32px;
   border: 1px solid #313131;
@@ -890,6 +891,21 @@ button, a { touch-action: manipulation; } /* kill the 300ms tap delay / double-t
     height: 44px;
   }
 
+  /* ---- v1.4 UX transparency pass: enlarge the small ⓘ affordances for touch (audit A3 same
+     44px-ish spirit; kept modest here since these are secondary/corner badges, not primary
+     targets) ---- */
+  .info-btn {
+    min-width: 20px;
+    min-height: 20px;
+    font-size: 12px;
+  }
+  .tech-slot-info {
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    font-size: 11px;
+  }
+
   /* ---- Battle log: a real scrollable touch area instead of a cramped 160px sliver ---- */
   .battle-log {
     min-height: 200px;
@@ -1013,5 +1029,81 @@ button, a { touch-action: manipulation; } /* kill the 300ms tap delay / double-t
 @media (max-width: 640px) and (orientation: landscape) {
   #statusbars {
     position: static;
+  }
+}
+
+/* ===== v1.4 UX transparency pass (user-directed 2026-07-12) =====
+   "ⓘ" info affordances (Status screen stats, battle actions/tech slots/items) + the Status
+   screen's two-column stats/skills reflow + the level-up unspent-points banner. Reuses the
+   existing infobox overlay (Game.Infobox.openStat/openPanel, js/ui/infobox.js) — these are just
+   the small trigger glyphs and the new layout, no new overlay chrome. */
+
+/* Circular gold "ⓘ" glyph — a plain unicode character (not an icon asset), styled to read as a
+   secondary/tappable control next to a stat row, battle-action button, tech slot, or item row.
+   Deliberately smaller/lighter than .button so it never competes with the primary action. */
+.info-btn {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  line-height: 14px;
+  border: 1px solid #313131;
+  border-radius: 50%;
+  background: #3c4a56;
+  color: #c4bb4b;
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+}
+
+.info-btn:hover {
+  background: #4a5a68;
+  color: #ffffff;
+}
+
+/* Tech-slot variant: a small corner badge overlaid on the 32/44px slot (which is now
+   position:relative — see the .tech-slot rule above) instead of a sibling in the flex row, since
+   there's no room to spare inside the slot itself. */
+.tech-slot-info {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 12px;
+  height: 12px;
+  line-height: 12px;
+  font-size: 9px;
+}
+
+/* Level-up "you have unspent Stat Points" banner (Status screen, renderStatus). Reuses the gold-
+   on-slate chrome color already established by .tcat/.navlist rather than inventing a new accent. */
+.levelup-hint {
+  background: #3c4a56;
+  color: #c4bb4b;
+  border: 1px solid #313131;
+  padding: 4px 6px;
+  font-weight: bold;
+}
+
+/* Status screen: left column (Primary + Derived Stats) / right column (Skills). Collapses to a
+   single stacked column at the same 640px breakpoint the rest of the mobile layout already uses
+   (SPEC-MOBILE-UI.md §3/§4), so this reads as "just another panel" on phones rather than a
+   cramped two-up squeeze. */
+.status-columns {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.status-col {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .status-columns {
+    flex-direction: column;
   }
 }

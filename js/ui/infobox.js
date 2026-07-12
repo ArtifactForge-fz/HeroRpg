@@ -176,7 +176,14 @@ Game.Infobox = (function () {
     // Power/Effective-Damage rows below (which assume the Intelligence spell factor via
     // Game.Battle.techEffectivePower) are replaced with Power Multiplier/Armor Pierce/Hits and a
     // getDamage-based effective damage.
+    //
+    // v1.4 UX transparency pass (user-directed 2026-07-12): every tech now states which stat
+    // "Scales with" it (weapon Damage for weapon techs, Intelligence for spells — DESIGN.md §3),
+    // and the effective damage/healing number is shown as a RANGE (BALANCE.DAMAGE_VARIANCE, the
+    // same +-20% roll js/core/battle.js applies at cast time — rollVariance) rather than a single
+    // figure that silently omits the variance every real cast actually has.
     if (tech.weaponTech) {
+      body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Scales with']), e('span', {}, ["your weapon's Damage (follows the weapon's governing stat)"])]));
       body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Power Multiplier']), e('span', {}, ['x' + tech.powerMult])]));
       if (tech.armorPierce) {
         body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Armor Pierce']), e('span', {}, [Math.round(tech.armorPierce * 100) + '%'])]));
@@ -186,18 +193,25 @@ Game.Infobox = (function () {
       }
       if (character && Game.Character && Game.Character.getDamage) {
         var weaponEffective = Math.round(Game.Character.getDamage(character) * (tech.powerMult || 1)) * (tech.hits || 1);
-        body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Effective Damage']), e('span', {}, [String(weaponEffective) + (tech.hits > 1 ? ' (total, ' + tech.hits + ' hits)' : '')])]));
+        var wLo = Math.round(weaponEffective * (1 - BALANCE.DAMAGE_VARIANCE));
+        var wHi = Math.round(weaponEffective * (1 + BALANCE.DAMAGE_VARIANCE));
+        body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Effective Damage']), e('span', {}, [wLo + '–' + wHi + (tech.hits > 1 ? ' (total, ' + tech.hits + ' hits)' : '') + ' (before enemy defenses)'])]));
       }
     } else {
+      body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Scales with']), e('span', {}, ['Intelligence'])]));
       body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Power']), e('span', {}, [String(tech.power)])]));
 
-      // "Effective damage" (or healing) factoring Intelligence, via the same formula battle uses.
+      // "Effective damage" (or healing) factoring Intelligence, via the same formula battle uses,
+      // shown as a lo-hi range around the +-DAMAGE_VARIANCE roll.
       if (character && Game.Battle && Game.Battle.techEffectivePower) {
         var effective = Game.Battle.techEffectivePower(character, tech);
+        var eLo = Math.round(effective * (1 - BALANCE.DAMAGE_VARIANCE));
+        var eHi = Math.round(effective * (1 + BALANCE.DAMAGE_VARIANCE));
         var label = tech.effect === 'heal' ? 'Effective Healing'
           : tech.effect === 'buff' ? 'Damage Bonus'
           : 'Effective Damage';
-        body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, [label]), e('span', {}, [String(effective)])]));
+        var note = (tech.effect !== 'heal' && tech.effect !== 'buff') ? ' (before enemy defenses)' : '';
+        body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, [label]), e('span', {}, [eLo + '–' + eHi + note])]));
       }
     }
     if (tech.effect === 'buff' && tech.buffDuration) {
@@ -213,6 +227,73 @@ Game.Infobox = (function () {
       body.appendChild(e('div', { class: 'stat-row' + (ok ? '' : ' req-bad') }, [
         e('span', { class: 'stat-name' }, ['Requires']),
         e('span', {}, [tech.skill + ' ' + tech.skillReq + (ok ? '' : ' (you: ' + haveLevel + ')')])
+      ]));
+    }
+
+    box.appendChild(body);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  }
+
+  // ---------- Stat info window (v1.4 UX transparency pass, user-directed 2026-07-12) ----------
+  // Reuses the SAME overlay/box/close plumbing as open()/openTech() above — no second overlay
+  // implementation. Backed by Game.Data.statInfo (js/data/statinfo.js). Opened from the Status
+  // screen's per-stat "ⓘ" affordance (js/ui/screens.js renderStatus).
+
+  // "Nice to have" live readout (spec: "the stat's current live derived contribution if trivially
+  // available") — kept deliberately simple/safe: the character's own current value for that stat
+  // or pool, never a derived formula that might not actually be in effect for this character
+  // (e.g. Strength only feeds Damage while a Strength-based weapon is equipped) and so could
+  // mislead rather than inform.
+  function currentStatValue(statKey, c) {
+    if (!c) return null;
+    switch (statKey) {
+      case 'strength':
+      case 'vitality':
+      case 'dexterity':
+      case 'intelligence':
+      case 'endurance':
+        return String(c[statKey]);
+      case 'hitPoints':
+        return c.hitPoints + ' / ' + c.hitPointsMax;
+      case 'energy':
+        return c.energy + ' / ' + c.energyMax;
+      default:
+        return null;
+    }
+  }
+
+  function openStat(statKey, character) {
+    var e = getEl();
+    close();
+
+    var info = (Game.Data && Game.Data.statInfo) ? Game.Data.statInfo[statKey] : null;
+    if (!info) return; // no data registered for this key -- nothing to show
+
+    var overlay = document.createElement('div');
+    overlay.id = 'infobox-overlay';
+    overlay.className = 'infobox-overlay';
+    overlay.addEventListener('click', function (ev) {
+      if (ev.target === overlay) close();
+    });
+
+    var box = e('div', { class: 'infobox panelsurround' });
+    box.appendChild(e('div', { class: 'tcat' }, [
+      info.name,
+      e('span', { class: 'infobox-close', onclick: close }, [' [x]'])
+    ]));
+
+    var body = e('div', { class: 'panel infobox-body' });
+    body.appendChild(e('div', { class: 'smallfont mt4' }, [info.summary]));
+    (info.effects || []).forEach(function (line) {
+      body.appendChild(e('div', { class: 'smallfont mt4' }, ['• ' + line]));
+    });
+
+    var current = currentStatValue(statKey, character);
+    if (current) {
+      body.appendChild(e('div', { class: 'stat-row mt8' }, [
+        e('span', { class: 'stat-name' }, ['Current']),
+        e('span', {}, [current])
       ]));
     }
 
@@ -260,6 +341,7 @@ Game.Infobox = (function () {
   return {
     open: open,
     openTech: openTech,
+    openStat: openStat,
     openPanel: openPanel,
     close: close
   };

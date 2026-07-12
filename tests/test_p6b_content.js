@@ -68,6 +68,7 @@ loadScript('data/recipes.js');
 loadScript('data/quests.js');
 loadScript('data/story.js');
 loadScript('data/classes.js');
+loadScript('data/statinfo.js');
 loadScript('core/character.js');
 loadScript('core/inventory.js');
 loadScript('core/battle.js');

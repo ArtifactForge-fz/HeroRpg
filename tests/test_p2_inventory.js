@@ -52,6 +52,7 @@ function loadScript(relPath) {
 loadScript('balance.js');
 loadScript('data/items.js');
 loadScript('data/classes.js');
+loadScript('data/statinfo.js');
 loadScript('core/character.js');
 loadScript('core/inventory.js');
 loadScript('core/save.js');
