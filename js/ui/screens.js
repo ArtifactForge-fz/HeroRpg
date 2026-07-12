@@ -46,6 +46,15 @@ Game.Screens = (function () {
     return e;
   }
 
+  // v1.4 Mobile M2 (SPEC-MOBILE-UI.md §4 M2, audit A9): wraps a wide row-panel node in a
+  // `.scroll-x` container (css/theme.css, overflow-x:auto) so a narrow viewport scrolls just
+  // that panel, never the page body. Caller appends the returned wrapper instead of `node`.
+  function scrollX(node) {
+    var wrap = el('div', { class: 'scroll-x' });
+    wrap.appendChild(node);
+    return wrap;
+  }
+
   function skillPointTotal() {
     var total = 0;
     for (var s in wizard.skillPoints) {
@@ -279,7 +288,7 @@ Game.Screens = (function () {
     levelRow.appendChild(makeInfoRow('Damage', String(Game.Character.getDamage(c))));
     levelRow.appendChild(makeInfoRow('Armor', String(Game.Character.getArmor(c))));
     levelRow.appendChild(makeInfoRow('Magic Armor', String(Game.Character.getMagicArmor(c))));
-    top.appendChild(levelRow);
+    top.appendChild(scrollX(levelRow));
 
     var xpNeeded = Game.Character.xpNeededForNext(c);
     var xpInto = Game.Character.xpIntoCurrentLevel(c);
@@ -369,7 +378,7 @@ Game.Screens = (function () {
       ]);
       skillTable.appendChild(row);
     });
-    skillsPanel.appendChild(skillTable);
+    skillsPanel.appendChild(scrollX(skillTable));
     root.appendChild(skillsPanel);
   }
 
@@ -668,7 +677,7 @@ Game.Screens = (function () {
 
       equipPanel.appendChild(row);
     });
-    root.appendChild(equipPanel);
+    root.appendChild(scrollX(equipPanel));
 
     // ---- Drop boxes: Auto-Equip / Unequip / Discard (New_Player_Guide.md) ----
     root.appendChild(el('div', { class: 'tcat mt8' }, ['Drag & Drop']));
@@ -763,7 +772,7 @@ Game.Screens = (function () {
       });
     }
 
-    root.appendChild(listPanel);
+    root.appendChild(scrollX(listPanel));
   }
 
   // ---------- Techs screen (Phase 3; Techniques.md, Techs.md) ----------
@@ -1194,7 +1203,9 @@ Game.Screens = (function () {
       else if (type === 'academy') renderAcademyPanel(body, c);
       else if (type === 'shrine') renderShrinePanel(body, c);
       else if (type === 'tavern') renderTavernPanel(body, c, area);
-      facPanel.appendChild(body);
+      // v1.4 Mobile M2 (audit A9): a single wrap here covers every facility sub-panel's wide
+      // rows (shop/exchange/synthesis/academy/shrine/etc. all render into this shared `body`).
+      facPanel.appendChild(scrollX(body));
     }
     root.appendChild(facPanel);
   }
@@ -1746,7 +1757,7 @@ Game.Screens = (function () {
     if (journalTab === 'active') renderJournalActive(body, c);
     else if (journalTab === 'completed') renderJournalCompleted(body, c);
     else renderJournalStory(body);
-    panel.appendChild(body);
+    panel.appendChild(scrollX(body)); // v1.4 Mobile M2 (audit A9): wide quest rows scroll-x
 
     root.appendChild(panel);
   }

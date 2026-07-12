@@ -844,3 +844,104 @@ button, a { touch-action: manipulation; } /* kill the 300ms tap delay / double-t
   font-weight: bold;
   padding: 0 4px 3px 4px;
 }
+
+/* ===== v1.4 Mobile M2: wide-table scroll containment (docs/SPEC-MOBILE-UI.md §4 M2, audit A9)
+   =====
+   Base rule (not scoped to any media query) — wraps a wide row-panel (shop/exchange/synthesis/
+   academy/inventory/journal listings) so IT scrolls sideways on a narrow viewport instead of the
+   whole page. Applied in js/ui/screens.js via a small `scrollX(node)` helper. No-op on desktop:
+   those panels already fit inside #maincol there. */
+.scroll-x {
+  overflow-x: auto;
+}
+
+/* ===== v1.4 Mobile M2: touch ergonomics (docs/SPEC-MOBILE-UI.md §4 M2) =====
+   Scoped to `pointer: coarse` (any touch-primary input — including a touch-screen laptop at full
+   desktop width, which still deserves real tap targets) rather than a viewport-width query.
+   Appended after the M1 responsive-shell block above (never edited — see that block's own
+   comment); a mouse/trackpad device (`pointer: fine`) at any width is untouched. */
+@media (pointer: coarse) {
+
+  /* ---- Tap targets: ~44px minimum (audit A3) ---- */
+  .navlist a, .actions-list a, #mobiletabs a {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .button, button.hrpg {
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+
+  /* ---- Kill iOS Safari's input focus-zoom (audit A4) ---- */
+  select, input[type="text"], textarea, .bginput {
+    font-size: 16px;
+  }
+
+  /* ---- Tech slots: 44x44 touch target; the 32px icon stays centered (flex rule set above) ---- */
+  .tech-slot {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* ---- Battle log: a real scrollable touch area instead of a cramped 160px sliver ---- */
+  .battle-log {
+    min-height: 200px;
+  }
+
+  /* ---- Drag-and-drop never fires on touch (audit A2) — hide the now-useless drop boxes. Every
+     drop-box action already has an always-visible button equivalent (audited — see the
+     equip/unequip/discard buttons wired alongside each Game.DragDrop call in screens.js). ---- */
+  .dropbox-row {
+    display: none;
+  }
+
+  /* ---- Hover-only cues have no touch equivalent (audit A7): add :active feedback, and give
+     castable tech slots a static outline so castability reads without ever hovering. ---- */
+  .navlist a:active, .actions-list a:active {
+    background: #a9b4bb;
+  }
+
+  #mobiletabs a:active {
+    background: #4a5a68;
+  }
+
+  .button:active, button.hrpg:active {
+    background: #4a5a68;
+  }
+
+  .tech-slot.castable {
+    outline: 1px solid #c4bb4b;
+  }
+}
+
+/* ===== v1.4 Mobile M2: supplementary small-screen font scale (docs/SPEC-MOBILE-UI.md §4 M2) =====
+   A SECOND @media (max-width: 640px) block, appended after the M1 block above (never edited —
+   per the spec's containment strategy, cascade/source order lets a later block override the
+   same selectors, e.g. .statbar-text below). Desktop stays the archived 10px verdana; only this
+   query's small-screen presentation is bumped for legibility. */
+@media (max-width: 640px) {
+  body {
+    font: 13px verdana, geneva, lucida, 'lucida grande', arial, helvetica, sans-serif;
+  }
+
+  .smallfont {
+    font: 13px verdana, geneva, lucida, 'lucida grande', arial, helvetica, sans-serif;
+  }
+
+  .tinyfont {
+    font: 11px verdana, geneva, lucida, 'lucida grande', arial, helvetica, sans-serif;
+  }
+
+  /* Structural spots that hardcode a small font-size in the M1 block above (not editable there)
+     get a small bump here — still capped by their unchanged mobile container sizes (the 9px-tall
+     .statbar-track, the 48px-tall #mobiletabs bar). */
+  .statbar-text {
+    font-size: 9px; /* up from M1's 8px */
+  }
+
+  #mobiletabs a, #mobiletabs span {
+    font-size: 10px; /* up from M1's 9px */
+  }
+}
