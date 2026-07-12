@@ -2097,7 +2097,8 @@ Game.Screens = (function () {
       Game.UI.icon(m.id, 64),
       el('span', {}, [
         el('b', { class: 'orangetext' }, [m.name]),
-        el('span', { class: 'smallfont' }, [' — Level ' + m.level + (m.boss ? ' [BOSS]' : (m.champion ? ' [CHAMPION]' : ''))])
+        el('span', { class: 'smallfont' }, [' — Level ' + m.level + (m.boss ? ' [BOSS]' :
+          (m.champion ? ' [CHAMPION' + (m.affix ? ' - ' + m.affix.charAt(0).toUpperCase() + m.affix.slice(1) : '') + ']' : ''))])
       ])
     ]));
     field.appendChild(el('div', { class: 'smallfont mt4' }, [m.desc]));

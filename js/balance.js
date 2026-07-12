@@ -406,5 +406,20 @@ var BALANCE = {
   // hp/damage premiums and x3 xp" — AP mirrors both exactly (x2 champion, x3 boss) rather than
   // inventing a third curve.
   AP_CHAMPION_MULT: 2, // invented, matches CHAMPION_REWARD_MULT
-  AP_BOSS_MULT: 3 // invented, matches the archived boss xp x3 premium
+  AP_BOSS_MULT: 3, // invented, matches the archived boss xp x3 premium
+
+  // ==================== v1.4 P3: G2 Champion affixes + boss scripts (docs/SPEC-V1.4-GAMEPLAY.md §4) ====================
+  // Champion affixes: intent [archived] ("strategic boss battles ... scripted abilities, summons,
+  // status effects, item usage" + the "Champion Bosses" forum-thread title, homepage_2006.md);
+  // the five affixes and every number below are [invented] within that intent, LOCKED by the P0
+  // sim (docs/SPEC-V1.4-GAMEPLAY.md P0 RESULTS item 2). Rolled ONCE, uniformly, through the single
+  // rng() stub surface, only when options.champion (js/core/battle.js start()) — never a second
+  // roll, never on a non-champion fight or a boss/Lair fight (champion and boss are mutually
+  // exclusive encounter types in this game).
+  CHAMPION_AFFIXES: ['vampiric', 'frenzied', 'warded', 'venomous', 'hoarder'],
+  AFFIX_VAMPIRIC_LEECH: 0.25, // invented, LOCKED P0 RESULTS item 2: monster heals 25% of the damage it just dealt (post-mitigation), capped at its own hpMax
+  AFFIX_FRENZIED_RATE: 0.05, // invented, LOCKED P0 RESULTS item 2: +5% monster damage per monster action taken so far this battle
+  AFFIX_FRENZIED_CAP: 0.40, // invented, LOCKED P0 RESULTS item 2: escalation capped at +40% — the UNCAPPED +5%/action design broke the >=85% win floor at L90/100 (62-64% win over 16-round fights); WITH the cap it holds 93.7-100% at every checkpoint
+  AFFIX_VENOMOUS_CHANCE: 0.35, // invented, LOCKED P0 RESULTS item 2: 35% chance per successful monster BASIC attack (not techs) to poison the player, only while the player is not already poisoned
+  AFFIX_HOARDER_DROP_MULT: 3 // invented, LOCKED P0 RESULTS item 2: replaces CHAMPION_REWARD_MULT (x2) on drop-CHANCE rolls only — xp/gold/AP premiums (and CHAMPION_REWARD_MULT itself) are untouched
 };

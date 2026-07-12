@@ -396,6 +396,12 @@ Game.Data.monsters = [
     name: 'Ruin Warden of the Estari',
     level: 10,
     boss: true,
+    // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): data-driven, one interpreter in
+    // js/core/battle.js (runBossScript) — no per-boss code. MODEST per the §7 guardrail: fortify
+    // amount 2 is ~6% of this boss's own damage stat (33), well under the ~15% ceiling.
+    script: [
+      { atHpFrac: 0.5, effect: 'fortify', amount: 2, log: "The Ruin Warden's stone core flares — its hide hardens like fresh-poured rock!" }
+    ],
     hp: 20 + 12 * 10 + 120, // invented: boss gets a flat HP premium over the regular-monster ballpark
     energy: 140, // invented: 40 + 10*level (retuned at Phase 3 milestone gate; see BALANCE.MONSTER_ATTACK_ENERGY_COST)
     damage: 3 + 2 * 10 + 10, // invented: boss gets a flat damage premium
@@ -777,6 +783,11 @@ Game.Data.monsters = [
     name: 'Matriarch of the High Camp',
     level: 18,
     boss: true,
+    // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST enrage (amount 1.12, under
+    // the 1.25 ceiling) — the Matriarch rallies her pack for a last stand.
+    script: [
+      { atHpFrac: 0.4, effect: 'enrage', amount: 1.12, log: 'The Matriarch throws back her head and howls — the whole pack answers, and she strikes harder!' }
+    ],
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 18 + 12 * 18, // invented: boss flat HP premium, ~12*level pattern
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 18,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 18 + 12, // invented: boss flat damage premium
@@ -940,6 +951,11 @@ Game.Data.monsters = [
     name: 'The Juneros Leviathan',
     level: 25,
     boss: true,
+    // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST heal (amount 0.10, under
+    // the 0.15 ceiling) — the Leviathan retreats into its own element to mend.
+    script: [
+      { atHpFrac: 0.5, effect: 'heal', amount: 0.10, log: 'The Leviathan dives beneath the shoal — the deep water knits its wounds!' }
+    ],
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 25 + 12 * 25,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 25,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 25 + 14,
@@ -1086,6 +1102,12 @@ Game.Data.monsters = [
     name: 'The Kastengard Custodian',
     level: 32,
     boss: true,
+    // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST fortify (amount 6, ~7% of
+    // this boss's own damage stat 83, under the ~15% ceiling) — the construct reroutes power to
+    // its shell.
+    script: [
+      { atHpFrac: 0.5, effect: 'fortify', amount: 6, log: "The Custodian's runic wardplate reroutes power to its outer shell!" }
+    ],
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 32 + 12 * 32,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 32,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 32 + 16,
@@ -1211,6 +1233,14 @@ Game.Data.monsters = [
     name: "Eidas' Echo",
     level: 40,
     boss: true,
+    // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): two MODEST entries (heal 0.10 under
+    // the 0.15 ceiling; enrage 1.15 under the 1.25 ceiling) — the projection first restabilizes,
+    // then burns hottest as its own unmaking nears (a mild prelude to eidas_ascendant's later,
+    // deliberately mild curse script — see that boss's own script comment).
+    script: [
+      { atHpFrac: 0.6, effect: 'heal', amount: 0.10, log: 'The projection flickers and steadies — anima knits its edges whole again.' },
+      { atHpFrac: 0.25, effect: 'enrage', amount: 1.15, log: "Faced with its own unmaking, the echo's light burns cold and furious." }
+    ],
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 40 + 12 * 40, // invented: boss flat HP premium, ~12*level pattern (matches estari_ruin_warden's +120 at level 10)
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 40,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 40 + 45, // invented: boss flat damage premium — raised at the Phase 7 balance pass (was +20): after the monster-dodge and weapon-tier fixes, a rested level-40 warrior won 100% barely scratched; the final boss must land meaningful hits through ~90 endgame Armor
@@ -1425,6 +1455,13 @@ Game.Data.monsters = [
     name: 'The Majiku Warlord',
     level: 50,
     boss: true,
+    // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST enrage (amount 1.15, under
+    // the 1.25 ceiling) — the Warlord rallies his war-camp for the killing blow. Re-simmed (P3):
+    // majiku_warlord's real-RNG win-rate floor test (tests/test_p3_battle.js Test 32) stays
+    // comfortably above its >=60% floor with this script in place.
+    script: [
+      { atHpFrac: 0.5, effect: 'enrage', amount: 1.15, log: 'The Warlord roars for a killing blow, and his war-camp answers with him!' }
+    ],
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 50 + 12 * 50, // 620 + 600 = 1220
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 50,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 50 + Math.round(1.5 * 50 + 10), // 103 + 85 = 188
@@ -1621,6 +1658,13 @@ Game.Data.monsters = [
     name: 'The Majiku Ridge-Chieftain',
     level: 60,
     boss: true,
+    // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST fortify (amount 16, ~7% of
+    // this boss's own damage stat 223, under the ~15% ceiling) — the Chieftain digs in behind his
+    // host's shieldwall. Re-simmed (P3): test_p3_battle.js Test 35's real-RNG floor stays
+    // comfortably above its >=60% floor with this script in place.
+    script: [
+      { atHpFrac: 0.5, effect: 'fortify', amount: 16, log: "The Chieftain plants his standard — the host's shieldwall closes around him!" }
+    ],
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 60 + 12 * 60, // 740 + 720 = 1460
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 60,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 60 + Math.round(1.5 * 60 + 10), // 123 + 100 = 223
@@ -1818,6 +1862,13 @@ Game.Data.monsters = [
     name: 'The Ukai Deep-Dweller',
     level: 70,
     boss: true,
+    // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST heal (amount 0.10, under the
+    // 0.15 ceiling) — the cave-dwelling thing draws strength from the old stone. Re-simmed (P3):
+    // test_p3_battle.js Test 38's real-RNG floor stays comfortably above its >=60% floor with this
+    // script in place.
+    script: [
+      { atHpFrac: 0.5, effect: 'heal', amount: 0.10, log: 'The Deep-Dweller presses flat against the cavern wall, and the old stone feeds it strength.' }
+    ],
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 70 + 12 * 70, // 860 + 840 = 1700
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 70,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 70 + Math.round(1.5 * 70 + 10), // 143 + 115 = 258
@@ -2023,6 +2074,13 @@ Game.Data.monsters = [
     name: 'Estari Warden-Prime',
     level: 80,
     boss: true,
+    // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST fortify (amount 21, ~7% of
+    // this boss's own damage stat 293, under the ~15% ceiling) — the ward-construct channels the
+    // Wellspring itself. Re-simmed (P3): test_p3_battle.js Test 41's real-RNG floor stays
+    // comfortably above its >=60% floor with this script in place.
+    script: [
+      { atHpFrac: 0.5, effect: 'fortify', amount: 21, log: 'The Warden-Prime channels the Wellspring itself through its wardframe!' }
+    ],
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 80 + 12 * 80, // 980 + 960 = 1940
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 80,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 80 + Math.round(1.5 * 80 + 10), // 163 + 130 = 293
@@ -2228,6 +2286,13 @@ Game.Data.monsters = [
     name: 'Society Anima-Horror',
     level: 90,
     boss: true,
+    // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST enrage (amount 1.12, under
+    // the 1.25 ceiling) — the Horror's hunger sharpens as it nears its own end. Re-simmed (P3):
+    // test_p3_battle.js Test 44's real-RNG floor stays comfortably above its >=60% floor with this
+    // script in place.
+    script: [
+      { atHpFrac: 0.4, effect: 'enrage', amount: 1.12, log: "The Horror's hunger sharpens to a single point — it lashes out harder!" }
+    ],
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 90 + 12 * 90, // 1100 + 1080 = 2180
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 90,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 90 + Math.round(1.5 * 90 + 10), // 183 + 145 = 328
@@ -2454,6 +2519,17 @@ Game.Data.monsters = [
     name: 'Eidas Ascendant',
     level: 100,
     boss: true,
+    // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): deliberately the flavor-richest
+    // but NUMERICALLY MILDEST script in the game — this fight is already the hardest in the game
+    // (see the header comment above), so it gets a single scripted Curse (25% outgoing-damage
+    // reduction, BALANCE.CURSE_DAMAGE_MULT, for BALANCE.CURSE_DURATION turns — the exact existing
+    // Curse status, reused via applyPlayerCurse in js/core/battle.js) rather than an enrage/fortify
+    // stack on top of his already-amplified HP/damage premiums. Re-simmed (P3): test_p3_battle.js
+    // Test 47's real-RNG floor (>=60%, currently ~83%) stays comfortably clear with this script in
+    // place — see tests/test_p3_battle.js for the 5-consecutive-run verification.
+    script: [
+      { atHpFrac: 0.5, effect: 'curse', amount: 0, log: 'Ascendant Eidas turns his gaze upon you, and the unfinished weight of a divine race settles over your soul.' }
+    ],
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 100 + Math.round(12 * 100 * 1.4), // 1220 + 1680 = 2900
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 100,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 100 + Math.round(1.5 * 100 + 10), // 203 + 160 = 363

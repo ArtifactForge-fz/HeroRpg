@@ -140,6 +140,10 @@ Game.Battle = (function () {
       monsterCopy.hp = Math.round(monsterCopy.hp * BALANCE.CHAMPION_HP_MULT);
       monsterCopy.hpMax = Math.round(monsterCopy.hpMax * BALANCE.CHAMPION_HP_MULT);
       monsterCopy.damage = Math.round(monsterCopy.damage * BALANCE.CHAMPION_DAMAGE_MULT);
+      // v1.4 P3 (G2): one affix, rolled uniformly through the single rng() stub surface (never a
+      // second _rng — CLAUDE.md cardinal rule). docs/SPEC-V1.4-GAMEPLAY.md §4 + P0 RESULTS item 2.
+      var affixes = BALANCE.CHAMPION_AFFIXES;
+      monsterCopy.affix = affixes[Math.floor(rng() * affixes.length)];
     }
 
     var battle = {
@@ -170,6 +174,7 @@ Game.Battle = (function () {
     log(battle, 'A ' + monsterCopy.name + ' (Lv ' + def.level + ') appears!');
     if (monsterCopy.champion) {
       log(battle, 'A Champion prowls the area — it looks far stronger than its kin!');
+      if (monsterCopy.affix) log(battle, AFFIX_ANNOUNCE[monsterCopy.affix]);
     }
     if (fearLevels(battle) > 0) {
       log(battle, 'A yellow bar of Fear creeps in — this foe is above your level.');
@@ -257,6 +262,26 @@ Game.Battle = (function () {
     return playerCurseActive(battle) ? BALANCE.CURSE_DAMAGE_MULT : 1;
   }
 
+  // v1.4 P3 (G2): true while any 'poison' entry is active — mirrors playerCurseActive above.
+  // Used by the Venomous champion affix so it never stacks a second poison instance.
+  function playerPoisoned(battle) {
+    for (var i = 0; i < battle.playerStatuses.length; i++) {
+      if (battle.playerStatuses[i].type === 'poison') return true;
+    }
+    return false;
+  }
+
+  // Shared application helpers (single definition point for both status pushes) — used by the
+  // existing tech-poisonChance/monster-curseChance paths below AND by the new v1.4 P3 (G2)
+  // Venomous affix / boss 'curse' script effect, so every caller applies the identical shape.
+  function applyPlayerPoison(battle) {
+    battle.playerStatuses.push({ type: 'poison', name: 'Poison', turnsLeft: BALANCE.POISON_DURATION_TURNS });
+  }
+
+  function applyPlayerCurse(battle) {
+    battle.playerStatuses.push({ type: 'curse', name: 'Curse', turnsLeft: BALANCE.CURSE_DURATION });
+  }
+
   // Ticks the player's per-battle statuses (poison damage, buff duration) once per full round.
   function tickPlayerStatuses(battle) {
     if (isOver(battle)) return;
@@ -287,6 +312,9 @@ Game.Battle = (function () {
   function monsterAct(battle) {
     if (isOver(battle)) return;
     var monster = battle.monster;
+    // v1.4 P3 (G2) Frenzied champion affix: counts monster actions this battle (every action,
+    // hit/dodged/tech alike) — tracked on the battle object, never the shared monster def.
+    battle.monsterActionsTaken = (battle.monsterActionsTaken || 0) + 1;
 
     // Choose action: a known monster tech (50% inclination) if affordable, else basic attack.
     var usedTech = null;
@@ -321,6 +349,14 @@ Game.Battle = (function () {
     }
 
     var base = usedTech ? usedTech.power : monster.damage;
+    // v1.4 P3 (G2) Frenzied champion affix: escalating +5%/action, capped +40% (LOCKED by the P0
+    // sim — docs/SPEC-V1.4-GAMEPLAY.md P0 RESULTS item 2; the uncapped version broke the >=85% win
+    // floor at L90/100). Applies to the raw base power, upstream of the same variance/glancing/
+    // mitigation pipeline every other action already uses.
+    if (monster.affix === 'frenzied') {
+      var frenzyMult = 1 + Math.min(BALANCE.AFFIX_FRENZIED_RATE * battle.monsterActionsTaken, BALANCE.AFFIX_FRENZIED_CAP);
+      base = Math.round(base * frenzyMult);
+    }
     var glancing = rng() < BALANCE.GLANCING_CHANCE;
     var raw = rollVariance(base);
     if (glancing) raw *= BALANCE.GLANCING_MULT;
@@ -339,6 +375,17 @@ Game.Battle = (function () {
     log(battle, monster.name + (usedTech ? ' uses ' + usedTech.name : ' attacks') +
       (glancing ? ' — a glancing blow —' : '') + ' for ' + dmg + ' damage.');
 
+    // v1.4 P3 (G2) Vampiric champion affix: heals the monster for 25% of the damage it just dealt
+    // (post-mitigation), capped at its own hpMax. LOCKED by the P0 sim (docs/SPEC-V1.4-GAMEPLAY.md
+    // P0 RESULTS item 2).
+    if (monster.affix === 'vampiric') {
+      var vampiricHeal = Math.round(dmg * BALANCE.AFFIX_VAMPIRIC_LEECH);
+      if (vampiricHeal > 0) {
+        monster.hp = Math.min(monster.hpMax, monster.hp + vampiricHeal);
+        log(battle, 'The ' + monster.name + ' drinks your blood, healing ' + vampiricHeal + ' HP!');
+      }
+    }
+
     // Record armor slots worn while being hit, for post-battle armor-skill XP.
     var slots = Game.Inventory.EQUIP_SLOTS;
     for (var s = 0; s < slots.length; s++) {
@@ -349,8 +396,17 @@ Game.Battle = (function () {
 
     // On-hit poison from certain monster techs (e.g. Gnawing Bite).
     if (usedTech && usedTech.poisonChance && rng() < usedTech.poisonChance) {
-      battle.playerStatuses.push({ type: 'poison', name: 'Poison', turnsLeft: BALANCE.POISON_DURATION_TURNS });
+      applyPlayerPoison(battle);
       log(battle, 'You are poisoned!');
+    }
+
+    // v1.4 P3 (G2) Venomous champion affix: each successful monster BASIC attack (not techs — a
+    // tech that already carries its own poisonChance is unaffected) has a chance to poison the
+    // player, but never stacks a second poison instance. LOCKED by the P0 sim
+    // (docs/SPEC-V1.4-GAMEPLAY.md P0 RESULTS item 2): 35% on-hit.
+    if (!usedTech && monster.affix === 'venomous' && !playerPoisoned(battle) && rng() < BALANCE.AFFIX_VENOMOUS_CHANCE) {
+      applyPlayerPoison(battle);
+      log(battle, 'The venom takes hold — you are poisoned!');
     }
 
     // v1.2 Phase 1 item 8: Curse status — a monster-level `curseChance` field (analogous to a
@@ -358,17 +414,50 @@ Game.Battle = (function () {
     // Poison, which is tied to specific monster techs). Battle-scoped debuff; see
     // playerCurseActive/playerCurseMultiplier below for the outgoing-damage halving.
     if (monster.curseChance && rng() < monster.curseChance) {
-      battle.playerStatuses.push({ type: 'curse', name: 'Curse', turnsLeft: BALANCE.CURSE_DURATION });
+      applyPlayerCurse(battle);
       log(battle, 'A creeping curse settles over you!');
     }
 
     checkEnd(battle);
   }
 
+  // ---------------- Boss scripts (data-driven; docs/SPEC-V1.4-GAMEPLAY.md §4 G2) ----------------
+  // ONE interpreter for every scripted boss — no per-boss code branches (the explicit §7 guardrail
+  // / scope-creep-magnet warning). js/data/monsters.js gives a boss a
+  // `script: [{ atHpFrac, effect, amount, log }, ...]` array; each entry fires exactly once, the
+  // first time the monster's HP fraction drops to or below atHpFrac, checked here — after the
+  // player's action has resolved and the battle confirmed still active, but before the monster's
+  // own counter-attack, so e.g. an 'enrage' entry is already in effect for that very counter.
+  // `entry.fired` is set on the battle-transient monster COPY (deepCopyMonster above deep-clones
+  // the def via JSON.parse(JSON.stringify(...)), so this never mutates the shared monsters.js def).
+  function runBossScript(battle) {
+    var monster = battle.monster;
+    var script = monster.script;
+    if (!script || !script.length) return;
+    for (var i = 0; i < script.length; i++) {
+      var entry = script[i];
+      if (entry.fired) continue;
+      if (monster.hp / monster.hpMax > entry.atHpFrac) continue;
+      entry.fired = true;
+      if (entry.effect === 'enrage') {
+        monster.damage = Math.round(monster.damage * entry.amount);
+      } else if (entry.effect === 'heal') {
+        monster.hp = Math.min(monster.hpMax, monster.hp + Math.round(monster.hpMax * entry.amount));
+      } else if (entry.effect === 'curse') {
+        applyPlayerCurse(battle);
+      } else if (entry.effect === 'fortify') {
+        monster.armor += entry.amount;
+      }
+      log(battle, entry.log);
+    }
+  }
+
   // Runs the monster counter + end-of-round status ticks after a player action, unless the
-  // battle already ended.
+  // battle already ended. Boss scripts (above) are checked first so a threshold crossed by the
+  // player's own action can affect the monster's counter-attack that follows in the same round.
   function finishRound(battle) {
     if (isOver(battle)) return;
+    runBossScript(battle);
     monsterAct(battle);
     tickPlayerStatuses(battle);
   }
@@ -569,6 +658,19 @@ Game.Battle = (function () {
       log(battle, 'You cast ' + tech.name + ' — Damage +' + tech.power + ' for ' + (tech.buffDuration || 3) + ' turns.');
     } else {
       // 'damage' | 'drain'
+      // v1.4 P3 (G2) Warded champion affix: the FIRST hostile (damage/drain) tech the player
+      // casts this battle is negated outright — Energy is already spent (deducted above), damage
+      // is 0, and the one-shot flag never fires again this battle. Covers weaponTech AND magic
+      // techs alike (both reach this branch — js/data/techs.js: `effect: 'damage'|'drain'` is the
+      // shared shape). LOCKED by the P0 sim (docs/SPEC-V1.4-GAMEPLAY.md P0 RESULTS item 2 — spot-
+      // checked against a caster build, not sim-gated on the melee-only fixture).
+      if (battle.monster.affix === 'warded' && !battle.wardedTechUsed) {
+        battle.wardedTechUsed = true;
+        log(battle, 'The ward flares and swallows your technique!');
+        if (checkEnd(battle)) return battle;
+        finishRound(battle);
+        return battle;
+      }
       var fear = fearMultiplier(battle);
       // v1.2 Phase 1 item 8: Curse reduces outgoing damage by 25% (attacks AND techs) while active.
       var curseMult = playerCurseMultiplier(battle);
@@ -734,6 +836,15 @@ Game.Battle = (function () {
     return battle;
   }
 
+  // v1.4 P3 (G2) Hoarder champion affix: combat-neutral — replaces the champion drop-chance
+  // multiplier (BALANCE.CHAMPION_REWARD_MULT, x2) with BALANCE.AFFIX_HOARDER_DROP_MULT (x3) on
+  // this kill's loot rolls only; xp/gold/AP premiums still use CHAMPION_REWARD_MULT untouched in
+  // onWin below. LOCKED by the P0 sim (docs/SPEC-V1.4-GAMEPLAY.md P0 RESULTS item 2).
+  function dropChanceMult(monster) {
+    if (!monster.champion) return 1;
+    return monster.affix === 'hoarder' ? BALANCE.AFFIX_HOARDER_DROP_MULT : BALANCE.CHAMPION_REWARD_MULT;
+  }
+
   // ---------------- Win / loss resolution ----------------
 
   function onWin(battle) {
@@ -895,7 +1006,7 @@ Game.Battle = (function () {
     var lootId = null;
     var drops = monster.drops || [];
     for (var d = 0; d < drops.length; d++) {
-      var dropChance = monster.champion ? Math.min(0.95, drops[d].chance * BALANCE.CHAMPION_REWARD_MULT) : drops[d].chance;
+      var dropChance = monster.champion ? Math.min(0.95, drops[d].chance * dropChanceMult(monster)) : drops[d].chance;
       if (rng() < dropChance) {
         lootId = drops[d].itemId;
         break;
@@ -912,7 +1023,7 @@ Game.Battle = (function () {
     var stolenId = null;
     if (thieveryStealChance > 0 && rng() < thieveryStealChance) {
       for (var sd = 0; sd < drops.length; sd++) {
-        var stealDropChance = monster.champion ? Math.min(0.95, drops[sd].chance * BALANCE.CHAMPION_REWARD_MULT) : drops[sd].chance;
+        var stealDropChance = monster.champion ? Math.min(0.95, drops[sd].chance * dropChanceMult(monster)) : drops[sd].chance;
         if (rng() < stealDropChance) {
           stolenId = drops[sd].itemId;
           break;
@@ -1097,6 +1208,17 @@ Game.Battle = (function () {
   }
 
   var ARMOR_SKILLS = ['Light Armor', 'Medium Armor', 'Heavy Armor', 'Shields'];
+
+  // v1.4 P3 (G2): flavor line announced once, at battle start, next to the champion banner
+  // (js/ui/screens.js renderBattle also shows the affix name beside [CHAMPION]) — the battle log
+  // must teach players the rules (spec §4).
+  var AFFIX_ANNOUNCE = {
+    vampiric: 'This champion is Vampiric — it drinks the blood it spills!',
+    frenzied: 'This champion is Frenzied — it grows more savage with every action!',
+    warded: 'This champion is Warded — the first hostile technique cast at it will be swallowed whole!',
+    venomous: 'This champion is Venomous — its bite carries a virulent poison!',
+    hoarder: 'This champion is a Hoarder — expect richer plunder from its corpse!'
+  };
 
   return {
     start: start,

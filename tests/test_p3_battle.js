@@ -2600,6 +2600,191 @@ assert(b48.rewards.ap === expectedBossAp, 'boss win grants AP_PER_WIN(10) x AP_B
 assert(c48.ap === expectedBossAp, 'character.ap credited with the boss AP reward');
 Game.Battle.endBattle();
 
+// =================== Test 49: v1.4 P3 (G2) — champion affix roll (forced rng); non-champion gets none ===================
+console.log('\n=== Test 49: champion affix — each of the 5 reachable via a forced roll; a non-champion battle never gets one ===');
+var AFFIX_ROLL_CASES = [
+  { rng: 0.05, expected: 'vampiric' },
+  { rng: 0.25, expected: 'frenzied' },
+  { rng: 0.45, expected: 'warded' },
+  { rng: 0.65, expected: 'venomous' },
+  { rng: 0.85, expected: 'hoarder' }
+];
+AFFIX_ROLL_CASES.forEach(function (tc) {
+  var cAffix = makeCharacter({ name: 'AffixRoll' });
+  cAffix.dexterity = 20; // playerFirst vs a level-1 monster -> start() does not consume extra rng before we inspect
+  setRng(fixedRng(tc.rng));
+  var bAffix = Game.Battle.start('plains_field_rat', { champion: true });
+  assert(bAffix.monster.affix === tc.expected, 'rng ' + tc.rng + ' rolls affix ' + tc.expected + ', got ' + bAffix.monster.affix);
+  var expectedCap = tc.expected.charAt(0).toUpperCase() + tc.expected.slice(1);
+  assert(bAffix.log.some(function (l) { return l.indexOf(expectedCap) !== -1; }), 'affix announced in the battle log at start: ' + tc.expected);
+  Game.Battle.endBattle();
+});
+
+var cNoChampAffix = makeCharacter({ name: 'NoChampionAffix' });
+setRng(fixedRng(0.99));
+var bNoChampAffix = Game.Battle.start('plains_field_rat');
+assert(bNoChampAffix.monster.affix === undefined, 'a non-champion battle never gets an affix, got ' + bNoChampAffix.monster.affix);
+Game.Battle.endBattle();
+
+// =================== Test 50: v1.4 P3 (G2) — Vampiric champion affix ===================
+console.log('\n=== Test 50: Vampiric champion affix — monster heals 25% of damage dealt to the player, capped at hpMax ===');
+var cVamp = makeCharacter({ name: 'VampiricTest' });
+cVamp.dexterity = 20; // playerFirst
+Game.Character.recalcDerived(cVamp);
+cVamp.hitPoints = cVamp.hitPointsMax = 100000; // survive regardless of the monster's counter
+cVamp.energy = cVamp.energyMax = 100000;
+setRng(fixedRng(0.5)); // Test 3/13 idiom: neutral variance, no dodge/glancing/double-attack
+var bVamp = Game.Battle.start('plains_field_rat');
+bVamp.monster.techs = []; // isolate to basic attacks only
+bVamp.monster.affix = 'vampiric';
+bVamp.monster.damage = 100; // large enough that round(dmg * 0.25) is unambiguously > 0 after mitigation
+bVamp.monster.hpMax = 10000;
+bVamp.monster.hp = bVamp.monster.hpMax - 200; // headroom so the heal is visible, not capped
+var hpBeforeVamp = bVamp.monster.hp;
+Game.Battle.attack();
+var vampLog = bVamp.log.filter(function (l) { return l.indexOf('drinks your blood') !== -1; }).pop();
+assert(!!vampLog, 'vampiric heal log line present');
+var strikeLineVamp = bVamp.log.filter(function (l) { return /^You strike the/.test(l); }).pop();
+var playerDealtDmgVamp = parseInt(strikeLineVamp.match(/for (\d+) damage/)[1], 10);
+var healedAmtVamp = parseInt(vampLog.match(/healing (\d+) HP/)[1], 10);
+var counterLineVamp = bVamp.log.filter(function (l) { return / attacks for \d+ damage\.$/.test(l); }).pop();
+var dealtToPlayerVamp = parseInt(counterLineVamp.match(/for (\d+) damage/)[1], 10);
+assert(healedAmtVamp === Math.round(dealtToPlayerVamp * BALANCE.AFFIX_VAMPIRIC_LEECH), 'heal = round(' + BALANCE.AFFIX_VAMPIRIC_LEECH + ' x ' + dealtToPlayerVamp + ') = ' + Math.round(dealtToPlayerVamp * BALANCE.AFFIX_VAMPIRIC_LEECH) + ', got ' + healedAmtVamp);
+assert(bVamp.monster.hp === hpBeforeVamp - playerDealtDmgVamp + healedAmtVamp, 'monster.hp reflects the player\'s hit then the vampiric heal exactly: ' + bVamp.monster.hp);
+Game.Battle.endBattle();
+
+// =================== Test 51: v1.4 P3 (G2) — Frenzied champion affix ===================
+console.log('\n=== Test 51: Frenzied champion affix — damage escalates +5%/action, caps at +40% ===');
+var cFz = makeCharacter({ name: 'FrenziedTest' });
+cFz.dexterity = 60; // playerFirst vs a level-50 boss (used only for its large, rounding-friendly damage stat)
+Game.Character.recalcDerived(cFz);
+cFz.hitPoints = cFz.hitPointsMax = 1000000;
+cFz.energy = cFz.energyMax = 1000000;
+setRng(fixedRng(0.5)); // neutral: no dodge/glancing/double-attack, variance factor 1.0 (Test 3/13/50 idiom)
+var bFz = Game.Battle.start('majiku_warlord');
+bFz.monster.techs = []; // isolate to basic attacks (base = monster.damage, not a tech's power)
+bFz.monster.script = []; // isolate from majiku_warlord's own boss script (covered by Test 55)
+bFz.monster.affix = 'frenzied';
+bFz.monster.hp = bFz.monster.hpMax = 10000000;
+bFz.monster.energy = bFz.monster.energyMax = 10000000;
+var baseDamageFz = bFz.monster.damage;
+var dmgHistoryFz = [];
+for (var roundFz = 1; roundFz <= 12; roundFz++) {
+  Game.Battle.attack();
+  var lastLineFz = bFz.log[bFz.log.length - 1];
+  dmgHistoryFz.push(parseInt(lastLineFz.match(/for (\d+) damage\.$/)[1], 10));
+}
+assert(bFz.monsterActionsTaken === 12, 'monsterActionsTaken tracked 12 monster actions, got ' + bFz.monsterActionsTaken);
+for (var fzI = 1; fzI < 7; fzI++) {
+  assert(dmgHistoryFz[fzI] > dmgHistoryFz[fzI - 1], 'frenzied damage still escalating at action ' + (fzI + 1) + ': ' + dmgHistoryFz[fzI] + ' > ' + dmgHistoryFz[fzI - 1]);
+}
+var plateauFz = dmgHistoryFz.slice(7); // actions 8-12: multiplier pinned at the +40% cap
+assert(plateauFz.every(function (d) { return d === plateauFz[0]; }), 'frenzied damage plateaus once the +40% cap is reached (actions 8-12): ' + JSON.stringify(plateauFz));
+var expectedCapDmgFz = Math.round(baseDamageFz * (1 + BALANCE.AFFIX_FRENZIED_CAP));
+assert(plateauFz[0] === expectedCapDmgFz, 'plateau damage matches round(baseDamage x (1+cap)) = ' + expectedCapDmgFz + ', got ' + plateauFz[0]);
+Game.Battle.endBattle();
+
+// =================== Test 52: v1.4 P3 (G2) — Warded champion affix ===================
+console.log('\n=== Test 52: Warded champion affix — first hostile tech this battle is negated (energy spent, damage 0); only once ===');
+var cWard = makeCharacter({ skills: { 'Evocation': 3 }, name: 'WardedTest' });
+cWard.dexterity = 20; // playerFirst
+cWard.hitPoints = cWard.hitPointsMax = 100000;
+cWard.energy = cWard.energyMax = 100000;
+setRng(fixedRng(0.1)); // < INT_SPELL_HIT_MIN floor (0.40) -> every cast hits; harmless elsewhere (all other proc chances here are well above 0.1)
+var bWard = Game.Battle.start('plains_field_rat');
+bWard.monster.techs = [];
+bWard.monster.affix = 'warded';
+bWard.monster.hp = bWard.monster.hpMax = 100000;
+var techW = Game.Battle.getTech('tech_firebolt_1');
+var energyBeforeWard = cWard.energy;
+var monsterHpBeforeWard = bWard.monster.hp;
+Game.Battle.useTech('tech_firebolt_1');
+assert(cWard.energy === energyBeforeWard - techW.energyCost, 'Energy is still spent on the warded (negated) cast');
+assert(bWard.monster.hp === monsterHpBeforeWard, 'the warded tech dealt 0 damage — monster HP unchanged');
+assert(bWard.wardedTechUsed === true, 'the one-shot warded flag is now consumed');
+assert(bWard.log.indexOf('The ward flares and swallows your technique!') !== -1, 'warded log line present');
+
+// A SECOND hostile tech the same battle casts normally — the ward already fired once.
+var monsterHpBeforeWard2 = bWard.monster.hp;
+var energyBeforeWard2 = cWard.energy;
+Game.Battle.useTech('tech_firebolt_1');
+assert(bWard.monster.hp < monsterHpBeforeWard2, 'a SECOND hostile tech this battle casts normally and damages the monster (ward already spent)');
+assert(cWard.energy === energyBeforeWard2 - techW.energyCost, 'the second cast also spends energy normally');
+Game.Battle.endBattle();
+
+// =================== Test 53: v1.4 P3 (G2) — Venomous champion affix ===================
+console.log('\n=== Test 53: Venomous champion affix — poisons on a successful BASIC attack (forced rng), never stacks a second poison ===');
+var cVeno = makeCharacter({ name: 'VenomousTest' });
+cVeno.dexterity = 20; // playerFirst
+cVeno.hitPoints = cVeno.hitPointsMax = 100000;
+cVeno.energy = cVeno.energyMax = 100000;
+setRng(fixedRng(0.3)); // < AFFIX_VENOMOUS_CHANCE (0.35); clears every dodge/glancing/double-attack check in this fixture
+var bVeno = Game.Battle.start('plains_field_rat');
+bVeno.monster.techs = [];
+bVeno.monster.affix = 'venomous';
+bVeno.monster.hp = bVeno.monster.hpMax = 100000;
+Game.Battle.attack();
+var poisonCountAfter1 = bVeno.playerStatuses.filter(function (s) { return s.type === 'poison'; }).length;
+assert(poisonCountAfter1 === 1, 'a successful monster basic attack applies poison (rng 0.3 < 0.35), got count ' + poisonCountAfter1);
+assert(bVeno.log.some(function (l) { return l.indexOf('venom takes hold') !== -1; }), 'venomous poison log line present');
+
+Game.Battle.attack();
+var poisonCountAfter2 = bVeno.playerStatuses.filter(function (s) { return s.type === 'poison'; }).length;
+assert(poisonCountAfter2 === 1, 'venomous never stacks a second poison instance even on another successful proc, got count ' + poisonCountAfter2);
+Game.Battle.endBattle();
+
+// =================== Test 54: v1.4 P3 (G2) — Hoarder champion affix ===================
+console.log('\n=== Test 54: Hoarder champion affix — drop chance x3 (not x2), while xp/gold stay at the normal champion x2 ===');
+var cHoard = makeCharacter({ name: 'HoarderTest' });
+setRng(fixedRng(0.99));
+var bHoard = Game.Battle.start('plains_field_rat', { champion: true });
+bHoard.monster.affix = 'hoarder';
+bHoard.monster.hp = 1; // next attack kills
+// attack(): [dbl, monsterDodge, glancing, variance] -> onWin: [gold, drop] (champion skips the shard roll entirely)
+setRng(seqRng([0.99, 0.99, 0.99, 0.5, /* gold */ 0.0, /* drop (hoarder probe) */ 0.25], 0.99));
+Game.Battle.attack();
+assert(bHoard.phase === 'won', 'champion battle won');
+var rHoard = bHoard.rewards;
+assert(rHoard.xp === bHoard.monster.xp * BALANCE.CHAMPION_REWARD_MULT, 'champion xp premium (x' + BALANCE.CHAMPION_REWARD_MULT + ') unaffected by Hoarder, got ' + rHoard.xp);
+assert(rHoard.gold === bHoard.monster.goldMin * BALANCE.CHAMPION_REWARD_MULT, 'champion gold premium (x' + BALANCE.CHAMPION_REWARD_MULT + ') unaffected by Hoarder, got ' + rHoard.gold);
+// probe: drop chance 0.1 x2 (normal champion) = 0.2 -> rng 0.25 would MISS; x3 (Hoarder) = 0.3 -> rng 0.25 HITS.
+assert(rHoard.loot === 'potion_minor_healing', 'Hoarder replaces the x2 champion drop-chance premium with x3 (probe rng 0.25 misses at x2=0.2 but hits at x3=0.3), got loot=' + rHoard.loot);
+Game.Battle.endBattle();
+
+// =================== Test 55: v1.4 P3 (G2) — boss script fires exactly once at its threshold ===================
+console.log('\n=== Test 55: boss script (kastengard_custodian, fortify @ 50%) fires exactly once when HP first crosses its threshold ===');
+var cScript = makeCharacter({ name: 'BossScriptTest' });
+cScript.dexterity = 60; // playerFirst vs a level-32 boss
+cScript.level = 32; // avoid Fear complicating the player's own hit (irrelevant to what's asserted, but keeps it simple)
+cScript.strength = 100;
+Game.Character.recalcDerived(cScript);
+cScript.hitPoints = cScript.hitPointsMax = 100000;
+cScript.energy = cScript.energyMax = 100000;
+setRng(fixedRng(0.99));
+var bScript = Game.Battle.start('kastengard_custodian');
+bScript.monster.techs = [];
+bScript.monster.hpMax = 100000;
+bScript.monster.hp = 50001; // one point above the 50% threshold -- any positive hit crosses it, without killing the boss
+var armorBefore = bScript.monster.armor;
+var scriptEntry = bScript.monster.script[0];
+assert(scriptEntry.effect === 'fortify' && scriptEntry.atHpFrac === 0.5, 'sanity: kastengard_custodian carries the expected fortify script entry');
+assert(!scriptEntry.fired, 'sanity: the script entry has not fired yet');
+
+Game.Battle.attack(); // crosses the 50% threshold this round without killing the boss
+assert(bScript.monster.hp / bScript.monster.hpMax <= 0.5, 'sanity: the hit brought the boss to/below the 50% threshold');
+assert(scriptEntry.fired === true, 'the script entry fired once its threshold was crossed');
+assert(bScript.monster.armor === armorBefore + scriptEntry.amount, 'fortify applied its flat amount exactly once: armor ' + armorBefore + ' -> ' + bScript.monster.armor);
+var scriptLogHits1 = bScript.log.filter(function (l) { return l === scriptEntry.log; }).length;
+assert(scriptLogHits1 === 1, 'the script log line was written exactly once, got ' + scriptLogHits1);
+
+// A further round (well clear of the threshold either way) must NOT re-fire the one-shot entry.
+var armorAfterFirstFire = bScript.monster.armor;
+Game.Battle.attack();
+assert(bScript.monster.armor === armorAfterFirstFire, 'fortify does not re-apply on a later round: armor stays ' + bScript.monster.armor);
+var scriptLogHits2 = bScript.log.filter(function (l) { return l === scriptEntry.log; }).length;
+assert(scriptLogHits2 === 1, 'the script log line still appears exactly once after a second round, got ' + scriptLogHits2);
+Game.Battle.endBattle();
+
 // =================== Summary ===================
 console.log('\n===================================');
 if (failures === 0) {
