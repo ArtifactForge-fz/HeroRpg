@@ -218,6 +218,13 @@ Artifact not redeployed (claude.ai publishing on hold; see Deployment).
   plus MMO-inspired single-player variants (Relic sets, Codex/achievements, Bounty board). Phased
   E0–E4, E0 (Ascension-scaling sim) the gate. **Depends on v1.4 landing** (reuses AP + champion
   affixes); save v10→v11.
+- **v1.5 Reactive monster behavior** — spec at `docs/SPEC-V1.5-MONSTER-AI.md` (backlogged
+  2026-07-12; user-directed as the v1.5 headliner). Telegraphed heavy attacks + reusable behavior
+  archetypes (`simple`/`telegraph`/`caster`/`enrage`/`guardian`/`reactive`) that make Defend a real
+  read; extended to most standard monsters but **graded along the journey** (starting areas stay
+  `simple`, complexity ramps north). [archived intent] `homepage_2006.md` "Intelligent reactions
+  based on hero actions"; generalizes the v1.4 G2 boss-script interpreter — **depends on v1.4**.
+  Phased V0–V4, V0 (`/balance-sim`) the gate; **no save change** (data + transient only).
 - Unique champion abilities (beyond stat multipliers); Eidolon system (`manual/Version_3.0.md`);
   pets (`heropet.php` existed, no data survived). (Tier-3 classes Shadowknight/Magus/Gambit and the
   Curse affliction — formerly backlog — shipped in v1.2.)
