@@ -639,3 +639,12 @@ body {
   padding-left: 16px;
   font-size: 9px;
 }
+
+/* ===== v1.4 Mobile M0: foundation hygiene (docs/SPEC-MOBILE-UI.md §4 M0) =====
+   Appended per the spec's containment strategy: all mobile work lives at the end of this file;
+   nothing above this line is edited. These three rules are visually inert on desktop. */
+
+html { -webkit-text-size-adjust: 100%; } /* stop iOS Safari auto-inflating the 10px verdana */
+button, a { touch-action: manipulation; } /* kill the 300ms tap delay / double-tap zoom */
+#app { min-height: 100dvh; } /* overrides the 100vh rule above only where dvh exists (mobile
+  browser chrome); engines without dvh drop this declaration and keep the 100vh fallback */

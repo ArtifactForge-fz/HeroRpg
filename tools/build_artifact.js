@@ -68,7 +68,8 @@ const shim = `// Artifact runtime shims: sandboxed iframes can have an opaque or
 })();
 window.HERORPG_ICONS = ${JSON.stringify(icons)};`;
 
-const out = `<title>HeroRPG</title>
+const out = `<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HeroRPG</title>
 <style>
 ${css}
 </style>
@@ -85,6 +86,10 @@ ${boot}
 `;
 
 fs.writeFileSync(OUT, out);
+// verification: mobile M0 (docs/SPEC-MOBILE-UI.md §4/§5) — both the site and this artifact must
+// carry the viewport meta, or phones render at ~980px virtual width again.
+if (!indexHtml.includes('name="viewport"')) throw new Error('index.html lost its viewport meta (mobile M0)');
+if (!out.includes('name="viewport"')) throw new Error('artifact template lost its viewport meta (mobile M0)');
 // verification: syntax-check each embedded script block
 new Function(shim.replace('window.HERORPG_ICONS', 'var __icons'));
 new Function(gameJs); // throws on syntax error (does not execute)
