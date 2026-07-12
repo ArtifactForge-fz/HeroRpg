@@ -2785,6 +2785,206 @@ var scriptLogHits2 = bScript.log.filter(function (l) { return l === scriptEntry.
 assert(scriptLogHits2 === 1, 'the script log line still appears exactly once after a second round, got ' + scriptLogHits2);
 Game.Battle.endBattle();
 
+// =================== Test 56: v1.4 P4 (G3) — Limit Break gating (classless / under-fury) ===================
+console.log('\n=== Test 56: Limit Break unavailable when classless or under the Fury floor; no fury spent on refusal ===');
+var c56 = makeCharacter({ name: 'LbGateClassless' });
+c56.dexterity = 20; // playerFirst
+c56.fury = 10;
+assert(Game.Battle.getLimitBreak(c56) === null, 'a classless character has no Limit Break, got ' + JSON.stringify(Game.Battle.getLimitBreak(c56)));
+setRng(fixedRng(0.5));
+var b56a = Game.Battle.start('plains_field_rat');
+b56a.monster.hp = b56a.monster.hpMax = 100000;
+var hpBefore56a = b56a.monster.hp;
+Game.Battle.limitBreak();
+assert(b56a.monster.hp === hpBefore56a, 'classless limitBreak() deals no damage');
+assert(c56.fury === 10, 'classless limitBreak() spends no Fury');
+assert(b56a.log[b56a.log.length - 1].indexOf('no Limit Break') !== -1, 'log explains no Limit Break is available');
+Game.Battle.endBattle();
+
+var c56b = makeCharacter({ name: 'LbGateUnderFury' });
+c56b.dexterity = 20;
+Game.Classes.obtainClass(c56b, 'warrior');
+c56b.fury = BALANCE.LB_FURY_MIN - 1;
+setRng(fixedRng(0.5));
+var b56b = Game.Battle.start('plains_field_rat');
+b56b.monster.hp = b56b.monster.hpMax = 100000;
+var hpBefore56b = b56b.monster.hp;
+Game.Battle.limitBreak();
+assert(b56b.monster.hp === hpBefore56b, 'under-fury limitBreak() deals no damage');
+assert(c56b.fury === BALANCE.LB_FURY_MIN - 1, 'under-fury limitBreak() spends no Fury');
+assert(b56b.log[b56b.log.length - 1].indexOf('not yet strong enough') !== -1, 'log explains the Fury streak is not yet strong enough');
+Game.Battle.endBattle();
+
+// =================== Test 57: v1.4 P4 (G3) — Limit Break damage, Fury cost, once per battle ===================
+console.log('\n=== Test 57: Limit Break consumes the whole Fury streak, deals ~' + BALANCE.LB_DAMAGE_MULT + 'x a basic hit, once per battle ===');
+function lbFixture(name) {
+  var c = makeCharacter({ name: name });
+  c.dexterity = 20; // playerFirst
+  Game.Character.recalcDerived(c);
+  return c;
+}
+
+var c57base = lbFixture('LbBaselineHit');
+setRng(fixedRng(0.5)); // neutral variance, no dodge/glancing/double-attack (Test 3/13/50 idiom)
+var b57base = Game.Battle.start('plains_field_rat');
+b57base.monster.techs = [];
+b57base.monster.armor = 0; // isolate the raw damage-vs-mitigation math from any armor rounding skew
+b57base.monster.hp = b57base.monster.hpMax = 1000000;
+Game.Battle.attack();
+var baseLine57 = b57base.log.filter(function (l) { return /^You strike the/.test(l); }).pop();
+var baseDmg57 = parseInt(baseLine57.match(/for (\d+) damage/)[1], 10);
+Game.Battle.endBattle();
+
+var c57lb = lbFixture('LbHit');
+Game.Classes.obtainClass(c57lb, 'warrior');
+c57lb.fury = 6;
+setRng(fixedRng(0.5));
+var b57lb = Game.Battle.start('plains_field_rat');
+b57lb.monster.techs = [];
+b57lb.monster.armor = 0;
+b57lb.monster.hp = b57lb.monster.hpMax = 1000000;
+Game.Battle.limitBreak();
+var lbLine57 = b57lb.log.filter(function (l) { return l.indexOf('slams into') !== -1; }).pop();
+assert(!!lbLine57, 'limit break strike logged');
+var lbDmg57 = parseInt(lbLine57.match(/for (\d+) damage/)[1], 10);
+assert(Math.abs(lbDmg57 - baseDmg57 * BALANCE.LB_DAMAGE_MULT) <= 1, 'Limit Break damage ~= ' + BALANCE.LB_DAMAGE_MULT + 'x a basic hit (base ' + baseDmg57 + ', LB ' + lbDmg57 + ', expected ~' + (baseDmg57 * BALANCE.LB_DAMAGE_MULT) + ')');
+assert(c57lb.fury === 0, 'Limit Break consumes the ENTIRE Fury streak, got ' + c57lb.fury);
+assert(b57lb.limitBreakUsed === true, 'battle.limitBreakUsed flag set after use');
+
+// once per battle: fury re-primed mid-battle must still refuse a second use this same battle.
+c57lb.fury = 10;
+var hpBeforeSecond57 = b57lb.monster.hp;
+Game.Battle.limitBreak();
+assert(b57lb.monster.hp === hpBeforeSecond57, 'a second Limit Break this battle deals no further damage');
+assert(c57lb.fury === 10, 'a refused second Limit Break does not touch Fury');
+assert(b57lb.log[b57lb.log.length - 1].indexOf('already unleashed') !== -1, 'log explains the Limit Break was already used this battle');
+Game.Battle.endBattle();
+
+// =================== Test 58: v1.4 P4 (G3) — Limit Break maps to the class LINE ===================
+console.log('\n=== Test 58: Limit Break maps to the class LINE (warrior->Rage, thief->Dragon Kick, magician->Hurricane Blow); first obtained wins ===');
+var LB_MAP_CASES = [
+  { base: 'warrior', expectedId: 'rage', expectedName: 'Rage' },
+  { base: 'thief', expectedId: 'dragon_kick', expectedName: 'Dragon Kick' },
+  { base: 'magician', expectedId: 'hurricane_blow', expectedName: 'Hurricane Blow' }
+];
+LB_MAP_CASES.forEach(function (tc) {
+  var c58 = makeCharacter({ name: 'LbMap_' + tc.base });
+  Game.Classes.obtainClass(c58, tc.base);
+  var lb58 = Game.Battle.getLimitBreak(c58);
+  assert(!!lb58 && lb58.id === tc.expectedId && lb58.name === tc.expectedName, tc.base + ' base class grants ' + tc.expectedName + ', got ' + JSON.stringify(lb58));
+});
+
+var c58multi = makeCharacter({ name: 'LbMapMultiBase' });
+Game.Classes.obtainClass(c58multi, 'warrior');
+Game.Classes.obtainClass(c58multi, 'thief');
+var lb58multi = Game.Battle.getLimitBreak(c58multi);
+assert(lb58multi && lb58multi.id === 'rage', 'a character with multiple base classes keeps the FIRST obtained (warrior -> Rage), got ' + JSON.stringify(lb58multi));
+
+// =================== Test 59: v1.4 P4 (G3) — Rage's armor buff rider ===================
+console.log('\n=== Test 59: Rage limit-break rider — +' + BALANCE.LB_RAGE_ARMOR_BONUS + ' Armor for ' + BALANCE.LB_RAGE_ARMOR_DURATION + ' turns, then reverts ===');
+var c59 = makeCharacter({ name: 'RageArmorTest' });
+c59.dexterity = 60; // playerFirst
+c59.level = 1; // matches plains_field_rat's own level -> no Fear complicating the mitigation math
+Game.Character.recalcDerived(c59);
+c59.hitPoints = c59.hitPointsMax = 1000000;
+c59.energy = c59.energyMax = 1000000;
+Game.Classes.obtainClass(c59, 'warrior');
+c59.fury = BALANCE.LB_FURY_MIN;
+setRng(fixedRng(0.5)); // neutral: no dodge/glancing/double-attack on either side (Test 3/13/50 idiom)
+var b59 = Game.Battle.start('plains_field_rat');
+b59.monster.techs = [];
+b59.monster.damage = 500; // large enough that +-3 Armor is unambiguous after rounding
+b59.monster.energy = b59.monster.energyMax = 1000000;
+b59.monster.hp = b59.monster.hpMax = 1000000;
+
+Game.Battle.limitBreak(); // Rage fires -> +Armor buff pushed BEFORE finishRound's monster counter
+var hit1Line59 = b59.log.filter(function (l) { return / attacks for \d+ damage\.$/.test(l); }).pop();
+var hit1_59 = parseInt(hit1Line59.match(/for (\d+) damage/)[1], 10);
+
+Game.Battle.attack(); // 2nd monster counter — buff still active
+var hit2Line59 = b59.log.filter(function (l) { return / attacks for \d+ damage\.$/.test(l); }).pop();
+var hit2_59 = parseInt(hit2Line59.match(/for (\d+) damage/)[1], 10);
+
+Game.Battle.attack(); // 3rd monster counter — buff still active; ticks to 0 (expires) at round end
+var hit3Line59 = b59.log.filter(function (l) { return / attacks for \d+ damage\.$/.test(l); }).pop();
+var hit3_59 = parseInt(hit3Line59.match(/for (\d+) damage/)[1], 10);
+assert(b59.log.some(function (l) { return l.indexOf('Rage fades') !== -1; }), 'Rage buff expiry logged after its 3rd turn');
+
+Game.Battle.attack(); // 4th monster counter — buff already expired, mitigation reverts
+var hit4Line59 = b59.log.filter(function (l) { return / attacks for \d+ damage\.$/.test(l); }).pop();
+var hit4_59 = parseInt(hit4Line59.match(/for (\d+) damage/)[1], 10);
+
+assert(hit1_59 === hit2_59 && hit2_59 === hit3_59, 'all 3 buffed hits take identical (reduced) damage: ' + JSON.stringify([hit1_59, hit2_59, hit3_59]));
+assert(hit4_59 === hit1_59 + BALANCE.LB_RAGE_ARMOR_BONUS, 'once the buff expires, damage rises by exactly the ' + BALANCE.LB_RAGE_ARMOR_BONUS + ' Armor it granted: buffed ' + hit1_59 + ', unbuffed ' + hit4_59);
+Game.Battle.endBattle();
+
+// =================== Test 60: v1.4 P4 (G3) — Dragon Kick's dodge-debuff rider ===================
+console.log('\n=== Test 60: Dragon Kick limit-break rider — flat dodge-chance reduction, floored at 0 ===');
+var c60 = makeCharacter({ name: 'DragonKickTest' });
+c60.dexterity = 20; // playerFirst
+c60.hitPoints = c60.hitPointsMax = 1000000;
+c60.energy = c60.energyMax = 1000000;
+Game.Classes.obtainClass(c60, 'thief');
+c60.fury = BALANCE.LB_FURY_MIN;
+setRng(fixedRng(0.5));
+var b60 = Game.Battle.start('plains_field_rat');
+b60.monster.techs = [];
+b60.monster.hp = b60.monster.hpMax = 1000000;
+assert(b60.monster.dodgeDebuff === undefined, 'sanity: no dodge debuff before the Limit Break');
+Game.Battle.limitBreak();
+assert(b60.log.some(function (l) { return l.indexOf('shatters') !== -1; }), 'Dragon Kick rider logged');
+assert(b60.monster.dodgeDebuff === BALANCE.LB_DRAGON_KICK_DODGE_DEBUFF, 'Dragon Kick applies its flat dodge-chance debuff exactly once, got ' + b60.monster.dodgeDebuff);
+
+// Floor at 0: force the debuff far past the monster's own dodge chance, then confirm even a
+// forced rng=0 (which would otherwise dodge ANY positive chance) fails to dodge a plain Attack.
+b60.monster.dodgeDebuff = 999;
+setRng(fixedRng(0.0));
+var monsterHpBefore60 = b60.monster.hp;
+Game.Battle.attack();
+assert(monsterHpBefore60 > b60.monster.hp, 'a monster whose dodge chance is floored at 0 can never dodge — the attack connected');
+assert(!b60.log.some(function (l) { return l.indexOf('dodges your attack') !== -1; }), 'no dodge log line — the floor at 0 held even against a forced rng=0 roll');
+Game.Battle.endBattle();
+
+// =================== Test 61: v1.4 P4 (G3) — Hurricane Blow's no-dodge rider ===================
+console.log('\n=== Test 61: Hurricane Blow limit-break rider — bypasses the monster\'s dodge roll for this strike ===');
+var c61 = makeCharacter({ name: 'HurricaneBlowTest' });
+c61.dexterity = 20; // playerFirst
+c61.hitPoints = c61.hitPointsMax = 1000000;
+c61.energy = c61.energyMax = 1000000;
+Game.Classes.obtainClass(c61, 'magician');
+c61.fury = BALANCE.LB_FURY_MIN;
+setRng(fixedRng(0.0)); // 0.0 would dodge ANY positive dodge chance, if the roll were even made
+var b61 = Game.Battle.start('plains_field_rat');
+b61.monster.techs = [];
+b61.monster.hp = b61.monster.hpMax = 1000000;
+var monsterHpBefore61 = b61.monster.hp;
+Game.Battle.limitBreak();
+assert(b61.monster.hp < monsterHpBefore61, 'Hurricane Blow auto-connects even at a forced rng=0 dodge roll — monster HP dropped');
+assert(!b61.log.some(function (l) { return l.indexOf('dodges your Hurricane Blow') !== -1; }), 'no dodge log line for Hurricane Blow — its dodge roll is skipped entirely');
+Game.Battle.endBattle();
+
+// =================== Test 62: v1.4 P4 (G3) — Fury still ticks on the NEXT win after a Limit Break ===================
+console.log('\n=== Test 62: using a Limit Break then winning still grants the next Fury tick ===');
+var c62 = makeCharacter({ name: 'LbThenWinFuryTick' });
+c62.dexterity = 20; // playerFirst
+Game.Character.recalcDerived(c62);
+c62.hitPoints = c62.hitPointsMax = 1000000;
+c62.energy = c62.energyMax = 1000000;
+Game.Classes.obtainClass(c62, 'warrior');
+c62.fury = BALANCE.LB_FURY_MIN;
+setRng(fixedRng(0.5));
+var b62 = Game.Battle.start('plains_field_rat'); // level 1, at-or-above the player's own level (1) -> qualifies for the fury tick
+b62.monster.techs = [];
+b62.monster.energy = b62.monster.energyMax = 1000000;
+Game.Battle.limitBreak();
+assert(c62.fury === 0, 'sanity: Limit Break spent the whole streak');
+b62.monster.hp = 1; // next hit kills, regardless of exact damage (the 1-damage floor always applies)
+setRng(fixedRng(0.99)); // clears every dodge/glancing/double-attack/gold/shard/drop check that follows
+Game.Battle.attack();
+assert(b62.phase === 'won', 'battle won after the Limit Break');
+assert(c62.fury === 1, 'a fresh Fury tick (+1) is still granted on the very next win after spending a Limit Break, got ' + c62.fury);
+Game.Battle.endBattle();
+
 // =================== Summary ===================
 console.log('\n===================================');
 if (failures === 0) {

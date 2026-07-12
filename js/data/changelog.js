@@ -26,6 +26,14 @@ Game.Data.changelog = [
         'their entire quest list on you at once; finish or abandon a quest to make room for more.',
       'Multi-part questlines now unlock their next chapter automatically as you complete the ' +
         'quest before it, instead of all appearing at once.',
+      'Building a big enough Fury kill-streak now unlocks a class Limit Break in battle — Rage, ' +
+        'Dragon Kick, or Hurricane Blow depending on your calling — a devastating strike that ' +
+        'spends your entire streak in one go.',
+      'You can now Forage in any hunting ground for local materials and provisions, right ' +
+        'alongside Hunt and Camp — though it shares Camp\'s same risk of a robbery or ambush.',
+      'New cheap tavern provisions — Trail Rations, Honeyed Mead, and Kuraan Spice Tea — restore ' +
+        'Energy for a few gold at early and mid-level towns; a rarer Forager\'s Bundle can only ' +
+        'be found while foraging.',
       'The Town screen now shows one facility at a time (Shop, Inn, Vault, and so on) instead of ' +
         'stacking every service onto a single crowded page.',
       'Fixed a display bug where some status bars (Health, Energy, and others) could render with ' +

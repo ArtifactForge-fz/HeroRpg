@@ -75,7 +75,13 @@ Game.Battle = (function () {
   function monsterDodgeChance(monster) {
     // Phase 7 retune: see BALANCE.MONSTER_DODGE_PER_LEVEL — the old level-based scaling made
     // endgame monsters dodge 1-in-3 attacks and stalled fights.
-    return Math.min(BALANCE.MONSTER_DODGE_CAP, BALANCE.DODGE_BASE + monster.level * BALANCE.MONSTER_DODGE_PER_LEVEL);
+    var chance = Math.min(BALANCE.MONSTER_DODGE_CAP, BALANCE.DODGE_BASE + monster.level * BALANCE.MONSTER_DODGE_PER_LEVEL);
+    // v1.4 P4 (G3) Dragon Kick limit-break rider: a flat dodge-chance reduction for the rest of the
+    // battle, floored at 0 — transient on the battle's monster COPY only (deepCopyMonster deep-
+    // clones the def; this never mutates the shared js/data/monsters.js entry). Cosmetic-scale,
+    // not sim-gated (docs/SPEC-V1.4-GAMEPLAY.md §5 G3; balance.js LB_DRAGON_KICK_DODGE_DEBUFF).
+    if (monster.dodgeDebuff) chance = Math.max(0, chance - monster.dodgeDebuff);
+    return chance;
   }
 
   // ---------------- Feature A: Escape can fail (relative-power based) ----------------
@@ -240,11 +246,26 @@ Game.Battle = (function () {
     var bonus = 0;
     for (var i = 0; i < battle.playerStatuses.length; i++) {
       var st = battle.playerStatuses[i];
-      if (st.type === 'buff') bonus += st.power;
+      // v1.4 P4 (G3): Rage's armor rider (below) reuses this exact same {type:'buff', name,
+      // power, turnsLeft} shape but marks itself statKind:'armor' so it is picked up by
+      // playerBuffArmorBonus() instead of being double-counted here as bonus Damage.
+      if (st.type === 'buff' && st.statKind !== 'armor') bonus += st.power;
     }
     // Phase 4: Spirit Shrine "Battle Fervor" buff adds flat Damage for its remaining battles
     // (js/data/shrine.js), on top of any in-battle tech buffs above.
     if (Game.World && Game.World.shrineBonus) bonus += Game.World.shrineBonus(battle.player, 'damage');
+    return bonus;
+  }
+
+  // v1.4 P4 (G3): Rage limit-break rider — flat +Armor for a few turns. Mirrors
+  // playerBuffDamageBonus's shape exactly, but sums only the armor-flavored buff entries (see the
+  // statKind check above) so a Rage buff never also inflates outgoing Damage.
+  function playerBuffArmorBonus(battle) {
+    var bonus = 0;
+    for (var i = 0; i < battle.playerStatuses.length; i++) {
+      var st = battle.playerStatuses[i];
+      if (st.type === 'buff' && st.statKind === 'armor') bonus += st.power;
+    }
     return bonus;
   }
 
@@ -365,9 +386,13 @@ Game.Battle = (function () {
     // Fear also weakens the player's defensive stat-derived numbers (Fear.md: "lower your
     // stats by 10% for each level").
     var fear = fearMultiplier(battle);
+    // v1.4 P4 (G3): a Rage limit-break buff (playerBuffArmorBonus) adds flat Armor on top of the
+    // character's own Armor stat, same as every other physical-mitigation term here — Fear reduces
+    // it identically (Fear.md: "lower your stats by 10% for each level"), it never touches Magic
+    // Armor mitigation (Rage grants Armor, not Magic Armor).
     var mitigation = (usedTech && usedTech.grade)
       ? Game.Character.getMagicArmor(battle.player) * fear
-      : Game.Character.getArmor(battle.player) * fear;
+      : (Game.Character.getArmor(battle.player) + playerBuffArmorBonus(battle)) * fear;
     var dmg = Math.max(1, Math.round(raw - mitigation));
     if (defending) dmg = Math.max(1, Math.round(dmg * BALANCE.DEFEND_DAMAGE_MULT));
 
@@ -836,6 +861,121 @@ Game.Battle = (function () {
     return battle;
   }
 
+  // ---------------- Limit Breaks (v1.4 P4, G3 — docs/SPEC-V1.4-GAMEPLAY.md §5) ----------------
+  // Names [archived] reference/forum/t-796.md (Rage, Dragon Kick, Hurricane Blow — MP-gated
+  // specials in the 2005 engine); the P0 engine correction (spec §5) keys them off the SHIPPED
+  // Fury mechanic instead of a per-battle gauge: c.fury is a cross-battle kill streak (+1 per
+  // at-or-above-level kill in onWin below, resets on flee/death) that already persists on the
+  // character — no save change needed. One Limit Break per class LINE (tier-1 base class), granted
+  // implicitly by whichever base class the character obtained FIRST — no separate learning step,
+  // no new character field.
+  var LIMIT_BREAKS = {
+    rage: { name: 'Rage' },
+    dragon_kick: { name: 'Dragon Kick' },
+    hurricane_blow: { name: 'Hurricane Blow' }
+  };
+  var LIMIT_BREAK_BY_BASE_CLASS = {
+    warrior: 'rage',
+    thief: 'dragon_kick',
+    magician: 'hurricane_blow'
+  };
+
+  // Resolves which Limit Break (if any) a character's obtained classes grant, independent of any
+  // live battle — js/ui/screens.js uses this to decide button VISIBILITY even before Fury is
+  // charged. Game.Classes.baseClassIdsObtained(c) walks Object.keys(c.classes), which iterates in
+  // INSERTION order for these string (non-array-index) keys, so bases[0] is genuinely the first
+  // tier-1 base class the character ever obtained — "if a character somehow has multiple branches,
+  // first obtained wins" (phase brief). A character with no base class at all gets null.
+  function getLimitBreakId(c) {
+    if (!c || !Game.Classes || !Game.Classes.baseClassIdsObtained) return null;
+    var bases = Game.Classes.baseClassIdsObtained(c);
+    if (!bases.length) return null;
+    return LIMIT_BREAK_BY_BASE_CLASS[bases[0]] || null;
+  }
+
+  function getLimitBreak(c) {
+    var lbId = getLimitBreakId(c);
+    if (!lbId) return null;
+    return { id: lbId, name: LIMIT_BREAKS[lbId].name };
+  }
+
+  // Consumes the character's ENTIRE Fury streak (sacrificing the +1%/tick XP bonus it was earning
+  // on every future win of the streak — "a real tension, not a freebie", spec §5) for a class-line
+  // special. Energy cost is 0 — the streak IS the cost. Damage runs the player's normal basic-
+  // attack pipeline (same rollVariance/glancing/monster.armor mitigation path as attack()'s main
+  // hit — no double-attack roll, no dual-wield offhand swing, those are separate features) with
+  // the final number multiplied by BALANCE.LB_DAMAGE_MULT (LOCKED by the P0 sim, P0 RESULTS item
+  // 3). Once per battle (battle.limitBreakUsed flag, mirrors battle.wardedTechUsed's one-shot
+  // pattern above).
+  function limitBreak() {
+    var battle = Game.state.battle;
+    if (!battle || isOver(battle)) return battle;
+    var c = battle.player;
+
+    var lbId = getLimitBreakId(c);
+    if (!lbId) {
+      log(battle, 'You have no Limit Break to call on.');
+      return battle;
+    }
+    if (battle.limitBreakUsed) {
+      log(battle, 'You have already unleashed your Limit Break this battle.');
+      return battle;
+    }
+    if ((c.fury || 0) < BALANCE.LB_FURY_MIN) {
+      log(battle, 'Your Fury streak (' + (c.fury || 0) + ') is not yet strong enough for a Limit Break (needs ' + BALANCE.LB_FURY_MIN + ').');
+      return battle;
+    }
+    // archived: New_Player_Guide.md "You may not attack an enemy without a weapon equipped." — the
+    // Limit Break runs the same basic-attack damage pipeline as attack(), so it needs a weapon for
+    // the same reason.
+    if (!battle.player.equipment.weapon) {
+      log(battle, 'You have no weapon equipped and cannot unleash a Limit Break.');
+      return battle;
+    }
+
+    var lbDef = LIMIT_BREAKS[lbId];
+    var streakSpent = c.fury;
+    c.fury = 0; // consumes the ENTIRE streak, win or miss, hit or dodged
+    battle.limitBreakUsed = true;
+    battle.attackedThisBattle = true; // it's a weapon strike — counts for post-battle weapon-skill XP like attack()
+    log(battle, 'You unleash ' + lbDef.name.toUpperCase() + '! (Fury streak of ' + streakSpent + ' spent)');
+
+    var fear = fearMultiplier(battle);
+    var curseMult = playerCurseMultiplier(battle);
+    var baseDamage = (Game.Character.getDamage(battle.player) + playerBuffDamageBonus(battle)) * fear * curseMult;
+
+    // Hurricane Blow (magician line): ignores the monster's dodge roll for this strike — auto-connects.
+    var bypassDodge = (lbId === 'hurricane_blow');
+    if (!bypassDodge && rng() < monsterDodgeChance(battle.monster)) {
+      log(battle, 'The ' + battle.monster.name + ' dodges your ' + lbDef.name + '!');
+    } else {
+      var glancing = rng() < BALANCE.GLANCING_CHANCE;
+      var raw = rollVariance(baseDamage);
+      if (glancing) raw *= BALANCE.GLANCING_MULT;
+      raw *= BALANCE.LB_DAMAGE_MULT;
+      var dmg = Math.max(1, Math.round(raw - battle.monster.armor));
+      battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
+      log(battle, 'Your ' + lbDef.name + (glancing ? ' — a glancing blow —' : '') + ' slams into the ' + battle.monster.name + ' for ' + dmg + ' damage.');
+    }
+
+    // Flavor riders (spec §5: "deliberately TINY... not sim-gated, keep them cosmetic-scale").
+    // Granted on USE, regardless of whether the strike above connected or was dodged.
+    if (lbId === 'rage') {
+      battle.playerStatuses.push({
+        type: 'buff', name: 'Rage', statKind: 'armor',
+        power: BALANCE.LB_RAGE_ARMOR_BONUS, turnsLeft: BALANCE.LB_RAGE_ARMOR_DURATION
+      });
+      log(battle, 'Rage hardens your guard — Armor +' + BALANCE.LB_RAGE_ARMOR_BONUS + ' for ' + BALANCE.LB_RAGE_ARMOR_DURATION + ' turns.');
+    } else if (lbId === 'dragon_kick') {
+      battle.monster.dodgeDebuff = (battle.monster.dodgeDebuff || 0) + BALANCE.LB_DRAGON_KICK_DODGE_DEBUFF;
+      log(battle, 'Dragon Kick shatters the ' + battle.monster.name + "'s footing — its Dodge falters for the rest of the fight.");
+    }
+
+    if (checkEnd(battle)) return battle;
+    finishRound(battle);
+    return battle;
+  }
+
   // v1.4 P3 (G2) Hoarder champion affix: combat-neutral — replaces the champion drop-chance
   // multiplier (BALANCE.CHAMPION_REWARD_MULT, x2) with BALANCE.AFFIX_HOARDER_DROP_MULT (x3) on
   // this kill's loot rolls only; xp/gold/AP premiums still use CHAMPION_REWARD_MULT untouched in
@@ -1228,6 +1368,9 @@ Game.Battle = (function () {
     flee: flee,
     fleeChance: fleeChance,
     defend: defend,
+    limitBreak: limitBreak,
+    getLimitBreak: getLimitBreak,
+    getLimitBreakId: getLimitBreakId,
     claimLoot: claimLoot,
     endBattle: endBattle,
     getBattle: getBattle,

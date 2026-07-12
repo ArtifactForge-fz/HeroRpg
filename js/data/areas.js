@@ -40,7 +40,10 @@ Game.Data.areas = [
           'heavy_body_plate_cuirass', 'heavy_head_great_helm',
           'tent_ragged_bedroll', 'tent_travelers_tent',
           'potion_minor_healing', 'potion_healing',
-          'crystal_energy_shard'
+          'crystal_energy_shard',
+          // v1.4 P4 (G4b): cheap tavern provisions (js/data/items.js) — appended, existing stock
+          // order unchanged.
+          'provision_trail_rations', 'provision_honeyed_mead', 'provision_spice_tea'
         ]
       },
       { type: 'synthesis' },
@@ -65,6 +68,9 @@ Game.Data.areas = [
     // archived: Averast.md — the flat plains region surrounding Eldor.
     monsters: ['plains_field_rat', 'plains_wild_boar', 'plains_vermin_swarm', 'plains_windrunner_kestrel', 'plains_cutpurse_vole'],
     facilities: [],
+    // v1.4 P4 (G4): Forage table (docs/SPEC-V1.4-GAMEPLAY.md §5) — a level-1 area with no existing
+    // synthesis material of its own leans entirely on provisions.
+    forage: ['provision_trail_rations', 'provision_honeyed_mead', 'provision_foragers_bundle'],
     // Standing Stones touch-quest token (DESIGN.md §7, "The Standing Stones"; archived quest
     // name/behavior — Recent_Updates.md 2007-05-09 — content/placement invented). One of three
     // stones scattered across hunting grounds.
@@ -83,6 +89,10 @@ Game.Data.areas = [
     // level (invented gate, matches DESIGN.md §4 boss-difficulty framing).
     lair: { monsterId: 'estari_ruin_warden', minLevel: 8, name: 'Ruin Warden’s Lair' },
     facilities: [],
+    // v1.4 P4 (G4): Forage table — estari_loose_rubble's own quest material (Phase 5,
+    // "Professor Flad") plus a shard estari_anima_scavenger already drops; still leans provisions
+    // at this early a level.
+    forage: ['provision_trail_rations', 'provision_foragers_bundle', 'quest_animate_rubble_core', 'crystal_energy_shard'],
     questTokens: [{ id: 'standing_stone_ruins', label: 'Cracked Standing Stone' }],
     desc: 'A buried excavation of the precursor Estari race, its stonework still stirred by restless Anima. Something older and stronger stands guard deeper in.'
   },
@@ -115,7 +125,10 @@ Game.Data.areas = [
           'heavy_legs_warplate_legguards', 'heavy_feet_ironclad_sabatons',
           'tent_travelers_tent',
           'potion_healing', 'potion_greater_healing',
-          'crystal_energy_shard'
+          'crystal_energy_shard',
+          // v1.4 P4 (G4b): cheap tavern provisions (js/data/items.js) — appended, existing stock
+          // order unchanged.
+          'provision_trail_rations', 'provision_honeyed_mead', 'provision_spice_tea'
         ]
       },
       { type: 'inn' },
@@ -135,6 +148,9 @@ Game.Data.areas = [
     // archived region name: Forests of Kuraan (DESIGN.md §2 — Arkan homeland, overrun by the Majiku).
     monsters: ['majiku_forest_scout', 'majiku_war_shaman', 'skyspire_wisp', 'oruk_ravager', 'kuraan_prowler', 'kuraan_wind_spirit', 'majiku_beastmaster'],
     facilities: [],
+    // v1.4 P4 (G4): Forage table — the Majiku venom glands (Phase 5, "Eldor: Dr. Ferrier") and
+    // Energy Shards already found among this area's own drops, plus one provision.
+    forage: ['provision_honeyed_mead', 'provision_foragers_bundle', 'quest_majiku_venom_gland', 'crystal_energy_shard'],
     questTokens: [{ id: 'standing_stone_kuraan', label: 'Moss-Grown Standing Stone' }],
     desc: 'The southern fringe of the Forests of Kuraan, where Majiku raiders range, Oruk tribesmen have been sighted of late, and stray Anima wisps drift down from the distant Skyspire.'
   },
@@ -171,7 +187,10 @@ Game.Data.areas = [
           'heavy_head_riverguard_greathelm',
           'tent_travelers_tent',
           'potion_healing', 'potion_greater_healing',
-          'crystal_energy_shard'
+          'crystal_energy_shard',
+          // v1.4 P4 (G4b): cheap tavern provisions (js/data/items.js) — appended, existing stock
+          // order unchanged.
+          'provision_trail_rations', 'provision_honeyed_mead', 'provision_spice_tea'
         ]
       },
       // v1.4 P2 (G1): the AA Exchange — [archived] the "AA list" (reference/site/homepage_2006.md
@@ -220,6 +239,10 @@ Game.Data.areas = [
     // preserved per the phase brief).
     monsters: ['gares_river_stalker', 'gares_majiku_raider', 'gares_anima_touched_heron', 'gares_current_wraith', 'gares_bog_adder', 'gares_shellback', 'gares_torrent_naga'],
     facilities: [],
+    // v1.4 P4 (G4): Forage table — the Riverweed Bundle (Phase 5, "Riverweed for the Synthesis
+    // Shop") and the Majiku venom gland material this far south (js/data/monsters.js
+    // gares_majiku_raider), plus one provision.
+    forage: ['provision_spice_tea', 'quest_riverweed_bundle', 'quest_majiku_venom_gland'],
     desc: 'Marshy banks along the Gares river delta. Riverbank predators, Majiku raiding parties, and Anima-touched wildlife haunt the reeds. (Archived as a level-20 zone in the original; repurposed here for the v1 level 9-12 band.)'
   },
 
@@ -254,7 +277,11 @@ Game.Data.areas = [
           'heavy_body_juneros_scaleplate', 'heavy_head_juneros_scalehelm',
           'tent_expedition_pavilion',
           'potion_healing', 'potion_greater_healing',
-          'crystal_energy_shard', 'crystal_pure_anima'
+          'crystal_energy_shard', 'crystal_pure_anima',
+          // v1.4 P4 (G4b): cheap tavern provisions (js/data/items.js) — appended, existing stock
+          // order unchanged. Saratus is the Arkan starting town, so provisions belong here too
+          // (Eldor/Ju`Mak/Laik cover the Human side).
+          'provision_trail_rations', 'provision_honeyed_mead', 'provision_spice_tea'
         ]
       },
       { type: 'inn' },
@@ -290,6 +317,9 @@ Game.Data.areas = [
     // rather than inventing new low-level monsters (Content-B already owns monsters.js).
     monsters: ['plains_field_rat', 'plains_windrunner_kestrel', 'plains_wild_boar'],
     facilities: [],
+    // v1.4 P4 (G4): Forage table — same early plains fauna as plains_of_averast, so the same
+    // provisions-leaning table (no existing synthesis material of its own).
+    forage: ['provision_trail_rations', 'provision_foragers_bundle'],
     desc: 'The same windswept plains that shelter Eldor stretch east all the way to Saratus\'s gates (Averast.md) — rats, kestrels, and boar are as common a nuisance on the Arkan side of the region as on the Human one.'
   },
 
@@ -304,6 +334,9 @@ Game.Data.areas = [
     monsters: ['foothills_frost_ram', 'foothills_barrier_wolf', 'foothills_stoneback_giant', 'foothills_gale_harrier', 'foothills_ridge_hound'],
     lair: { monsterId: 'foothills_matriarch', minLevel: 18, name: 'Matriarch’s High Camp' },
     facilities: [],
+    // v1.4 P4 (G4): Forage table — the Frost Ram Hide (js/data/monsters.js foothills_frost_ram)
+    // and the Matriarch's Horn quest material from this area's own gate-boss, plus one provision.
+    forage: ['provision_spice_tea', 'quest_frostram_hide', 'quest_matriarch_horn'],
     desc: 'Rocky slopes climbing toward the mountain wall no Human or Arkan has ever crossed (Averast.md). Something with teeth guards the high passes.'
   },
 
@@ -318,6 +351,10 @@ Game.Data.areas = [
     monsters: ['juneros_tidewalker', 'juneros_reefstalker', 'juneros_drowned_settler', 'juneros_riptide_hunter', 'juneros_coral_warden'],
     lair: { monsterId: 'juneros_leviathan', minLevel: 25, name: 'The Deep Shoal' },
     facilities: [],
+    // v1.4 P4 (G4): Forage table — leans materials at this level: the graded B-Class Crystal/Sphere
+    // I already dropped here (js/data/monsters.js juneros_tidewalker/juneros_reefstalker), the
+    // Drowned Settler's Locket, and the Leviathan Scale from this area's own gate-boss.
+    forage: ['crystal_bclass_1', 'sphere_bclass_1', 'quest_settler_locket', 'quest_leviathan_scale'],
     desc: 'A wind-scoured isle in the inland sea west of Averast, home to a scatter of small human settlements clinging to its shores (Averast.md). The deep shoal beyond them holds something far older than any settler.'
   },
 
@@ -333,6 +370,10 @@ Game.Data.areas = [
     monsters: ['kastengard_wardframe', 'kastengard_anima_wraith', 'kastengard_society_remnant', 'kastengard_earthbound_sentinel'],
     lair: { monsterId: 'kastengard_custodian', minLevel: 32, name: 'The Custodian’s Vault' },
     facilities: [],
+    // v1.4 P4 (G4): Forage table — the graded B-Class Crystal/Sphere II already dropped here
+    // (js/data/monsters.js kastengard_wardframe/kastengard_anima_wraith), the Society Ledger Page,
+    // and the Custodian Core Shard from this area's own gate-boss.
+    forage: ['crystal_bclass_2', 'sphere_bclass_2', 'quest_society_ledger_page', 'quest_custodian_core_shard'],
     desc: 'Far to the northeast, the abandoned base the Society of Modern Magic called Kastengard (Chapter_I.md). Its outer halls stir with old wardframes and Anima long left untended.'
   },
 
@@ -388,6 +429,10 @@ Game.Data.areas = [
     monsters: ['vault_anima_construct', 'vault_runic_horror', 'vault_forsaken_archivist'],
     lair: { monsterId: 'eidas_echo', minLevel: 40, name: 'The Skyspire Anchor' },
     facilities: [],
+    // v1.4 P4 (G4): Forage table — the top-grade B-Class Crystal/Sphere IV already dropped here
+    // (js/data/monsters.js vault_anima_construct/vault_runic_horror) and the Archivist's Key from
+    // vault_forsaken_archivist; all-materials, no provisions at this level.
+    forage: ['crystal_bclass_4', 'sphere_bclass_4', 'quest_archivist_key'],
     desc: 'The deepest vaults beneath Kastengard, sealed since the Skyspire\'s departure. Something of Eidas himself still answers here — an echo cast down from the red moon, and the last thing standing between Van Arius and its oldest, quietest wound.'
   },
 
@@ -415,6 +460,9 @@ Game.Data.areas = [
     // at the story's next act — the fringe the reclamation push is fighting to hold.
     monsters: ['majiku_reclaimer_knight', 'kuraan_bramble_stalker', 'anima_scarred_revenant'],
     facilities: [],
+    // v1.4 P4 (G4): Forage table — Band A's C-Class Crystal I and Majiku Warband Sigil, already
+    // dropped in this pool (js/data/monsters.js, js/data/recipes.js synth_kuraan_reclaimers_blade).
+    forage: ['crystal_cclass_1', 'quest_majiku_warband_sigil'],
     desc: 'The southern fringe of the Forests of Kuraan, where the first heroes mustered at the Reclamation Camp are pushing the Majiku back tree by tree. The deeper woods — Deep Kuraan — still answer to a Majiku Warlord who has not yet been made to answer for it.'
   },
 
@@ -429,6 +477,9 @@ Game.Data.areas = [
     // level (invented gate, matches the estari_ruin_warden/foothills_matriarch precedent).
     lair: { monsterId: 'majiku_warlord', minLevel: 50, name: "The Warlord's Deep Camp" },
     facilities: [],
+    // v1.4 P4 (G4): Forage table — the Kuraan Energy Stone and Majiku Warband Sigil already
+    // dropped together by this pool's own level-49 monster (js/data/monsters.js).
+    forage: ['stone_energy_kuraan', 'quest_majiku_warband_sigil'],
     desc: 'The old-growth heart of Kuraan, where the Arkan homeland\'s oldest trees still stand — and where the Majiku Warlord who has commanded the occupation for a generation has made his deep camp. Nothing the reclamation has fielded so far has been strong enough to reach him.'
   },
 
@@ -505,6 +556,9 @@ Game.Data.areas = [
     // highland steppe north of the Forests of Kuraan the reclamation push has just cleared.
     monsters: ['majiku_steppe_lancer', 'highland_ridgehawk', 'anima_scarred_highlander'],
     facilities: [],
+    // v1.4 P4 (G4): Forage table — Band B's D-Class Crystal I and Majiku Host Standard, already
+    // dropped in this pool (js/data/monsters.js, js/data/recipes.js synth_majiku_hostbreaker).
+    forage: ['crystal_dclass_1', 'quest_majiku_host_standard'],
     desc: 'Windswept high steppe north of the reclaimed Kuraan fringe, where Majiku lancers still ride patrol for a host that has not yet accepted the fringe is lost. Further north, dug into the ridgelines proper, the Highland War-Camps still muster in force.'
   },
 
@@ -519,6 +573,9 @@ Game.Data.areas = [
     // level (invented gate, matches the majiku_warlord/estari_ruin_warden precedent).
     lair: { monsterId: 'majiku_ridge_chieftain', minLevel: 60, name: "The Ridge-Chieftain's Camp" },
     facilities: [],
+    // v1.4 P4 (G4): Forage table — the Majiku Energy Stone and Majiku Host Standard already
+    // dropped together by this pool's own level-59 monster (js/data/monsters.js).
+    forage: ['stone_energy_majiku', 'quest_majiku_host_standard'],
     desc: "The Majiku host's own ridgeline war-camps, dug into the highlands proper — shamans, vanguards, and worse held in reserve behind palisade and ward alike. The Majiku Ridge-Chieftain who commands the whole host still holds this ground, and means to keep it."
   },
 
@@ -547,6 +604,9 @@ Game.Data.areas = [
     // have scattered to survive rather than surrender.
     monsters: ['majiku_frost_exile', 'glacial_frost_stalker', 'anima_scarred_frostwalker'],
     facilities: [],
+    // v1.4 P4 (G4): Forage table — Band C's E-Class Crystal I and Ukai Deep-Rune, already dropped
+    // in this pool (js/data/monsters.js, js/data/recipes.js synth_frosthold_vanguard_blade).
+    forage: ['crystal_eclass_1', 'quest_ukai_deep_rune'],
     desc: 'The windswept ice-fields north of the Majiku Highlands, where the host\'s broken remnants have fled to freeze or die free rather than answer for the Chieftain\'s defeat. Further north the ice gives way to bare rock and the first cave-mouths of the Ukai Undercaverns — ground the Ukai have never once let an outsider column cross uninvited.'
   },
 
@@ -561,6 +621,9 @@ Game.Data.areas = [
     // level (invented gate, matches the majiku_warlord/majiku_ridge_chieftain precedent).
     lair: { monsterId: 'ukai_deep_dweller', minLevel: 70, name: "The Deep-Dweller's Hollow" },
     facilities: [],
+    // v1.4 P4 (G4): Forage table — the Frosthold Energy Stone and Ukai Deep-Rune already dropped
+    // together by this pool's own level-69 monster (js/data/monsters.js).
+    forage: ['stone_energy_frosthold', 'quest_ukai_deep_rune'],
     desc: 'The Ukai\'s own cavern-halls, warded and guarded exactly as proudly as the old lore said they would be (Prelude.md). Something the cavern-dwellers call the Deep-Dweller keeps its own hollow at the undercaverns\' heart — and until it answers for the column at the gate, no Ukai elder will so much as discuss passage north.'
   },
 
@@ -687,6 +750,9 @@ Game.Data.areas = [
     // whoever last excavated this deep.
     monsters: ['estari_sublevel_warden', 'estari_anima_conduit', 'anima_scarred_excavator'],
     facilities: [],
+    // v1.4 P4 (G4): Forage table — Band D's F-Class Crystal I and Anima Taint Sample, already
+    // dropped in this pool (js/data/monsters.js, js/data/recipes.js synth_estari_wardblade).
+    forage: ['crystal_fclass_1', 'quest_anima_taint_sample'],
     desc: "The Estari ruins run far deeper than Eldor's own excavated shell ever let on — sealed sublevels, still warded by constructs older than the Ukai's own undercaverns. Something down here is leaking raw Anima again, badly enough that even long-dead ward-stone is waking to stop it. Further down, the sublevels open onto whatever the Estari themselves were guarding: the Anima Wellspring."
   },
 
@@ -702,6 +768,9 @@ Game.Data.areas = [
     // precedent).
     lair: { monsterId: 'estari_warden_prime', minLevel: 80, name: "The Warden-Prime's Sanctum" },
     facilities: [],
+    // v1.4 P4 (G4): Forage table — the Wellspring Energy Stone and Anima Taint Sample already
+    // dropped together by this pool's own level-79 monster (js/data/monsters.js).
+    forage: ['stone_energy_wellspring', 'quest_anima_taint_sample'],
     desc: "The taboo itself: a raw seam of Anima the Estari sealed away rather than mine to exhaustion, exactly as the Council of Three's ban demanded (Prelude.md). Somebody — or something — has cracked that seal again, and the Estari Warden-Prime that answers to the wellspring's own old wards has started treating anything that moves, hero included, as the trespass the ban was written to prevent."
   },
 
@@ -731,6 +800,9 @@ Game.Data.areas = [
     // raw-Anima horrors it never managed to fully leash.
     monsters: ['skyspire_lower_warden', 'society_remnant_battlemage', 'anima_horror_stalker'],
     facilities: [],
+    // v1.4 P4 (G4): Forage table — Band E's G-Class Crystal I and Society Cipher Page, already
+    // dropped in this pool (js/data/monsters.js, js/data/recipes.js synth_spireward_blade).
+    forage: ['crystal_gclass_1', 'quest_society_cipher_page'],
     desc: "Eidas's Skyspire rises straight out of Kastengard's own rooftops, its lower spans still held by ward-constructs that answer to no one now — and by the Society of Modern Magic's last remnant, holed up in the tower its master abandoned for the red moon. Higher up, past the spans still open to the sky, the Society's own inner sanctum waits."
   },
 
@@ -746,6 +818,9 @@ Game.Data.areas = [
     // estari_warden_prime precedent).
     lair: { monsterId: 'society_anima_horror', minLevel: 90, name: "The Society's Last Sanctum" },
     facilities: [],
+    // v1.4 P4 (G4): Forage table — the Skyspire Energy Stone and Society Cipher Page already
+    // dropped together by this pool's own level-86 monster (js/data/monsters.js).
+    forage: ['stone_energy_skyspire', 'quest_society_cipher_page'],
     desc: "The spans thin out this high, open on every side to the wind and to whatever the Society of Modern Magic was still working on when Eidas sailed for the red moon without them. Something down in the tower's own sanctum has outgrown every leash the Society ever put on it — Anima given shape and hunger, exactly the outcome the Council of Three's old ban was written to prevent."
   },
 
@@ -773,6 +848,9 @@ Game.Data.areas = [
     // guarded by his own ward-constructs and the first of his "divine race" progeny.
     monsters: ['moonbridge_ward_sentinel', 'divine_race_initiate', 'moon_anima_stalker'],
     facilities: [],
+    // v1.4 P4 (G4): Forage table — Band F's H-Class Crystal I and Eidas's Sigil Shard, already
+    // dropped in this pool (js/data/monsters.js, js/data/recipes.js synth_redmoon_blade).
+    forage: ['crystal_hclass_1', 'quest_eidas_sigil_shard'],
     desc: "A span of rune-inscribed stone that should not exist, arcing up off the Skyspire's highest platform and out past the sky itself, straight toward the red moon hanging fat and close on the horizon. Eidas built this, three centuries gone, and never came back down it. His ward-sentinels never stood down either — and neither did whatever his 'divine race' has become since."
   },
 
@@ -788,6 +866,9 @@ Game.Data.areas = [
     // estari_warden_prime/society_anima_horror precedent).
     lair: { monsterId: 'eidas_ascendant', minLevel: 100, name: "The Ascendant's Chamber" },
     facilities: [],
+    // v1.4 P4 (G4): Forage table — the Moon-Bridge Energy Stone and Eidas's Sigil Shard already
+    // dropped together by this pool's own level-96 monster (js/data/monsters.js).
+    forage: ['stone_energy_moonbridge', 'quest_eidas_sigil_shard'],
     desc: "The red moon's own ground, if it can even be called that — a sanctum of rune-stone and raw Anima light, grown rather than built past a certain point. Whatever Eidas found or made out here, it answers to him alone, and it has had three centuries to grow into something the Council of Three's old ban was never written broadly enough to stop. At the sanctum's heart, the renegade runologist himself is still waiting — ascended, changed, and very much not finished."
   }
 ];

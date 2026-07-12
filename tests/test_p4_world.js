@@ -138,8 +138,16 @@ Game.Data.areas.forEach(function (a) {
       if (!Game.Inventory.getItem(iid)) badAreaRefs.push(a.id + ' ' + f.type + ' -> ' + iid);
     });
   });
+  // v1.4 P4 (G4): every hunting area's forage table ids must resolve to real items.
+  (a.forage || []).forEach(function (iid) { if (!Game.Inventory.getItem(iid)) badAreaRefs.push(a.id + ' forage -> ' + iid); });
 });
-assert(badAreaRefs.length === 0, 'all area monster/shop refs resolve' + (badAreaRefs.length ? ': ' + badAreaRefs.join(', ') : ''));
+assert(badAreaRefs.length === 0, 'all area monster/shop/forage refs resolve' + (badAreaRefs.length ? ': ' + badAreaRefs.join(', ') : ''));
+
+// v1.4 P4 (G4): EVERY hunting area carries a forage table with 2-4 ids (spec G4).
+var huntingAreas = Game.Data.areas.filter(function (a) { return a.type === 'hunting'; });
+huntingAreas.forEach(function (a) {
+  assert(Array.isArray(a.forage) && a.forage.length >= 2 && a.forage.length <= 4, a.id + ' has a forage table of 2-4 ids, got ' + (a.forage ? a.forage.length : 'none'));
+});
 var eldor = Game.World.getArea('eldor');
 ['shop', 'synthesis', 'inn', 'vault', 'academy', 'shrine'].forEach(function (t) {
   assert(!!Game.World.getFacility(eldor, t), 'Eldor has facility: ' + t);
@@ -520,6 +528,49 @@ connCheckF.level = 96;
 var connToSanctum = Game.World.travelTo('eidas_sanctum');
 assert(connToSanctum.ok === true, "level 96 reaches Eidas's Sanctum directly from The Moon-Bridge");
 
+// =================== Test 0j: v1.4 P4 (G4b) — Provisions pricing guardrail + shop/forage placement ===================
+console.log('\n=== Test 0j: sold provisions stay STRICTLY below crystal_energy_shard/stone_energy_*\'s energy-per-gold; shop + forage-only placement ===');
+var ENERGY_REFERENCE_IDS = ['crystal_energy_shard', 'stone_energy_lesser', 'stone_energy_greater',
+  'stone_energy_kuraan', 'stone_energy_majiku', 'stone_energy_frosthold', 'stone_energy_wellspring',
+  'stone_energy_skyspire', 'stone_energy_moonbridge'];
+var energyRatios = ENERGY_REFERENCE_IDS.map(function (id) {
+  var item = Game.Inventory.getItem(id);
+  assert(!!item && item.energyRestore && item.value, 'energy reference item resolves with energyRestore+value: ' + id);
+  return { id: id, ratio: item.energyRestore / item.value };
+});
+var SOLD_PROVISION_IDS = ['provision_trail_rations', 'provision_honeyed_mead', 'provision_spice_tea'];
+SOLD_PROVISION_IDS.forEach(function (pid) {
+  var pItem = Game.Inventory.getItem(pid);
+  assert(!!pItem, 'provision item exists: ' + pid);
+  var pRatio = pItem.energyRestore / pItem.value;
+  energyRatios.forEach(function (ref) {
+    assert(pRatio < ref.ratio, pid + ' energy-per-gold (' + pRatio.toFixed(4) + ') is STRICTLY below ' + ref.id + '\'s (' + ref.ratio.toFixed(4) + ')');
+  });
+});
+
+// Sold provisions appear in Eldor/Ju`Mak/Laik/Saratus town shops (early/mid tier, per spec G4b).
+['eldor', 'jumak_village', 'laik', 'saratus'].forEach(function (areaId) {
+  var area = Game.World.getArea(areaId);
+  var shop = Game.World.getFacility(area, 'shop');
+  assert(!!shop, areaId + ' has a shop facility');
+  SOLD_PROVISION_IDS.forEach(function (pid) {
+    assert(shop.stock.indexOf(pid) !== -1, areaId + ' shop stocks ' + pid);
+  });
+});
+
+// Forager's Bundle is forage-only: never present in ANY town's shop or exchange stock.
+Game.Data.areas.forEach(function (a) {
+  (a.facilities || []).forEach(function (f) {
+    (f.stock || []).forEach(function (entry) {
+      var iid = (typeof entry === 'string') ? entry : entry.itemId;
+      assert(iid !== 'provision_foragers_bundle', 'provision_foragers_bundle never appears in a shop/exchange stock (' + a.id + ' ' + f.type + ')');
+    });
+  });
+});
+// ...but it DOES appear in at least one area's forage table.
+var bundleForaged = Game.Data.areas.some(function (a) { return (a.forage || []).indexOf('provision_foragers_bundle') !== -1; });
+assert(bundleForaged, 'provision_foragers_bundle appears in at least one hunting area\'s forage table');
+
 // =================== Test 1: new character starts by race (v1.2 Phase 3 Content-A) ===================
 console.log('\n=== Test 1: new character defaults (Human -> Eldor, Arkan -> Saratus) ===');
 var c1 = makeCharacter({ name: 'Fresh' });
@@ -664,6 +715,104 @@ assert(Game.state.battle.playerFirst === false, 'camp: ambush always gives the m
 assert(/ambushed/i.test(Game.state.battle.log.join(' ')), 'camp: ambush battle logs a distinct "ambushed" line');
 assert(!Game.state.battle.monster.champion, 'camp: direct ambush is never a Champion encounter');
 assert(Game.Character.goldTotalAsGold(c3g) === 50, 'camp: carried gold untouched on an ambush (no robbery occurred)');
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// =================== Test 3h: v1.4 P4 (G4) — Forage ===================
+// archived concept: reference/forum/t-449.md ("Luck determines what kind of items you can Forage
+// for"); [revised] keying (no Luck stat) — availability instead follows the area's own
+// `forage: [itemIds]` table. Same risk profile as camp() (rollRiskEvent, js/core/world.js), no
+// HP/Energy recovery, hunting-areas-only.
+console.log('\n=== Test 3h: Game.World.forage() — success/failure, second-item roll, weight overflow, shared camp risk, hunting-area-only ===');
+
+// hunting-area-only gate: a town refuses.
+var c3h0 = makeCharacter({ name: 'ForageTownGate' });
+var resForageTown = Game.World.forage();
+assert(resForageTown.ok === false, 'forage() refuses in a town (eldor)');
+
+// failure path: success roll misses -> no yield, HP/Energy untouched, risk roll still happens.
+var c3h1 = makeCharacter({ name: 'ForageFail' });
+Game.World.travelTo('plains_of_averast');
+c3h1.hitPoints = 1; c3h1.energy = 1;
+setRng(seqRng([0.99, 0.99], 0.99)); // yield-success roll misses (0.99 >= FORAGE_SUCCESS 0.70); event roll then also misses
+var resForage1 = Game.World.forage();
+assert(resForage1.ok === true && resForage1.event === 'none', 'forage: missed yield roll -> ok, no event: ' + JSON.stringify(resForage1));
+assert(resForage1.message.indexOf('nothing worth keeping') !== -1, 'forage: honest "nothing worth keeping" message on a missed yield');
+assert(c3h1.hitPoints === 1 && c3h1.energy === 1, 'forage() never restores HP or Energy (unlike camp())');
+
+// success path, no second item: yields exactly one table member, no HP/Energy change.
+var c3h2 = makeCharacter({ name: 'ForageSuccessOne' });
+Game.World.travelTo('plains_of_averast');
+c3h2.hitPoints = 1; c3h2.energy = 1;
+var plainsForage = Game.World.getArea('plains_of_averast').forage;
+setRng(seqRng([0.0, 0.0, 0.99, 0.99], 0.99)); // yield-success hits; pick-roll picks table[0]; second-item roll misses (0.99 >= 0.30); event roll misses
+var resForage2 = Game.World.forage();
+assert(resForage2.ok === true, 'forage: success path ok');
+var firstItem = Game.Inventory.getItem(plainsForage[0]);
+assert(resForage2.message.indexOf(firstItem.name) !== -1, 'forage: message names the yielded item (' + firstItem.name + '): ' + resForage2.message);
+assert(c3h2.inventory.indexOf(plainsForage[0]) !== -1, 'forage: yielded item actually added to inventory');
+assert(c3h2.hitPoints === 1 && c3h2.energy === 1, 'forage: still no HP/Energy change on a success');
+
+// yields only table members: run several successful forages and confirm every yielded id is a
+// member of the area's own forage table (never an off-table id).
+var c3h3 = makeCharacter({ name: 'ForageOnlyTableMembers' });
+Game.World.travelTo('plains_of_averast');
+var invStartLen3h3 = c3h3.inventory.length; // starter-kit items already present are not forage yields
+for (var f3 = 0; f3 < 15; f3++) {
+  setRng(seqRng([0.0, Math.random(), 0.99, 0.99], 0.99));
+  Game.World.forage();
+}
+c3h3.inventory.slice(invStartLen3h3).forEach(function (iid) {
+  assert(plainsForage.indexOf(iid) !== -1, 'forage: yielded item ' + iid + ' is a member of the area\'s own forage table');
+});
+
+// second-item roll: success roll hits AND the second-item roll hits -> two items yielded.
+var c3h4 = makeCharacter({ name: 'ForageSecondItem' });
+Game.World.travelTo('plains_of_averast');
+setRng(seqRng([0.0, 0.0, 0.0, 0.0, 0.99], 0.99)); // yield hits; pick table[0]; second-item roll hits (0.0 < 0.30); pick table[0] again; event roll misses
+var resForage4 = Game.World.forage();
+assert(resForage4.ok === true, 'forage: second-item path ok');
+var yieldedCount4 = c3h4.inventory.filter(function (iid) { return iid === plainsForage[0]; }).length;
+assert(yieldedCount4 === 2, 'forage: a hit second-item roll yields a SECOND item this attempt, got count ' + yieldedCount4);
+
+// weight overflow: never blocks the whole forage — an honest "couldn't carry everything" note,
+// but the attempt still resolves ok and the risk roll below still runs.
+var c3h5 = makeCharacter({ name: 'ForageOverflow' });
+Game.World.travelTo('plains_of_averast');
+// Fill inventory to exactly at capacity so the yielded item cannot fit.
+while (Game.Inventory.currentWeight(c3h5) < Game.Inventory.carryCapacity(c3h5)) {
+  c3h5.inventory.push('potion_minor_healing'); // weight 1 filler, cheap and plentiful
+}
+var invLenBefore5 = c3h5.inventory.length;
+setRng(seqRng([0.0, 0.0, 0.99, 0.99], 0.99)); // yield hits; pick table[0]; second-item roll misses; event roll misses
+var resForage5 = Game.World.forage();
+assert(resForage5.ok === true, 'forage: weight overflow never blocks the whole attempt — still ok');
+assert(resForage5.message.indexOf('couldn\'t carry everything') !== -1, 'forage: honest overflow message: ' + resForage5.message);
+assert(c3h5.inventory.length === invLenBefore5, 'forage: the overflowing item was NOT added to inventory');
+
+// shared risk profile: robbery (same constants/ordering as camp()'s Test 3d/3e/3f/3g).
+var c3h6 = makeCharacter({ name: 'ForageRiskRobbery' });
+Game.World.travelTo('plains_of_averast');
+Game.Character.addGold(c3h6, 100);
+var carriedBefore3h6 = Game.Character.goldTotalAsGold(c3h6);
+setRng(seqRng([0.99, 0.0, 0.0], 0.99)); // yield-success roll misses; event roll forces an event; robbery-vs-ambush roll forces robbery
+var resForage6 = Game.World.forage();
+assert(resForage6.ok === true && resForage6.event === 'robbery', 'forage: shares camp\'s robbery event: ' + JSON.stringify(resForage6));
+var expectedStolen3h6 = Math.ceil(carriedBefore3h6 * BALANCE.CAMP_ROBBERY_GOLD_FRACTION);
+assert(resForage6.stolen === expectedStolen3h6, 'forage: robbery steals ceil(carried x CAMP_ROBBERY_GOLD_FRACTION), same formula as camp()');
+assert(Game.Character.goldTotalAsGold(c3h6) === carriedBefore3h6 - expectedStolen3h6, 'forage: carried gold reduced by exactly the stolen amount');
+
+// shared risk profile: ambush returns a live battle, same as camp()'s.
+var c3h7 = makeCharacter({ name: 'ForageRiskAmbush' });
+Game.World.travelTo('plains_of_averast');
+Game.Character.addGold(c3h7, 50);
+setRng(seqRng([0.99, 0.0, 0.99, 0.0], 0.99)); // yield misses; event roll forces an event; robbery-vs-ambush roll forces ambush; pool-pick picks the first entry
+var resForage7 = Game.World.forage();
+assert(resForage7.ok === true && resForage7.event === 'ambush', 'forage: shares camp\'s ambush event: ' + JSON.stringify(resForage7));
+assert(Game.state.battle !== null && Game.state.battle.phase === 'active', 'forage: ambush returns a LIVE battle');
+assert(Game.state.battle.ambush === true, 'forage: the battle is flagged as an ambush (monster strikes first)');
+var areaPlains3h7 = Game.World.getArea('plains_of_averast');
+assert(areaPlains3h7.monsters.indexOf(resForage7.monsterId) !== -1, 'forage: ambush monster comes from the area\'s own non-boss pool');
 Game.Battle.flee();
 Game.Battle.endBattle();
 

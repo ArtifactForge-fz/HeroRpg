@@ -124,12 +124,54 @@ Game.World = (function () {
     return best;
   }
 
-  // Camping risk (user-directed feature; makes Inn vs Camp a real decision — camp is free but
-  // risky, Inn stays the safe/complete option). archived: reference/forum/t-756.md — a player
+  // Shared camp/forage risk roll (v1.4 P4, G4: "foraging doesn't dodge the camp's existing risk
+  // profile" — docs/SPEC-V1.4-GAMEPLAY.md §5). archived: reference/forum/t-756.md — a player
   // complained "those damn thieves keep taking all my damn gold whenever I try to rest [camping]
   // ... I have only ever had enough GP to sleep in the inn like one time"; developer Nerevar's
   // reply: "you should use the vault to prevent your gold from being stolen while camping." That
-  // exchange is the authority for the mechanic below; BALANCE.CAMP_* rates are invented.
+  // exchange is the authority for the mechanic below; BALANCE.CAMP_* rates are invented. Returns
+  // the raw outcome only (no message text) — camp()/forage() each build their own flavor text
+  // around it, since "in your sleep" fits a campfire but not a daytime forage. Same rng()
+  // consumption order either caller uses it from: event roll, then (if an event fires) a
+  // robbery-vs-ambush roll, then (if ambush) a pool-pick roll.
+  function rollRiskEvent(c, area) {
+    if (rng() >= BALANCE.CAMP_EVENT_CHANCE) {
+      return { event: 'none' };
+    }
+
+    // An event strikes: robbery (CAMP_ROBBERY_WEIGHT of events) or ambush (the remainder) —
+    // invented split, the risk itself is archived (t-756.md above).
+    var robbery = rng() < BALANCE.CAMP_ROBBERY_WEIGHT;
+    var carried = Game.Character.goldTotalAsGold(c);
+    var foundNothing = false;
+    if (robbery && carried <= 0) {
+      // Carrying 0 gold: thieves find nothing to steal — escalate straight to an ambush instead
+      // (invented flavor, per the phase brief).
+      robbery = false;
+      foundNothing = true;
+    }
+
+    if (robbery) {
+      var stolen = Math.ceil(carried * BALANCE.CAMP_ROBBERY_GOLD_FRACTION);
+      spendGold(c, stolen); // carried gold only (platinum+gold) — vault is untouched, per Nerevar's advice
+      return { event: 'robbery', stolen: stolen };
+    }
+
+    // Ambush: reuse hunt()'s non-boss pool logic; no champion roll (invented: ambushers caught
+    // you off guard — ordinary monsters, not the rarer Champion encounter).
+    var pool = nonBossPool(area);
+    if (pool.length === 0) {
+      // Nothing to ambush with — degrade gracefully to a no-event outcome.
+      return { event: 'none', foundNothing: foundNothing };
+    }
+    var pick = pool[Math.floor(rng() * pool.length)];
+    var battle = Game.Battle.start(pick, { ambush: true });
+    return { event: 'ambush', monsterId: pick, battle: battle, foundNothing: foundNothing };
+  }
+
+  // Camping risk (user-directed feature; makes Inn vs Camp a real decision — camp is free but
+  // risky, Inn stays the safe/complete option). See rollRiskEvent above for the shared risk-roll
+  // mechanic and its archived citation.
   function camp() {
     var c = Game.state.character;
     if (!c) return { ok: false, message: 'No character.' };
@@ -157,49 +199,99 @@ Game.World = (function () {
 
     // (b) Roll the risk event AFTER healing, through the single shared rng() stub point (the
     // same Game.Battle._rng() surface hunt() already routes through — see rng()'s comment above).
-    if (rng() >= BALANCE.CAMP_EVENT_CHANCE) {
-      if (Game.persist) Game.persist();
-      return { ok: true, message: message, event: 'none' };
-    }
-
-    // (c) An event strikes: robbery (CAMP_ROBBERY_WEIGHT of events) or ambush (the remainder) —
-    // invented split, the risk itself is archived (t-756.md above).
-    var robbery = rng() < BALANCE.CAMP_ROBBERY_WEIGHT;
-    var carried = Game.Character.goldTotalAsGold(c);
-    var foundNothing = false;
-    if (robbery && carried <= 0) {
-      // Carrying 0 gold: thieves find nothing to steal — escalate straight to an ambush instead
-      // (invented flavor, per the phase brief).
-      robbery = false;
-      foundNothing = true;
-    }
-
-    if (robbery) {
-      var stolen = Math.ceil(carried * BALANCE.CAMP_ROBBERY_GOLD_FRACTION);
-      spendGold(c, stolen); // carried gold only (platinum+gold) — vault is untouched, per Nerevar's advice
-      message += ' Thieves creep into your camp and make off with ' + stolen + ' gold! ' +
+    var risk = rollRiskEvent(c, area);
+    if (risk.event === 'robbery') {
+      message += ' Thieves creep into your camp and make off with ' + risk.stolen + ' gold! ' +
         '(Your Vault gold stays safe from camp robberies — archived advice, forum t-756.md.)';
       if (Game.persist) Game.persist();
-      return { ok: true, message: message, event: 'robbery', stolen: stolen };
+      return { ok: true, message: message, event: 'robbery', stolen: risk.stolen };
+    }
+    if (risk.event === 'ambush') {
+      var monsterDef = Game.Battle.getMonsterDef(risk.monsterId);
+      message += risk.foundNothing
+        ? ' Thieves creep into your camp but find your pockets empty — before you can rest easy, a ' + (monsterDef ? monsterDef.name : 'monster') + ' catches your scent!'
+        : ' You are ambushed in your sleep!';
+      if (Game.persist) Game.persist();
+      return { ok: true, message: message, event: 'ambush', monsterId: risk.monsterId, battle: risk.battle };
+    }
+    // event === 'none' — either a clean high roll, or a robbery-turned-ambush that found an empty
+    // non-boss pool to ambush with (foundNothing, degraded gracefully).
+    if (risk.foundNothing) message += ' Thieves creep into your camp but find your pockets empty.';
+    if (Game.persist) Game.persist();
+    return { ok: true, message: message, event: 'none' };
+  }
+
+  // ---------------- Forage (v1.4 P4, G4 — docs/SPEC-V1.4-GAMEPLAY.md §5) ----------------
+  // [archived] concept: reference/forum/t-449.md ("Luck determines what kind of items you can
+  // Forage for" — the same thread that describes tradeskill plans). [revised] keying: the remake
+  // has no Luck stat, so what's available instead follows the current hunting area's own
+  // `forage: [itemIds]` table (js/data/areas.js). Hunting areas only, same gate as camp() above.
+  // No HP/Energy recovery (unlike camp) — a forage attempt is purely a materials/provisions roll,
+  // followed by the SAME risk profile camp() uses (rollRiskEvent above): yield first, then risk.
+  function addForageYield(c, itemId, yieldedNames, overflowNames) {
+    var item = Game.Inventory.getItem(itemId);
+    if (!item) return;
+    var added = Game.Inventory.addItem(c, itemId);
+    if (added) {
+      yieldedNames.push(item.name);
+    } else {
+      // Weight overflow never blocks the rest of the forage attempt (spec: "never block the whole
+      // forage") — just an honest, itemized note of what couldn't be carried.
+      overflowNames.push(item.name);
+    }
+  }
+
+  function forage() {
+    var c = Game.state.character;
+    if (!c) return { ok: false, message: 'No character.' };
+    if (Game.state.battle) return { ok: false, message: 'You cannot forage during a battle.' };
+    var area = currentArea();
+    if (!area || area.type !== 'hunting') {
+      return { ok: false, message: 'You can only forage in a hunting area.' };
     }
 
-    // (d) Ambush: reuse hunt()'s non-boss pool logic; no champion roll (invented: ambushers
-    // caught you sleeping — ordinary monsters, not the rarer Champion encounter).
-    var pool = nonBossPool(area);
-    if (pool.length === 0) {
-      // Nothing to ambush with — degrade gracefully to a no-event camp.
-      if (foundNothing) message += ' Thieves creep into your camp but find your pockets empty.';
-      if (Game.persist) Game.persist();
-      return { ok: true, message: message, event: 'none' };
+    // (a) Yield roll FIRST (spec ordering: "yield first, then the risk roll").
+    var table = area.forage || [];
+    var yieldedNames = [];
+    var overflowNames = [];
+    if (rng() < BALANCE.FORAGE_SUCCESS) {
+      if (table.length > 0) {
+        var firstId = table[Math.floor(rng() * table.length)];
+        addForageYield(c, firstId, yieldedNames, overflowNames);
+      }
+      if (rng() < BALANCE.FORAGE_SECOND_ITEM && table.length > 0) {
+        var secondId = table[Math.floor(rng() * table.length)];
+        addForageYield(c, secondId, yieldedNames, overflowNames);
+      }
     }
-    var pick = pool[Math.floor(rng() * pool.length)];
-    var monsterDef = Game.Battle.getMonsterDef(pick);
-    message += foundNothing
-      ? ' Thieves creep into your camp but find your pockets empty — before you can rest easy, a ' + (monsterDef ? monsterDef.name : 'monster') + ' catches your scent!'
-      : ' You are ambushed in your sleep!';
-    var battle = Game.Battle.start(pick, { ambush: true });
+
+    var message = yieldedNames.length > 0
+      ? 'You forage and find: ' + yieldedNames.join(', ') + '.'
+      : 'You find nothing worth keeping.';
+    if (overflowNames.length > 0) {
+      message += ' You couldn\'t carry everything — ' + overflowNames.join(', ') + ' was left behind.';
+    }
+
+    // (b) Risk roll AFTER the yield, same shared profile as camp() (rollRiskEvent above) — foraging
+    // doesn't dodge the camp's existing risk profile (spec §5 G4).
+    var risk = rollRiskEvent(c, area);
+    if (risk.event === 'robbery') {
+      message += ' Thieves creep up on you while your hands are full and make off with ' + risk.stolen + ' gold! ' +
+        '(Your Vault gold stays safe — archived advice, forum t-756.md.)';
+      if (Game.persist) Game.persist();
+      return { ok: true, message: message, event: 'robbery', stolen: risk.stolen };
+    }
+    if (risk.event === 'ambush') {
+      var monsterDef = Game.Battle.getMonsterDef(risk.monsterId);
+      message += risk.foundNothing
+        ? ' Thieves creep up but find your pockets empty — before you can react, a ' + (monsterDef ? monsterDef.name : 'monster') + ' catches your scent!'
+        : ' Something was watching you forage — you are ambushed!';
+      if (Game.persist) Game.persist();
+      return { ok: true, message: message, event: 'ambush', monsterId: risk.monsterId, battle: risk.battle };
+    }
+    if (risk.foundNothing) message += ' Thieves creep up but find your pockets empty.';
     if (Game.persist) Game.persist();
-    return { ok: true, message: message, event: 'ambush', monsterId: pick, battle: battle };
+    return { ok: true, message: message, event: 'none' };
   }
 
   // ---------------- Inn (New_Player_Guide.md §5.4 "Healing" — "pay to stay at an inn") ----------------
@@ -673,6 +765,7 @@ Game.World = (function () {
     travelTo: travelTo,
     hunt: hunt,
     camp: camp,
+    forage: forage,
     bestTentQuality: bestTentQuality,
     innFee: innFee,
     innRest: innRest,

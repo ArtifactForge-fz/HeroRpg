@@ -3762,6 +3762,82 @@ Game.Data.items = [
     value: 45,
     tags: [],
     desc: 'A radiant healing sphere from the AA Exchange, priced for kills rather than coin.'
+  },
+
+  // =====================================================================
+  // v1.4 P4: G4b Provisions [invented], user-requested 2026-07-11 (docs/SPEC-V1.4-GAMEPLAY.md §5).
+  // Cheap food/tonic energy consumables sold at early/mid taverns and yielded by G4 Foraging
+  // (js/data/areas.js `forage:` tables) alongside existing synthesis materials — the low-cost
+  // convenience niche below the existing deep energy-restore line (Energy Shards, graded B-H
+  // Class Crystals, Energy Stones), not a new sustain tier. Deliberately early-game-shaped: small
+  // flat restores, low gold cost, heavier weight-per-Energy than a Crystal (inefficient to
+  // stockpile late).
+  //
+  // PRICING GUARDRAIL (spec G4b, test_p4_world.js): every SOLD provision's energy-per-gold must
+  // sit STRICTLY below crystal_energy_shard's (40/45 = 0.889) and every stone_energy_*'s (lowest:
+  // stone_energy_skyspire 560/820 = 0.683) — so provisions can never be the gold-efficient
+  // sustain optimum. All three below land at exactly energyRestore/value = 0.5, comfortably under
+  // that floor (recomputed against the real, shipped values above — the spec's own "~25-70g"
+  // estimate undershot what a strict 0.5 ratio actually requires at these energyRestore amounts).
+  // levelReq 0 on all four — available from the very first battle.
+  // =====================================================================
+  {
+    id: 'provision_trail_rations',
+    name: 'Trail Rations',
+    slot: 'none',
+    skill: null,
+    weight: 2,
+    levelReq: 0,
+    value: 60, // energyRestore/value = 30/60 = 0.5 (< every crystal_energy_shard/stone_energy_* ratio)
+    tags: [],
+    combatUsable: true,
+    energyRestore: 30,
+    desc: 'Dense, dry travel bread and salted meat, wrapped in oilcloth — no tavern-keeper worth their apron would call it fine dining, but it keeps a hero on their feet between real meals.'
+  },
+  {
+    id: 'provision_honeyed_mead',
+    name: 'Honeyed Mead',
+    slot: 'none',
+    skill: null,
+    weight: 2,
+    levelReq: 0,
+    value: 100, // energyRestore/value = 50/100 = 0.5
+    tags: [],
+    combatUsable: true,
+    energyRestore: 50,
+    desc: "A tavern-brewed mead, sweetened with honey and just strong enough to steady a shaking hand before the next fight."
+  },
+  {
+    id: 'provision_spice_tea',
+    name: 'Kuraan Spice Tea',
+    slot: 'none',
+    skill: null,
+    weight: 2,
+    levelReq: 0,
+    value: 140, // energyRestore/value = 70/140 = 0.5
+    tags: [],
+    combatUsable: true,
+    energyRestore: 70,
+    desc: 'A fiery, dark-spiced tea brewed from Kuraan border-woods herbs — favored by scouts who need to stay sharp on a long watch.'
+  },
+  {
+    // FORAGE-ONLY: never appears in a shop stock (js/data/areas.js) — the pricing guardrail above
+    // therefore doesn't apply to it (no `value`-vs-gold arbitrage is possible for an item that
+    // can't be bought). Its `value` field still exists for the ordinary sell-back path
+    // (Game.World.sellValue) and the death-mishap item-loss pool, same as every other tradeable
+    // consumable.
+    id: 'provision_foragers_bundle',
+    name: "Forager's Bundle",
+    slot: 'none',
+    skill: null,
+    weight: 3,
+    levelReq: 0,
+    value: 70,
+    tags: [],
+    combatUsable: true,
+    energyRestore: 50,
+    heal: 40,
+    desc: 'A forager\'s lucky handful — a few edible roots, a strip of dried meat, and a fistful of wound-moss, bundled together in whatever cloth was on hand.'
   }
 ];
 

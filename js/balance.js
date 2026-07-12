@@ -421,5 +421,35 @@ var BALANCE = {
   AFFIX_FRENZIED_RATE: 0.05, // invented, LOCKED P0 RESULTS item 2: +5% monster damage per monster action taken so far this battle
   AFFIX_FRENZIED_CAP: 0.40, // invented, LOCKED P0 RESULTS item 2: escalation capped at +40% — the UNCAPPED +5%/action design broke the >=85% win floor at L90/100 (62-64% win over 16-round fights); WITH the cap it holds 93.7-100% at every checkpoint
   AFFIX_VENOMOUS_CHANCE: 0.35, // invented, LOCKED P0 RESULTS item 2: 35% chance per successful monster BASIC attack (not techs) to poison the player, only while the player is not already poisoned
-  AFFIX_HOARDER_DROP_MULT: 3 // invented, LOCKED P0 RESULTS item 2: replaces CHAMPION_REWARD_MULT (x2) on drop-CHANCE rolls only — xp/gold/AP premiums (and CHAMPION_REWARD_MULT itself) are untouched
+  AFFIX_HOARDER_DROP_MULT: 3, // invented, LOCKED P0 RESULTS item 2: replaces CHAMPION_REWARD_MULT (x2) on drop-CHANCE rolls only — xp/gold/AP premiums (and CHAMPION_REWARD_MULT itself) are untouched
+
+  // ==================== v1.4 P4: G3 Limit Breaks (docs/SPEC-V1.4-GAMEPLAY.md §5) ====================
+  // Names [archived] reference/forum/t-796.md (Rage, Dragon Kick, Hurricane Blow — MP-gated
+  // specials in the 2005 engine, "Warriors replace MP with Fury?"); numbers [invented], LOCKED by
+  // the P0 sim (docs/SPEC-V1.4-GAMEPLAY.md P0 RESULTS item 3: "Limit break locked at x2.0 of the
+  // player's average basic hit... x2.5 reached 85% — too strong for a repeatable button"). A
+  // Limit Break unlocks once the character's cross-battle Fury kill-streak (c.fury, unchanged
+  // mechanic) reaches this floor, and consuming it spends the WHOLE streak (js/core/battle.js
+  // limitBreak()) — energy cost is 0 (the streak IS the cost).
+  LB_DAMAGE_MULT: 2.0, // invented, LOCKED P0 RESULTS item 3
+  LB_FURY_MIN: 5, // invented, LOCKED P0 RESULTS item 3
+
+  // Flavor riders (docs/SPEC-V1.4-GAMEPLAY.md §5: "deliberately TINY... they were not sim-gated —
+  // keep them cosmetic-scale"). Not part of the P0 sim's locked damage number above; small enough
+  // that removing them would not change the P0 win/loss numbers.
+  LB_RAGE_ARMOR_BONUS: 3, // invented: Rage grants the player flat +3 Armor for LB_RAGE_ARMOR_DURATION turns
+  LB_RAGE_ARMOR_DURATION: 3, // invented
+  // "2" is expressed in the same percentage-point convention as every other dodge constant in this
+  // file (e.g. DODGE_BASE 0.02 = a flat 2%) — Dragon Kick knocks 2 percentage points off the
+  // monster's dodge chance for the rest of the battle, floored at 0 (js/core/battle.js
+  // monsterDodgeChance's monster.dodgeDebuff term).
+  LB_DRAGON_KICK_DODGE_DEBUFF: 0.02, // invented
+
+  // ==================== v1.4 P4: G4 Foraging (docs/SPEC-V1.4-GAMEPLAY.md §5) ====================
+  // [archived] concept, reference/forum/t-449.md ("Luck determines what kind of items you can
+  // Forage for"); [revised] keying — the remake has no Luck stat, so availability instead follows
+  // the area's own forage table (js/data/areas.js `forage: [itemIds]`), hunting-areas-only, same as
+  // Game.World.camp(). Numbers [invented].
+  FORAGE_SUCCESS: 0.70, // invented
+  FORAGE_SECOND_ITEM: 0.30 // invented: chance of a SECOND item on an already-successful forage
 };

@@ -239,6 +239,19 @@
           Game.refreshCurrentScreen();
         }
       }, true);
+      // v1.4 P4 (G4): Forage — same pattern as Camp above (js/core/world.js forage() shares
+      // camp()'s risk profile, so an ambush needs the identical battle-screen redirect).
+      addLink('Forage', function () {
+        var res = Game.World.forage();
+        if (!res.ok) { alert(res.message); return; }
+        alert(res.message);
+        Game.persist();
+        if (res.event === 'ambush' && res.battle) {
+          Game.Screens.navigate('battle');
+        } else {
+          Game.refreshCurrentScreen();
+        }
+      }, true);
 
       // Phase 5 quest touch-tokens (Standing Stones): same visibility rule as the Explore
       // screen's copy (DESIGN.md §7) — shown here too, per the phase brief ("show in both").

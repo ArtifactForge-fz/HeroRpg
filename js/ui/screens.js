@@ -1039,6 +1039,32 @@ Game.Screens = (function () {
         'Camping restores ' + Math.round(tentQuality * 100) + '% of your max HP and Energy (best tent in your pack) — but risks a robbery or ambush in the night. Deposit gold at a Vault first to keep it safe.'
       ]));
 
+      // ---- v1.4 P4 (G4): Forage — beside Camp, same risk profile, no HP/Energy recovery ----
+      actions.appendChild(el('div', { class: 'mt8' }, [
+        el('b', {}, ['Forage']), ' ',
+        el('button', {
+          class: 'button',
+          title: 'Search the area for materials and provisions — free, but shares Camp\'s risk of robbery or ambush (archived: forum t-756.md).',
+          onclick: function () {
+            var res = Game.World.forage();
+            if (!res.ok) { alert(res.message); return; }
+            Game.persist();
+            // Forage's ambush risk (js/core/world.js) lands on the battle screen, same as Camp's.
+            if (res.event === 'ambush' && res.battle) {
+              alert(res.message);
+              battleReturnScreen = 'explore';
+              navigate('battle');
+            } else {
+              alert(res.message);
+              refreshExploreScreen();
+            }
+          }
+        }, ['Forage'])
+      ]));
+      actions.appendChild(el('div', { class: 'tinyfont mt4' }, [
+        'Foraging never restores HP or Energy, but can turn up local materials or provisions — it shares Camp\'s same risk of a robbery or ambush.'
+      ]));
+
       root.appendChild(actions);
     }
 
@@ -1949,7 +1975,14 @@ Game.Screens = (function () {
       vit.appendChild(battleBar('Fear', 'fear', fearLv * 10, 100, '-' + (fearLv * 10) + '% stats'));
     }
     if (c.fury > 0) {
-      vit.appendChild(el('div', { class: 'smallfont mt4' }, ['Fury: ' + c.fury + ' (+' + c.fury + '% XP)']));
+      // v1.4 P4 (G3): make the Limit Break trade-off legible right on the meter that pays for it —
+      // spending a streak sacrifices this same +N% XP bonus on every future win of the streak.
+      var lbHint = Game.Battle.getLimitBreak(c);
+      var furyLine = 'Fury: ' + c.fury + ' (+' + c.fury + '% XP)';
+      if (lbHint) {
+        furyLine += (c.fury >= BALANCE.LB_FURY_MIN) ? ' — ' + lbHint.name + ' ready!' : ' — ' + lbHint.name + ' at Fury ' + BALANCE.LB_FURY_MIN;
+      }
+      vit.appendChild(el('div', { class: 'smallfont mt4' }, [furyLine]));
     }
 
     // Feature B (user-directed): afflictions shown in dark red on the "Your Vitality" panel (also
@@ -2086,6 +2119,31 @@ Game.Screens = (function () {
       })(s);
     }
     vit.appendChild(techGrid);
+
+    // ---- Limit Break (v1.4 P4, G3 — docs/SPEC-V1.4-GAMEPLAY.md §5) ----
+    // Visible only when the character's class LINE grants one (Game.Battle.getLimitBreak reads
+    // Game.Classes.baseClassIdsObtained — a classless character never sees this button at all);
+    // enabled only once charged (Fury >= BALANCE.LB_FURY_MIN) and not yet spent this battle. The
+    // label always shows the live Fury count so the fury-vs-XP trade stays legible even before
+    // it's charged.
+    var lb = Game.Battle.getLimitBreak(c);
+    if (lb) {
+      var lbCharged = !over && (c.fury || 0) >= BALANCE.LB_FURY_MIN && !battle.limitBreakUsed;
+      vit.appendChild(el('div', { class: 'mt8' }, [
+        el('button', {
+          class: 'button battle-action',
+          title: battle.limitBreakUsed
+            ? lb.name + ' already unleashed this battle.'
+            : lb.name + ' — consumes your whole Fury streak (needs ' + BALANCE.LB_FURY_MIN + '+; costs 0 Energy)',
+          disabled: !lbCharged ? 'disabled' : null,
+          onclick: function () {
+            Game.Battle.limitBreak();
+            Game.persist();
+            refreshBattleScreen();
+          }
+        }, ['⚔ ' + lb.name + ' (Fury: ' + (c.fury || 0) + ')'])
+      ]));
+    }
 
     left.appendChild(vit);
     layout.appendChild(left);
