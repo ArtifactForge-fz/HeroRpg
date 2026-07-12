@@ -150,8 +150,53 @@ purchases, deactivation wipe):
     death" outcome isn't strictly enforced past ~L50. At-level and boss balance are unaffected
     (proven by the real-content re-sim). Fixing it fully needs a Fear/healing/energy pass (deferred,
     user-accepted); see `js/balance.js` F1 CONVENTION NOTES §3 and `docs/SPEC-FULL-LEVEL-ARC.md`.
+    **v1.4 re-check:** the P0 sim confirmed the new low-cost energy provisions (§6) don't move
+    this needle — true 5-down cells stayed at 0.0% win with and without provisions in the kit
+    (`docs/SPEC-V1.4-GAMEPLAY.md` P0 RESULTS §4); the known limitation is unchanged, not worsened.
 - **Fury Meter**: kills at-or-above your level add ticks, +1% combat & skill XP each; resets on
   death, flee, or daily — single-player: reset on death/flee/inn rest **[adapted]**.
+  - **v1.4 — Limit Breaks, spent from the same streak [archived names, `forum/t-796.md`;
+    invented mechanics]:** Rage, Dragon Kick, and Hurricane Blow were MP-gated specials in the
+    2005 engine; the forum itself proposed bridging them onto a Fury-style resource
+    (`forum/f-84.md`, "Warriors replace MP with Fury?"). At `c.fury >= 5` (`LB_FURY_MIN`) a
+    Limit Break action unlocks in battle; using it **consumes the entire streak** — a real
+    trade-off, since it forfeits the accumulated +1%/tick XP bonus on every future win of that
+    streak, not a free action — for a class-line special at **×2.0 of the player's average
+    basic hit** (`LB_DAMAGE_MULT`), once per battle, 0 Energy cost (the streak *is* the cost):
+    Rage (warrior line — hit + self +3 Armor for 3 turns), Dragon Kick (rogue/gambit line — hit
+    + −2 percentage points off the monster's Dodge for the rest of the fight), Hurricane Blow
+    (mage line — non-elemental burst that ignores the monster's dodge roll entirely, i.e. it
+    auto-connects). One rank each, granted automatically at the class tier that fits. The ×2.0
+    multiplier and the fury-5 floor are **locked by the P0 sim**
+    (`docs/SPEC-V1.4-GAMEPLAY.md` P0 RESULTS §3): ×2.5 pushed win rate on the hardest boss
+    (Eidas Ascendant) to 85% — too strong for a repeatable button — while ×2.0 lifted that
+    fight's baseline 66.3% win to ~77% without changing its HP cost, which is the intended
+    "strong but not degenerate" shape.
+- **v1.4 — Champion hunts, affixes, and boss scripts** [archived intent, `site/homepage_2006.md`
+  Hero 6.5 plan: "strategic boss battles… scripted abilities, summons, status effects, item
+  usage" + a "Champion Bosses" forum-thread title; specifics **[invented]** within that intent,
+  P0-locked]: a champion hunt (`Game.Battle.start(id, {champion:true})`) already carried flat
+  HP/damage multipliers (1.5× / 1.35×, unchanged); v1.4 adds ONE affix on top, rolled uniformly
+  through the single `Game.Battle._rng` surface (never a second RNG): **Vampiric** (heals the
+  monster for 25% of the damage it deals), **Frenzied** (damage escalates +5% per action taken
+  this battle, **capped at +40%**), **Warded** (negates the first hostile technique the player
+  casts each battle), **Venomous** (35% chance per successful *basic* attack — not techs — to
+  poison an unpoisoned player), **Hoarder** (combat-neutral: drop chance ×3 instead of the
+  champion's usual ×2). The battle log announces the affix at the start of the fight and again
+  on each trigger, so the rule is always learnable in play. The engine's own 1v1 constraint
+  (`forum/t-449.md`: "no summons in battle") rules summons out — the affix roster is the
+  invented substitute within the archived intent. **Boss scripts:** all 11 bosses (the 3 pre-arc
+  bosses plus the level-100 arc's 6 band bosses) carry a data-driven `script:` array (HP-fraction
+  thresholds → a named effect, e.g. the Ruin Warden of the Estari fortifies its Armor at 50%
+  HP), read by one interpreter in `battle.js` — never per-boss code branches. Script effects are
+  kept modest (well under the boss's own damage stat) so they read as flavor, not a difficulty
+  spike. **P0 sim as balance authority** (`docs/SPEC-V1.4-GAMEPLAY.md` P0 RESULTS §2, locked
+  constants in `js/balance.js`'s v1.4 P3 block): the existing champion multipliers held 100% win
+  at every checkpoint L10–100 unmodified; Vampiric/Venomous held 100% win everywhere; an
+  *uncapped* +5%/action Frenzied broke the ≥85% at-level win floor at L90/100 (62–64% win over
+  16-round fights) — the **+40% cap is load-bearing**, not decorative, and restored 93.7–100%.
+  Warded is a one-action tax the pure-attack sim fixture can't exercise (no techs); it is
+  spot-checked against a caster build in P3's own suite instead.
 - Monsters: have levels, elements/resistances by Anima grade, can use techniques (v2.1 added 24
   monster techs), bosses are harder. XP/loot cutoff: enemy more than 5 levels below you yields
   nothing.
@@ -168,8 +213,8 @@ purchases, deactivation wipe):
   battle statuses; Haunting as a persistent affliction (halves magical/consumable healing until
   cleansed at the Spirit Shrine). Curse is applied by monster `curseChance`, cleansed by an
   Abjuration `clearsStatus` tech; effect numbers **[invented]**.
-- Win yields: combat XP, skill XP, gold, Anima Shards, and a possible item drop claimed via an
-  explicit **Loot** click.
+- Win yields: combat XP, skill XP, gold, Anima Shards, **Advantage Points (v1.4, see §6)**, and a
+  possible item drop claimed via an explicit **Loot** click.
 - Damage formulas: **[invented]**, constrained by archived facts (Str ratio 2.5:1, glancing blows
   exist, Keen-style defense ignore existed for monsters). Two of these are **implemented as of
   v1.2**: **Intelligence decides spell hit/miss** for offensive magic techs (`Recent_Updates.md`
@@ -206,10 +251,52 @@ purchases, deactivation wipe):
   archived "over 20", `Version_2.1_Changes.md`; removes **Cursed** items for a value-based fee and
   cleanses **Haunting** — `Cursed.md`).
 - Camping in hunting areas: partial HP restore, scaled by tent quality; tents sold in shops.
+  - **v1.4 — Foraging**, a second camp-style action **[archived concept, `forum/t-449.md`:
+    "Luck determines what kind of items you can Forage for"; [revised] keying]**: the remake has
+    no Luck stat, so availability instead follows each hunting area's own `forage:` item table
+    (21 areas covered) rather than a stat roll. One forage attempt per visit, hunting areas only:
+    70% base success (`FORAGE_SUCCESS`), with a further 30% chance of a second item on a
+    successful roll (`FORAGE_SECOND_ITEM`) — both **[invented]**, no HP/Energy recovery (that
+    stays camp's role). Foraging shares camp's existing ambush/robbery risk profile unchanged
+    (`forum/t-756.md`, archived) via the same shared risk roll — foraging does not dodge it.
+  - **v1.4 — Provisions [invented]**, user-requested: four cheap food/tonic Energy consumables
+    (Trail Rations, Honeyed Mead, Kuraan Spice Tea — sold at early/mid taverns and shops, and
+    foraged; plus the foraging-only Forager's Bundle, which also restores a little HP) fill a
+    low-cost convenience niche beneath the existing Energy Shard / graded Crystal / Energy Stone
+    line, not a new sustain tier: small flat Energy restores, heavier weight-per-Energy than a
+    Crystal, and every sold provision's Energy-per-gold ratio is held **strictly below** the
+    cheapest Crystal's and Energy Stone's (0.5 vs. the lowest archived/invented alternative's
+    0.683–0.889) so provisions can never become the gold-efficient sustain optimum — see the
+    Fear known-limitation re-check in §4.
 - Items: weight/encumbrance vs Strength-based capacity; skill affinity; level/stat requirements
   (red = unusable); slots incl. foot armor; tags (lore, no-trade); cursed items equip-lock.
   Item database: **[invented]** (only one item id, #3273, was ever archived — and it 404s).
 - Alchemy/transmutation recipes existed (v2.1) — fold into Synthesis for v1.
+- **v1.4 — Advantage Points (AP) & the AA Exchange** **[archived]** (partial): a second currency
+  earned from battle **victories** survives in the record — "you can now spend kills to get
+  items" (`forum/t-827.md`) — redeemable against an "AA list" catalog spanning "all price ranges"
+  (`site/homepage_2006.md` patch notes, "Added 20+ items to the AA list"). Exact earn rate and
+  item list did not survive; both are **[invented]**, designed to the archived shape and locked
+  by the P0 sim (`docs/SPEC-V1.4-GAMEPLAY.md` P0 RESULTS §5):
+  - `character.ap` is earned **only on victory** — never from fleeing, quests, or sales, per the
+    "spend kills" framing. `AP_PER_WIN(monsterLevel) = 1 + floor(level/20)` (1 AP at L1–19,
+    rising to 6 at L100); champions ×2 (mirrors the existing champion reward multiplier exactly),
+    bosses ×3 (mirrors the archived boss XP ×3 premium, §4) — reusing the game's existing
+    reward-multiplier shape rather than inventing a third curve.
+  - A new town facility type, **`exchange`** (same pattern as `shop`), opened in **Laik**
+    (mid-arc) and **Frosthold Waystation** (late-arc) — the archived placement is unknown; the
+    two-town split is **[invented]** to serve both mid-game and capped players.
+  - The ~20-item catalog is mostly *existing* item ids at AP prices (including graded B-class
+    Crystal/Sphere entries that are otherwise monster-drop/synthesis-only, giving AP a second
+    route to them) plus six new AP-exclusive items with new icons — two of them, **Steel-Plated
+    Boots** and **Gold-Plated Boots**, reuse an **[archived] item name** ("players bought 'steel
+    plated boots' from the AA list", `forum/t-827.md`); the rest (Gilded Crest Helm, the
+    level-100 prestige **Tourney Regalia**, Veteran's Edge, Royal Energy Stone, Royal Sphere) are
+    **[invented]**. **Hard rule (no-arbitrage guardrail):** every AP item's stats sit at or below
+    the best non-unique gear of the same level requirement (AP is convenience/prestige, not
+    power creep — uniques remain monster-drop-only per §6's own item conventions) and every AP
+    item's gold `value` is ≤50 (vendor-trash), so selling one back for gold can never out-earn
+    the AP spent buying it.
 
 ## 7. Quests — [archived names, lost text]
 
@@ -217,6 +304,35 @@ Journal with active/completed tabs, cancellable, multi-reward (gold/items/TP/cla
 Known quest names: The Standing Stones, the Oruk quest (level 5–10 band), Eldor: Dr. Ferrier,
 Laik: Professor Flad, tavern quests. All quest content: **[invented]**, anchored in the archived
 lore (Estari ruins, Anima excavation taboo, Majiku raids, Skyspire mythology).
+
+- **v1.4 — pacing: active cap + quest chains.** The original documented no limit, but by the
+  level-100 arc the Tavern was offering every not-yet-accepted quest in the area simultaneously
+  with no prerequisite mechanism (only class/race/level gates) — with 40+ quests this flooded the
+  Journal and dumped multi-part storylines (the Arkan line, Rennick's cipher line) on the player
+  all at once. Fixed with two mechanisms, both **[revised]/[invented]** (user-directed, no
+  archived cap or chain data survives):
+  - **`BALANCE.MAX_ACTIVE_QUESTS = 3` [revised]** — accepting a new quest is refused once the
+    Journal holds 3 `active` entries ("Your journal is full — finish or abandon a quest first."),
+    surfaced in the Tavern as a greyed-out offer with that reason (the same `{eligible, reason}`
+    record pattern already used for level-window gates). Backward compatible: a save already
+    above the cap keeps its existing actives — the cap only blocks new accepts — and the
+    already-archived `cancel()` is the relief valve. The cap can never soft-lock the story
+    spine: main story-spine quests are always chain heads (never gated behind side content), so
+    abandoning side quests always makes room.
+  - **`requiresQuest` chains [invented]** — an optional quest field naming a prerequisite quest
+    id. `availableAt()` hides a quest until its prerequisite reaches `status: 'completed'`, so
+    chained content no longer clutters the offer list before its turn. `turnIn()` returns a
+    `followUps` array — any quest whose `requiresQuest` just completed and whose giver is at the
+    current area — which the Tavern UI surfaces immediately after the turn-in message ("Rennick
+    has more work for you…") with an accept button; if the player is at the cap or
+    under-leveled, the follow-up simply reappears later via `availableAt()` rather than being
+    lost. 28 chain edges organize existing quests so each giver exposes at most 1–2 entry quests
+    at a time (main-spine quests as chain heads; regional side quests chained behind their band's
+    spine entry). A reachability check (extended quests suite) walks every chain from its head
+    and asserts every quest id is eventually offered in a fresh playthrough, catching dangling
+    `requiresQuest` typos that would otherwise strand content invisibly.
+  - **No save impact** — both mechanisms read existing `c.quests` state; no new character field,
+    no version bump.
 
 ## 8. Presentation — [archived]
 
@@ -229,6 +345,12 @@ lore (Estari ruins, Anima excavation taboo, Majiku raids, Skyspire mythology).
   windows — all described in `New_Player_Guide.md`.
 - No copyrighted icons (the original used ripped Blizzard/Square-Enix GIFs — replace with CSS/
   unicode/simple pixel art **[invented]**).
+- **v1.4 — Town screen master→detail [revised]**, user-directed: the Town screen previously
+  stacked an accordion of every facility present in the town, duplicating the Actions panel's own
+  quick-link list. It now shows either a plain facility directory (nothing selected) or only the
+  selected facility's panel with a back row — reached from the directory or from an Actions
+  quick-link. A facility selected in one town that isn't present in the next (e.g. the Shrine)
+  resets to the directory rather than rendering empty.
 
 ## 9. Cut from v1 (was multiplayer or never shipped)
 
@@ -253,5 +375,22 @@ Eidolons/v3.0 systems, arcade. Pets (`heropet.php` existed) — deferred, no des
      curve (F1 finding — literal 3+2·levelReq breaks at scale); extended tech chains (ranks to 9);
      Chapters III–IV + Epilogue. Tier-3 class unlock moved 38→60. XP curve unchanged (sim: ~12 h to
      100). See the §4 Fear known-limitation note.
+   - **v1.4 actual — gameplay pass** (`docs/SPEC-V1.4-GAMEPLAY.md`): no new areas/monsters/
+     classes; XP-stream-at-cap fix via **Advantage Points** (a second kills-only currency, §6)
+     spent at a new **AA Exchange** facility (Laik + Frosthold Waystation, ~20-item catalog incl.
+     6 new AP-exclusive items); **champion affixes** (5, one per champion fight) and **data-driven
+     boss scripts** on all 11 bosses (§4); class-line **Limit Breaks** off the existing Fury
+     streak (§4); **Foraging** as a second camp action across all 21 hunting areas plus 4
+     **Provisions** items (§6); quest-journal **active cap of 3** + **28 `requiresQuest` chain
+     edges** (§7); Town screen master→detail (§8). Save v9→v10 (AP only). Balance gated by a
+     dedicated P0 simulation (below).
 4. **Balance oracle**: encode every archived number as a named constant in one `balance.js` file
    with a comment citing its reference file, so archived vs invented stays auditable in code.
+   - **v1.4 P0 sim** (`docs/SPEC-V1.4-GAMEPLAY.md` P0 RESULTS, 2026-07-12, 300 trials/cell, real
+     RNG, checkpoints L10/30/50/70/90/100): the methodology that gated the level-100 arc (F1) was
+     reused to lock every new v1.4 constant before implementation — champion-affix numbers
+     (Vampiric 25% leech, Frenzied +5%/action capped +40%, Venomous 35% on-hit, Hoarder ×3
+     drops), the Limit Break multiplier (×2.0) and Fury floor (5), the AP earn curve
+     (`1 + floor(level/20)`, champion ×2, boss ×3), and confirmation that cheap Provisions don't
+     move the §4 Fear known-limitation needle. See each constant's citation comment in
+     `js/balance.js`'s v1.4 P1–P4 blocks for the exact numbers this sim locked.

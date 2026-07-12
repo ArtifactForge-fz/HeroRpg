@@ -1,6 +1,7 @@
 # SPEC — v1.4 Gameplay Features (Quest Pacing, Advantage Points, Champion Abilities, Limit Breaks, Foraging)
 
-**Status:** proposed (spec written 2026-07-11, not started — awaiting user approval of scope).
+**Status:** **implemented** (P0–P5 complete, 2026-07-12) — this spec is now historical; DESIGN.md
+is the authority.
 **Owner model:** lead (Fable) scopes/reviews; Sonnet subagents implement, each with a full
 up-front brief (CLAUDE.md cardinal rule 4).
 **Companion spec:** `docs/SPEC-MOBILE-UI.md` (the other v1.4 candidate — UI axis, independent,
@@ -214,24 +215,32 @@ Branch **`v1.4-gameplay`** off `main`. Each phase: full-brief Sonnet subagent �
 - **P1 — G5 quest pacing (FIRST — live pain point, no sim dependency).** Cap + chains in
   quests.js + Tavern/Journal UI + the quests.js data pass into chains; extended quests suite
   incl. the chain-reachability check. Independent of P0 — may run in parallel with it.
+  **Done:** commit `82d2c04`. A related but separately-scoped UI change, the Town screen's
+  master→detail rework (§8/DESIGN.md), landed alongside it as its own commit `f1d06fa`.
 - **P0 — Sim harness (lead, gating de-risk for G1–G3, same role F1 played for the arc).**
   Scratchpad sim in `node vm` loading the real game code; measures win %, rounds, HP-left,
   damage-per-energy at L10/30/50/70/90/100 for: champion+affix fights, boss scripts, limit-
   break usage. Locks the G1 AP earn curve against gold/xp pacing (AP catalog prices come from
   measured wins-per-hour, aiming: cheapest item ≈ 15 wins, top item ≈ 300). Output: final
   constants for balance.js, each with its citation comment.
+  **Done:** commit `3a1effd` — see the P0 RESULTS section below for the locked findings.
 - **P2 — G1 Advantage Points** (save v10 + migration + migration-chain test; exchange
   facility + catalog + UI; stubbed-RNG not needed — AP is deterministic on victory). Icons
   for the 6–8 new items: **lead pulls DCSS tiles** (subagents' env has no network;
   repo-relative staging dir; no `< /dev/null` in execSync curl — v1.3 icon-pipeline notes).
+  **Done:** commit `30e78d3`.
 - **P3 — G2 champion affixes + boss scripts** (stubbed-RNG tests: forced affix rolls, each
   script threshold; re-run P0 sim with real data; battle-log assertions).
+  **Done:** commit `9b8522a`.
 - **P4 — G3 limit breaks + G4 foraging & provisions** (stubbed-RNG tests for forage tables
   and fury threshold; sim confirms limit-break damage-per-energy stays in band AND the
   provisions 5-down delta; provisions icons pulled by lead; drop tables APPEND only —
   first-hit-wins order preserved).
+  **Done:** commit `8868100`.
 - **P5 — Docs**: DESIGN.md sections for all five (tags + citations), README, CLAUDE.md
   "recently completed" rollover; this spec marked shipped.
+  **Done:** 2026-07-12 (this pass) — DESIGN.md §4/§6/§7/§8/§10, README, and this status line;
+  changelog.js entry `[0]` polished for player-facing wording.
 
 All ten suites green before every commit (`cd tests && for t in test_*.js; do node $t; done`);
 stale constants (item/monster counts, save version) updated, behavioral assertions never

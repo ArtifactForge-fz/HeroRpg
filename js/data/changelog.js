@@ -24,8 +24,13 @@ Game.Data.changelog = [
         'of Exchange-only items, up to a level-100 prestige set of Tourney Regalia.',
       'Your quest journal is now capped at 3 active quests at a time, so taverns no longer dump ' +
         'their entire quest list on you at once; finish or abandon a quest to make room for more.',
-      'Multi-part questlines now unlock their next chapter automatically as you complete the ' +
-        'quest before it, instead of all appearing at once.',
+      'Multi-part questlines now unlock their next chapter automatically as you hand in the one ' +
+        'before it, instead of every chapter appearing at once.',
+      'Some champion monsters now fight with a trick of their own: a few drink back the blood ' +
+        'they draw, some grow steadily more savage the longer a fight runs, some shrug off the ' +
+        'first spell you throw at them, some poison every bite, and some simply guard a far ' +
+        'richer prize. Bosses, too, now pull a scripted trick or two of their own once a battle ' +
+        'has run long enough.',
       'Building a big enough Fury kill-streak now unlocks a class Limit Break in battle — Rage, ' +
         'Dragon Kick, or Hurricane Blow depending on your calling — a devastating strike that ' +
         'spends your entire streak in one go.',
