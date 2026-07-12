@@ -12,6 +12,18 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.4.2',
+    date: '2026-07-12',
+    title: 'Academy Technique Info',
+    saveVersion: 10,
+    highlights: [
+      'You can now inspect any technique at the Academy before you learn it — click the ⓘ next to ' +
+        'it to see exactly what it does, which stat it scales with, and its damage or healing ' +
+        'range, so you always know what you are paying Training Points for.'
+    ]
+  },
+
+  {
     version: 'v1.4.1',
     date: '2026-07-12',
     title: 'Clearer Stats & Combat Info',

@@ -1538,6 +1538,17 @@ Game.Screens = (function () {
       row.appendChild(el('span', { class: 'stat-name', style: 'width:150px; flex:0 0 150px;' }, [
         tech.name + (tech.chain ? ' (' + tech.chain + ' ' + tech.rank + ')' : '')
       ]));
+      // v1.4.2 (user feedback): the Academy learn list had no way to inspect a technique before
+      // paying for it. Same ⓘ affordance as the Status/battle screens — opens the full tech info
+      // window (Game.Infobox.openTech: desc, Scales with, effective damage/heal range, grade, etc.).
+      row.appendChild(el('span', {
+        class: 'info-btn',
+        title: 'About ' + tech.name,
+        onclick: function (ev) {
+          if (ev && ev.stopPropagation) ev.stopPropagation();
+          Game.Infobox.openTech(tech, c);
+        }
+      }, ['ⓘ']));
       row.appendChild(el('span', { class: 'tinyfont' }, [tech.trainingCost + ' TP']));
       if (known) {
         row.appendChild(el('span', { class: 'tinyfont' }, [' Known']));
