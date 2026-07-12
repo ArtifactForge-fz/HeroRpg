@@ -160,6 +160,34 @@ counterable:
   don't re-introduce over-armoring (charged *tech* hits route through Magic Armor; charged physical
   through Armor — keep the ~half-a-hit armor cap intact).
 
+### P0 RESULTS — LOCKED 2026-07-12 (ephemeral sim, scratchpad `v15_p0_sim.js`)
+
+Method: trusted level-appropriate warrior fixture vs. an at-level regular monster; swept a uniform
+monster-damage multiplier D (the average-DPS-equivalent of "charge chance P × multiplier M", i.e.
+`avgDPS = 1 + P·(M−1)`), 250 trials/cell. Telegraph is a %-of-damage mechanic so the budget as a %
+generalizes; V1 re-sims the **real burst** mechanic across the full grid (uniform-D understates burst
+lumpiness — it's a necessary, not sufficient, gate).
+
+- **Binding cell is L100.** L40 held **100% win even at D=1.50** (regulars are soft vs. a geared
+  warrior — and starting areas stay `simple` anyway, no telegraphs early). At L100 (moon_anima_devourer,
+  a non-reacting player): D=1.0→100%, **D=1.1→99.6%, D=1.2→98.0%**, D=1.3→89.6%, D=1.5→**49.6%**.
+- **Telegraph DPS budget: ≤ +20% average monster DPS** (keeps L100 ≥98% for a player who NEVER reacts;
+  +30% is the ragged 85% edge — no margin, rejected).
+- **LOCKED constants for V1:**
+  - `AFFIX_CHARGED_MULT = 2.0` — a charged hit = 2× a normal hit. At L100 that's ~40–50% of player HP
+    *after* mitigation (a real threat, **not** a one-shot — corroborates the burst lens; higher M
+    risks one-shots and is rejected).
+  - `TELEGRAPH_CHARGE_CHANCE = 0.15` per eligible telegraphing-monster turn → avg DPS **+15%**
+    (L100 ≈ 99%, comfortable margin under the +20% budget). Tunable up toward 0.20 in V1 if telegraphs
+    feel too rare, never past the +20% budget.
+  - `INTERRUPT_THRESHOLD` (§2a, M6): **provisional 0.15 × monster max HP**, scaled per level; a normal
+    strong hit can clear it, a weak one can't, and a Limit Break always does. **V1 refines this with
+    the real mechanic** (it's the one constant a uniform-DPS model can't pin down).
+- **V1 re-sim requirement (non-negotiable):** the real burst mechanic across at-level / boss /
+  5-down at L10/40/70/100, for non-reacting AND reacting players, confirming (a) no at-level cell
+  drops below 85%, (b) no new spike-kill at-level, (c) the 5-down cell stays at its shipped
+  (near-0%) rate — telegraphs must not *widen* the known Fear limitation.
+
 ---
 
 ## 7. Architecture & save impact
