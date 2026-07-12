@@ -465,5 +465,14 @@ var BALANCE = {
   // tracked in the spec, not re-run here (P1 ships the LOCKED provisional numbers).
   AFFIX_CHARGED_MULT: 2.0, // invented, LOCKED v1.5 P0: a charged telegraph hit = 2x a normal hit (~40-50% of an L100 player's HP after mitigation — a real threat, not a one-shot)
   TELEGRAPH_CHARGE_CHANCE: 0.15, // invented, LOCKED v1.5 P0: per eligible telegraph-monster turn; avg DPS +15% (L100 ~99% win for a non-reacting player, comfortable margin under the +20% sim budget)
-  INTERRUPT_THRESHOLD_HP_FRAC: 0.15 // invented, LOCKED v1.5 P0 (provisional per spec §10 M6 — a flat fraction, not yet level-scaled): a player hit >= 15% of the monster's OWN max HP cancels its charge; a Limit Break always cancels regardless of its damage
+  INTERRUPT_THRESHOLD_HP_FRAC: 0.15, // invented, LOCKED v1.5 P0 (provisional per spec §10 M6 — a flat fraction, not yet level-scaled): a player hit >= 15% of the monster's OWN max HP cancels its charge; a Limit Break always cancels regardless of its damage
+
+  // ==================== v1.5 P2: caster + enrage archetypes (docs/SPEC-V1.5-MONSTER-AI.md §3) ====================
+  // Provisional [invented] — the lead runs a P2 acceptance re-sim + the P3 full-grid re-sim
+  // validates the final numbers (spec §3 table + §6). Both archetypes reuse the P0-simmed
+  // telegraph/charged-hit math verbatim (windup chance / AFFIX_CHARGED_MULT); neither adds a new
+  // damage term.
+  CASTER_TECH_CHANCE: 0.75, // invented (v1.5 P2): caster-behavior monsters' tech inclination (vs the default 0.5); reuses the existing, already-balanced monster-tech path
+  ENRAGE_HP_FRAC: 0.30, // invented (v1.5 P2): an enrage-behavior monster is "enraged" below this fraction of its max HP
+  ENRAGE_CHARGE_MULT: 1.5 // invented (v1.5 P2, RETUNED by the P2 acceptance re-sim): while enraged, wind-up chance x1.5 (0.15 -> 0.225). The initial 2.0 (->0.30) blew past the P0 +20% avg-DPS budget and dropped the L99 enrage cell to 80% win (contract floor 85%); 1.5 restores it while keeping a real death-throes threat. Ratchet: tune the new mechanic to the shipped contract (LEAD-PLAYBOOK §0.3)
 };

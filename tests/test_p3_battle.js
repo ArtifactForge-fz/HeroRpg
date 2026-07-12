@@ -3339,6 +3339,108 @@ for (var round69 = 0; round69 < 5; round69++) {
 assert(!b69.charge, 'a simple monster never sets battle.charge across 5 rounds, got ' + JSON.stringify(b69.charge));
 Game.Battle.endBattle();
 
+// =================== Test 70: v1.5 P2 — caster raises tech inclination ===================
+console.log('\n=== Test 70: v1.5 P2 caster — raised tech inclination (CASTER_TECH_CHANCE) casts where a simple monster at the same rng would basic-attack ===');
+// rng = 0.6: below CASTER_TECH_CHANCE (0.75, so a caster's tech roll fires) but above the default
+// 0.5 (so a simple monster's tech roll does NOT fire) -- isolates the raised inclination alone.
+// Also well above TELEGRAPH_CHARGE_CHANCE (0.15), so neither battle winds up this turn, and above
+// every other small proc threshold in this fixture (monster dodge, GLANCING_CHANCE 0.10,
+// double-attack chance for dex 20 ~0.06) -- a clean single-action turn, same discipline as the
+// 0.20 constant used in Test 68 Case D above.
+var cCaster70 = windUpFixture('CasterTechChance');
+finalizeFixture(cCaster70);
+setRng(fixedRng(0.6));
+var b70 = Game.Battle.start('plains_field_rat');
+b70.monster.behavior = 'caster';
+b70.monster.techs = ['mon_gnawing_bite'];
+b70.monster.energy = 1000;
+b70.monster.hp = b70.monster.hpMax = 100000;
+b70.monster.damage = 100;
+Game.Battle.attack();
+assert(!b70.charge, 'sanity: rng 0.6 is above TELEGRAPH_CHARGE_CHANCE (0.15) -- no wind-up this turn');
+assert(b70.log.some(function (l) { return l.indexOf('uses Gnawing Bite') !== -1; }), 'caster monster (techChance=' + BALANCE.CASTER_TECH_CHANCE + ') casts its tech at rng 0.6');
+Game.Battle.endBattle();
+
+var cSimple70 = windUpFixture('SimpleTechChanceBaseline');
+finalizeFixture(cSimple70);
+setRng(fixedRng(0.6));
+var bBase70 = Game.Battle.start('plains_field_rat'); // behavior absent -> 'simple', techChance 0.5
+bBase70.monster.techs = ['mon_gnawing_bite'];
+bBase70.monster.energy = 1000;
+bBase70.monster.hp = bBase70.monster.hpMax = 100000;
+bBase70.monster.damage = 100;
+Game.Battle.attack();
+assert(bBase70.log.some(function (l) { return / attacks for \d+ damage\.$/.test(l); }), 'a simple monster at the SAME rng (0.6, above its default 0.5 tech inclination) basic-attacks instead');
+assert(!bBase70.log.some(function (l) { return l.indexOf('uses Gnawing Bite') !== -1; }), 'sanity: the simple baseline did not cast the tech');
+Game.Battle.endBattle();
+
+// =================== Test 71: v1.5 P2 — caster can still wind up ===================
+console.log('\n=== Test 71: v1.5 P2 caster — still telegraph-capable at the normal TELEGRAPH_CHARGE_CHANCE ===');
+var cCasterWindup71 = windUpFixture('CasterWindup');
+finalizeFixture(cCasterWindup71);
+setRng(fixedRng(0.10)); // < TELEGRAPH_CHARGE_CHANCE (0.15) -- forces the wind-up, same as Test 65
+var b71 = Game.Battle.start('plains_field_rat');
+b71.monster.behavior = 'caster';
+b71.monster.techs = [];
+b71.monster.hp = b71.monster.hpMax = 100000;
+b71.monster.damage = 100;
+Game.Battle.attack();
+assert(!!b71.charge && b71.charge.mult === BALANCE.AFFIX_CHARGED_MULT, 'a caster monster winds up too (same TELEGRAPH_CHARGE_CHANCE as telegraph): battle.charge set, got ' + JSON.stringify(b71.charge));
+assert(b71.log.some(function (l) { return l.indexOf('rears back') !== -1; }), 'caster wind-up announced in the battle log');
+Game.Battle.endBattle();
+
+// =================== Test 72: v1.5 P2 — enrage at full HP uses the base wind-up chance ===================
+console.log('\n=== Test 72: v1.5 P2 enrage at full HP — wind-up chance is the base TELEGRAPH_CHARGE_CHANCE (0.15), not the boosted rate ===');
+// rng = 0.20 sits between TELEGRAPH_CHARGE_CHANCE (0.15) and TELEGRAPH_CHARGE_CHANCE*ENRAGE_CHARGE_MULT
+// (0.30) -- it must NOT fire the base rate (this test) but MUST fire the boosted enraged rate
+// (Test 73), isolating the multiplier's effect.
+var cEnrageFull72 = windUpFixture('EnrageFullHP');
+finalizeFixture(cEnrageFull72);
+setRng(fixedRng(0.20));
+var b72 = Game.Battle.start('plains_field_rat');
+b72.monster.behavior = 'enrage';
+b72.monster.techs = [];
+b72.monster.hp = b72.monster.hpMax = 100000; // full HP -- well above ENRAGE_HP_FRAC even after this turn's hit
+b72.monster.damage = 100;
+Game.Battle.attack();
+assert(b72.monster.hp / b72.monster.hpMax >= BALANCE.ENRAGE_HP_FRAC, 'sanity: monster stays at/above ENRAGE_HP_FRAC after taking the player\'s hit this turn');
+assert(!b72.charge, 'enrage monster at full HP: base wind-up chance (0.15) does not fire at rng 0.20, got ' + JSON.stringify(b72.charge));
+Game.Battle.endBattle();
+
+// =================== Test 73: v1.5 P2 — enrage below ENRAGE_HP_FRAC boosts the wind-up chance ===================
+console.log('\n=== Test 73: v1.5 P2 enrage below ENRAGE_HP_FRAC — wind-up chance x' + BALANCE.ENRAGE_CHARGE_MULT + ' fires at an rng value that would NOT have fired at full HP ===');
+var cEnrageLow73 = windUpFixture('EnrageLowHP');
+finalizeFixture(cEnrageLow73);
+setRng(fixedRng(0.20)); // identical rng to Test 72 -- only the HP fraction differs
+var b73 = Game.Battle.start('plains_field_rat');
+b73.monster.behavior = 'enrage';
+b73.monster.techs = [];
+b73.monster.hpMax = 100000;
+b73.monster.hp = 25000; // 25% of hpMax -- below ENRAGE_HP_FRAC (0.30): wind-up chance x2.0 -> 0.30
+b73.monster.damage = 100;
+Game.Battle.attack();
+assert(b73.monster.hp / b73.monster.hpMax < BALANCE.ENRAGE_HP_FRAC, 'sanity: monster remains below ENRAGE_HP_FRAC after taking the player\'s hit this turn');
+assert(!!b73.charge && b73.charge.mult === BALANCE.AFFIX_CHARGED_MULT, 'enraged monster (wind-up chance ' + BALANCE.TELEGRAPH_CHARGE_CHANCE + 'x' + BALANCE.ENRAGE_CHARGE_MULT + '=' + (BALANCE.TELEGRAPH_CHARGE_CHANCE * BALANCE.ENRAGE_CHARGE_MULT) + ') winds up at rng 0.20 -- the SAME rng that did not fire at full HP in Test 72 -- proving the boost, got ' + JSON.stringify(b73.charge));
+assert(b73.log.some(function (l) { return l.indexOf('rears back') !== -1; }), 'enraged wind-up announced in the battle log');
+Game.Battle.endBattle();
+
+// =================== Test 74: v1.5 P2 — data integrity: journey-ramp behavior assignment ===================
+console.log('\n=== Test 74: v1.5 P2 data integrity — level<=10 monsters stay simple; >=60% of L40+ non-boss monsters carry a non-simple behavior ===');
+var lowLevelNonSimple = Game.Data.monsters.filter(function (m) {
+  return m.level <= 10 && m.behavior !== undefined && m.behavior !== 'simple';
+});
+assert(lowLevelNonSimple.length === 0, 'every level<=10 monster has no behavior set (or simple) -- new players never meet a telegraph before learning the basics, got: ' + lowLevelNonSimple.map(function (m) { return m.id + '=' + m.behavior; }).join(', '));
+
+var lateNonBoss = Game.Data.monsters.filter(function (m) { return m.level >= 40 && !m.boss; });
+var lateNonSimple = lateNonBoss.filter(function (m) { return m.behavior !== undefined && m.behavior !== 'simple'; });
+var lateNonSimplePct = lateNonSimple.length / lateNonBoss.length;
+assert(lateNonSimplePct >= 0.60, '>=60% of level>=40 non-boss monsters carry a non-simple behavior (the journey-ramp target, spec §5/§10 M5): got ' + lateNonSimple.length + '/' + lateNonBoss.length + ' = ' + (lateNonSimplePct * 100).toFixed(1) + '%');
+// Every non-simple behavior actually used must be one of the four archetypes shipped so far
+// (P1's telegraph + P2's caster/enrage) -- guardian/reactive are explicitly out of scope for P2.
+var knownBehaviors = { telegraph: true, caster: true, enrage: true };
+var unknownBehaviors = Game.Data.monsters.filter(function (m) { return m.behavior !== undefined && !knownBehaviors[m.behavior]; });
+assert(unknownBehaviors.length === 0, 'no monster carries an out-of-scope P2 behavior (guardian/reactive are P3), got: ' + unknownBehaviors.map(function (m) { return m.id + '=' + m.behavior; }).join(', '));
+
 // =================== Summary ===================
 console.log('\n===================================');
 if (failures === 0) {

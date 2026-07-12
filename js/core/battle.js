@@ -346,16 +346,37 @@ Game.Battle = (function () {
     var defending = !!battle.playerDefending;
     battle.playerDefending = false;
 
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §3): archetype -> {windupChance, techChance}. ONE
+    // interpreter, no per-monster branches. `behavior` absent/'simple' keeps today's AI exactly
+    // (windupChance 0, the original 50% tech inclination). 'telegraph' adds the base wind-up
+    // chance on top of that same 50% inclination. 'caster' adds the same wind-up chance but raises
+    // tech inclination to CASTER_TECH_CHANCE (casts more, still can charge a heavy hit — the
+    // charged release itself is untouched, it reuses the basic-attack pipeline exactly as
+    // 'telegraph' does). 'enrage' keeps the 50% tech inclination but multiplies its wind-up chance
+    // by ENRAGE_CHARGE_MULT while below ENRAGE_HP_FRAC of its own max HP (more frequent charged
+    // hits in its death throes) — no new damage term, just a higher roll into the same charge path.
+    var windupChance = 0;
+    var techChance = 0.5;
+    if (monster.behavior === 'telegraph') {
+      windupChance = BALANCE.TELEGRAPH_CHARGE_CHANCE;
+    } else if (monster.behavior === 'caster') {
+      windupChance = BALANCE.TELEGRAPH_CHARGE_CHANCE;
+      techChance = BALANCE.CASTER_TECH_CHANCE;
+    } else if (monster.behavior === 'enrage') {
+      windupChance = BALANCE.TELEGRAPH_CHARGE_CHANCE;
+      if (monster.hp / monster.hpMax < BALANCE.ENRAGE_HP_FRAC) windupChance *= BALANCE.ENRAGE_CHARGE_MULT;
+    }
+
     // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §2, §2a): telegraph wind-up/release. A charge already
     // pending from a previous turn always releases THIS turn — checked first, so no fresh wind-up
-    // roll happens while one is already charging. `behavior` absent/'simple' never reaches the
-    // wind-up branch at all (today's AI, unchanged).
+    // roll happens while one is already charging. `behavior` absent/'simple' (windupChance 0) never
+    // reaches the wind-up branch at all (today's AI, unchanged).
     var releasing = !!battle.charge;
     var chargeMult = 1;
     if (releasing) {
       chargeMult = battle.charge.mult;
       battle.charge = null;
-    } else if (monster.behavior === 'telegraph' && rng() < BALANCE.TELEGRAPH_CHARGE_CHANCE) {
+    } else if (windupChance > 0 && rng() < windupChance) {
       // Wind up instead of acting: no damage, no energy spent — but it still counts as the
       // monster's turn (monsterActionsTaken already incremented above). battle.charge lives only
       // on the battle object (never the shared monster def, never persisted) — same discipline as
@@ -366,10 +387,10 @@ Game.Battle = (function () {
       return;
     }
 
-    // Choose action: a known monster tech (50% inclination) if affordable, else basic attack. A
-    // releasing charge always takes the basic-attack path below (no tech roll) — it reuses that
-    // exact pipeline verbatim, with `chargeMult` applied to `base` further down (do NOT fork the
-    // pipeline — docs/SPEC-V1.5-MONSTER-AI.md §2).
+    // Choose action: a known monster tech (techChance inclination, computed above per archetype)
+    // if affordable, else basic attack. A releasing charge always takes the basic-attack path
+    // below (no tech roll) — it reuses that exact pipeline verbatim, with `chargeMult` applied to
+    // `base` further down (do NOT fork the pipeline — docs/SPEC-V1.5-MONSTER-AI.md §2).
     var usedTech = null;
     if (!releasing) {
       var affordable = [];
@@ -378,7 +399,7 @@ Game.Battle = (function () {
         var t = getTech(list[i]);
         if (t && t.energyCost <= monster.energy) affordable.push(t);
       }
-      if (affordable.length > 0 && rng() < 0.5) {
+      if (affordable.length > 0 && rng() < techChance) {
         usedTech = affordable[Math.floor(rng() * affordable.length)];
       }
     }

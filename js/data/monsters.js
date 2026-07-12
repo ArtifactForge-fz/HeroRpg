@@ -525,6 +525,11 @@ Game.Data.monsters = [
     id: 'gares_anima_touched_heron',
     name: 'Anima-Touched Heron',
     level: 11,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): caster archetype — "Anima-Touched" is a
+    // magic-flavored name (§3 mid-band criterion) and its lone tech is graded Star; a minority of
+    // bands 2-3 (~L10-40) monsters get a non-simple archetype (see foothills_stoneback_giant's
+    // comment for the full mechanic citation).
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 11,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 11,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 11,
@@ -552,10 +557,11 @@ Game.Data.monsters = [
     id: 'gares_current_wraith',
     name: 'Current Wraith',
     level: 12,
-    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §5): a minority of bands 2-3 (~L10-40) monsters get
-    // the telegraph archetype — the first "watch for the wind-up" lesson. See js/core/battle.js
-    // monsterAct's telegraph interpreter; js/balance.js TELEGRAPH_CHARGE_CHANCE/AFFIX_CHARGED_MULT.
-    behavior: 'telegraph',
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): re-typed from P1's placeholder 'telegraph' to
+    // 'caster' — "wraith" is a magic-flavored name (§3 mid-band criterion) and its kit is a graded
+    // Dark tech, so the raised tech inclination (BALANCE.CASTER_TECH_CHANCE) fits better than a
+    // plain heavy-hit windup. Still telegraph-capable (same TELEGRAPH_CHARGE_CHANCE windup).
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 12,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 12,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 12,
@@ -711,9 +717,11 @@ Game.Data.monsters = [
     id: 'foothills_stoneback_giant',
     name: 'Stoneback Giant',
     level: 15,
-    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype (see gares_current_wraith's
-    // comment above for the full citation) — a hulking giant winding up a heavy blow is an
-    // apt thematic fit.
+    // v1.5 P1/P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): a minority of bands 2-3 (~L10-40) monsters get
+    // a non-simple archetype — the first "watch for the wind-up" lesson. See js/core/battle.js
+    // monsterAct's archetype interpreter; js/balance.js TELEGRAPH_CHARGE_CHANCE/AFFIX_CHARGED_MULT/
+    // CASTER_TECH_CHANCE. telegraph here — a hulking giant winding up a heavy blow is an apt
+    // thematic fit.
     behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 15,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 15,
@@ -850,8 +858,8 @@ Game.Data.monsters = [
     id: 'juneros_reefstalker',
     name: 'Reefstalker',
     level: 20,
-    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype (see gares_current_wraith's
-    // comment above for the full citation).
+    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype (see foothills_stoneback_
+    // giant's comment above for the full citation).
     behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 20,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 20,
@@ -907,6 +915,11 @@ Game.Data.monsters = [
     id: 'juneros_coral_warden',
     name: 'Coral Warden',
     level: 21,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype — a heavy defensive "warden"
+    // winding up before it strikes is an apt thematic fit; a minority of bands 2-3 (~L10-40)
+    // monsters get a non-simple archetype (see foothills_stoneback_giant's comment for the full
+    // mechanic citation).
+    behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 21,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 21,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 21,
@@ -995,9 +1008,9 @@ Game.Data.monsters = [
     id: 'kastengard_wardframe',
     name: 'Kastengard Wardframe',
     level: 26,
-    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype (see gares_current_wraith's
-    // comment above for the full citation) — a sentry-construct visibly powering up before it
-    // strikes is an apt thematic fit.
+    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype (see foothills_stoneback_
+    // giant's comment above for the full citation) — a sentry-construct visibly powering up before
+    // it strikes is an apt thematic fit.
     behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 26,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 26,
@@ -1028,6 +1041,11 @@ Game.Data.monsters = [
     id: 'kastengard_anima_wraith',
     name: 'Anima Wraith',
     level: 27,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): caster archetype — "Anima Wraith" is a doubly
+    // magic-flavored name (§3 mid-band criterion) with two graded Dark techs; a minority of bands
+    // 2-3 (~L10-40) monsters get a non-simple archetype (see foothills_stoneback_giant's comment
+    // for the full mechanic citation).
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 27,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 27,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 27,
@@ -1155,6 +1173,12 @@ Game.Data.monsters = [
     id: 'vault_anima_construct',
     name: 'Vault Anima Construct',
     level: 33,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype — "Construct" reads as a
+    // physical heavy-hitter (armor 30 >> magicArmor 20) despite the graded Anima tech, so the
+    // heavy-hit windup fits better than caster; a minority of bands 2-3 (~L10-40) monsters get a
+    // non-simple archetype (see foothills_stoneback_giant's comment for the full mechanic
+    // citation).
+    behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 33,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 33,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 33,
@@ -1183,9 +1207,10 @@ Game.Data.monsters = [
     id: 'vault_runic_horror',
     name: 'Runic Horror',
     level: 34,
-    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype (see gares_current_wraith's
-    // comment above for the full citation).
-    behavior: 'telegraph',
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): re-typed from P1's placeholder 'telegraph' to
+    // 'caster' — "Runic" is a magic-flavored name (§3 mid-band criterion: name reads mage/wraith/
+    // anima/rune/spirit) and both its techs are graded Dark. Still telegraph-capable.
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 34,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 34,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 34,
@@ -1214,6 +1239,11 @@ Game.Data.monsters = [
     id: 'vault_forsaken_archivist',
     name: 'Forsaken Archivist',
     level: 35,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): caster archetype — an "Archivist" is a
+    // spellcaster-flavored name (§3 mid-band criterion) with two graded techs; a minority of
+    // bands 2-3 (~L10-40) monsters get a non-simple archetype (see foothills_stoneback_giant's
+    // comment for the full mechanic citation).
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 35,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 35,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 35,
@@ -1315,6 +1345,13 @@ Game.Data.monsters = [
     id: 'majiku_reclaimer_knight',
     name: 'Majiku Reclaimer Knight',
     level: 41,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): late bands (~L41-100) — telegraphs become common;
+    // caster on magic-flavored monsters, enrage on brutish/beast/boss-adjacent flavor, telegraph
+    // (heavy melee) on the rest, targeting >=60% of L40+ non-boss monsters non-simple (see
+    // js/core/battle.js monsterAct's archetype interpreter; js/balance.js CASTER_TECH_CHANCE/
+    // ENRAGE_HP_FRAC/ENRAGE_CHARGE_MULT/TELEGRAPH_CHARGE_CHANCE/AFFIX_CHARGED_MULT for the full
+    // mechanic citation). telegraph here — a Majiku officer, a heavy melee flavor.
+    behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 41,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 41,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 41,
@@ -1340,6 +1377,10 @@ Game.Data.monsters = [
     id: 'kuraan_bramble_stalker',
     name: 'Kuraan Bramble Stalker',
     level: 42,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): enrage archetype — a beast "stalker" with no
+    // graded tech, brutish flavor; see majiku_reclaimer_knight's comment for the full mechanic
+    // citation.
+    behavior: 'enrage',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 42,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 42,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 42,
@@ -1364,6 +1405,10 @@ Game.Data.monsters = [
     id: 'anima_scarred_revenant',
     name: 'Anima-Scarred Revenant',
     level: 44,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): caster archetype — "Anima-Scarred Revenant" is
+    // magic-flavored with two graded Dark techs; see majiku_reclaimer_knight's comment for the
+    // full mechanic citation.
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 44,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 44,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 44,
@@ -1392,6 +1437,9 @@ Game.Data.monsters = [
     id: 'majiku_deepwood_witch',
     name: 'Majiku Deepwood Witch',
     level: 46,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): caster archetype — "Witch" is a magic-flavored
+    // name with graded techs; see majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 46,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 46,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 46,
@@ -1416,6 +1464,10 @@ Game.Data.monsters = [
     id: 'kuraan_hollow_wraith',
     name: 'Kuraan Hollow Wraith',
     level: 48,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): caster archetype — "Wraith" is a magic-flavored
+    // name with two graded Dark techs; see majiku_reclaimer_knight's comment for the full
+    // mechanic citation.
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 48,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 48,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 48,
@@ -1443,6 +1495,9 @@ Game.Data.monsters = [
     id: 'majiku_ironclad_vanguard',
     name: 'Majiku Ironclad Vanguard',
     level: 49,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype — "Ironclad Vanguard" is a
+    // heavy melee flavor; see majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 49,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 49,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 49,
@@ -1567,6 +1622,10 @@ Game.Data.monsters = [
     id: 'anima_scarred_highlander',
     name: 'Anima-Scarred Highlander',
     level: 54,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype — "Highlander" reads as a
+    // heavy melee warrior despite the graded Anima techs; see majiku_reclaimer_knight's comment
+    // for the full mechanic citation.
+    behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 54,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 54,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 54,
@@ -1595,6 +1654,9 @@ Game.Data.monsters = [
     id: 'majiku_hostcaller_shaman',
     name: 'Majiku Hostcaller Shaman',
     level: 56,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): caster archetype — "Shaman" is a magic-flavored
+    // name with graded techs; see majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 56,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 56,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 56,
@@ -1619,6 +1681,10 @@ Game.Data.monsters = [
     id: 'highland_hollow_stormwraith',
     name: 'Highland Hollow Stormwraith',
     level: 58,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): caster archetype — "Wraith" is a magic-flavored
+    // name with two graded Dark techs; see majiku_reclaimer_knight's comment for the full
+    // mechanic citation.
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 58,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 58,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 58,
@@ -1771,6 +1837,10 @@ Game.Data.monsters = [
     id: 'anima_scarred_frostwalker',
     name: 'Anima-Scarred Frostwalker',
     level: 64,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): caster archetype — "Anima-Scarred" is
+    // magic-flavored with two graded Dark techs; see majiku_reclaimer_knight's comment for the
+    // full mechanic citation.
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 64,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 64,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 64,
@@ -1799,6 +1869,9 @@ Game.Data.monsters = [
     id: 'ukai_cave_warden',
     name: 'Ukai Cave Warden',
     level: 66,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype — a heavy defensive "warden";
+    // see majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 66,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 66,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 66,
@@ -1850,6 +1923,9 @@ Game.Data.monsters = [
     id: 'ukai_deep_vanguard',
     name: 'Ukai Deep Vanguard',
     level: 69,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype — a "Vanguard" heavy melee
+    // flavor; see majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 69,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 69,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 69,
@@ -1956,6 +2032,10 @@ Game.Data.monsters = [
     id: 'estari_anima_conduit',
     name: 'Estari Anima Conduit',
     level: 72,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): caster archetype — "Anima Conduit" is a
+    // strongly magic-flavored name with a graded Star tech; see majiku_reclaimer_knight's comment
+    // for the full mechanic citation.
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 72,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 72,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 72,
@@ -2009,6 +2089,9 @@ Game.Data.monsters = [
     id: 'estari_wellspring_warden',
     name: 'Estari Wellspring Warden',
     level: 76,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype — a heavy defensive "warden";
+    // see majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 76,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 76,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 76,
@@ -2033,6 +2116,10 @@ Game.Data.monsters = [
     id: 'raw_anima_horror',
     name: 'Raw Anima-Horror',
     level: 78,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): enrage archetype — "Horror" is brutish/
+    // boss-adjacent flavor (previews Band E's Society Anima-Horror capstone); see
+    // majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'enrage',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 78,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 78,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 78,
@@ -2143,6 +2230,9 @@ Game.Data.monsters = [
     id: 'skyspire_lower_warden',
     name: 'Skyspire Lower Warden',
     level: 81,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype — a heavy defensive
+    // "warden"; see majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 81,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 81,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 81,
@@ -2168,6 +2258,9 @@ Game.Data.monsters = [
     id: 'society_remnant_battlemage',
     name: 'Society Remnant Battlemage',
     level: 82,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): caster archetype — "Battlemage" is an explicitly
+    // magic-flavored name; see majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 82,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 82,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 82,
@@ -2192,6 +2285,10 @@ Game.Data.monsters = [
     id: 'anima_horror_stalker',
     name: 'Anima-Horror Stalker',
     level: 84,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): enrage archetype — "Horror" is brutish/
+    // boss-adjacent flavor (previews Band E's Society Anima-Horror capstone); see
+    // majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'enrage',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 84,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 84,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 84,
@@ -2245,6 +2342,9 @@ Game.Data.monsters = [
     id: 'society_arcanist_prime',
     name: 'Society Arcanist Prime',
     level: 87,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): caster archetype — "Arcanist" is an explicitly
+    // magic-flavored name; see majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 87,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 87,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 87,
@@ -2269,6 +2369,10 @@ Game.Data.monsters = [
     id: 'anima_horror_ravager',
     name: 'Anima-Horror Ravager',
     level: 89,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): enrage archetype — "Horror"/"Ravager" is brutish/
+    // boss-adjacent flavor, right before the level-90 Society Anima-Horror lair boss; see
+    // majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'enrage',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 89,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 89,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 89,
@@ -2397,6 +2501,9 @@ Game.Data.monsters = [
     id: 'divine_race_initiate',
     name: 'Divine-Race Initiate',
     level: 92,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): caster archetype — a graded Light (radiant)
+    // spell-flinger; see majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 92,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 92,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 92,
@@ -2449,6 +2556,10 @@ Game.Data.monsters = [
     id: 'sanctum_ward_colossus',
     name: 'Sanctum Ward Colossus',
     level: 96,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): enrage archetype — "Colossus" is brutish/
+    // boss-adjacent flavor, four levels from the arc's final boss (Eidas Ascendant, L100); see
+    // majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'enrage',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 96,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 96,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 96,
@@ -2473,6 +2584,10 @@ Game.Data.monsters = [
     id: 'divine_race_exemplar',
     name: 'Divine-Race Exemplar',
     level: 97,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): caster archetype — a graded Light (radiant)
+    // spell-flinger, same lineage as divine_race_initiate; see majiku_reclaimer_knight's comment
+    // for the full mechanic citation.
+    behavior: 'caster',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 97,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 97,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 97,
@@ -2497,6 +2612,10 @@ Game.Data.monsters = [
     id: 'moon_anima_devourer',
     name: 'Moon-Anima Devourer',
     level: 99,
+    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §5): enrage archetype — "Devourer" is brutish/
+    // boss-adjacent flavor, one level from the arc's final boss (Eidas Ascendant, L100); see
+    // majiku_reclaimer_knight's comment for the full mechanic citation.
+    behavior: 'enrage',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 99,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 99,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 99,

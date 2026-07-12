@@ -196,6 +196,13 @@ stays as locked; the **full P3 grid re-sim** (Defend policy + low-damage builds 
 L10/70) is where final tuning happens — if aggregate feel is too punishing, charge chance is a
 data-only tweak downward.
 
+**P2 acceptance re-sim (2026-07-12, real caster/enrage/telegraph monsters, N=400):** caught a
+regression — `enrage` at L99 hit **80% win** because its charge boost (×2 → 0.30) blew past the P0
++20% budget in the death window. Ratchet fix (LEAD-PLAYBOOK §0.3): retuned `ENRAGE_CHARGE_MULT`
+2.0→1.5 (enraged 0.225). Post-retune all archetype at-level cells clear 85%: caster 97–99.5%,
+telegraph 93–99.8%, **enrage L78 92% / L99 86%**. Journey data pass: L≤10 all `simple`; **66.7% of
+L40+ non-boss monsters non-`simple`** (≥60% target), test-enforced.
+
 ---
 
 ## 7. Architecture & save impact
