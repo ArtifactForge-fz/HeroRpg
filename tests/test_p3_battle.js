@@ -3146,6 +3146,199 @@ assert(itemOverlayHasTabs, 'item ⓘ opened the item info window (Info/Reqs tabs
 Game.Infobox.close();
 Game.Battle.endBattle();
 
+// =================== Test 65: v1.5 P1 — telegraph wind-up (forced rng) ===================
+console.log('\n=== Test 65: v1.5 P1 telegraph wind-up — forced rng winds up instead of acting: charge set, no damage, logged ===');
+function windUpFixture(name, skills) {
+  var c = makeCharacter({ name: name, skills: skills });
+  c.dexterity = 20; // playerFirst vs a level-1 monster
+  c.level = 1; // matches plains_field_rat's level -> no Fear complicating the mitigation math
+  c.endurance = 0; // zero the player's own Endurance mitigation term
+  c.equipment.body = null; // strip the auto-equipped starter tunic so getArmor() is exactly 0
+  return c;
+}
+function finalizeFixture(c) {
+  Game.Character.recalcDerived(c);
+  c.hitPoints = c.hitPointsMax = 100000;
+  c.energy = c.energyMax = 100000;
+}
+
+var cTel65 = windUpFixture('TelegraphWindup');
+finalizeFixture(cTel65);
+// rng 0.10 is < TELEGRAPH_CHARGE_CHANCE (0.15) -- forces the wind-up. Harmless elsewhere in this
+// fixture: double-attack chance (dex 20 -> 0.06) and the level-1 monster's own dodge chance
+// (~0.024) are both well under 0.10, and GLANCING_CHANCE (0.10) is not itself < 0.10.
+setRng(fixedRng(0.10));
+var b65 = Game.Battle.start('plains_field_rat');
+b65.monster.behavior = 'telegraph'; // battle-transient override — never touches the shared def
+b65.monster.techs = [];
+b65.monster.hp = b65.monster.hpMax = 100000;
+b65.monster.damage = 100;
+var playerHpBefore65 = b65.player.hitPoints;
+Game.Battle.attack(); // player's turn; the monster's counter winds up instead of attacking
+assert(!!b65.charge && b65.charge.mult === BALANCE.AFFIX_CHARGED_MULT, 'monster winds up: battle.charge set with mult=' + BALANCE.AFFIX_CHARGED_MULT + ', got ' + JSON.stringify(b65.charge));
+assert(b65.player.hitPoints === playerHpBefore65, 'the wind-up deals no damage — player HP unchanged this monster turn');
+assert(b65.log.some(function (l) { return l.indexOf('rears back') !== -1; }), 'wind-up announced in the battle log');
+
+// =================== Test 66: v1.5 P1 — telegraph release ~= 2x a normal hit; charge cleared ===================
+console.log('\n=== Test 66: v1.5 P1 telegraph release — charged damage ~= ' + BALANCE.AFFIX_CHARGED_MULT + 'x a normal hit (same fixed rng), battle.charge cleared ===');
+Game.Battle.attack(); // b65 is still Game.state.battle -- player's 2nd turn; the monster releases
+var releaseLine65 = b65.log.filter(function (l) { return l.indexOf('unleashes its charged blow') !== -1; }).pop();
+assert(!!releaseLine65, 'release logged');
+var chargedDmg65 = parseInt(releaseLine65.match(/for (\d+) damage/)[1], 10);
+assert(b65.charge === null, 'battle.charge cleared after the release');
+Game.Battle.endBattle();
+
+// Baseline: a FRESH, non-telegraph battle (behavior left absent -> 'simple'), same fixed rng,
+// same character/monster setup — measures what a plain (unmultiplied) hit deals through the
+// IDENTICAL pipeline, so the ratio to chargedDmg65 above isolates AFFIX_CHARGED_MULT alone.
+var cBase66 = windUpFixture('TelegraphBaseline');
+finalizeFixture(cBase66);
+setRng(fixedRng(0.10));
+var bBase66 = Game.Battle.start('plains_field_rat');
+bBase66.monster.techs = [];
+bBase66.monster.hp = bBase66.monster.hpMax = 100000;
+bBase66.monster.damage = 100;
+Game.Battle.attack(); // a normal (non-telegraph) monster counter-attack
+var baseLine66 = bBase66.log.filter(function (l) { return / attacks for \d+ damage\.$/.test(l); }).pop();
+var baseDmg66 = parseInt(baseLine66.match(/for (\d+) damage/)[1], 10);
+assert(Math.abs(chargedDmg65 - baseDmg66 * BALANCE.AFFIX_CHARGED_MULT) <= 1, 'charged release damage ~= ' + BALANCE.AFFIX_CHARGED_MULT + 'x a normal hit (baseline ' + baseDmg66 + ', charged ' + chargedDmg65 + ', expected ~' + (baseDmg66 * BALANCE.AFFIX_CHARGED_MULT) + ')');
+Game.Battle.endBattle();
+
+// =================== Test 67: v1.5 P1 — Defend halves the released charged hit ===================
+console.log('\n=== Test 67: v1.5 P1 — Defending during the wind-up window halves the released charged hit ===');
+var cDef67 = windUpFixture('TelegraphDefend');
+finalizeFixture(cDef67);
+setRng(fixedRng(0.10));
+var b67 = Game.Battle.start('plains_field_rat');
+b67.monster.behavior = 'telegraph';
+b67.monster.techs = [];
+b67.monster.hp = b67.monster.hpMax = 100000;
+b67.monster.damage = 100;
+Game.Battle.attack(); // wind-up
+assert(!!b67.charge, 'sanity: charge pending going into the defended release');
+Game.Battle.defend(); // the player's window: Defend instead of attacking
+var defendedLine67 = b67.log.filter(function (l) { return l.indexOf('unleashes its charged blow') !== -1; }).pop();
+assert(!!defendedLine67, 'defended release still logged');
+var defendedDmg67 = parseInt(defendedLine67.match(/for (\d+) damage/)[1], 10);
+assert(Math.abs(defendedDmg67 - Math.round(chargedDmg65 * BALANCE.DEFEND_DAMAGE_MULT)) <= 1, 'Defend halves the released charged hit: undefended ' + chargedDmg65 + ', defended ' + defendedDmg67 + ', expected ~' + Math.round(chargedDmg65 * BALANCE.DEFEND_DAMAGE_MULT));
+assert(b67.charge === null, 'charge cleared after the defended release');
+Game.Battle.endBattle();
+
+// =================== Test 68: v1.5 P1 — Interrupt (the offensive answer) ===================
+console.log('\n=== Test 68: v1.5 P1 Interrupt — a hit >= threshold cancels the charge; a hit < threshold leaves it for a full release; a Limit Break always cancels ===');
+
+// All four cases below use a two-phase rng swap: a LOW constant (0.05, < TELEGRAPH_CHARGE_CHANCE
+// 0.15) for the wind-up-triggering turn, then a fresh constant for the interrupt-attempt turn.
+// This matters because interrupting clears battle.charge SYNCHRONOUSLY inside the player's own
+// action function, before that same action's finishRound->monsterAct call runs — so by the time
+// monsterAct checks `releasing = !!battle.charge`, it already reads false and falls through to a
+// FRESH wind-up roll (the monster "resumes normal behavior next turn", which can legitimately
+// include re-telegraphing). A single constant rng across both turns would make that fresh roll
+// re-fire every time (since 0.05 < 0.15 unconditionally), masking whether the interrupt itself
+// worked. Using >= 0.15 for the second phase's own wind-up-reroll keeps the post-interrupt
+// assertions unambiguous.
+
+// Case A: a hit >= INTERRUPT_THRESHOLD_HP_FRAC of the monster's max HP cancels the charge.
+var cA68 = windUpFixture('InterruptAboveThreshold');
+finalizeFixture(cA68);
+setRng(fixedRng(0.05));
+var bA68 = Game.Battle.start('plains_field_rat');
+bA68.monster.behavior = 'telegraph';
+bA68.monster.techs = [];
+bA68.monster.armor = 0;
+bA68.monster.hp = bA68.monster.hpMax = 100000; // threshold = round(100000*0.15) = 15000
+Game.Battle.attack(); // wind-up (a weak default-stat hit to the monster -- negligible against 100000 hp)
+assert(!!bA68.charge, 'sanity: charge pending before the interrupt attempt');
+
+cA68.strength = 100000; // NOW boost strength so this turn's hit clears the 15000 threshold
+Game.Character.recalcDerived(cA68);
+cA68.hitPoints = cA68.hitPointsMax = 100000;
+cA68.energy = cA68.energyMax = 100000;
+setRng(fixedRng(0.99)); // clean single-hit turn: no double-attack/monster-dodge/glancing, and >= 0.15 avoids a fresh wind-up reroll after the clear
+Game.Battle.attack(); // the player's window: a heavy hit
+assert(bA68.charge === null, 'a hit >= the interrupt threshold cancels the charge');
+assert(bA68.log.some(function (l) { return l.indexOf('charge collapses') !== -1; }), 'interrupt logged');
+Game.Battle.endBattle();
+
+// Case B: a hit BELOW the threshold leaves the charge untouched -- the monster's own counter to
+// that SAME failed-interrupt turn then releases in full (charge persists -> monsterAct's
+// `releasing` branch fires directly, bypassing the wind-up reroll entirely).
+var cB68 = windUpFixture('InterruptBelowThreshold');
+finalizeFixture(cB68);
+setRng(fixedRng(0.05));
+var bB68 = Game.Battle.start('plains_field_rat');
+bB68.monster.behavior = 'telegraph';
+bB68.monster.techs = [];
+bB68.monster.armor = 0;
+bB68.monster.hp = bB68.monster.hpMax = 100000; // threshold 15000, far above a default-character hit
+Game.Battle.attack(); // wind-up
+assert(!!bB68.charge, 'sanity: charge pending before the sub-threshold attack');
+setRng(fixedRng(0.99)); // default (un-boosted) stats -> a weak hit, comfortably below 15000 either way; clean single-hit turn
+Game.Battle.attack(); // the player's window: a weak hit (fails to interrupt) -- the monster's own counter to THIS turn releases in full
+assert(bB68.log.some(function (l) { return l.indexOf('unleashes its charged blow') !== -1; }), 'the full release happens on schedule when the weak hit failed to interrupt it');
+assert(bB68.charge === null, 'charge cleared after releasing in full');
+Game.Battle.endBattle();
+
+// Case C: a Limit Break ALWAYS interrupts, regardless of its own damage -- even when DODGED
+// (0 damage dealt).
+var cC68 = windUpFixture('InterruptLimitBreak');
+Game.Classes.obtainClass(cC68, 'warrior');
+cC68.fury = BALANCE.LB_FURY_MIN;
+finalizeFixture(cC68);
+setRng(fixedRng(0.05));
+var bC68 = Game.Battle.start('plains_field_rat');
+bC68.monster.behavior = 'telegraph';
+bC68.monster.techs = [];
+bC68.monster.hp = bC68.monster.hpMax = 100000;
+Game.Battle.attack(); // wind-up
+assert(!!bC68.charge, 'sanity: charge pending before the Limit Break');
+// First rng() call (the LB's own dodge-of-attack roll) forces a DODGE (< the level-1 monster's
+// ~0.024 dodge chance); every call after (the fresh wind-up-reroll, etc.) falls back to 0.99.
+setRng(seqRng([0.01], 0.99));
+Game.Battle.limitBreak();
+assert(bC68.log.some(function (l) { return l.indexOf('dodges your') !== -1; }), 'sanity: the Limit Break itself was dodged (0 damage dealt)');
+assert(bC68.charge === null, 'a Limit Break cancels a pending charge even when dodged (0 damage) -- "regardless of its damage"');
+assert(bC68.log.some(function (l) { return l.indexOf('charge collapses') !== -1; }), 'interrupt logged for the dodged Limit Break');
+Game.Battle.endBattle();
+
+// Case D: Interrupt also fires from a damaging tech cast (useTech), not just attack()/limitBreak().
+var cD68 = windUpFixture('InterruptViaTech', { 'Evocation': 3 });
+finalizeFixture(cD68);
+setRng(fixedRng(0.05));
+var bD68 = Game.Battle.start('plains_field_rat');
+bD68.monster.behavior = 'telegraph';
+bD68.monster.techs = [];
+bD68.monster.armor = 0;
+bD68.monster.magicArmor = 0;
+bD68.monster.hp = bD68.monster.hpMax = 100000; // threshold 15000
+Game.Battle.attack(); // wind-up (a plain weak attack this turn, not the tech)
+assert(!!bD68.charge, 'sanity: charge pending before the tech cast');
+
+cD68.intelligence = 100000; // NOW boost Intelligence so the cast both guarantees a hit (Int hit/miss) and clears the threshold
+Game.Character.recalcDerived(cD68);
+cD68.hitPoints = cD68.hitPointsMax = 100000;
+cD68.energy = cD68.energyMax = 100000;
+setRng(fixedRng(0.20)); // < INT_SPELL_HIT_MAX (0.98, so the cast always hits) and >= GLANCING_CHANCE (0.1, no glancing); also >= TELEGRAPH_CHARGE_CHANCE (0.15) so it avoids a fresh wind-up reroll after the clear
+Game.Battle.useTech('tech_firebolt_1');
+assert(bD68.charge === null, 'a damaging tech cast (useTech) also interrupts a pending charge when it clears the threshold');
+Game.Battle.endBattle();
+
+// =================== Test 69: v1.5 P1 regression — a simple monster never sets battle.charge ===================
+console.log('\n=== Test 69: v1.5 P1 regression — a simple (behavior absent) monster never sets battle.charge across several rounds ===');
+var c69 = makeCharacter({ name: 'SimpleRegression' });
+c69.dexterity = 20;
+c69.hitPoints = c69.hitPointsMax = 100000;
+c69.energy = c69.energyMax = 100000;
+setRng(fixedRng(0.01)); // well below TELEGRAPH_CHARGE_CHANCE -- would trigger a wind-up if this monster telegraphed
+var b69 = Game.Battle.start('plains_field_rat'); // behavior absent -> 'simple' (today's AI, unchanged)
+assert(b69.monster.behavior === undefined, 'sanity: plains_field_rat carries no behavior field (defaults to simple)');
+for (var round69 = 0; round69 < 5; round69++) {
+  if (b69.phase !== 'active') break;
+  Game.Battle.attack();
+}
+assert(!b69.charge, 'a simple monster never sets battle.charge across 5 rounds, got ' + JSON.stringify(b69.charge));
+Game.Battle.endBattle();
+
 // =================== Summary ===================
 console.log('\n===================================');
 if (failures === 0) {

@@ -451,5 +451,19 @@ var BALANCE = {
   // the area's own forage table (js/data/areas.js `forage: [itemIds]`), hunting-areas-only, same as
   // Game.World.camp(). Numbers [invented].
   FORAGE_SUCCESS: 0.70, // invented
-  FORAGE_SECOND_ITEM: 0.30 // invented: chance of a SECOND item on an already-successful forage
+  FORAGE_SECOND_ITEM: 0.30, // invented: chance of a SECOND item on an already-successful forage
+
+  // ==================== v1.5 P1: Monster telegraph core + Interrupt (docs/SPEC-V1.5-MONSTER-AI.md §2, §2a) ====================
+  // Intent [archived]: reference/site/homepage_2006.md (Hero 6.5 plan) "Revamped Monster AI:
+  // Scripted abilities ... status effects, item usage; Intelligent reactions based on hero
+  // actions ... Strategic boss battles." The telegraph wind-up/release mechanic and the
+  // Interrupt/stagger answer are [invented] within that intent. Numbers LOCKED by the P0 sim
+  // (docs/SPEC-V1.5-MONSTER-AI.md §6 "P0 RESULTS — LOCKED"): a uniform-monster-damage-multiplier
+  // sweep (trusted warrior fixture vs at-level regular, 250 trials/cell) found L100 the binding
+  // cell — a NON-reacting player held 98-99.6% win up to the avgDPS +20% budget (D=1.2); +30%
+  // (D=1.5) collapsed to a ragged 49.6% and was rejected. V1's real-burst re-sim requirement is
+  // tracked in the spec, not re-run here (P1 ships the LOCKED provisional numbers).
+  AFFIX_CHARGED_MULT: 2.0, // invented, LOCKED v1.5 P0: a charged telegraph hit = 2x a normal hit (~40-50% of an L100 player's HP after mitigation — a real threat, not a one-shot)
+  TELEGRAPH_CHARGE_CHANCE: 0.15, // invented, LOCKED v1.5 P0: per eligible telegraph-monster turn; avg DPS +15% (L100 ~99% win for a non-reacting player, comfortable margin under the +20% sim budget)
+  INTERRUPT_THRESHOLD_HP_FRAC: 0.15 // invented, LOCKED v1.5 P0 (provisional per spec §10 M6 — a flat fraction, not yet level-scaled): a player hit >= 15% of the monster's OWN max HP cancels its charge; a Limit Break always cancels regardless of its damage
 };

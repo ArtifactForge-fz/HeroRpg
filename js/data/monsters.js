@@ -552,6 +552,10 @@ Game.Data.monsters = [
     id: 'gares_current_wraith',
     name: 'Current Wraith',
     level: 12,
+    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §5): a minority of bands 2-3 (~L10-40) monsters get
+    // the telegraph archetype — the first "watch for the wind-up" lesson. See js/core/battle.js
+    // monsterAct's telegraph interpreter; js/balance.js TELEGRAPH_CHARGE_CHANCE/AFFIX_CHARGED_MULT.
+    behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 12,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 12,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 12,
@@ -707,6 +711,10 @@ Game.Data.monsters = [
     id: 'foothills_stoneback_giant',
     name: 'Stoneback Giant',
     level: 15,
+    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype (see gares_current_wraith's
+    // comment above for the full citation) — a hulking giant winding up a heavy blow is an
+    // apt thematic fit.
+    behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 15,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 15,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 15,
@@ -842,6 +850,9 @@ Game.Data.monsters = [
     id: 'juneros_reefstalker',
     name: 'Reefstalker',
     level: 20,
+    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype (see gares_current_wraith's
+    // comment above for the full citation).
+    behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 20,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 20,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 20,
@@ -984,6 +995,10 @@ Game.Data.monsters = [
     id: 'kastengard_wardframe',
     name: 'Kastengard Wardframe',
     level: 26,
+    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype (see gares_current_wraith's
+    // comment above for the full citation) — a sentry-construct visibly powering up before it
+    // strikes is an apt thematic fit.
+    behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 26,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 26,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 26,
@@ -1168,6 +1183,9 @@ Game.Data.monsters = [
     id: 'vault_runic_horror',
     name: 'Runic Horror',
     level: 34,
+    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §5): telegraph archetype (see gares_current_wraith's
+    // comment above for the full citation).
+    behavior: 'telegraph',
     hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 34,
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 34,
     damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 34,

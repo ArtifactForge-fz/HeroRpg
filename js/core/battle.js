@@ -334,42 +334,75 @@ Game.Battle = (function () {
     if (isOver(battle)) return;
     var monster = battle.monster;
     // v1.4 P3 (G2) Frenzied champion affix: counts monster actions this battle (every action,
-    // hit/dodged/tech alike) — tracked on the battle object, never the shared monster def.
+    // hit/dodged/tech/telegraph-wind-up alike) — tracked on the battle object, never the shared
+    // monster def.
     battle.monsterActionsTaken = (battle.monsterActionsTaken || 0) + 1;
 
-    // Choose action: a known monster tech (50% inclination) if affordable, else basic attack.
-    var usedTech = null;
-    var affordable = [];
-    var list = monster.techs || [];
-    for (var i = 0; i < list.length; i++) {
-      var t = getTech(list[i]);
-      if (t && t.energyCost <= monster.energy) affordable.push(t);
-    }
-    if (affordable.length > 0 && rng() < 0.5) {
-      usedTech = affordable[Math.floor(rng() * affordable.length)];
-    }
-
-    // Energy: monster attacks also cost monster energy (spec). Basic attacks cost the reduced
-    // monster rate (see BALANCE.MONSTER_ATTACK_ENERGY_COST); techs cost their listed energyCost.
-    var cost = usedTech ? usedTech.energyCost : BALANCE.MONSTER_ATTACK_ENERGY_COST;
-    monster.energy = Math.max(0, monster.energy - cost);
-
-    // Feature C: Defend halves the damage of the monster's very next action, hit or dodged, then
-    // clears — captured now so a dodged attack still consumes the guard (the monster "acted";
-    // only its resulting damage, if any, is affected by the flag).
+    // Feature C: Defend halves the damage of the monster's very next action, hit or dodged (or a
+    // v1.5 telegraph wind-up below, which deals no damage at all) — then clears. Captured up front
+    // (moved here unchanged from just before the old dodge-roll spot) so the wind-up branch, which
+    // returns before that old capture point ever ran, still consumes any pending guard uniformly —
+    // Defend always answers the monster's very next action, whatever it turns out to be.
     var defending = !!battle.playerDefending;
     battle.playerDefending = false;
+
+    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §2, §2a): telegraph wind-up/release. A charge already
+    // pending from a previous turn always releases THIS turn — checked first, so no fresh wind-up
+    // roll happens while one is already charging. `behavior` absent/'simple' never reaches the
+    // wind-up branch at all (today's AI, unchanged).
+    var releasing = !!battle.charge;
+    var chargeMult = 1;
+    if (releasing) {
+      chargeMult = battle.charge.mult;
+      battle.charge = null;
+    } else if (monster.behavior === 'telegraph' && rng() < BALANCE.TELEGRAPH_CHARGE_CHANCE) {
+      // Wind up instead of acting: no damage, no energy spent — but it still counts as the
+      // monster's turn (monsterActionsTaken already incremented above). battle.charge lives only
+      // on the battle object (never the shared monster def, never persisted) — same discipline as
+      // the Frenzied affix's monsterActionsTaken counter.
+      battle.charge = { mult: BALANCE.AFFIX_CHARGED_MULT };
+      log(battle, 'The ' + monster.name + ' rears back, gathering force!');
+      checkEnd(battle);
+      return;
+    }
+
+    // Choose action: a known monster tech (50% inclination) if affordable, else basic attack. A
+    // releasing charge always takes the basic-attack path below (no tech roll) — it reuses that
+    // exact pipeline verbatim, with `chargeMult` applied to `base` further down (do NOT fork the
+    // pipeline — docs/SPEC-V1.5-MONSTER-AI.md §2).
+    var usedTech = null;
+    if (!releasing) {
+      var affordable = [];
+      var list = monster.techs || [];
+      for (var i = 0; i < list.length; i++) {
+        var t = getTech(list[i]);
+        if (t && t.energyCost <= monster.energy) affordable.push(t);
+      }
+      if (affordable.length > 0 && rng() < 0.5) {
+        usedTech = affordable[Math.floor(rng() * affordable.length)];
+      }
+    }
+
+    // Energy: monster attacks also cost monster energy (spec). Basic attacks — including a
+    // charged release, which is a basic attack — cost the reduced monster rate (see BALANCE.
+    // MONSTER_ATTACK_ENERGY_COST); techs cost their listed energyCost.
+    var cost = usedTech ? usedTech.energyCost : BALANCE.MONSTER_ATTACK_ENERGY_COST;
+    monster.energy = Math.max(0, monster.energy - cost);
 
     // Player dodge roll (Dodge skill + Dex). v1.2 Phase 1 item 3: a successful dodge grants Dodge
     // skill XP at the proc site (use-based skill system; addSkillXp already enforces the 2L+1 cap).
     if (rng() < playerDodgeChance(battle.player)) {
-      log(battle, 'You dodge the ' + monster.name + "'s " + (usedTech ? usedTech.name : 'attack') + '!');
+      log(battle, 'You dodge the ' + monster.name + "'s " + (releasing ? 'charged blow' : (usedTech ? usedTech.name : 'attack')) + '!');
       Game.Character.addSkillXp(battle.player, 'Dodge', BALANCE.DODGE_SKILL_XP_PER_PROC);
       checkEnd(battle);
       return;
     }
 
     var base = usedTech ? usedTech.power : monster.damage;
+    // v1.5 P1: a charged release = normal basic-attack damage x AFFIX_CHARGED_MULT, applied to
+    // `base` BEFORE the rest of this pipeline (variance/glancing/mitigation/Fear/defending) below —
+    // reuses it verbatim, same as every other action.
+    if (releasing) base *= chargeMult;
     // v1.4 P3 (G2) Frenzied champion affix: escalating +5%/action, capped +40% (LOCKED by the P0
     // sim — docs/SPEC-V1.4-GAMEPLAY.md P0 RESULTS item 2; the uncapped version broke the >=85% win
     // floor at L90/100). Applies to the raw base power, upstream of the same variance/glancing/
@@ -397,7 +430,7 @@ Game.Battle = (function () {
     if (defending) dmg = Math.max(1, Math.round(dmg * BALANCE.DEFEND_DAMAGE_MULT));
 
     battle.player.hitPoints = Math.max(0, battle.player.hitPoints - dmg);
-    log(battle, monster.name + (usedTech ? ' uses ' + usedTech.name : ' attacks') +
+    log(battle, (releasing ? 'The ' + monster.name + ' unleashes its charged blow' : monster.name + (usedTech ? ' uses ' + usedTech.name : ' attacks')) +
       (glancing ? ' — a glancing blow —' : '') + ' for ' + dmg + ' damage.');
 
     // v1.4 P3 (G2) Vampiric champion affix: heals the monster for 25% of the damage it just dealt
@@ -495,6 +528,23 @@ Game.Battle = (function () {
     return battle && !isOver(battle) && battle.player.energy > 0;
   }
 
+  // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §2a): Interrupt — the offensive answer to a monster's
+  // telegraph wind-up. Call sites (attack(), useTech()'s damage/drain branch, limitBreak()) invoke
+  // this AFTER the player's damage for that action has fully resolved (all hits/rounds summed into
+  // `dealtDamage`). A Limit Break always interrupts regardless of its own damage (even a dodged
+  // one); any other action needs to clear INTERRUPT_THRESHOLD_HP_FRAC of the monster's OWN max HP.
+  // Below threshold, battle.charge is left UNTOUCHED — it releases in full on the monster's very
+  // next turn (the player gambled on the burst check and lost the window). A no-op whenever no
+  // charge is pending, so it is safe to call unconditionally after every damaging player action.
+  function tryInterruptCharge(battle, dealtDamage, isLimitBreak) {
+    if (!battle.charge) return;
+    var threshold = Math.round(battle.monster.hpMax * BALANCE.INTERRUPT_THRESHOLD_HP_FRAC);
+    if (isLimitBreak || dealtDamage >= threshold) {
+      battle.charge = null;
+      log(battle, "The " + battle.monster.name + "'s charge collapses!");
+    }
+  }
+
   function attack() {
     var battle = Game.state.battle;
     if (!battle || isOver(battle)) return battle;
@@ -524,6 +574,10 @@ Game.Battle = (function () {
       Game.Character.addSkillXp(battle.player, 'Double Attack', BALANCE.DOUBLE_ATTACK_SKILL_XP_PER_PROC);
     }
 
+    // v1.5 P1: sums every hit this action lands (main hit(s) + the dual-wield offhand swing below)
+    // so tryInterruptCharge (called once, after all of this action's damage has resolved) checks
+    // the ACTION's total against the interrupt threshold, not any single swing in isolation.
+    var totalDmgDealt = 0;
     for (var i = 0; i < hits; i++) {
       if (battle.monster.hp <= 0) break;
       if (rng() < monsterDodgeChance(battle.monster)) {
@@ -535,6 +589,7 @@ Game.Battle = (function () {
       if (glancing) raw *= BALANCE.GLANCING_MULT;
       var dmg = Math.max(1, Math.round(raw - battle.monster.armor));
       battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
+      totalDmgDealt += dmg;
       log(battle, 'You strike the ' + battle.monster.name + (glancing ? ' with a glancing blow' : '') + ' for ' + dmg + ' damage.');
     }
 
@@ -562,11 +617,16 @@ Game.Battle = (function () {
           if (glancingOff) rawOff *= BALANCE.GLANCING_MULT;
           var dmgOff = Math.max(1, Math.round(rawOff - battle.monster.armor));
           battle.monster.hp = Math.max(0, battle.monster.hp - dmgOff);
+          totalDmgDealt += dmgOff;
           log(battle, 'Your offhand strikes the ' + battle.monster.name + (glancingOff ? ' with a glancing blow' : '') + ' for ' + dmgOff + ' damage.');
         }
         Game.Character.addSkillXp(battle.player, 'Dual Wield', 1);
       }
     }
+
+    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §2a): Interrupt check — a no-op unless a telegraph
+    // charge is pending.
+    tryInterruptCharge(battle, totalDmgDealt, false);
 
     if (checkEnd(battle)) return battle;
     finishRound(battle);
@@ -723,6 +783,9 @@ Game.Battle = (function () {
         }
       }
 
+      // v1.5 P1: sums every hit this cast lands so tryInterruptCharge (below, after the loop)
+      // checks the CAST's total against the interrupt threshold, not any single hit in isolation.
+      var totalDmgDealt = 0;
       for (var h = 0; h < hitCount; h++) {
         if (battle.monster.hp <= 0) break;
         var base, mitigation;
@@ -752,6 +815,7 @@ Game.Battle = (function () {
         raw = applyResistance(battle.monster, tech.grade, raw);
         var dmg = Math.max(1, Math.round(raw - mitigation));
         battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
+        totalDmgDealt += dmg;
         log(battle, (tech.weaponTech ? 'You strike with ' : 'You cast ') + tech.name + (glancing ? ' (glancing)' : '') + ' for ' + dmg + ' damage.');
 
         if (tech.effect === 'drain') {
@@ -762,6 +826,10 @@ Game.Battle = (function () {
           log(battle, 'You absorb ' + drained + ' HP from the ' + battle.monster.name + '.');
         }
       }
+      // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §2a): Interrupt check — scoped to this damage/drain
+      // branch only (a heal/buff cast never reaches here, so it can never accidentally interrupt
+      // with a false dealtDamage=0 >= threshold read). A no-op unless a telegraph charge is pending.
+      tryInterruptCharge(battle, totalDmgDealt, false);
     }
 
     if (checkEnd(battle)) return battle;
@@ -946,6 +1014,7 @@ Game.Battle = (function () {
 
     // Hurricane Blow (magician line): ignores the monster's dodge roll for this strike — auto-connects.
     var bypassDodge = (lbId === 'hurricane_blow');
+    var lbDealtDmg = 0; // v1.5 P1: 0 when dodged — a Limit Break still always interrupts (below)
     if (!bypassDodge && rng() < monsterDodgeChance(battle.monster)) {
       log(battle, 'The ' + battle.monster.name + ' dodges your ' + lbDef.name + '!');
     } else {
@@ -955,8 +1024,15 @@ Game.Battle = (function () {
       raw *= BALANCE.LB_DAMAGE_MULT;
       var dmg = Math.max(1, Math.round(raw - battle.monster.armor));
       battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
+      lbDealtDmg = dmg;
       log(battle, 'Your ' + lbDef.name + (glancing ? ' — a glancing blow —' : '') + ' slams into the ' + battle.monster.name + ' for ' + dmg + ' damage.');
     }
+
+    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §2a): a Limit Break ALWAYS interrupts a pending
+    // telegraph charge, regardless of its own damage (isLimitBreak=true short-circuits the
+    // threshold check in tryInterruptCharge) — even a dodged Limit Break still breaks the charge.
+    // A no-op unless a charge is pending.
+    tryInterruptCharge(battle, lbDealtDmg, true);
 
     // Flavor riders (spec §5: "deliberately TINY... not sim-gated, keep them cosmetic-scale").
     // Granted on USE, regardless of whether the strike above connected or was dodged.

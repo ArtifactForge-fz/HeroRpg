@@ -188,6 +188,14 @@ lumpiness — it's a necessary, not sufficient, gate).
   drops below 85%, (b) no new spike-kill at-level, (c) the 5-down cell stays at its shipped
   (near-0%) rate — telegraphs must not *widen* the known Fear limitation.
 
+**P1 acceptance re-sim (2026-07-12, real mechanic, worst-case non-Defending melee, N=400):** at-level
+held **L40 98.8% / L100 87.8%** win (baseline 100% both) — above the 85% floor. The real burst runs
+harsher than the uniform-DPS P0 proxy at L100 (87.8% vs ~99% modelled — the lumpiness the proxy
+understates), but within contract; a Defending player recovers most of the margin. Charge chance 0.15
+stays as locked; the **full P3 grid re-sim** (Defend policy + low-damage builds + boss/5-down at
+L10/70) is where final tuning happens — if aggregate feel is too punishing, charge chance is a
+data-only tweak downward.
+
 ---
 
 ## 7. Architecture & save impact
