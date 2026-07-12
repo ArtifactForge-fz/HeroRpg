@@ -191,6 +191,15 @@
       return;
     }
     wrap.style.display = '';
+    // [invented] user-directed (2026-07-12): character summary line above the bars — name,
+    // calling, level, lifetime kills (c.monsterKills, save v11). Class label mirrors the Status
+    // screen's classLabel(): primary class name, 'No calling' before The First Calling.
+    var info = document.createElement('div');
+    info.className = 'charinfo-row smallfont';
+    var primaryClass = c.primaryClass ? (Game.Classes.getClass(c.primaryClass) || {}).name : null;
+    info.textContent = c.name + ' — ' + (primaryClass || 'No calling') +
+      ' — Level ' + c.level + ' — Kills: ' + (c.monsterKills || 0);
+    wrap.appendChild(info);
     wrap.appendChild(barRow('HP', 'hp', c.hitPoints, c.hitPointsMax));
     wrap.appendChild(barRow('Energy', 'energy', c.energy, c.energyMax));
     var xpNeeded = Game.Character.xpNeededForNext(c);

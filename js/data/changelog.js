@@ -41,6 +41,8 @@ Game.Data.changelog = [
         'be found while foraging.',
       'The Town screen now shows one facility at a time (Shop, Inn, Vault, and so on) instead of ' +
         'stacking every service onto a single crowded page.',
+      'The bars at the top of the screen now carry your hero\'s name, calling, level, and ' +
+        'lifetime monster kills at a glance.',
       'Fixed a display bug where some status bars (Health, Energy, and others) could render with ' +
         'no visible color fill.'
     ]

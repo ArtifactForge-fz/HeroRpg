@@ -834,3 +834,13 @@ button, a { touch-action: manipulation; } /* kill the 300ms tap delay / double-t
     max-height: 220px; /* more vertical room now that the layout stacks full-width */
   }
 }
+
+/* ===== v1.4: status-header character summary (user-directed 2026-07-12) =====
+   One compact gold line above the HP/Energy/XP bars: name, calling, level, kills.
+   Applies at every viewport (it rides inside the sticky #statusbars header on mobile). */
+
+.charinfo-row {
+  color: #c4bb4b;
+  font-weight: bold;
+  padding: 0 4px 3px 4px;
+}
