@@ -221,9 +221,46 @@ Game.Infobox = (function () {
     document.body.appendChild(overlay);
   }
 
+  // ---------- Generic overlay panel (v1.4 Mobile M3; SPEC-MOBILE-UI.md §4 M3, audit A8) ----------
+  // A minimal generic entry point that reuses the SAME overlay/box/close plumbing as open()/
+  // openTech() above, for callers with no item/tech object to show — just a plain title and a
+  // body they build themselves. Added so the save-panel Export/Import modal (index.html
+  // renderSavePanel) can drop window.prompt() (audit A8: "functional... but miserable, especially
+  // iOS") without a second overlay implementation ("infobox reuse preferred — zero new overlay
+  // code", SPEC-MOBILE-UI.md §3).
+  //
+  // buildBody(bodyEl, closePanel) is called once, synchronously, with the empty `.infobox-body`
+  // node to populate and a bound reference to this box's close() so callers don't need to reach
+  // back into Game.Infobox themselves.
+  function openPanel(title, buildBody) {
+    var e = getEl();
+    close();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'infobox-overlay';
+    overlay.className = 'infobox-overlay';
+    overlay.addEventListener('click', function (ev) {
+      if (ev.target === overlay) close();
+    });
+
+    var box = e('div', { class: 'infobox panelsurround infobox-wide' });
+    box.appendChild(e('div', { class: 'tcat' }, [
+      title,
+      e('span', { class: 'infobox-close', onclick: close }, [' [x]'])
+    ]));
+
+    var body = e('div', { class: 'panel infobox-body' });
+    if (typeof buildBody === 'function') buildBody(body, close);
+    box.appendChild(body);
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  }
+
   return {
     open: open,
     openTech: openTech,
+    openPanel: openPanel,
     close: close
   };
 })();

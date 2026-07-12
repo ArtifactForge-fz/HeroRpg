@@ -34,6 +34,17 @@
     </div>
 
     <div id="maincol">
+      <!-- v1.4 Mobile M3 (docs/SPEC-MOBILE-UI.md §4 M3): transient toast bar for high-frequency
+           action results (Hunt/Camp/Forage/touch-tokens), replacing alert() for those flows.
+           Placed as a SIBLING immediately before #maincontent, not inside it, so navigating
+           screens (which wipes #maincontent's innerHTML) never wipes an in-flight toast — see
+           js/ui/screens.js's Game.UI.toast and the Camp/Forage ambush ordering note there. On
+           mobile (<=640px) #maincol renders right after the Actions chip row per the M1 layout,
+           so this same element also satisfies "directly under the actions row" there. Hidden by
+           default via the base .toastbar rule in css/theme.css; toast() toggles a class, never
+           inline .style (keeps the fakedom-quirk guard in Game.UI.toast trivial). Guarded via
+           getElementById in Game.UI.toast itself, same defensive style as #mobiletabs. -->
+      <div id="toastbar" class="toastbar"></div>
       <div id="maincontent"></div>
     </div>
   </div>
@@ -104,6 +115,15 @@
   Game.refreshCurrentScreen = function () {
     Game.Screens.navigate(Game.Screens.getCurrentScreen());
   };
+
+  // v1.4 Mobile M3 (SPEC-MOBILE-UI.md §4 M3): same guarded toast-or-alert helper as
+  // js/ui/screens.js's `notify()` (duplicated rather than shared — this inline script and
+  // screens.js are separate scopes with no module system, per CLAUDE.md architecture: "No
+  // modules, no fetch"). Used by the Actions-panel Camp/Forage/touch-token handlers below, which
+  // are patterned on renderExplore's copies in screens.js.
+  function notify(message) {
+    if (Game.UI && Game.UI.toast) { Game.UI.toast(message); } else { alert(message); }
+  }
 
   var NAV_ITEMS = [
     { key: 'status', label: 'Status' },
@@ -268,12 +288,13 @@
       addLink('Hunt', function () { Game.Screens.performHunt(); }, true);
       addLink('Camp', function () {
         var res = Game.World.camp();
-        alert(res.message);
+        notify(res.message);
         Game.persist();
         // Fix #1: camp() can return an ambush that already started a battle
         // (Game.state.battle set — js/core/world.js camp()). A plain refresh would hit the
         // battle-lock in Game.Screens.navigate and render nothing. Mirror the Explore screen's
         // Camp handler (js/ui/screens.js renderExplore) and route straight to the battle screen.
+        // (v1.4 Mobile M3: the toast survives this navigate() — see #toastbar's placement note.)
         if (res.event === 'ambush' && res.battle) {
           Game.Screens.navigate('battle');
         } else {
@@ -284,8 +305,8 @@
       // camp()'s risk profile, so an ambush needs the identical battle-screen redirect).
       addLink('Forage', function () {
         var res = Game.World.forage();
-        if (!res.ok) { alert(res.message); return; }
-        alert(res.message);
+        if (!res.ok) { notify(res.message); return; }
+        notify(res.message);
         Game.persist();
         if (res.event === 'ambush' && res.battle) {
           Game.Screens.navigate('battle');
@@ -307,7 +328,7 @@
               if (qEntry.progress.touched && qEntry.progress.touched[token.areaId]) return;
               addLink(token.label, function () {
                 var res = Game.Quests.touch(quest.id, tokenIdx);
-                alert(res.message);
+                notify(res.message);
                 Game.refreshCurrentScreen();
               }, true);
             });
@@ -326,6 +347,107 @@
     panel.appendChild(list);
   };
 
+  // v1.4 Mobile M3 (SPEC-MOBILE-UI.md §4 M3, audit A8): Export modal body — a readonly textarea
+  // holding the export string (select-all on open, per the brief) plus a clipboard-API Copy
+  // button. The clipboard API needs a secure context (unavailable on a plain `file://` open), so
+  // it's feature-detected; the textarea's own select-all is the universal fallback, exactly as
+  // the brief specifies. Built via Game.Infobox.openPanel — no new overlay code.
+  function buildExportBody(body, closePanel) {
+    var str = Game.Save.exportString(Game.state);
+
+    var ta = document.createElement('textarea');
+    ta.className = 'savebox-textarea';
+    ta.readOnly = true;
+    ta.value = str;
+    ta.addEventListener('focus', function () { ta.select(); });
+    body.appendChild(ta);
+
+    var status = document.createElement('div');
+    status.className = 'smallfont mt4';
+    body.appendChild(status);
+
+    var btnRow = document.createElement('div');
+    btnRow.className = 'mt8';
+
+    var copyBtn = document.createElement('button');
+    copyBtn.className = 'button';
+    copyBtn.textContent = 'Copy';
+    copyBtn.style.marginRight = '4px';
+    copyBtn.addEventListener('click', function () {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(str).then(function () {
+          status.textContent = 'Copied!';
+        }, function () {
+          // Secure-context/permission failure (expected on file://) -- fall back silently to
+          // the select-all textarea path rather than surface an error for something this minor.
+          ta.focus();
+          ta.select();
+        });
+      } else {
+        ta.focus();
+        ta.select();
+      }
+    });
+    btnRow.appendChild(copyBtn);
+
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'button';
+    closeBtn.textContent = 'Close';
+    closeBtn.addEventListener('click', closePanel);
+    btnRow.appendChild(closeBtn);
+
+    body.appendChild(btnRow);
+
+    ta.focus();
+    ta.select();
+  }
+
+  // Import modal body — empty textarea + Import button running the EXACT existing import flow,
+  // including the v1.3.1 overwrite-confirmation (Fix #10) unchanged.
+  function buildImportBody(body, closePanel) {
+    var ta = document.createElement('textarea');
+    ta.className = 'savebox-textarea';
+    ta.placeholder = 'Paste your save string here...';
+    body.appendChild(ta);
+
+    var status = document.createElement('div');
+    status.className = 'smallfont req-bad mt4';
+    body.appendChild(status);
+
+    var btnRow = document.createElement('div');
+    btnRow.className = 'mt8';
+
+    var importBtn = document.createElement('button');
+    importBtn.className = 'button';
+    importBtn.textContent = 'Import';
+    importBtn.style.marginRight = '4px';
+    importBtn.addEventListener('click', function () {
+      var str = ta.value;
+      if (!str) { status.textContent = 'Paste a save string first.'; return; }
+      var state = Game.Save.importString(str);
+      if (!state) { status.textContent = 'Import failed: invalid save string.'; return; }
+      // Fix #10 (unchanged, v1.3.1): importing used to overwrite Game.state on any valid string
+      // with no warning, unlike New Game (which does confirm). Only prompt when there's an
+      // existing character to lose; wording parallels the New Game confirm below. Still a native
+      // confirm() — an overwrite is exactly the kind of rare, high-stakes action the spec says
+      // stays native.
+      if (Game.state.character && !window.confirm('This will permanently overwrite your current character with the imported save. Continue?')) return;
+      Game.state = state;
+      Game.persist();
+      closePanel();
+      boot();
+    });
+    btnRow.appendChild(importBtn);
+
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'button';
+    closeBtn.textContent = 'Close';
+    closeBtn.addEventListener('click', closePanel);
+    btnRow.appendChild(closeBtn);
+
+    body.appendChild(btnRow);
+  }
+
   function renderSavePanel() {
     var panel = document.getElementById('savepanel');
     panel.innerHTML = '';
@@ -336,8 +458,7 @@
     exportBtn.style.marginRight = '4px';
     exportBtn.addEventListener('click', function () {
       if (!Game.state.character) { alert('No character to export.'); return; }
-      var str = Game.Save.exportString(Game.state);
-      window.prompt('Copy your save string:', str);
+      Game.Infobox.openPanel('Export Save', buildExportBody);
     });
 
     var importBtn = document.createElement('button');
@@ -345,17 +466,7 @@
     importBtn.textContent = 'Import Save';
     importBtn.style.marginRight = '4px';
     importBtn.addEventListener('click', function () {
-      var str = window.prompt('Paste your save string:', '');
-      if (!str) return;
-      var state = Game.Save.importString(str);
-      if (!state) { alert('Import failed: invalid save string.'); return; }
-      // Fix #10: importing used to overwrite Game.state on any valid string with no warning,
-      // unlike New Game (which does confirm). Only prompt when there's an existing character to
-      // lose; wording parallels the New Game confirm above.
-      if (Game.state.character && !window.confirm('This will permanently overwrite your current character with the imported save. Continue?')) return;
-      Game.state = state;
-      Game.persist();
-      boot();
+      Game.Infobox.openPanel('Import Save', buildImportBody);
     });
 
     var newGameBtn = document.createElement('button');

@@ -55,6 +55,16 @@ Game.Screens = (function () {
     return wrap;
   }
 
+  // v1.4 Mobile M3 (SPEC-MOBILE-UI.md §4 M3, audit A8/high-frequency-alert item): replaces
+  // alert() for the high-frequency Hunt/Camp/Forage/touch-token results with the shared
+  // Game.UI.toast helper (defined near the end of this file). Guarded the same defensive way as
+  // Game.renderActions' other cross-module hooks (CLAUDE.md "guarded-hook pattern") so an
+  // environment that never wired up Game.UI.toast (or a #toastbar element) falls back to the
+  // original alert() instead of silently losing the message.
+  function notify(message) {
+    if (Game.UI && Game.UI.toast) { Game.UI.toast(message); } else { alert(message); }
+  }
+
   function skillPointTotal() {
     var total = 0;
     for (var s in wizard.skillPoints) {
@@ -912,13 +922,13 @@ Game.Screens = (function () {
   // panel link (index.html Game.renderActions). archived encounter chance: forum/t-755.md.
   function performHunt() {
     var res = Game.World.hunt();
-    if (!res.ok) { alert(res.message); return; }
+    if (!res.ok) { notify(res.message); return; }
     Game.persist();
     if (res.encounter) {
       battleReturnScreen = 'explore';
       navigate('battle');
     } else {
-      alert(res.message);
+      notify(res.message);
       refreshExploreScreen();
     }
   }
@@ -1010,7 +1020,7 @@ Game.Screens = (function () {
                   title: 'Touch the ' + token.label + ' (' + quest.name + ')',
                   onclick: function () {
                     var res = Game.Quests.touch(quest.id, tokenIdx);
-                    alert(res.message);
+                    notify(res.message);
                     refreshExploreScreen();
                   }
                 }, ['Touch']),
@@ -1028,16 +1038,20 @@ Game.Screens = (function () {
           title: 'Free, but risky — thieves or an ambush may find you in the night (archived: forum t-756.md).',
           onclick: function () {
             var res = Game.World.camp();
-            if (!res.ok) { alert(res.message); return; }
+            if (!res.ok) { notify(res.message); return; }
             Game.persist();
             // Camping-risk ambush (js/core/world.js): lands on the battle screen, same as a Hunt
-            // encounter (performHunt above), instead of just alerting the message.
+            // encounter (performHunt above), instead of just alerting the message. The toast is
+            // called before navigate() but survives the transition anyway — #toastbar lives
+            // outside #maincontent (index.html), so navigate()'s re-render of #maincontent into
+            // the battle screen never wipes it; the ambush message stays visible on top of the
+            // freshly-rendered battle screen for its full ~4s (or until tapped).
             if (res.event === 'ambush' && res.battle) {
-              alert(res.message);
+              notify(res.message);
               battleReturnScreen = 'explore';
               navigate('battle');
             } else {
-              alert(res.message);
+              notify(res.message);
               refreshExploreScreen();
             }
           }
@@ -1056,15 +1070,16 @@ Game.Screens = (function () {
           title: 'Search the area for materials and provisions — free, but shares Camp\'s risk of robbery or ambush (archived: forum t-756.md).',
           onclick: function () {
             var res = Game.World.forage();
-            if (!res.ok) { alert(res.message); return; }
+            if (!res.ok) { notify(res.message); return; }
             Game.persist();
-            // Forage's ambush risk (js/core/world.js) lands on the battle screen, same as Camp's.
+            // Forage's ambush risk (js/core/world.js) lands on the battle screen, same as Camp's
+            // (see the toast/navigate ordering note on the Camp handler above).
             if (res.event === 'ambush' && res.battle) {
-              alert(res.message);
+              notify(res.message);
               battleReturnScreen = 'explore';
               navigate('battle');
             } else {
-              alert(res.message);
+              notify(res.message);
               refreshExploreScreen();
             }
           }
@@ -2352,6 +2367,51 @@ Game.Screens = (function () {
     performHunt: performHunt,
     openTownFacility: openTownFacility,
     el: el
+  };
+})();
+
+// v1.4 Mobile M3 (SPEC-MOBILE-UI.md §4 M3): shared toast helper for the high-frequency
+// Hunt/Camp/Forage/touch-token results that used to alert(). Exposed on Game.UI (the namespace
+// icons.js already establishes, loaded just before this file — see index.html script order) so
+// BOTH this file's `notify()` above and index.html's Actions-panel handlers can reach it through
+// the one Game namespace, with no new global.
+//
+// Renders into the static #toastbar element (index.html, a sibling placed immediately before
+// #maincontent so re-rendering the current screen never wipes an in-flight toast — see the
+// Camp/Forage ambush note above). Looked up by id and guarded exactly like Game.renderNav's
+// #mobiletabs lookup: environments that never register #toastbar (every fakedom test bootstrap
+// in tests/) just no-op instead of throwing, and since nothing above ever creates a live
+// setTimeout in that case, the fakedom quirk about elements lacking `.style` never comes into
+// play either — this helper only ever toggles `className`, never touches `.style`.
+(function () {
+  var toastTimer = null;
+
+  function hideToast() {
+    var bar = document.getElementById('toastbar');
+    if (!bar) return;
+    bar.className = 'toastbar';
+    bar.textContent = '';
+    toastTimer = null;
+  }
+
+  Game.UI = Game.UI || {};
+  Game.UI.toast = function (message) {
+    var bar = document.getElementById('toastbar');
+    if (!bar) return; // no container in this environment (e.g. test fakedom) -- silent no-op
+    if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+    bar.textContent = message;
+    bar.className = 'toastbar toastbar-visible';
+    // Tap-to-dismiss: bind once per element rather than once per toast() call.
+    if (!bar._toastClickBound) {
+      bar._toastClickBound = true;
+      bar.addEventListener('click', hideToast);
+    }
+    // Multiple calls replace the previous toast, never stack (single timer, single message).
+    toastTimer = setTimeout(hideToast, 4000);
+    // Belt-and-suspenders for a hypothetical future Node/fakedom harness that DOES register
+    // #toastbar: don't let a live timer keep the process alive after the script's done with it.
+    // Browsers' setTimeout return value has no .unref, so this is a no-op there.
+    if (toastTimer && typeof toastTimer.unref === 'function') toastTimer.unref();
   };
 })();
 

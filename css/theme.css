@@ -945,3 +945,68 @@ button, a { touch-action: manipulation; } /* kill the 300ms tap delay / double-t
     font-size: 10px; /* up from M1's 9px */
   }
 }
+
+/* ===== v1.4 Mobile M3: inline toast (docs/SPEC-MOBILE-UI.md §4 M3) =====
+   Base rule (NOT scoped to a media query — the spec explicitly allows the toast at every
+   viewport, since prompt()/alert() were flagged "miserable" primarily on mobile but the
+   dismissable-banner pattern reads strictly better on desktop too). Replaces alert() for the
+   high-frequency Hunt/Camp/Forage/touch-token results (js/ui/screens.js `notify()` / index.html
+   `notify()` -> Game.UI.toast). Visibility is a class swap, never an inline .style write (see
+   Game.UI.toast's comment on the fakedom .style quirk) — `.toastbar` is the always-present
+   hidden base state, `.toastbar-visible` is added alongside it while a message is showing; same
+   specificity, so the later rule (this one) wins for any element carrying both classes. */
+.toastbar {
+  display: none;
+}
+.toastbar-visible {
+  display: block;
+  background: #3c4a56;
+  color: #c4bb4b;
+  border: 1px solid #313131;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  font-weight: bold;
+  cursor: pointer; /* tap-to-dismiss */
+}
+
+@media (max-width: 640px) {
+  .toastbar-visible {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+}
+
+/* ===== v1.4 Mobile M3: save export/import modal (docs/SPEC-MOBILE-UI.md §4 M3, audit A8) =====
+   Reuses the existing .infobox/.infobox-overlay/.infobox-body/.infobox-close chrome (defined
+   above, unedited) via Game.Infobox.openPanel (js/ui/infobox.js) — these two rules are the only
+   new styling the modal needs. `.infobox-wide` widens the box past the item-infobox's 320px (a
+   save string needs real room); `.savebox-textarea` sizes/styles the export/import textarea
+   itself. Both are plain classes with no media-query scoping because the modal is meant to look
+   the same (just strictly better than window.prompt()) at every viewport, per the brief. */
+.infobox-wide {
+  width: 480px; /* .infobox's own max-width: 90vw (defined above) still caps this on narrow screens */
+}
+.savebox-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  height: 120px;
+  font: 11px monospace;
+  resize: vertical;
+}
+
+/* ===== v1.4 Mobile M3: landscape-phone sanity (docs/SPEC-MOBILE-UI.md §4 M3) =====
+   Reasoned rather than device-tested this pass (no real landscape hardware in this loop — flagged
+   for the user's phone-checklist walkthrough below). At a rotated phone's ~360-430px HEIGHT, M1's
+   sticky `#statusbars` header plus the fixed 48px `#mobiletabs` bar can together eat roughly 40%
+   of the vertical viewport, crowding out #maincontent. Minimal fix: drop the sticky pin in
+   landscape ONLY, so the status header scrolls away with the rest of the page instead of
+   permanently occupying screen real estate — #mobiletabs is left fixed/48px as-is, since
+   thumb-reachable navigation matters at least as much in landscape. Scoped to BOTH the existing
+   640px width query AND `orientation: landscape` so portrait phones and desktop are untouched;
+   appended after the M1 block so this same-specificity #statusbars rule wins by source order for
+   any viewport matching both conditions. */
+@media (max-width: 640px) and (orientation: landscape) {
+  #statusbars {
+    position: static;
+  }
+}

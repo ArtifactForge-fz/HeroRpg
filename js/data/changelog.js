@@ -44,7 +44,10 @@ Game.Data.changelog = [
       'The bars at the top of the screen now carry your hero\'s name, calling, level, and ' +
         'lifetime monster kills at a glance.',
       'Fixed a display bug where some status bars (Health, Energy, and others) could render with ' +
-        'no visible color fill.'
+        'no visible color fill.',
+      'Exporting or importing your save now opens a proper copy/paste window with a Copy button, ' +
+        'instead of a clunky browser popup — and results from Hunting, Camping, and Foraging now ' +
+        'show up as a quick on-screen message instead of an interrupting popup.'
     ]
   },
 
