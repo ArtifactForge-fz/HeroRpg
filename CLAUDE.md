@@ -229,10 +229,12 @@ Artifact not redeployed (claude.ai publishing on hold; see Deployment).
   user-directed). [revised] replaces the v1.2 Tier-3 *convergence* (2 tier-2 → 1) with *branching*:
   each of the 6 Tier-2 classes offers **2** Tier-3 options at L60 → **12** Tier-3 classes (roster
   15→24). All new names archived from the 2004 create-a-class thread (`forum/t-449.md`: Berserker,
-  Paladin, Warden, Archmage, Cleric, Seer, Assassin, Ranger, Dragoon); the 3 shipped classes
+  Paladin, Warden, Conjurer, Cleric, Seer, Assassin, Ranger, Dragoon); the 3 shipped classes
   (Shadowknight/Magus/Gambit) re-home under one Tier-2 parent. Reuses the tier machinery
-  (`thirdTierOptionsFor` re-keyed to tier-2 via a new `advancedClassIdsObtained`); **no save bump**;
-  balance is a sanity sim (same tier-3 band). Phased T0–T3.
+  (`thirdTierOptionsFor` re-keyed to tier-2 via a new `advancedClassIdsObtained`); **no save bump**.
+  One Wizard option, the **Conjurer**, is summon-based (§3a) — an invented 1v1-safe "Elemental
+  Servitor": a persistent battle-transient DoT rider (reuses the Poison tick pipeline), NOT a second
+  combatant; the one new class needing a small battle mechanic + a `/balance-sim`. Phased T0–T3.
 - Unique champion abilities (beyond stat multipliers); Eidolon system (`manual/Version_3.0.md`);
   pets (`heropet.php` existed, no data survived). (Tier-3 classes Shadowknight/Magus/Gambit and the
   Curse affliction — formerly backlog — shipped in v1.2.)

@@ -41,7 +41,7 @@ accepted class's text — plus the two shipped names from `homepage_2006.md`. No
 |---|---|---|---|
 | **Gladiator** (offense) | **Shadowknight** *(shipped)* | **Berserker** | Shadowknight accepted (t-449) + homepage_2006; "Beserker: a brutal warrior, very strong" proposed (t-449) |
 | **Crusader** (defense) | **Paladin** | **Warden** | Paladin referenced in Shadowknight's accepted desc ("the opposite of a paladin", t-449); "Warden: powerful defensive mage, adept at creating barriers" proposed, dev "will consider" (t-449) |
-| **Wizard** (spell damage) | **Magus** *(shipped)* | **Archmage** | Magus homepage_2006 + t-787; "Archmage: powerful mages which achieve perfection into magic" proposed (t-449) |
+| **Wizard** (spell damage) | **Magus** *(shipped)* | **Conjurer** *(summon-based — §3a)* | Magus homepage_2006 + t-787; **Conjurer** derives from the archived **Conjuration** skill (`Skills.md`), which DESIGN §3 already defines as "summoned/DoT effects" — see §3a |
 | **Sage** (healing/support) | **Cleric** | **Seer** | Both in the dev's own suggested caster-name list (t-449: "…Channeler, **Cleric**, Enchanter, **Seer**, Adept, Mystic, Priest…") |
 | **Rogue** (crits/dodge) | **Gambit** *(shipped)* | **Assassin** | Gambit homepage_2006; "Assassin: cunning hero, adept at stealing and assassination" proposed (t-449) |
 | **Mercenary** (versatility) | **Ranger** | **Dragoon** | Both **accepted** by the dev (t-449: "Ranger (formerly Hunter)"; "Dragoon (formerly Dragon Knight)") |
@@ -64,8 +64,10 @@ effects** so the choice is real:
   top-of-band damage + double-attack, **no** defensive passive; a high-risk frenzy tech).
 - **Crusader** → Paladin (offense-leaning holy: armor + damage + a smite/self-heal tech) **vs.**
   Warden (anti-magic wall: max magic-armor + HP + a barrier tech).
-- **Wizard** → Magus (uncategorised-Anima nuke: damage + energy) **vs.** Archmage (elemental
-  mastery: damage + magic-armor, an elemental cataclysm tech).
+- **Wizard** → Magus (uncategorised-Anima **burst** nuker: damage + energy, one big hit) **vs.**
+  **Conjurer** (**summon-based sustained** elemental damage — §3a). The two split Wizard's "spell
+  damage" role cleanly into *burst* (Magus, best for quick kills) vs. *sustained pet-DoT* (Conjurer,
+  best for long boss fights) — a real playstyle choice, not two flavours of the same nuke.
 - **Sage** → Cleric (restoration: HP + energy + a greater-heal tech) **vs.** Seer (foresight/support:
   dodge + energy + a buff/foresight tech).
 - **Rogue** → Gambit (luck/gamble: gold + dodge, dice tech) **vs.** Assassin (burst: damage +
@@ -73,9 +75,61 @@ effects** so the choice is real:
 - **Mercenary** → Ranger (skirmisher: damage + dodge + gold, ranged-volley tech) **vs.** Dragoon
   (heavy hybrid: damage + armor + HP, leaping-strike tech).
 
-Exact per-ability numbers are locked in phase T0 within the band above; effects reuse the existing
-`classBonus` vocabulary (`damage_pct`/`armor_flat`/`magic_armor_flat`/`dodge_flat`/`energy_max_flat`/
-`hp_max_flat`/`gold_pct`/`double_attack_flat`) — **no new effect kinds, no core changes**.
+Exact per-ability numbers are locked in phase T0 within the band above; passive effects reuse the
+existing `classBonus` vocabulary (`damage_pct`/`armor_flat`/`magic_armor_flat`/`dodge_flat`/
+`energy_max_flat`/`hp_max_flat`/`gold_pct`/`double_attack_flat`) — **no new effect kinds**. **One
+exception:** the **Conjurer** (§3a) is the single class here that needs a small new *battle*
+mechanic (its summoned elemental) — every other new class is pure data. Its two passives still use
+the existing `classBonus` vocabulary; only its signature tech introduces new behaviour.
+
+### 3a. The Conjurer's summon — "Elemental Servitor" (invented, 1v1-safe)
+
+**The hard constraint:** the battle engine is strictly **1v1** and the original developer explicitly
+rejected summons-as-a-second-combatant (*"there won't be summons in battle. It's just 1v1"* —
+`forum/t-449.md`). So the Conjurer's "summon" is **not** a second combatant with its own HP/turn/
+targeting — it is a **persistent battle-transient damage rider**, reusing the existing DoT/status-tick
+pipeline (the same machinery as Poison — `BALANCE.POISON_*`, `tickPlayerStatuses`, buff durations).
+
+**How it plays:**
+- The Conjurer's signature `classOnly` tech is **Summon Elemental** — a new tech `effect: 'summon'`
+  carrying `{ grade, servitorPower, turns }`. Casting it costs Energy **once** and places an
+  **Elemental Servitor** on the battle object (`battle.servitor = { grade, power, turnsLeft }`) —
+  transient state, exactly like `battle` itself; never persisted, wiped on battle end/flee/reload.
+- **Each round thereafter, the servitor automatically strikes the enemy** for elemental damage of its
+  `grade`, scaled by the caster's Intelligence (the spell factor, via the existing
+  `techEffectivePower`-style path) and mitigated by the enemy's **Magic Armor + that grade's
+  resistance** — so it interacts with the archived Anima-grade resistance system. The tick fires in
+  the round-resolution step next to the existing status ticks. The servitor has **no HP, cannot be
+  targeted, and never takes the enemy's turn** — the enemy still only ever faces the player. 1v1 is
+  preserved.
+- The point of the class: **pay Energy once, then get free recurring elemental damage** while you
+  spend your own turns on other actions (attack, defend, another spell). That is the summoner's
+  identity — action economy, not raw burst.
+- **One servitor at a time** (re-summoning replaces it). Grade is chosen at cast (Fire/Water/Wind/
+  Earth variants of the tech, or a single tech that picks the enemy's-weakness grade — D-below), so
+  the Conjurer plays the archived "align to the enemy's weakness" game.
+
+**Passives (support the summon, still plain `classBonus`):**
+- one that **empowers the servitor** — modelled as `energy_max_flat` (deeper well to keep re-summoning)
+  or a small `damage_pct` (the servitor's ticks read the player's damage scalars); pick in T0 so the
+  servitor benefits without a new effect kind, OR add ONE narrow new effect `summon_power_pct` if the
+  sim shows the plain scalars don't give the class enough identity (kept generic in `classBonus`, one
+  guarded read in the servitor tick — mirrors how `gold_pct`/`double_attack_flat` were added in v1.1).
+- one defensive/utility passive from the standard band (`magic_armor_flat` or `energy_max_flat`).
+
+**Balance identity & the sim (this is the class that most needs `/balance-sim`):**
+- Recurring damage rewards **long** fights and is weak in **short** ones — the deliberate inverse of
+  Magus's burst. Tune `servitorPower` + `turns` so total damage-per-summon and damage-per-Energy over
+  a *representative boss fight* land inside the Tier-3 band next to Magus's nuke — **strong vs.
+  bosses is the intended niche**, but it must not trivialise a long fight (cap `turns`, or decay the
+  tick, so an endless boss doesn't become a free win). Sim at L60/80/100 vs. both a regular and a
+  boss; report damage-per-Energy vs. Magus.
+- **Guardrail:** the servitor's per-turn damage must route through the same variance/grade-resistance/
+  Magic-Armor mitigation every other hit uses — no unmitigated "true" tick (that would break the
+  over-armoring/contract discipline).
+
+**Save impact: still none.** `battle.servitor` is transient like all battle state; the class + tech
+are data; the tick is code. No new character field, no version bump.
 
 ---
 
@@ -117,8 +171,9 @@ instead of Tier-1:
 
 ## 6. Balance & sim gate
 
-Lower-risk than a new mechanic: this adds **options, not a new power band**. The gate is a
-**sanity sim**, not a full re-derive:
+For the 11 data-only classes this adds **options, not a new power band**, so the gate is a
+**sanity sim**, not a full re-derive. The **Conjurer is the exception** — its summon is genuinely new
+combat math and needs a real sim of its own (§3a). Both are covered below:
 - Confirm every new Tier-3 class sits inside the established Tier-3 envelope (§3) and none exceeds the
   strongest shipped Tier-3 combo. Special attention to **Berserker** (glass cannon): its top-of-band
   damage must be paid for with the missing defensive passive — sim its survivability so it's a
@@ -146,6 +201,11 @@ Lower-risk than a new mechanic: this adds **options, not a new power band**. The
   (and the correct union for multi-Tier-2 characters); obtain/activate/deactivate each new class;
   `buyAbility` respects class levels; `classBonus` sums the new passives on active slots; new techs
   are `classOnly` and gated to their class.
+- **Conjurer summon (stubbed-RNG, battle suite):** casting Summon Elemental sets `battle.servitor`;
+  the servitor deals its grade damage each round through the normal variance/Magic-Armor/grade-
+  resistance path (assert damage lands and respects resistance); it is never targeted and never
+  grants the enemy an extra action (assert enemy HP/turn count unaffected by its presence); re-summon
+  replaces (not stacks); it expires after `turns` and is absent after battle end/flee (transient).
 - Migration/legacy: a fabricated legacy save (Crusader + obtained Shadowknight) loads and both remain
   usable; full v1→current chain passes.
 - Update the hardcoded class-count constant (15 → 24) and any tier-count assertions — never weaken a
@@ -187,8 +247,18 @@ Lower-risk than a new mechanic: this adds **options, not a new power band**. The
 - **D1 — Re-home mapping** of the 3 shipped classes (Shadowknight→Gladiator, Magus→Wizard,
   Gambit→Rogue). Recommend as written; the alternative is a hybrid where the 3 stay available to both
   siblings (messier, breaks the clean 1-of-2 symmetry).
-- **D2 — Second-option names.** Confirm Berserker / Paladin / Warden / Archmage / Cleric / Seer /
+- **D2 — Second-option names.** Confirm Berserker / Paladin / Warden / **Conjurer** / Cleric / Seer /
   Assassin / Ranger / Dragoon (all archived), or swap any from the t-449 pool (also available:
-  Necromancer, Witch, Bard, Geomancer, Enchanter, Mystic, Priest, Healer, Shaman…).
+  Archmage, Necromancer, Witch, Bard, Geomancer, Enchanter, Mystic, Priest, Healer, Shaman…). For the
+  summoner specifically, **Conjurer** (from the Conjuration skill) is recommended; **Shaman** or
+  **Spiritist** (both in the dev's own archived caster-name list, t-449) are alternates.
 - **D3 — Legendary interaction.** None planned — the 3 Legendaries (tier 4) are unaffected. Confirm
   they stay convergence-free capstones above the branch.
+- **D4 — Summon grade model (§3a).** One Summon Elemental tech that auto-picks the enemy's-weakness
+  grade (simpler, always-useful) vs. Fire/Water/Wind/Earth variant techs the player chooses between
+  (more archived "align to the enemy" depth, more tech ids/icons). Recommend starting with the
+  single auto-weakness tech; add grade variants later if the class wants more decisions.
+- **D5 — `summon_power_pct` effect?** Whether the Conjurer's servitor-empowering passive reuses an
+  existing scalar (`damage_pct`/`energy_max_flat`) or justifies ONE narrow new `classBonus` effect
+  read only by the servitor tick (§3a). Recommend try the existing scalars first; add the new effect
+  only if the T2 sim shows the class lacks identity without it.
