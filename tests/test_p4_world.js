@@ -131,7 +131,12 @@ var badAreaRefs = [];
 Game.Data.areas.forEach(function (a) {
   (a.monsters || []).forEach(function (mid) { if (!Game.Battle.getMonsterDef(mid)) badAreaRefs.push(a.id + ' -> ' + mid); });
   (a.facilities || []).forEach(function (f) {
-    (f.stock || []).forEach(function (iid) { if (!Game.Inventory.getItem(iid)) badAreaRefs.push(a.id + ' shop -> ' + iid); });
+    // v1.4 P2 (G1): an 'exchange' facility's stock is { itemId, costAp } pairs rather than the
+    // 'shop' facility's plain id list — resolve either shape to the underlying item id.
+    (f.stock || []).forEach(function (entry) {
+      var iid = (typeof entry === 'string') ? entry : entry.itemId;
+      if (!Game.Inventory.getItem(iid)) badAreaRefs.push(a.id + ' ' + f.type + ' -> ' + iid);
+    });
   });
 });
 assert(badAreaRefs.length === 0, 'all area monster/shop refs resolve' + (badAreaRefs.length ? ': ' + badAreaRefs.join(', ') : ''));
@@ -146,12 +151,41 @@ Game.Data.recipes.forEach(function (r) {
   r.inputs.forEach(function (iid) { assert(!!Game.Inventory.getItem(iid), 'recipe input resolves: ' + iid); });
 });
 
+// =================== Test 0a2: v1.4 P2 (G1) AA Exchange-exclusive item sanity ===================
+// Hard rule (docs/SPEC-V1.4-GAMEPLAY.md §7 guardrail): no ap_* item may outclass same-levelReq
+// (or lower) non-unique drops/shop gear (no power creep — AP is convenience/prestige), and every
+// new item's gold `value` is vendor-trash (<=50g) so AP->gold arbitrage is impossible.
+console.log('\n=== Test 0a2: AA Exchange-exclusive (ap_*) item stats never outclass same-or-lower-levelReq non-unique gear; value <= 50g ===');
+var AP_ITEM_IDS = ['ap_boots_steel_plated', 'ap_boots_gold_plated', 'ap_helm_gilded_crest',
+  'ap_body_tourney_regalia', 'ap_blade_veterans_edge', 'ap_stone_energy_royal', 'ap_sphere_royal'];
+var STAT_FIELDS = ['armor', 'magicArmor', 'damage', 'heal', 'energyRestore'];
+AP_ITEM_IDS.forEach(function (id) {
+  var apItem = Game.Inventory.getItem(id);
+  assert(!!apItem, 'ap_* item exists: ' + id);
+  if (!apItem) return;
+  assert(apItem.value <= 50, id + ' value is vendor-trash (<=50g), got ' + apItem.value);
+  STAT_FIELDS.forEach(function (stat) {
+    if (apItem[stat] === undefined) return;
+    var maxComparable = 0, maxComparableId = null;
+    Game.Data.items.forEach(function (other) {
+      if (other.id === id) return;
+      if (other.slot !== apItem.slot) return;
+      if (other.levelReq > apItem.levelReq) return;
+      if (other.tags && other.tags.indexOf('unique') !== -1) return; // uniques stay monster-drop-only, not a valid comparison baseline
+      if (other[stat] === undefined) return;
+      if (other[stat] > maxComparable) { maxComparable = other[stat]; maxComparableId = other.id; }
+    });
+    assert(apItem[stat] <= maxComparable, id + '.' + stat + ' (' + apItem[stat] + ') must not exceed the best non-unique same-slot item at levelReq<=' + apItem.levelReq + ' (' + maxComparableId + ': ' + maxComparable + ')');
+  });
+});
+
 // =================== Test 0b: Laik, the 4th town (v1.2 Phase 3 Content-A) ===================
-console.log('\n=== Test 0b: Laik exists with shop/inn/vault/tavern (no synthesis/academy/shrine) ===');
+console.log('\n=== Test 0b: Laik exists with shop/exchange/inn/vault/tavern (no synthesis/academy/shrine) ===');
 var laik = Game.World.getArea('laik');
 assert(!!laik && laik.type === 'town', 'Laik exists as a town');
 assert(laik.minLevel === 8, 'Laik gates travel at minLevel 8');
-['shop', 'inn', 'vault', 'tavern'].forEach(function (t) {
+// v1.4 P2 (G1): the AA Exchange facility, added to Laik alongside the pre-existing shop/inn/vault/tavern.
+['shop', 'exchange', 'inn', 'vault', 'tavern'].forEach(function (t) {
   assert(!!Game.World.getFacility(laik, t), 'Laik has facility: ' + t);
 });
 ['synthesis', 'academy', 'shrine'].forEach(function (t) {
@@ -162,6 +196,12 @@ assert(laikShop.stock.length > 0, 'Laik shop has mid-level stock');
 laikShop.stock.forEach(function (iid) {
   var it = Game.Inventory.getItem(iid);
   assert(!!it, 'Laik shop item exists: ' + iid);
+});
+var laikExchange = Game.World.getFacility(laik, 'exchange');
+assert(laikExchange.stock.length > 0, 'Laik exchange has stock');
+laikExchange.stock.forEach(function (entry) {
+  assert(!!Game.Inventory.getItem(entry.itemId), 'Laik exchange item exists: ' + entry.itemId);
+  assert(typeof entry.costAp === 'number' && entry.costAp > 0, 'Laik exchange entry ' + entry.itemId + ' has a positive costAp');
 });
 
 // =================== Test 0c: Kastengard Vanguard Camp, the level-30+ outpost (v1.2 Phase 3 Content-A) ===================
@@ -282,8 +322,15 @@ assert(ukaiUndercaverns.minLevel === 66, 'Ukai Undercaverns gates travel at minL
 assert(!!ukaiUndercaverns.lair && ukaiUndercaverns.lair.monsterId === 'ukai_deep_dweller' && ukaiUndercaverns.lair.minLevel === 70, 'Ukai Undercaverns carries the ukai_deep_dweller lair gated at minLevel 70');
 assert(!!frostholdWaystation && frostholdWaystation.type === 'town', 'Frosthold Waystation exists as a town');
 assert(frostholdWaystation.minLevel === 65, 'Frosthold Waystation gates travel at minLevel 65');
-['shop', 'inn', 'vault', 'academy', 'shrine', 'tavern'].forEach(function (t) {
+// v1.4 P2 (G1): the AA Exchange facility, added to Frosthold Waystation alongside its pre-existing lineup.
+['shop', 'exchange', 'inn', 'vault', 'academy', 'shrine', 'tavern'].forEach(function (t) {
   assert(!!Game.World.getFacility(frostholdWaystation, t), 'Frosthold Waystation has facility: ' + t);
+});
+var frostholdExchange = Game.World.getFacility(frostholdWaystation, 'exchange');
+assert(frostholdExchange.stock.length > 0, 'Frosthold Waystation exchange has stock');
+frostholdExchange.stock.forEach(function (entry) {
+  assert(!!Game.Inventory.getItem(entry.itemId), 'Frosthold Waystation exchange item exists: ' + entry.itemId);
+  assert(typeof entry.costAp === 'number' && entry.costAp > 0, 'Frosthold Waystation exchange entry ' + entry.itemId + ' has a positive costAp');
 });
 // No gap wider than the archived ±5 XP/loot cutoff between the two hunting bands' monster levels.
 var glacialLevels = glacialApproach.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
@@ -751,6 +798,47 @@ assert(!!weaponId, 'sanity: starter weapon equipped');
 var res5f = Game.World.sell(weaponId);
 assert(res5f.ok === false, 'cannot sell an equipped item: ' + res5f.message);
 
+// =================== Test 5b: v1.4 P2 (G1) — AA Exchange (buyAp) ===================
+console.log('\n=== Test 5b: buyAp succeeds with enough AP, refuses when short on AP or over weight ===');
+var c5g = makeCharacter({ name: 'ExchangeTest' });
+c5g.level = 8; // Laik gates travel at minLevel 8
+var travel5g = Game.World.travelTo('laik');
+assert(travel5g.ok === true && c5g.currentLocation === 'laik', 'sanity: travelled to Laik');
+
+// not sold here
+var resNotSold5g = Game.World.buyAp('sword_arkan_runeblade');
+assert(resNotSold5g.ok === false && /not sold here/i.test(resNotSold5g.message), 'buyAp refuses an item not on the exchange stock: ' + resNotSold5g.message);
+
+// short on AP
+c5g.ap = 0;
+var cheapest5g = 'crystal_energy_shard'; // 15 AP in Laik's exchange stock (js/data/areas.js)
+var resShort5g = Game.World.buyAp(cheapest5g);
+assert(resShort5g.ok === false && /Advantage Points/i.test(resShort5g.message), 'buyAp refuses when short on AP: ' + resShort5g.message);
+assert(c5g.inventory.indexOf(cheapest5g) === -1, 'nothing added when buyAp refuses for lack of AP');
+assert(c5g.ap === 0, 'AP not spent when buyAp refuses for lack of AP');
+
+// success
+c5g.ap = 100;
+var invBefore5g = c5g.inventory.length;
+var resOk5g = Game.World.buyAp(cheapest5g);
+assert(resOk5g.ok === true, 'buyAp succeeds with enough AP: ' + resOk5g.message);
+assert(c5g.inventory.length === invBefore5g + 1, 'bought item added to inventory');
+assert(c5g.inventory.indexOf(cheapest5g) !== -1, 'exchange item present in inventory');
+assert(c5g.ap === 100 - 15, 'AP deducted by the exact costAp (15), got ' + c5g.ap);
+
+// over capacity
+var c5h = makeCharacter({ name: 'ExchangeCapacityTest' });
+c5h.level = 8;
+Game.World.travelTo('laik');
+c5h.ap = 10000;
+c5h.strength = 0; // zero carry capacity (same pattern as Test 5's shop over-capacity case)
+var apBefore5h = c5h.ap;
+var invBefore5h = c5h.inventory.length;
+var resCap5h = Game.World.buyAp('ap_boots_gold_plated'); // 140 AP, weight 5 -> too heavy at capacity 0
+assert(resCap5h.ok === false && /weight/i.test(resCap5h.message), 'buyAp refuses over capacity: ' + resCap5h.message);
+assert(c5h.ap === apBefore5h, 'AP not spent when buyAp fails over capacity');
+assert(c5h.inventory.length === invBefore5h, 'nothing added when buyAp fails over capacity');
+
 // =================== Test 6: vault ===================
 console.log('\n=== Test 6: vault round-trips gold/items, withdraw blocked over capacity, weightless ===');
 var c6 = makeCharacter({ name: 'VaultTest' });
@@ -1042,7 +1130,7 @@ assert(Array.isArray(loaded11.character.afflictions) && loaded11.character.affli
 Game.state = loaded11;
 Game.persist();
 var resaved11 = JSON.parse(localStorageStore['herorpg_save']);
-assert(resaved11.version === 9, 'resave stamps version 9 (v1.2 Phase 1 equipment.offhand migration)');
+assert(resaved11.version === 10, 'resave stamps version 10 (v1.4 P2 Advantage Points migration on top), got ' + resaved11.version);
 
 // v1 -> v4 chain (continues on through v8; the historical "v4" name in the label below refers to
 // the fields this specific fixture checks, not the final stamped version)
@@ -1075,7 +1163,7 @@ assert(Array.isArray(loaded11b.character.afflictions) && loaded11b.character.aff
 assert(loaded11b.character.name === 'V3Timer', 'v7->v8 migration: identity intact');
 Game.state = loaded11b;
 Game.persist();
-assert(JSON.parse(localStorageStore['herorpg_save']).version === 9, 'v7->v9 resave stamps version 9');
+assert(JSON.parse(localStorageStore['herorpg_save']).version === 10, 'v7->v10 resave stamps version 10');
 
 // A v7 save that (hypothetically) already carried an afflictions array is left untouched (no
 // double-init / data loss).
@@ -1271,6 +1359,11 @@ var baseGold = ratDef.goldMin + Math.floor(0.5 * (ratDef.goldMax - ratDef.goldMi
 var expectedChampGold = Math.round(baseGold * BALANCE.CHAMPION_REWARD_MULT);
 assert(champBattle.rewards.gold === expectedChampGold, 'champion: gold doubled: expected ' + expectedChampGold + ', got ' + champBattle.rewards.gold);
 assert(champBattle.rewards.shards === 1, 'champion: shard guaranteed (shardChance roll skipped entirely): got ' + champBattle.rewards.shards);
+// v1.4 P2 (G1): AP champion multiplier (BALANCE.AP_CHAMPION_MULT), same x2 pattern as
+// CHAMPION_REWARD_MULT for xp/gold above.
+var expectedChampAp = Math.round(BALANCE.AP_PER_WIN(ratDef.level) * BALANCE.AP_CHAMPION_MULT);
+assert(champBattle.rewards.ap === expectedChampAp, 'champion: AP x' + BALANCE.AP_CHAMPION_MULT + ': expected ' + expectedChampAp + ', got ' + champBattle.rewards.ap);
+assert(c15e.ap === expectedChampAp, 'champion: character.ap credited with the champion AP reward');
 assert(champBattle.pendingLoot === 'potion_minor_healing', 'champion: doubled drop chance (0.1 -> 0.2) hit on a 0.15 roll that would miss the base rate: got ' + champBattle.pendingLoot);
 Game.Battle.endBattle();
 

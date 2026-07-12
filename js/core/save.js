@@ -5,7 +5,7 @@ var Game = window.Game || {};
 Game.Save = (function () {
 
   var STORAGE_KEY = 'herorpg_save';
-  var CURRENT_VERSION = 9;
+  var CURRENT_VERSION = 10;
 
   // Transient fields are never persisted: `battle` (Phase 3) holds a live reference to the
   // character plus per-fight state; reloading mid-battle simply abandons the battle.
@@ -207,6 +207,17 @@ Game.Save = (function () {
         }
       }
       version = 9;
+    }
+
+    // v9 -> v10: v1.4 P2 (G1) added Advantage Points, character.ap (js/core/character.js create();
+    // docs/SPEC-V1.4-GAMEPLAY.md §3). Existing v9 saves are upgraded in place (no data lost); a
+    // pre-existing character simply starts with 0 AP, same as a fresh one.
+    if (version === 9) {
+      if (state && state.character) {
+        var c10 = state.character;
+        if (typeof c10.ap !== 'number') c10.ap = 0;
+      }
+      version = 10;
     }
 
     if (version === CURRENT_VERSION) return state;

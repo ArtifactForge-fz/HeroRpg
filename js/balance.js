@@ -390,5 +390,21 @@ var BALANCE = {
   //    out of this fix's scope).
 
   // ==================== v1.4 P1: G5 quest pacing (docs/SPEC-V1.4-GAMEPLAY.md §2) ====================
-  MAX_ACTIVE_QUESTS: 3 // [revised] user-directed pacing override (docs/SPEC-V1.4-GAMEPLAY.md §2, 2026-07-11); the original documents no cap
+  MAX_ACTIVE_QUESTS: 3, // [revised] user-directed pacing override (docs/SPEC-V1.4-GAMEPLAY.md §2, 2026-07-11); the original documents no cap
+
+  // ==================== v1.4 P2: G1 Advantage Points + the AA exchange (docs/SPEC-V1.4-GAMEPLAY.md §3) ====================
+  // [archived] kills-as-currency (reference/forum/t-827.md "you can now spend kills to get
+  // items"); the earn CURVE below is [invented] (no rate survived), locked by the P0 sim
+  // (docs/SPEC-V1.4-GAMEPLAY.md P0 RESULTS item 5): 1 AP at L1-19, rising by 1 every 20 levels up
+  // to 6 AP at L100. Awarded on every battle victory, including 5-level-cutoff wins ("a kill is a
+  // kill" — js/core/battle.js onWin places this ahead of the cutoff early-return, same placement
+  // precedent as recordKill/the Legendary-class check above it); never on flee or loss.
+  AP_PER_WIN: function (monsterLevel) { return 1 + Math.floor(monsterLevel / 20); },
+  // Champion/boss AP premiums reuse the EXACT existing reward-multiplier pattern (same P0 sim
+  // line): CHAMPION_REWARD_MULT already doubles xp/gold for a champion kill (js/core/battle.js
+  // onWin championMult), and CLAUDE.md documents the archived boss premium as "bosses get flat
+  // hp/damage premiums and x3 xp" — AP mirrors both exactly (x2 champion, x3 boss) rather than
+  // inventing a third curve.
+  AP_CHAMPION_MULT: 2, // invented, matches CHAMPION_REWARD_MULT
+  AP_BOSS_MULT: 3 // invented, matches the archived boss xp x3 premium
 };

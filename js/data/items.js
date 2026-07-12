@@ -3646,6 +3646,122 @@ Game.Data.items = [
     // boss signature: eidas_ascendant (js/data/monsters.js), the Band F lair boss and the arc's
     // FINAL final boss — the capstone drop of the entire 41-100 level arc.
     desc: "A blade struck whole from Eidas's own broken rune-plating, still humming with the same red-moon Anima he meant to remake himself with. Whatever divine race he founded out there, it never made a weapon as honest as the one that finally cut him down."
+  },
+
+  // =====================================================================
+  // v1.4 P2 (G1): AA Exchange-exclusive items (docs/SPEC-V1.4-GAMEPLAY.md §3). Bought only with
+  // Advantage Points at a town 'exchange' facility (js/data/areas.js Laik/Frosthold Waystation;
+  // js/core/world.js buyAp) — never sold in a gold shop, never a synthesis input/output. HARD
+  // RULE (spec §7 guardrail): every stat here sits AT OR BELOW the best non-unique gear of the
+  // same levelReq (no power creep — AP is convenience/prestige), and every `value` is vendor-trash
+  // (<=50g) so selling one back for gold can never out-earn the AP spent buying it.
+  // =====================================================================
+  {
+    // [archived] item NAME from reference/forum/t-827.md (players bought "steel plated boots"
+    // from the AA list); stats [invented]. Feet armor <=11 (heavy_feet_ironclad_sabatons, the
+    // best non-unique feet piece at levelReq<=10) — set to 10 to stay strictly below it.
+    id: 'ap_boots_steel_plated',
+    name: 'Steel-Plated Boots',
+    slot: 'feet',
+    skill: 'Medium Armor',
+    armor: 10,
+    weight: 5,
+    levelReq: 10,
+    value: 20,
+    tags: [],
+    desc: 'Sturdy boots reinforced with overlapping steel plates — plain work, honestly priced in kills rather than coin.'
+  },
+  {
+    // [archived] item NAME from reference/forum/t-827.md (players bought "steel plated boots"
+    // from the AA list — this gilded variant reuses the same archived name, one grade up). Feet
+    // armor <=23 (medium_feet_reclaimers_boots, the best non-unique feet piece at levelReq<=50).
+    id: 'ap_boots_gold_plated',
+    name: 'Gold-Plated Boots',
+    slot: 'feet',
+    skill: 'Medium Armor',
+    armor: 22,
+    weight: 5,
+    levelReq: 50,
+    value: 35,
+    tags: [],
+    desc: "A gilded upgrade on the steel-plated pattern — the gold leaf is cosmetic; the steel underneath does the actual work."
+  },
+  {
+    // [invented] a ceremonial helm for those who have racked up enough kills to afford one. Head
+    // armor <=36 (heavy_head_spireward_helm, the best non-unique head piece at levelReq<=85).
+    id: 'ap_helm_gilded_crest',
+    name: 'Gilded Crest Helm',
+    slot: 'head',
+    skill: 'Heavy Armor',
+    armor: 35,
+    weight: 10,
+    levelReq: 85,
+    value: 45,
+    tags: [],
+    desc: "A heavy helm crowned with a gilded crest, awarded (in spirit) for a kill count few ever reach — it turns a blade exactly as well as its plainer cousins."
+  },
+  {
+    // [invented] the L100 prestige piece — priced at the top of the AA list ("all price ranges",
+    // reference/site/homepage_2006.md). Body armor <=39 / magicArmor <=12 (light_body_moonveil_shroud,
+    // the best non-unique body piece at levelReq<=100 — nothing non-unique is authored at exactly
+    // 100), set below both so it stays a prestige/convenience pick, never best-in-slot.
+    id: 'ap_body_tourney_regalia',
+    name: 'Tourney Regalia',
+    slot: 'body',
+    skill: 'Light Armor',
+    armor: 38,
+    magicArmor: 10,
+    weight: 3,
+    levelReq: 100,
+    value: 50,
+    tags: [],
+    desc: "Ceremonial plate worn by champions of the arena rather than the battlefield — every rivet as fine as a soldier's kit, and priced for someone who has earned it a kill at a time."
+  },
+  {
+    // [invented] a solid mid-tier sword for a veteran willing to spend kills instead of gold.
+    // Damage <=87 (sword_kuraan_reclaimers_blade, the best non-unique Sword at levelReq<=45).
+    id: 'ap_blade_veterans_edge',
+    name: "Veteran's Edge",
+    slot: 'weapon',
+    skill: 'Swords',
+    damage: 80,
+    weight: 6,
+    levelReq: 45,
+    value: 40,
+    tags: [],
+    desc: "A well-worn blade sold to veterans of the reclamation campaigns — not the sharpest edge on the market, but never far from one."
+  },
+  {
+    // [invented] a convenience Energy consumable slotted between two existing grade steps
+    // (crystal_fclass_2 76->580, crystal_gclass_1 81->620) so it never obsoletes either.
+    // energyRestore <=620 (crystal_gclass_1, the best non-unique energy item at levelReq<=81).
+    id: 'ap_stone_energy_royal',
+    name: 'Royal Energy Stone',
+    slot: 'none',
+    skill: null,
+    combatUsable: true,
+    energyRestore: 600,
+    weight: 1,
+    levelReq: 81,
+    value: 40,
+    tags: [],
+    desc: 'A polished energy stone sold at the AA Exchange to travelers who would rather spend kills than coin on their next stone.'
+  },
+  {
+    // [invented] a convenience Sphere counterpart to Royal Energy Stone, slotted between
+    // sphere_fclass_2 (76->1020) and sphere_gclass_1 (81->1080) so it never obsoletes either.
+    // heal <=1080 (sphere_gclass_1, the best non-unique Sphere at levelReq<=81).
+    id: 'ap_sphere_royal',
+    name: 'Royal Sphere',
+    slot: 'none',
+    skill: null,
+    combatUsable: true,
+    heal: 1050,
+    weight: 1,
+    levelReq: 81,
+    value: 45,
+    tags: [],
+    desc: 'A radiant healing sphere from the AA Exchange, priced for kills rather than coin.'
   }
 ];
 

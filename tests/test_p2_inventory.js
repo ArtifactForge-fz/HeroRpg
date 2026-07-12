@@ -113,6 +113,16 @@ var reequip = Game.Inventory.equip(c1, 'sword_rusty_shortblade');
 assert(reequip.ok, 're-equip of starter sword succeeds');
 assert(Game.Character.getDamage(c1) === dmgWithWeapon, 'Damage restored after re-equip');
 
+// ================= Test 1b: v1.4 P2 (G1) — Advantage Points, current-version round-trip =================
+console.log('\n=== Test 1b: character.ap defaults to 0, and a current-version save/load round-trip keeps it ===');
+assert(c1.ap === 0, 'fresh character starts with ap: 0');
+c1.ap = 742;
+Game.state.character = c1;
+Game.persist();
+var reloadedAp = Game.Save.load();
+assert(reloadedAp !== null, 'current-version save reloads');
+assert(reloadedAp.character.ap === 742, 'a current-version round-trip keeps character.ap, got ' + reloadedAp.character.ap);
+
 // ================= Test 2: v1 save migration =================
 console.log('\n=== Test 2: hand-crafted v1 save migrates cleanly ===');
 var v1Character = {
@@ -147,7 +157,8 @@ assert(loaded.character.equipment && loaded.character.equipment.weapon === null,
 Game.state = loaded;
 Game.persist();
 var resaved = JSON.parse(localStorageStore['herorpg_save']);
-assert(resaved.version === 9, 'resaved payload is stamped CURRENT_VERSION 9 (v1.2 Phase 1 equipment.offhand migration), got ' + resaved.version);
+assert(resaved.version === 10, 'resaved payload is stamped CURRENT_VERSION 10 (v1.4 P2 Advantage Points migration), got ' + resaved.version);
+assert(loaded.character.ap === 0, 'v1 save migration adds ap:0 (v9->v10 step), got ' + loaded.character.ap);
 
 // ================= Test 3: level/stat requirement gating =================
 console.log('\n=== Test 3: equip blocked with red reqs when unmet; cursed item traps ===');

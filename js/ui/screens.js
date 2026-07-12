@@ -336,7 +336,9 @@ Game.Screens = (function () {
 
     var wealth = el('div', { class: 'mt8' }, [
       el('b', {}, ['Gold: ']), c.platinum + 'p ' + c.gold + 'g', '   ',
-      el('b', {}, ['Anima Shards: ']), String(c.animaShards)
+      el('b', {}, ['Anima Shards: ']), String(c.animaShards), '   ',
+      // v1.4 P2 (G1): Advantage Points, a kills-only currency spent at a town's AA Exchange.
+      el('b', {}, ['Advantage Points: ']), String(c.ap || 0)
     ]);
     top.appendChild(wealth);
 
@@ -1084,12 +1086,14 @@ Game.Screens = (function () {
   var FACILITY_LABELS = {
     shop: 'Shop', synthesis: 'Synthesis Shop', inn: 'Inn',
     vault: 'Vault', academy: 'Academy', shrine: 'Spirit Shrine',
-    tavern: 'Tavern'
+    tavern: 'Tavern', exchange: 'AA Exchange' // v1.4 P2 (G1): the AA Exchange facility
   };
 
   // Order per New_Player_Guide.md §5.1 facility mention order (Tavern is §5.1.5, between Vault
   // and Academy in the guide; appended after Shrine here to keep the Phase 4 layout stable).
-  var FACILITY_ORDER = ['shop', 'synthesis', 'inn', 'vault', 'academy', 'shrine', 'tavern'];
+  // v1.4 P2 (G1): 'exchange' inserted right after 'shop' — same buy-facing facility shape, just
+  // priced in Advantage Points instead of gold.
+  var FACILITY_ORDER = ['shop', 'exchange', 'synthesis', 'inn', 'vault', 'academy', 'shrine', 'tavern'];
 
   function renderTown(root) {
     root.innerHTML = '';
@@ -1157,6 +1161,7 @@ Game.Screens = (function () {
       facPanel.appendChild(header);
       var body = el('div', { class: 'mt4 mb8' });
       if (type === 'shop') renderShopPanel(body, c, area, presentTypes.shop);
+      else if (type === 'exchange') renderExchangePanel(body, c, area, presentTypes.exchange);
       else if (type === 'synthesis') renderSynthesisPanel(body, c);
       else if (type === 'inn') renderInnPanel(body, c);
       else if (type === 'vault') renderVaultPanel(body, c);
@@ -1223,6 +1228,38 @@ Game.Screens = (function () {
         body.appendChild(row);
       });
     }
+  }
+
+  // ---- AA Exchange sub-panel (v1.4 P2, G1): buy list priced in Advantage Points instead of
+  // gold — mirrors renderShopPanel's Buy list exactly (icon, name, cost, Buy/Info), but reads
+  // stock as { itemId, costAp } pairs and calls Game.World.buyAp instead of buy(). No Sell
+  // section: the Exchange is AP-in/item-out only (spec §7 — AP is never gold-convertible, and
+  // items bought here are ordinary inventory items sellable for gold at any shop like any other).
+  function renderExchangePanel(body, c, area, exchangeFacility) {
+    body.appendChild(el('div', { class: 'tcat2' }, ['Buy with Advantage Points']));
+    body.appendChild(el('div', { class: 'smallfont mt4 mb4' }, ['You have ' + (c.ap || 0) + ' Advantage Points.']));
+    var stock = exchangeFacility.stock || [];
+    stock.forEach(function (entry, idx) {
+      var item = Game.Inventory.getItem(entry.itemId);
+      if (!item) return;
+      var afford = (c.ap || 0) >= entry.costAp;
+      var row = el('div', { class: 'stat-row alt' + (idx % 2) }, [
+        Game.UI.icon(item.id, 32),
+        el('span', { class: 'stat-name', style: 'width:170px; flex:0 0 170px;' }, [item.name]),
+        el('span', { class: 'tinyfont' }, [entry.costAp + ' AP']),
+        el('button', {
+          class: 'button',
+          disabled: afford ? null : 'disabled',
+          onclick: function () {
+            var res = Game.World.buyAp(entry.itemId);
+            if (!res.ok) alert(res.message);
+            refreshTownScreen();
+          }
+        }, ['Buy']),
+        el('button', { class: 'button', onclick: function () { Game.Infobox.open(item, c); } }, ['Info'])
+      ]);
+      body.appendChild(row);
+    });
   }
 
   // ---- Synthesis sub-panel: recipe list, inputs have/missing color, gold + output ----
@@ -2078,7 +2115,8 @@ Game.Screens = (function () {
         outcome.appendChild(el('div', {}, [el('b', {}, ['Victory!'])]));
         var r = battle.rewards;
         if (r && !r.cutoff) {
-          outcome.appendChild(el('div', { class: 'smallfont mt4' }, ['Experience: ' + r.xp + '   Gold: ' + r.gold + (r.shards ? '   Anima Shards: ' + r.shards : '')]));
+          outcome.appendChild(el('div', { class: 'smallfont mt4' }, ['Experience: ' + r.xp + '   Gold: ' + r.gold +
+            (r.ap ? '   +' + r.ap + ' AP' : '') + (r.shards ? '   Anima Shards: ' + r.shards : '')]));
           var skillNames = Object.keys(r.skillXp || {});
           if (skillNames.length > 0) {
             outcome.appendChild(el('div', { class: 'tinyfont mt4' }, [
@@ -2086,7 +2124,10 @@ Game.Screens = (function () {
             ]));
           }
         } else {
-          outcome.appendChild(el('div', { class: 'smallfont mt4' }, ['This monster was too far below your level — no rewards.']));
+          // v1.4 P2 (G1): AP is a kills-only currency awarded on EVERY win, including a
+          // 5-level-cutoff win ("a kill is a kill") — shown here even though XP/gold/loot are cut.
+          outcome.appendChild(el('div', { class: 'smallfont mt4' }, ['This monster was too far below your level — no rewards.' +
+            (r && r.ap ? ' +' + r.ap + ' AP' : '')]));
         }
         if (battle.pendingLoot || battle.pendingStolenLoot) {
           var lootRow = el('div', { class: 'mt8', style: 'display:flex; align-items:center; gap:4px; flex-wrap:wrap;' });

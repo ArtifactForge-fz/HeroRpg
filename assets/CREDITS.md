@@ -244,3 +244,29 @@ items/techs may reuse tiles):
   impale→earth/air/conjuration, mend_wounds→light/restoration).
 All CC0 / public domain. Every tile verified a valid 32×32 PNG. Mapping script (not committed):
 scratchpad `real_icons_arc.js`.
+
+## v1.4 icons — AP-exclusive items (AA exchange, docs/SPEC-V1.4-GAMEPLAY.md G1)
+
+Pulled by the lead from the DCSS repo (same CC0 source/pipeline as the v1.2/v1.3 passes),
+verified 32x32 PNGs and byte-hash-distinct from every existing icon:
+
+| game id | rltiles source |
+|---|---|
+| ap_boots_steel_plated | item/armour/boots_ego2 |
+| ap_boots_gold_plated | item/armour/april_boots2 |
+| ap_helm_gilded_crest | item/armour/headgear/helmet_art1 |
+| ap_body_tourney_regalia | item/armour/golden_dragon_armour_art |
+| ap_blade_veterans_edge | item/weapon/blessed_blade |
+| ap_stone_energy_royal | item/misc/misc_crystal |
+| ap_sphere_royal | item/potion/i-magic |
+
+## v1.4 icons — provisions (foraging & provisions, docs/SPEC-V1.4-GAMEPLAY.md G4/G4b)
+
+Same CC0 source/pipeline; verified PNGs, byte-hash-distinct:
+
+| game id | rltiles source |
+|---|---|
+| provision_trail_rations | item/food/bread_ration |
+| provision_honeyed_mead | item/food/honeycomb |
+| provision_spice_tea | item/potion/orange |
+| provision_foragers_bundle | item/food/fruit |

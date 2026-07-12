@@ -184,9 +184,10 @@
   // access your inventory or techniques").
   var ACTIONS_FACILITY_LABELS = {
     shop: 'Shop', synthesis: 'Synthesis', inn: 'Inn',
-    vault: 'Vault', academy: 'Academy', shrine: 'Spirit Shrine', tavern: 'Tavern'
+    vault: 'Vault', academy: 'Academy', shrine: 'Spirit Shrine', tavern: 'Tavern',
+    exchange: 'AA Exchange' // v1.4 P2 (G1): the AA Exchange facility (js/data/areas.js)
   };
-  var ACTIONS_FACILITY_ORDER = ['shop', 'synthesis', 'inn', 'vault', 'academy', 'shrine', 'tavern'];
+  var ACTIONS_FACILITY_ORDER = ['shop', 'exchange', 'synthesis', 'inn', 'vault', 'academy', 'shrine', 'tavern'];
 
   Game.renderActions = function () {
     var wrap = document.getElementById('actionswrap');

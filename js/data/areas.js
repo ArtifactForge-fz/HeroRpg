@@ -174,6 +174,30 @@ Game.Data.areas = [
           'crystal_energy_shard'
         ]
       },
+      // v1.4 P2 (G1): the AA Exchange — [archived] the "AA list" (reference/site/homepage_2006.md
+      // "Added 20+ items to the AA list for all price ranges"); placement [invented] (Laik is the
+      // mid-arc half of the two-town split, docs/SPEC-V1.4-GAMEPLAY.md §3). Stock leans low/mid
+      // levelReq (1-50) so it stays relevant to the players actually passing through Laik; the two
+      // crystal_bclass_*/sphere_bclass_* entries are otherwise DROP-ONLY (never sold in any town
+      // shop, only from monster drops and synthesis inputs — js/data/monsters.js/recipes.js), so
+      // the Exchange gives kills-currency a second route to them.
+      {
+        type: 'exchange',
+        stock: [
+          { itemId: 'crystal_energy_shard', costAp: 15 },
+          { itemId: 'potion_greater_healing', costAp: 25 },
+          { itemId: 'potion_riverbank_elixir', costAp: 45 },
+          { itemId: 'ap_boots_steel_plated', costAp: 50 },
+          { itemId: 'crystal_bclass_1', costAp: 60 },
+          { itemId: 'sphere_bclass_1', costAp: 65 },
+          { itemId: 'crystal_bclass_2', costAp: 90 },
+          { itemId: 'sphere_bclass_2', costAp: 95 },
+          { itemId: 'medium_body_riverguard_brigandine', costAp: 100 },
+          { itemId: 'sword_riverguard_falchion', costAp: 110 },
+          { itemId: 'ap_boots_gold_plated', costAp: 140 },
+          { itemId: 'ap_blade_veterans_edge', costAp: 220 }
+        ]
+      },
       { type: 'inn' },
       { type: 'vault' },
       // archived: New_Player_Guide.md §5.1.5 "Tavern" (quest source) — Laik's Tavern is where
@@ -600,6 +624,27 @@ Game.Data.areas = [
           'light_legs_moonveil_leggings', 'medium_feet_sanctum_boots', 'heavy_legs_redmoon_legguards',
           'crystal_hclass_1', 'crystal_hclass_2', 'sphere_hclass_1', 'sphere_hclass_2',
           'stone_energy_moonbridge'
+        ]
+      },
+      // v1.4 P2 (G1): the AA Exchange — [archived] the "AA list" (reference/site/homepage_2006.md
+      // "Added 20+ items to the AA list for all price ranges"); placement [invented] (Frosthold is
+      // the late-arc half of the two-town split, docs/SPEC-V1.4-GAMEPLAY.md §3 — it already serves
+      // the whole 61-100 range, so it carries the mid/high end of the catalog, topping out at the
+      // level-100 prestige piece). Some entries deliberately overlap Laik's stock for a smooth
+      // handoff (established shop-stock pattern, see the shop facility's own comment above).
+      {
+        type: 'exchange',
+        stock: [
+          { itemId: 'ap_boots_gold_plated', costAp: 140 },
+          { itemId: 'crystal_cclass_2', costAp: 150 },
+          { itemId: 'stone_energy_majiku', costAp: 160 },
+          { itemId: 'sphere_dclass_1', costAp: 170 },
+          { itemId: 'ap_blade_veterans_edge', costAp: 220 },
+          { itemId: 'crystal_fclass_2', costAp: 300 },
+          { itemId: 'ap_stone_energy_royal', costAp: 320 },
+          { itemId: 'ap_sphere_royal', costAp: 340 },
+          { itemId: 'ap_helm_gilded_crest', costAp: 500 },
+          { itemId: 'ap_body_tourney_regalia', costAp: 1800 }
         ]
       },
       { type: 'inn' },

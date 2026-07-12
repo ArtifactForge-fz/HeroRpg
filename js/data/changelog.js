@@ -12,6 +12,28 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.4.0',
+    date: '2026-07-12',
+    title: 'Advantage Points & Quest Pacing',
+    saveVersion: 10,
+    highlights: [
+      'Every battle victory now also earns Advantage Points, a second currency you can spend ' +
+        'without ever opening your coin purse.',
+      'A new AA Exchange has opened in Laik and Frosthold Waystation, selling gear, crystals, ' +
+        'spheres, and energy stones for Advantage Points instead of gold — including a handful ' +
+        'of Exchange-only items, up to a level-100 prestige set of Tourney Regalia.',
+      'Your quest journal is now capped at 3 active quests at a time, so taverns no longer dump ' +
+        'their entire quest list on you at once; finish or abandon a quest to make room for more.',
+      'Multi-part questlines now unlock their next chapter automatically as you complete the ' +
+        'quest before it, instead of all appearing at once.',
+      'The Town screen now shows one facility at a time (Shop, Inn, Vault, and so on) instead of ' +
+        'stacking every service onto a single crowded page.',
+      'Fixed a display bug where some status bars (Health, Energy, and others) could render with ' +
+        'no visible color fill.'
+    ]
+  },
+
+  {
     version: 'v1.3.1',
     date: '2026-07-11',
     title: 'Bugfix Release',

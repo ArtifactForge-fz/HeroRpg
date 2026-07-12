@@ -254,6 +254,8 @@ setRng(fixedRng(0.01)); // 0.01 < 0.65 -> flee succeeds
 Game.Battle.flee();
 assert(b4.phase === 'fled', 'successful flee (roll < fleeChance) -> phase fled');
 assert(c4.fury === 0, 'successful flee resets Fury');
+// v1.4 P2 (G1): AP is a kills-only currency — fleeing (successful or not) grants none.
+assert(c4.ap === 0, 'fleeing grants no Advantage Points');
 Game.Battle.endBattle();
 
 // monster energy drain -> monsterFled with no rewards
@@ -352,6 +354,9 @@ assert(r5.gold === b5.monster.goldMin, 'gold roll 0.0 -> goldMin (' + r5.gold + 
 assert(r5.shards === 1, 'shard roll 0.0 < shardChance -> 1 shard');
 assert(b5.pendingLoot === 'potion_minor_healing', 'drop roll 0.0 -> first drop pending (potion)');
 assert(c5.fury === furyBefore + 1, 'fury +1 tick for killing an at-or-above-level monster');
+// v1.4 P2 (G1): Advantage Points — a kills-only currency, awarded on every win.
+assert(r5.ap === BALANCE.AP_PER_WIN(b5.monster.level), 'regular win grants BALANCE.AP_PER_WIN(monster level), got ' + r5.ap);
+assert(c5.ap === r5.ap, 'character.ap credited with the AP reward');
 // skill xp: Swords was at cap 3 -> addSkillXp must not raise it
 assert(c5.skills['Swords'].level === 3, 'weapon skill did not exceed cap 2L+1=3');
 assert(r5.skillXp['Swords'] === BALANCE.SKILL_XP_PER_USE, 'weapon skill XP granted at full rate (monster not below player)');
@@ -392,6 +397,8 @@ assert(b6.phase === 'lost', 'player at 1 HP dies to the first strike -> phase lo
 assert(c6.deaths === deathsBefore6 + 1, 'deaths incremented');
 assert(c6.fury === 0, 'fury reset on death');
 assert(c6.gold === goldBefore6 && c6.inventory.length === invBefore6, 'nothing lost on death');
+// v1.4 P2 (G1): AP is a kills-only currency — a loss grants none.
+assert(c6.ap === 0, 'a loss grants no Advantage Points');
 assert(c6.hitPoints === 0, 'HP is 0 while the defeat screen is showing');
 Game.Battle.endBattle();
 assert(c6.hitPoints === 1, 'player restored to 1 HP outside battle');
@@ -416,6 +423,10 @@ assert(b7.phase === 'won', 'battle won');
 assert(b7.rewards.cutoff === true, 'rewards flagged as cutoff');
 assert(c7.xp === xpBefore7, 'zero combat XP');
 assert(c7.gold === goldBefore7 && c7.animaShards === shardsBefore7, 'zero gold/shards');
+// v1.4 P2 (G1): AP is awarded on EVERY win, including a 5-level-cutoff win ("a kill is a kill") —
+// XP/gold/shards/skill-XP are cut, but AP is not.
+assert(b7.rewards.ap === BALANCE.AP_PER_WIN(b7.monster.level), 'cutoff win still grants BALANCE.AP_PER_WIN(monster level), got ' + b7.rewards.ap);
+assert(c7.ap === b7.rewards.ap, 'character.ap credited even on a cutoff win');
 assert(b7.pendingLoot === null, 'zero loot');
 assert(c7.skills['Swords'].xp === swordsXpBefore7 && c7.skills['Swords'].level === swordsLvBefore7, 'zero skill XP');
 assert(c7.monsterKills === 1, 'kill still counted');
@@ -558,7 +569,7 @@ assert(loaded.character.fury === 0, 'migration adds fury=0');
 Game.state = loaded;
 Game.persist();
 var resaved = JSON.parse(localStorageStore['herorpg_save']);
-assert(resaved.version === 9, 'resave stamps current version 9 (v1.2 Phase 1 equipment.offhand migration on top)');
+assert(resaved.version === 10, 'resave stamps current version 10 (v1.4 P2 Advantage Points migration on top), got ' + resaved.version);
 
 // v1 chain still works end-to-end (v1 -> v2 -> v3 -> v4)
 var v1c = JSON.parse(JSON.stringify(v2Character));
@@ -606,7 +617,7 @@ assert(loadedV9.character.equipment.offhand === null, 'v8->v9 migration backfill
 Game.state = loadedV9;
 Game.persist();
 var resavedV9 = JSON.parse(localStorageStore['herorpg_save']);
-assert(resavedV9.version === 9, 'resave stamps CURRENT_VERSION 9, got ' + resavedV9.version);
+assert(resavedV9.version === 10, 'resave stamps CURRENT_VERSION 10, got ' + resavedV9.version);
 
 // v1 -> v9 full chain also ends up with equipment.offhand present (SPEC-V1.2.md Phase 1 #5).
 var v1ToV9 = JSON.parse(JSON.stringify(v8Character));
@@ -2569,6 +2580,25 @@ console.log('eidas_ascendant sim results over ' + EIDAS_ASCENDANT_SIM_COUNT + ' 
 // but as the FINALE, eidas_ascendant should be the COSTLIEST fight in the game (not unwinnable).
 assert(eaWinRate >= 0.6, 'eidas_ascendant is winnable by a geared level-100 warrior (win rate ' + (eaWinRate * 100).toFixed(1) + '%, want >= 60%, per the difficulty contract\'s "not unwinnable" floor)');
 assert(eaAvgConsumed >= 2, 'eidas_ascendant extracts a heavier cost than a normal band boss (avg consumables spent ' + eaAvgConsumed.toFixed(1) + ', want >= 2 -- society_anima_horror\'s Band E sim spent ~1.4)');
+
+// =================== Test 48: v1.4 P2 (G1) — AP boss multiplier (BALANCE.AP_BOSS_MULT) ===================
+console.log('\n=== Test 48: AP boss win grants BALANCE.AP_PER_WIN(monster level) x BALANCE.AP_BOSS_MULT ===');
+var c48 = makeCharacter({ name: 'ApBossTest' });
+c48.level = 10; // matches estari_ruin_warden's own level -> no 5-level cutoff
+c48.xp = BALANCE.XP_TO_LEVEL(10);
+Game.Character.recalcDerived(c48);
+c48.hitPoints = c48.hitPointsMax = 5000; // survive the boss's first strike (dex 10 >= player's) unscathed either way
+setRng(fixedRng(0.99));
+var b48 = Game.Battle.start('estari_ruin_warden'); // level 10 boss (monster.boss === true)
+assert(b48.monster.boss === true, 'sanity: estari_ruin_warden is flagged boss');
+b48.monster.hp = 1;
+setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.99, 0.99, 0.99], 0.99)); // no dbl/dodge/glancing/variance skew; gold/shard/drop rolls all miss
+Game.Battle.attack();
+assert(b48.phase === 'won', 'boss battle won');
+var expectedBossAp = Math.round(BALANCE.AP_PER_WIN(10) * BALANCE.AP_BOSS_MULT);
+assert(b48.rewards.ap === expectedBossAp, 'boss win grants AP_PER_WIN(10) x AP_BOSS_MULT = ' + expectedBossAp + ', got ' + b48.rewards.ap);
+assert(c48.ap === expectedBossAp, 'character.ap credited with the boss AP reward');
+Game.Battle.endBattle();
 
 // =================== Summary ===================
 console.log('\n===================================');

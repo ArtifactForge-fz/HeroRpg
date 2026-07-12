@@ -773,6 +773,16 @@ Game.Battle = (function () {
     // reached mid-resolution by the very XP this kill grants.
     var levelBeforeXp = c.level;
 
+    // v1.4 P2 (G1): Advantage Points — a kills-only currency, awarded on EVERY win, including a
+    // 5-level-cutoff win ("a kill is a kill" — computed and credited BEFORE the cutoff
+    // early-return below, same placement precedent as recordKill/the Legendary-class check
+    // above). [archived] reference/forum/t-827.md; curve [invented], locked by the P0 sim
+    // (docs/SPEC-V1.4-GAMEPLAY.md P0 RESULTS item 5). Champion/boss multipliers mirror the
+    // existing CHAMPION_REWARD_MULT / boss xp x3 premium (same P0 line).
+    var apMult = monster.champion ? BALANCE.AP_CHAMPION_MULT : (monster.boss ? BALANCE.AP_BOSS_MULT : 1);
+    var apGain = Math.round(BALANCE.AP_PER_WIN(monster.level) * apMult);
+    c.ap = (c.ap || 0) + apGain;
+
     // archived: Recent_Updates.md 2007-04-06 "The experience/loot cutoff for monsters is once
     // again 5 levels" — a monster 5+ levels below you yields nothing at all (no XP, skill XP,
     // gold, shards, or loot).
@@ -794,9 +804,9 @@ Game.Battle = (function () {
         }
       }
       if (cutoffLootId && cutoffLootId.indexOf('quest_') !== 0) cutoffLootId = null;
-      battle.rewards = { xp: 0, gold: 0, shards: 0, skillXp: {}, loot: cutoffLootId, cutoff: true };
+      battle.rewards = { xp: 0, gold: 0, shards: 0, skillXp: {}, loot: cutoffLootId, cutoff: true, ap: apGain };
       battle.pendingLoot = cutoffLootId;
-      log(battle, 'The ' + monster.name + ' was far beneath your level. You gain nothing.');
+      log(battle, 'The ' + monster.name + ' was far beneath your level. You gain nothing but ' + apGain + ' Advantage Points.');
       if (cutoffLootId) {
         var cutoffItem = Game.Inventory.getItem(cutoffLootId);
         log(battle, 'The ' + monster.name + ' dropped: ' + (cutoffItem ? cutoffItem.name : cutoffLootId) + '. Click Loot to claim it.');
@@ -931,10 +941,10 @@ Game.Battle = (function () {
     battle.rewards = {
       xp: xpGain, gold: goldGain, shards: shardsGain,
       skillXp: skillXpGranted, loot: lootId, cutoff: false,
-      thieveryGold: thieveryGoldGain, stolenLoot: stolenId
+      thieveryGold: thieveryGoldGain, stolenLoot: stolenId, ap: apGain
     };
 
-    log(battle, 'You gain ' + xpGain + ' experience and ' + goldGain + ' gold.' +
+    log(battle, 'You gain ' + xpGain + ' experience, ' + goldGain + ' gold, and ' + apGain + ' Advantage Points.' +
       (shardsGain ? ' You find an Anima Shard!' : ''));
     if (lootId) {
       var lootItem = Game.Inventory.getItem(lootId);

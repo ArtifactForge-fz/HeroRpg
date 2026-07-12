@@ -269,6 +269,43 @@ Game.World = (function () {
     return { ok: true, message: 'You bought ' + item.name + ' for ' + item.value + ' gold.' };
   }
 
+  // ---------------- AA Exchange (v1.4 P2, G1 — docs/SPEC-V1.4-GAMEPLAY.md §3) ----------------
+  // [archived] the "AA list" (reference/site/homepage_2006.md "Added 20+ items to the AA list for
+  // all price ranges"); a per-town 'exchange' facility whose stock is priced in Advantage Points
+  // (character.ap) instead of gold — mirrors buy() above (same "add item first, so a failed
+  // addItem never charges the player" ordering, same battle/facility/afford gates), spending AP
+  // instead of gold and reading stock as { itemId, costAp } pairs instead of a plain id list.
+  function exchangeStock(area) {
+    var exchange = getFacility(area, 'exchange');
+    return exchange ? exchange.stock : [];
+  }
+
+  function buyAp(itemId) {
+    var c = Game.state.character;
+    if (!c) return { ok: false, message: 'No character.' };
+    if (Game.state.battle) return { ok: false, message: 'You cannot shop during a battle.' };
+    var area = currentArea();
+    var stock = exchangeStock(area);
+    var entry = null;
+    for (var i = 0; i < stock.length; i++) {
+      if (stock[i].itemId === itemId) { entry = stock[i]; break; }
+    }
+    if (!area || !entry) return { ok: false, message: 'That item is not sold here.' };
+    var item = Game.Inventory.getItem(itemId);
+    if (!item) return { ok: false, message: 'Unknown item.' };
+    if ((c.ap || 0) < entry.costAp) {
+      return { ok: false, message: 'You cannot afford ' + item.name + ' (' + entry.costAp + ' Advantage Points).' };
+    }
+    // Add the item first so a failed addItem (over capacity) never spends AP.
+    var added = Game.Inventory.addItem(c, itemId);
+    if (!added) {
+      return { ok: false, message: 'You cannot carry ' + item.name + ' — too much weight.' };
+    }
+    c.ap -= entry.costAp;
+    if (Game.persist) Game.persist();
+    return { ok: true, message: 'You bought ' + item.name + ' for ' + entry.costAp + ' Advantage Points.' };
+  }
+
   function sellValue(item) {
     return Math.floor(item.value * BALANCE.SHOP_SELL_RATE); // invented rate
   }
@@ -643,6 +680,8 @@ Game.World = (function () {
     buy: buy,
     sell: sell,
     sellValue: sellValue,
+    exchangeStock: exchangeStock,
+    buyAp: buyAp,
     depositGold: depositGold,
     withdrawGold: withdrawGold,
     depositItem: depositItem,

@@ -112,7 +112,14 @@ Game.Character = (function () {
       // Entries are { id: 'haunting' } — a plain array of small objects (mirrors shrineBuffs'
       // shape) so a future affliction with its own per-entry state (e.g. a duration) doesn't
       // require another migration.
-      afflictions: []
+      afflictions: [],
+
+      // v1.4 P2 (G1): Advantage Points, save v9->v10 (js/core/save.js). A kills-only currency —
+      // [archived] reference/forum/t-827.md ("you can now spend kills to get items"); earned only
+      // on battle victory (js/core/battle.js onWin, BALANCE.AP_PER_WIN), spent at the AA Exchange
+      // town facility (js/core/world.js buyAp). Never gold-convertible (docs/SPEC-V1.4-GAMEPLAY.md
+      // §7 guardrail: AP is a parallel currency, not a gold faucet).
+      ap: 0
     };
 
     recalcDerived(character);

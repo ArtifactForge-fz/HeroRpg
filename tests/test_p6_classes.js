@@ -292,7 +292,7 @@ assert(loadedV6.character.primaryClass === 'thief', 'primaryClass (active slot) 
 Game.state = loadedV6;
 Game.persist();
 var resavedV6 = JSON.parse(localStorageStore['herorpg_save']);
-assert(resavedV6.version === 9, 'resaved payload is stamped CURRENT_VERSION 9, got ' + resavedV6.version);
+assert(resavedV6.version === 10, 'resaved payload is stamped CURRENT_VERSION 10, got ' + resavedV6.version);
 
 // Second crafted payload: rogue in the SECONDARY slot instead of primary ("incl. active slots").
 console.log('\n=== Test 1b: v6 save with rogue in the SECONDARY slot also migrates ===');
@@ -343,7 +343,7 @@ assert(loadedV1.character.primaryClass === null && loadedV1.character.secondaryC
 assert(loadedV1.character.legendaryUnlocked === false, 'v1->v7: legendary latch false');
 Game.state = loadedV1;
 Game.persist();
-assert(JSON.parse(localStorageStore['herorpg_save']).version === 9, 'v1->v9 resave stamps version 9');
+assert(JSON.parse(localStorageStore['herorpg_save']).version === 10, 'v1->v10 resave stamps version 10');
 
 // =================== Test 3: first_calling gates at level 5 ===================
 console.log('\n=== Test 3: first_calling gated at level 5 ===');
