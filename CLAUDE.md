@@ -225,6 +225,14 @@ Artifact not redeployed (claude.ai publishing on hold; see Deployment).
   `simple`, complexity ramps north). [archived intent] `homepage_2006.md` "Intelligent reactions
   based on hero actions"; generalizes the v1.4 G2 boss-script interpreter — **depends on v1.4**.
   Phased V0–V4, V0 (`/balance-sim`) the gate; **no save change** (data + transient only).
+- **Tier-3 expansion (branching)** — spec at `docs/SPEC-TIER3-EXPANSION.md` (backlogged 2026-07-12,
+  user-directed). [revised] replaces the v1.2 Tier-3 *convergence* (2 tier-2 → 1) with *branching*:
+  each of the 6 Tier-2 classes offers **2** Tier-3 options at L60 → **12** Tier-3 classes (roster
+  15→24). All new names archived from the 2004 create-a-class thread (`forum/t-449.md`: Berserker,
+  Paladin, Warden, Archmage, Cleric, Seer, Assassin, Ranger, Dragoon); the 3 shipped classes
+  (Shadowknight/Magus/Gambit) re-home under one Tier-2 parent. Reuses the tier machinery
+  (`thirdTierOptionsFor` re-keyed to tier-2 via a new `advancedClassIdsObtained`); **no save bump**;
+  balance is a sanity sim (same tier-3 band). Phased T0–T3.
 - Unique champion abilities (beyond stat multipliers); Eidolon system (`manual/Version_3.0.md`);
   pets (`heropet.php` existed, no data survived). (Tier-3 classes Shadowknight/Magus/Gambit and the
   Curse affliction — formerly backlog — shipped in v1.2.)
