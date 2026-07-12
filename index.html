@@ -15,7 +15,7 @@
 
   <div id="layout">
     <div id="leftcol">
-      <div>
+      <div id="navwrap">
         <div class="tcat">.: Navigation</div>
         <div class="panel" style="padding:0;">
           <ul class="navlist" id="navlist"></ul>
@@ -27,7 +27,7 @@
           <span class="smallfont">&nbsp;</span>
         </div>
       </div>
-      <div>
+      <div id="savewrap">
         <div class="tcat">.: Save</div>
         <div class="panel" id="savepanel"></div>
       </div>
@@ -42,6 +42,13 @@
     Powered by RadiantWeb and RadiantRPG &mdash; in memory of HeroRPG (herorpg.net, 2004&ndash;2008)
     &mdash; <a href="changelog.html" id="versionloglink">Version Log</a>
   </div>
+
+  <!-- v1.4 Mobile M1 (docs/SPEC-MOBILE-UI.md §3/§4): bottom tab bar container. Hidden on desktop
+       via a base `#mobiletabs { display: none; }` rule in css/theme.css; the 640px media query
+       switches it to a fixed bottom bar. Populated by Game.renderNav from the same NAV_ITEMS as
+       #navlist (guarded — see below — so fakedom-based test suites that don't register this id
+       keep working unmodified). -->
+  <nav id="mobiletabs"></nav>
 </div>
 
 <script src="js/balance.js"></script>
@@ -109,7 +116,14 @@
 
   Game.renderNav = function () {
     var list = document.getElementById('navlist');
+    // v1.4 Mobile M1 (SPEC-MOBILE-UI.md §3/§4): the bottom tab bar renders the SAME NAV_ITEMS as
+    // #navlist, from this same function — no forked render logic. Guarded so suites whose
+    // fakedom doesn't register #mobiletabs (all ten test bootstraps stub Game.renderNav entirely
+    // and never call this function at all, but the guard is cheap insurance regardless) keep
+    // working unmodified.
+    var tabs = document.getElementById('mobiletabs');
     list.innerHTML = '';
+    if (tabs) tabs.innerHTML = '';
     if (!Game.state.character) return;
     // Phase 3: nav is disabled during battle (New_Player_Guide.md: "once you've started a
     // battle, you cannot access your inventory or techniques").
@@ -122,6 +136,11 @@
       span.textContent = 'In battle...';
       li.appendChild(span);
       list.appendChild(li);
+      if (tabs) {
+        var tabLock = document.createElement('span');
+        tabLock.textContent = 'In battle...';
+        tabs.appendChild(tabLock);
+      }
       return;
     }
     var current = Game.Screens.getCurrentScreen();
@@ -137,6 +156,18 @@
       });
       li.appendChild(a);
       list.appendChild(li);
+
+      if (tabs) {
+        var tabA = document.createElement('a');
+        tabA.href = '#';
+        tabA.textContent = item.label;
+        if (item.key === current) tabA.className = 'active';
+        tabA.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          Game.Screens.navigate(item.key);
+        });
+        tabs.appendChild(tabA);
+      }
     });
   };
 

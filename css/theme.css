@@ -648,3 +648,189 @@ html { -webkit-text-size-adjust: 100%; } /* stop iOS Safari auto-inflating the 1
 button, a { touch-action: manipulation; } /* kill the 300ms tap delay / double-tap zoom */
 #app { min-height: 100dvh; } /* overrides the 100vh rule above only where dvh exists (mobile
   browser chrome); engines without dvh drop this declaration and keep the 100vh fallback */
+
+/* ===== v1.4 Mobile M1: bottom tab bar base rule (SPEC-MOBILE-UI.md §3/§4) =====
+   Lives OUTSIDE the media query, per the spec, so desktop (and any width above 640px) never
+   shows the tab bar even before the query below is parsed. */
+#mobiletabs { display: none; }
+
+/* ===== v1.4 Mobile M1: responsive shell (docs/SPEC-MOBILE-UI.md §3/§4) =====
+   Everything below is scoped to this single media query, appended after every rule above
+   (including the M0 block) — containment strategy per the spec's risk section: desktop stays
+   pixel-identical, the 800px tablet breakpoint above is untouched, and this block only ever
+   ADDS or overrides rules for screens <= 640px wide. */
+@media (max-width: 640px) {
+
+  /* ---- A. Bottom tab bar ---- */
+  #mobiletabs {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 48px;
+    background: #34404b; /* same slate as .tcat/.navlist chrome */
+    border-top: 1px solid #313131;
+    z-index: 20;
+  }
+
+  #mobiletabs a, #mobiletabs span {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #c4bb4b; /* gold-on-slate, matching .navlist's gold link color */
+    font: 9px verdana, geneva, lucida, 'lucida grande', arial, helvetica, sans-serif;
+    padding: 2px 3px;
+    border-right: 1px solid #313131;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    box-sizing: border-box;
+  }
+
+  #mobiletabs a:last-child, #mobiletabs span:last-child {
+    border-right: none;
+  }
+
+  #mobiletabs a:hover {
+    background: #4a5a68;
+  }
+
+  #mobiletabs a.active {
+    background: #3c4a56;
+    color: #ffffff;
+    font-weight: bold;
+  }
+
+  /* Room at the bottom of the page so content never hides behind the fixed tab bar. */
+  #app {
+    padding-bottom: 56px;
+  }
+
+  /* ---- B. Layout re-flow ---- */
+
+  /* #leftcol becomes a transparent grouping node: its three panels (Navigation/Actions/Save)
+     flow as direct flex items of #layout so each can be independently ordered/hidden below,
+     rather than moving as one fixed block (the desktop and 800px-tablet behavior). */
+  #layout {
+    display: flex;
+    flex-direction: column;
+  }
+  #leftcol {
+    display: contents;
+  }
+
+  /* Navigation panel hidden — #mobiletabs replaces it. */
+  #navwrap {
+    display: none;
+  }
+
+  /* Design call (M1 report): the Actions chip row is contextual game content (Explore/Hunt/Camp/
+     quest tokens), not chrome, so it renders directly above #maincontent per SPEC-MOBILE-UI.md
+     §3. The Save panel (rarely used mid-session) is chrome, relocated BELOW #maincontent via
+     flex order rather than hidden, per the brief's fallback option (a 7th tab-bar slot was
+     rejected — §3/§4 both specify "6 equal slots" for the 6 NAV_ITEMS, and a 7th narrow slot for
+     "⚙ Save" would either break that 6-slot grid or squeeze every label under ~45px). */
+  #actionswrap { order: 1; }
+  #maincol { order: 2; }
+  #savewrap { order: 3; }
+
+  /* Status bars: sticky top, compressed. */
+  #statusbars {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .statbar-label {
+    width: 34px;
+    flex: 0 0 34px;
+    font-size: 9px;
+  }
+  .statbar-track {
+    height: 9px;
+  }
+  .statbar-text {
+    line-height: 9px;
+    font-size: 8px;
+  }
+  .weight-readout {
+    display: inline-block;
+    padding: 2px 4px 0 4px; /* drop the desktop 46px label-alignment indent */
+    font-size: 9px;
+  }
+
+  /* Actions panel -> horizontal chip row, CSS re-flow only (same DOM, same render function). */
+  #actionswrap .tcat {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+  #actionspanel {
+    padding: 4px;
+  }
+  .actions-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .actions-list li {
+    border-bottom: none;
+  }
+  .actions-list a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 4px 10px;
+    border: 1px solid #313131;
+    background: #a9b4bb;
+    white-space: nowrap;
+    box-sizing: border-box;
+  }
+  .actions-sub {
+    padding-left: 0; /* indentation dropped on mobile (chips carry no hierarchy cue) */
+  }
+
+  /* Save panel: relocated (see above), buttons enlarged to thumb-sized full-width. */
+  #savewrap .tcat {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+  #savepanel button {
+    display: block;
+    width: 100%;
+    min-height: 40px;
+    box-sizing: border-box;
+    margin: 4px 0 !important; /* overrides the inline marginRight set by index.html's JS */
+  }
+
+  /* ---- C. Battle layout ---- */
+  .battle-layout {
+    flex-direction: column;
+  }
+  .battle-left {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+  .battle-right {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+  .battle-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .battle-action {
+    width: 100%;
+    min-height: 44px;
+    display: block;
+    box-sizing: border-box;
+    font-size: 12px;
+  }
+  .battle-log {
+    max-height: 220px; /* more vertical room now that the layout stacks full-width */
+  }
+}
