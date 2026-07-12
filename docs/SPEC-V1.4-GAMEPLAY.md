@@ -163,15 +163,19 @@ status effects, item usage", plus a "Champion Bosses" thread title. The engine i
 **G3 Limit Breaks.** Archived names Rage / Dragon Kick / Hurricane Blow were MP-gated
 specials in the 2005 engine; the remake's Fury meter (archived, +1% XP per tick) is the
 natural modern host — the forum itself proposed exactly that bridge ("Warriors replace MP
-with Fury?"). **[invented] mechanics:** when the battle's fury meter reaches a threshold
-(proposed: 5 ticks), a Limit Break button unlocks; using it **consumes the whole meter**
-(sacrificing the accumulated XP bonus — a real tension, not a freebie) for a class-line
-special: Rage (warrior line — heavy hit + self armor buff), Dragon Kick (rogue/gambit line —
-hit + dodge-debuff), Hurricane Blow (mage line — non-elemental burst, bypasses the Int
-hit-roll). Damage tuned by sim to ≈1.6–2.0× a basic attack's damage-per-energy — strong but
-not degenerate. Energy cost 0 (the meter IS the cost). No save change (fury is per-battle).
-One rank each, granted automatically at the class tier that fits (base tier at L5+); shown in
-the battle UI only when charged.
+with Fury?"). **P0 engine correction (2026-07-12):** Fury in the shipped engine is a
+CROSS-BATTLE kill streak on the character (`c.fury`, battle.js — +1 per kill at-or-above
+your level, resets on flee/death, persists between fights), not a per-battle gauge. That
+makes the trade sharper, so the design keys off the streak: **[invented] mechanics:** when
+`c.fury >= 5`, a Limit Break action unlocks in battle; using it **consumes the entire
+streak** (sacrificing the accumulated +1%/tick XP bonus on every future win of the streak —
+a real tension, not a freebie) for a class-line special: Rage (warrior line — heavy hit +
+self armor buff), Dragon Kick (rogue/gambit line — hit + dodge-debuff), Hurricane Blow
+(mage line — non-elemental burst, bypasses the Int hit-roll). Damage tuned by the P0 sim
+(target ≈1.6–2.0× an average basic hit — strong but not degenerate; one use per battle).
+Energy cost 0 (the streak IS the cost). No save change needed beyond none: `c.fury` already
+persists on the character. One rank each, granted automatically at the class tier that fits
+(base tier at L5+); shown in the battle UI only when charged.
 
 **G4 Foraging.** Archived concept keyed Foraging to Luck; the remake has no Luck stat →
 **[revised]:** Forage is a new **camp action** beside the existing camp options. One forage
@@ -233,6 +237,38 @@ All ten suites green before every commit (`cd tests && for t in test_*.js; do no
 stale constants (item/monster counts, save version) updated, behavioral assertions never
 weakened. New item/tech ids each need `assets/icons/<id>.png` (presence enforced by
 test_icons.js; only monsters need mutual byte-distinctness — no new monsters planned).
+
+### P0 RESULTS (run 2026-07-12, scratchpad `sim_v14_p0.js`, 300 trials/cell, real RNG)
+
+Fixture: the "modest geared warrior" of the shipped boss tests (best-in-band weapon/body/
+shield, Swords 3 / Heavy Armor 2, str-heavy stats, 6+6 best-grade heal/energy consumables),
+at checkpoints L10/30/50/70/90/100 vs the nearest at-level non-boss (regular + champion) and
+nearest boss. Findings, binding on P2–P4:
+
+1. **Champion baseline (existing 1.5×hp / 1.35×dmg) holds**: 100% win at every checkpoint,
+   HP-left 60→72%. CHAMPION_HP/DAMAGE_MULT stay untouched.
+2. **Affix constants (locked)**: Vampiric heals **25% of damage dealt** (100% win everywhere,
+   ≈+1 round); Venomous applies the existing Poison status at **35% on-hit** when unpoisoned
+   (100% win everywhere); **Frenzied = +5% damage per round elapsed, CAPPED at +40%** — the
+   uncapped +5%/round design broke the ≥85% floor at L90/100 (62–64% win over 16-round
+   fights); with the cap it holds 93.7–100% at every checkpoint. Warded (first hostile tech
+   negated) is a one-action tax, not sim-gated here — P3 must spot-check it with a caster
+   build (it does nothing to the pure-attack fixture). Hoarder is combat-neutral (drops ×3
+   replaces the ×2 reward premium).
+3. **Limit break locked at ×2.0 of the player's average basic hit**, one use per battle,
+   requires `c.fury >= 5`, consumes the whole streak. On the hardest boss (eidas_ascendant,
+   66.3% baseline win for this modest fixture) LB ×2.0 lifts win to ~77% and shaves ~1.5
+   rounds without changing HP-cost; ×2.5 reached 85% — too strong for a repeatable button.
+4. **Provisions are contract-safe**: 8 cheap 60-energy provisions changed NOTHING at true
+   5-down cells (0.0% win with and without, L10/15/20); the marathon-stall shape of those
+   losses (400+ rounds of Fear-floored damage) is the known accepted limitation, unchanged.
+5. **AP curve (arithmetic; at-level win rates are 100%, so wins ≈ battles):**
+   `AP_PER_WIN(monsterLevel) = 1 + floor(monsterLevel/20)` (1 at L1–19 → 6 at L100),
+   champions ×2, bosses ×3. Catalog anchors: cheapest item ≈15 AP; mid-band gear 90–180 AP;
+   top prestige item ≈1800 AP (≈300 L100 wins).
+6. **Fixture caveat**: melee-only. P3 re-runs the affix cells against its real implementation
+   with this sim's driver, plus the caster spot-check for Warded (constraint-(b) style,
+   balance.js F1 notes §3).
 
 ## 7. Risks & guardrails
 
