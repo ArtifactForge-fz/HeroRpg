@@ -1,4 +1,4 @@
-# CLAUDE.md — HeroRPG Remake
+# AGENTS.md — HeroRPG Remake
 
 Single-player browser remake of **herorpg.net** (2004–2008, dead), reconstructed from Wayback
 Machine scrapes. Static HTML/CSS/JS, no build step, no dependencies — open `index.html` via
@@ -17,7 +17,7 @@ high levels (Fear-spared healing sustain) — deferred, documented in DESIGN §4
    `reference/SOURCES.md`). When designing new content, mine it first — several "new" features
    turned out to be archived (camp robbery: `forum/t-756.md`; 95% hunt chance: `forum/t-755.md`;
    tier-class names: `site/homepage_2006.md`).
-3. **Never touch `D:\Claude - collection folder\Test game generation\`** — unrelated project.
+3. **Never touch `D:\Codex - collection folder\Test game generation\`** — unrelated project.
 4. **Workflow (user-directed):** the lead session (strongest available model — Opus as of the
    2026-07-12 Fable handoff) does scoping, specs, sim gates, planning, and review; implementation
    and mechanical work goes to Sonnet subagents. **Read `docs/LEAD-PLAYBOOK.md` at the start of
@@ -111,7 +111,7 @@ Local git repo on branch `main` (no remote). `.gitignore`/`.gitattributes` are c
   and why*, and citing the DESIGN.md tag (`[archived]`/`[invented]`/`[revised]`) or spec that
   motivated it. Note any save-version bump and its migration. For a multi-feature session commit,
   list each feature as a body bullet (one line of what+why per feature). End with:
-  `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`
+  `Co-Authored-By: Codex Opus 4.8 <noreply@anthropic.com>`
 - **Still user-gated:** commit when a feature is done or when the user asks; do not push (no
   remote) and do not amend published history. For multi-feature work, branch off `main` first.
 
@@ -127,7 +127,7 @@ on a real origin `localStorage` works natively (no bundling needed). Deploy with
 passes creds via a temp curl config (never on the command line). It uploads only the static site —
 NOT `reference/`, `docs/`, `tests/`, `tools/`, or `.env`. Re-run it after any release to push HEAD.
 
-**claude.ai Artifact publishing is ON HOLD.** The previously-used URL
+**Codex.ai Artifact publishing is ON HOLD.** The previously-used URL
 (`1c21f461-a113-44e3-a681-ff938a8ffc4a`, favicon ⚔️) is owned by a different org and cannot be
 updated from the fizor account — do not attempt to publish there.
 
@@ -199,7 +199,7 @@ Spec: `docs/SPEC-V1.2.md`. Four phases, each committed green:
   byte-hash-distinct. Mapping in `assets/CREDITS.md`.
 
 Earlier combat-depth batch A/B/C (save v7→v8) is documented in `docs/FEATURE-SPEC-ABC.md`.
-Artifact not redeployed (claude.ai publishing on hold; see Deployment).
+Artifact not redeployed (Codex.ai publishing on hold; see Deployment).
 
 ## Backlog (user-approved ideas, not started)
 
