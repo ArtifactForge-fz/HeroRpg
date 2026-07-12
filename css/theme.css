@@ -807,20 +807,25 @@ button, a { touch-action: manipulation; } /* kill the 300ms tap delay / double-t
   }
 
   /* ---- C. Battle layout ---- */
+  /* [revised] user-directed (2026-07-12): keep the vitality/actions column and the monster
+     battlefield SIDE BY SIDE on phones (the first M1 pass stacked them full-width; the user
+     wants the desktop's two-window feel preserved). The desktop's fixed 240px left column
+     becomes a proportional 45% so both windows fit a ~360-430px viewport; row direction is
+     inherited from the desktop .battle-layout rule (no flex-direction override). */
   .battle-layout {
-    flex-direction: column;
+    gap: 4px;
   }
   .battle-left {
-    width: 100%;
-    flex: 1 1 100%;
+    width: 45%;
+    flex: 0 0 45%;
+    min-width: 0;
   }
   .battle-right {
-    width: 100%;
-    flex: 1 1 100%;
+    min-width: 0; /* desktop rule already flexes it; this guards against overflow at ~200px */
   }
   .battle-actions {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* one 44px button per row inside the narrow left column */
     gap: 6px;
   }
   .battle-action {
@@ -831,7 +836,7 @@ button, a { touch-action: manipulation; } /* kill the 300ms tap delay / double-t
     font-size: 12px;
   }
   .battle-log {
-    max-height: 220px; /* more vertical room now that the layout stacks full-width */
+    max-height: 220px;
   }
 }
 
