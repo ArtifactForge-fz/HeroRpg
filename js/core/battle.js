@@ -346,7 +346,7 @@ Game.Battle = (function () {
     var defending = !!battle.playerDefending;
     battle.playerDefending = false;
 
-    // v1.5 P2 (docs/SPEC-V1.5-MONSTER-AI.md §3): archetype -> {windupChance, techChance}. ONE
+    // v1.5 P2/P3 (docs/SPEC-V1.5-MONSTER-AI.md §3): archetype -> {windupChance, techChance}. ONE
     // interpreter, no per-monster branches. `behavior` absent/'simple' keeps today's AI exactly
     // (windupChance 0, the original 50% tech inclination). 'telegraph' adds the base wind-up
     // chance on top of that same 50% inclination. 'caster' adds the same wind-up chance but raises
@@ -355,6 +355,10 @@ Game.Battle = (function () {
     // 'telegraph' does). 'enrage' keeps the 50% tech inclination but multiplies its wind-up chance
     // by ENRAGE_CHARGE_MULT while below ENRAGE_HP_FRAC of its own max HP (more frequent charged
     // hits in its death throes) — no new damage term, just a higher roll into the same charge path.
+    // 'reactive' is telegraph-capable at the SAME base wind-up chance (50% tech inclination,
+    // unchanged) — its distinguishing behavior is the charge-hold reaction below, not a different
+    // windup/tech roll. 'guardian' leaves windupChance/techChance at their defaults entirely (it
+    // never telegraphs — its behavior is the pre-action guard check below, not a charge at all).
     var windupChance = 0;
     var techChance = 0.5;
     if (monster.behavior === 'telegraph') {
@@ -365,6 +369,8 @@ Game.Battle = (function () {
     } else if (monster.behavior === 'enrage') {
       windupChance = BALANCE.TELEGRAPH_CHARGE_CHANCE;
       if (monster.hp / monster.hpMax < BALANCE.ENRAGE_HP_FRAC) windupChance *= BALANCE.ENRAGE_CHARGE_MULT;
+    } else if (monster.behavior === 'reactive') {
+      windupChance = BALANCE.TELEGRAPH_CHARGE_CHANCE;
     }
 
     // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §2, §2a): telegraph wind-up/release. A charge already
@@ -373,6 +379,38 @@ Game.Battle = (function () {
     // reaches the wind-up branch at all (today's AI, unchanged).
     var releasing = !!battle.charge;
     var chargeMult = 1;
+
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'reactive'): the archived "intelligent reactions
+    // based on hero actions" — when a pending charge would release THIS turn and the player
+    // Defended this same turn (the `defending` local captured at the very top of this function),
+    // a reactive monster HOLDS the charge instead of releasing into the guard, up to
+    // REACTIVE_MAX_CHARGE_DELAYS times per charge (so a player cannot Defend-stall a charge
+    // forever — past the cap it releases anyway, still subject to that turn's Defend halving via
+    // the ordinary `defending` path below). A no-damage hold: costs the monster's turn exactly
+    // like a wind-up does, no rng roll (a deterministic read of the player's own action, not a
+    // proc). Checked BEFORE the `releasing` branch below so a held charge is never also cleared by
+    // it in the same turn.
+    if (releasing && monster.behavior === 'reactive' && defending &&
+      (battle.charge.delays || 0) < BALANCE.REACTIVE_MAX_CHARGE_DELAYS) {
+      battle.charge.delays = (battle.charge.delays || 0) + 1;
+      log(battle, 'The ' + monster.name + ' holds its charge, watching your guard.');
+      checkEnd(battle);
+      return;
+    }
+
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): the mirror of the player's own Defend
+    // — before the normal action choice, a guardian monster may guard itself instead of acting:
+    // costs its turn, deals no damage, spends no energy, exactly like the player's Defend costs
+    // theirs. windupChance is 0 for guardian (never telegraphs, see above), so `releasing` is
+    // always false here for it; this check still sits behind `!releasing` defensively in case a
+    // future archetype combination ever sets both.
+    if (monster.behavior === 'guardian' && !releasing && rng() < BALANCE.GUARDIAN_CHANCE) {
+      battle.monsterGuard = true; // battle-transient only, never the shared def, never persisted
+      log(battle, 'The ' + monster.name + ' raises its guard!');
+      checkEnd(battle);
+      return;
+    }
+
     if (releasing) {
       chargeMult = battle.charge.mult;
       battle.charge = null;
@@ -569,6 +607,11 @@ Game.Battle = (function () {
   function attack() {
     var battle = Game.state.battle;
     if (!battle || isOver(battle)) return battle;
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): snapshot+clear any pending monster
+    // guard right at the top, mirroring monsterAct's own `defending` capture exactly — the guard
+    // answers whatever the player's very next action in this function turns out to be.
+    var guarding = battle.monsterGuard;
+    battle.monsterGuard = false;
     if (!canAct(battle)) {
       log(battle, 'You are out of Energy — you can only flee or fall.');
       return battle;
@@ -609,9 +652,12 @@ Game.Battle = (function () {
       var raw = rollVariance(baseDamage);
       if (glancing) raw *= BALANCE.GLANCING_MULT;
       var dmg = Math.max(1, Math.round(raw - battle.monster.armor));
+      // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): a pending guard halves THIS action's
+      // final damage-to-monster, floored at 1 — mirrors the player's own Defend halving exactly.
+      if (guarding) dmg = Math.max(1, Math.round(dmg * (1 - BALANCE.GUARDIAN_REDUCTION)));
       battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
       totalDmgDealt += dmg;
-      log(battle, 'You strike the ' + battle.monster.name + (glancing ? ' with a glancing blow' : '') + ' for ' + dmg + ' damage.');
+      log(battle, 'You strike the ' + battle.monster.name + (glancing ? ' with a glancing blow' : '') + ' for ' + dmg + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
     }
 
     // v1.2 Phase 1 item 5 (Dual Wield): when BOTH the weapon and offhand slots hold a weapon
@@ -637,9 +683,12 @@ Game.Battle = (function () {
           var rawOff = rollVariance(offhandBase);
           if (glancingOff) rawOff *= BALANCE.GLANCING_MULT;
           var dmgOff = Math.max(1, Math.round(rawOff - battle.monster.armor));
+          // v1.5 P3 ('guardian'): the offhand swing is part of the SAME player action, so it is
+          // reduced by the same pending guard as the main hit(s) above.
+          if (guarding) dmgOff = Math.max(1, Math.round(dmgOff * (1 - BALANCE.GUARDIAN_REDUCTION)));
           battle.monster.hp = Math.max(0, battle.monster.hp - dmgOff);
           totalDmgDealt += dmgOff;
-          log(battle, 'Your offhand strikes the ' + battle.monster.name + (glancingOff ? ' with a glancing blow' : '') + ' for ' + dmgOff + ' damage.');
+          log(battle, 'Your offhand strikes the ' + battle.monster.name + (glancingOff ? ' with a glancing blow' : '') + ' for ' + dmgOff + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
         }
         Game.Character.addSkillXp(battle.player, 'Dual Wield', 1);
       }
@@ -682,6 +731,10 @@ Game.Battle = (function () {
   function useTech(techId) {
     var battle = Game.state.battle;
     if (!battle || isOver(battle)) return battle;
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): snapshot+clear any pending monster
+    // guard right at the top, same discipline as attack() above.
+    var guarding = battle.monsterGuard;
+    battle.monsterGuard = false;
     if (!canAct(battle)) {
       log(battle, 'You are out of Energy — you can only flee or fall.');
       return battle;
@@ -835,9 +888,12 @@ Game.Battle = (function () {
         if (glancing) raw *= BALANCE.GLANCING_MULT;
         raw = applyResistance(battle.monster, tech.grade, raw);
         var dmg = Math.max(1, Math.round(raw - mitigation));
+        // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): a pending guard halves THIS
+        // action's final damage-to-monster per hit, floored at 1 (same as attack()'s main hit).
+        if (guarding) dmg = Math.max(1, Math.round(dmg * (1 - BALANCE.GUARDIAN_REDUCTION)));
         battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
         totalDmgDealt += dmg;
-        log(battle, (tech.weaponTech ? 'You strike with ' : 'You cast ') + tech.name + (glancing ? ' (glancing)' : '') + ' for ' + dmg + ' damage.');
+        log(battle, (tech.weaponTech ? 'You strike with ' : 'You cast ') + tech.name + (glancing ? ' (glancing)' : '') + ' for ' + dmg + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
 
         if (tech.effect === 'drain') {
           var drained = Math.round(dmg * 0.5); // invented: Absorption drains return half the damage as HP
@@ -999,6 +1055,10 @@ Game.Battle = (function () {
   function limitBreak() {
     var battle = Game.state.battle;
     if (!battle || isOver(battle)) return battle;
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): snapshot+clear any pending monster
+    // guard right at the top, same discipline as attack()/useTech() above.
+    var guarding = battle.monsterGuard;
+    battle.monsterGuard = false;
     var c = battle.player;
 
     var lbId = getLimitBreakId(c);
@@ -1044,9 +1104,12 @@ Game.Battle = (function () {
       if (glancing) raw *= BALANCE.GLANCING_MULT;
       raw *= BALANCE.LB_DAMAGE_MULT;
       var dmg = Math.max(1, Math.round(raw - battle.monster.armor));
+      // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): a pending guard halves this Limit
+      // Break's final damage-to-monster too, floored at 1 — "the whole next player action".
+      if (guarding) dmg = Math.max(1, Math.round(dmg * (1 - BALANCE.GUARDIAN_REDUCTION)));
       battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
       lbDealtDmg = dmg;
-      log(battle, 'Your ' + lbDef.name + (glancing ? ' — a glancing blow —' : '') + ' slams into the ' + battle.monster.name + ' for ' + dmg + ' damage.');
+      log(battle, 'Your ' + lbDef.name + (glancing ? ' — a glancing blow —' : '') + ' slams into the ' + battle.monster.name + ' for ' + dmg + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
     }
 
     // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §2a): a Limit Break ALWAYS interrupts a pending

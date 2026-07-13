@@ -203,6 +203,29 @@ regression — `enrage` at L99 hit **80% win** because its charge boost (×2 →
 telegraph 93–99.8%, **enrage L78 92% / L99 86%**. Journey data pass: L≤10 all `simple`; **66.7% of
 L40+ non-boss monsters non-`simple`** (≥60% target), test-enforced.
 
+**P3 guardian sim-gate (2026-07-12, `/balance-sim`, N=350):** modelled `guardian` self-mitigation as
+monster effective-HP ×`1/(1−chance·reduction)` (the over-armoring/energy-stall lens). Generous
+envelope — even effHP **×1.40** (P_g·R=0.29) held **100% win, 0 stall** at L40 & L100 (fight stretches
+only ~9→13 rounds vs a ~120-action energy budget; bounded absorption never triggers the classic
+over-armoring stall). **LOCKED: `GUARDIAN_CHANCE = 0.30`, `GUARDIAN_REDUCTION = 0.50`** (P_g·R=0.15,
+effHP ×1.18, +2 rounds — comfortably inside). `reactive` adds no damage/HP term (it re-times the
+existing telegraph based on player actions), so it needs no numeric gate — its interaction is locked
+by the final full-grid re-sim.
+
+**P3 delivery + boss finding (2026-07-12) — ACCEPTED LIMITATION (scope reduction).** guardian +
+reactive shipped and the guard/charge-hold logic reviewed clean (mirrors the player Defend exactly;
+bounded delay). **Boss integration hit a real balance wall:** a boss charged release (×2.0 on top of
+boss damage premiums) can spike the player past their heal-item threshold AND death in a single hit —
+the suite's own boss floor-tests dropped 7 bosses to 5–30% win (floor 60%). Ratchet fix
+(LEAD-PLAYBOOK §0.3): reverted `behavior` on those 7; **only 3 lower-level bosses ship a behavior**
+(foothills_matriarch/telegraph, juneros_leviathan/enrage, kastengard_custodian/telegraph — lead
+re-sim, prepared player, N=300: **85–88% win, 70–75% HP left, 2+ consumables** — winnable-but-costly,
+holds). The other 8 bosses keep their v1.4 G2 HP-threshold scripts unchanged. **Boss-telegraph
+integration is DEFERRED** to a dedicated boss-tuned pass (needs a boss-specific lower charged
+multiplier or a "heal-fires-before-death" guarantee — its own sim gate). This does NOT affect the
+spec's primary goal ("extend to most standard monsters"), which P1/P2 fully met (66.7% of L40+
+standard monsters non-`simple`).
+
 ---
 
 ## 7. Architecture & save impact

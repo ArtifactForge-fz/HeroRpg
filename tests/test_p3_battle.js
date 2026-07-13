@@ -3435,11 +3435,221 @@ var lateNonBoss = Game.Data.monsters.filter(function (m) { return m.level >= 40 
 var lateNonSimple = lateNonBoss.filter(function (m) { return m.behavior !== undefined && m.behavior !== 'simple'; });
 var lateNonSimplePct = lateNonSimple.length / lateNonBoss.length;
 assert(lateNonSimplePct >= 0.60, '>=60% of level>=40 non-boss monsters carry a non-simple behavior (the journey-ramp target, spec §5/§10 M5): got ' + lateNonSimple.length + '/' + lateNonBoss.length + ' = ' + (lateNonSimplePct * 100).toFixed(1) + '%');
-// Every non-simple behavior actually used must be one of the four archetypes shipped so far
-// (P1's telegraph + P2's caster/enrage) -- guardian/reactive are explicitly out of scope for P2.
-var knownBehaviors = { telegraph: true, caster: true, enrage: true };
+// Every non-simple behavior actually used must be one of the archetypes shipped so far (P1's
+// telegraph + P2's caster/enrage + P3's guardian/reactive).
+var knownBehaviors = { telegraph: true, caster: true, enrage: true, guardian: true, reactive: true };
 var unknownBehaviors = Game.Data.monsters.filter(function (m) { return m.behavior !== undefined && !knownBehaviors[m.behavior]; });
-assert(unknownBehaviors.length === 0, 'no monster carries an out-of-scope P2 behavior (guardian/reactive are P3), got: ' + unknownBehaviors.map(function (m) { return m.id + '=' + m.behavior; }).join(', '));
+assert(unknownBehaviors.length === 0, 'no monster carries an unknown behavior, got: ' + unknownBehaviors.map(function (m) { return m.id + '=' + m.behavior; }).join(', '));
+
+// =================== Test 74b: v1.5 P3 data integrity — boss behavior integration ===================
+// A first pass assigned telegraph/enrage/reactive to all 10 non-gate bosses, but a real-RNG re-sim
+// (this file's own Test 32/35/38/41/44/47 win-rate floors, plus test_p6b_content.js's eidas_echo
+// beats-check) caught a genuine difficulty-contract regression: a charged release
+// (BALANCE.AFFIX_CHARGED_MULT=2.0) can land as a single spike that crosses BOTH the sim AI's
+// heal-at-low-HP trigger AND the death threshold in the same hit -- something the item-reactive AI
+// (a stand-in for a non-optimal real player) can only respond to BETWEEN actions, not mid-hit. Win
+// rates on majiku_warlord/majiku_ridge_chieftain/ukai_deep_dweller/estari_warden_prime/
+// society_anima_horror/eidas_ascendant/eidas_echo collapsed from ~70-90% down to 5-30% (floor
+// >=60%) -- far beyond the documented P0/P1 telegraph-tax envelope, because those bosses were
+// tuned+sim-verified WITHOUT a burst term. Reverted on those 7 (see each one's own comment in
+// js/data/monsters.js for the citation); this test locks in the resulting, EMPIRICALLY SAFE set —
+// only the 3 bosses with no stochastic real-RNG floor test in the suite (foothills_matriarch,
+// juneros_leviathan, kastengard_custodian) carry a P3 behavior. The other 8 (the level-10 gate
+// boss + the 7 reverted lair/finale bosses) stay simple pending a dedicated boss-tuned re-sim.
+console.log('\n=== Test 74b: v1.5 P3 data integrity -- only the 3 bosses with no real-RNG win-rate floor test carry a behavior (empirically safe set); the other 8 stay simple ===');
+var allBosses = Game.Data.monsters.filter(function (m) { return m.boss; });
+var bossesWithBehavior = ['foothills_matriarch', 'juneros_leviathan', 'kastengard_custodian'];
+var bossBehaviorAllowed = { telegraph: true, enrage: true, reactive: true };
+allBosses.forEach(function (m) {
+  if (bossesWithBehavior.indexOf(m.id) !== -1) {
+    assert(m.behavior !== undefined && bossBehaviorAllowed[m.behavior], m.id + ' carries a telegraph/enrage/reactive behavior, got ' + m.behavior);
+  } else {
+    assert(m.behavior === undefined, m.id + ' has no P3 behavior (Band 1 gate boss or a real-RNG-floor-tested lair/finale boss reverted after the sim regression above), got ' + m.behavior);
+  }
+});
+var bossesWithScriptAndBehavior = allBosses.filter(function (m) { return m.script && m.script.length && m.behavior !== undefined; });
+assert(bossesWithScriptAndBehavior.length === 3, '3 of the 11 bosses carry both a script AND a behavior, got ' + bossesWithScriptAndBehavior.length);
+
+// =================== Test 75: v1.5 P3 — guardian archetype (forced rng) ===================
+console.log('\n=== Test 75: v1.5 P3 guardian — forced rng guards instead of acting: battle.monsterGuard set, no damage, logged; rng >= GUARDIAN_CHANCE acts normally instead ===');
+var cGuard75 = windUpFixture('GuardianTrigger');
+finalizeFixture(cGuard75);
+setRng(fixedRng(0.10)); // < GUARDIAN_CHANCE (0.30); same safe constant as Test 65 (no dodge/glancing/double-attack surprises in this fixture)
+var b75 = Game.Battle.start('plains_field_rat');
+b75.monster.behavior = 'guardian'; // battle-transient override — never touches the shared def
+b75.monster.techs = [];
+b75.monster.hp = b75.monster.hpMax = 100000;
+b75.monster.damage = 100;
+var playerHpBefore75 = b75.player.hitPoints;
+Game.Battle.attack(); // player's turn deals its normal hit; the monster's counter guards instead of attacking
+assert(b75.monsterGuard === true, 'guardian monster guards: battle.monsterGuard set, got ' + b75.monsterGuard);
+assert(b75.player.hitPoints === playerHpBefore75, 'the guard deals no damage — player HP unchanged this monster turn');
+assert(b75.log.some(function (l) { return l.indexOf('raises its guard') !== -1; }), 'guard announced in the battle log');
+Game.Battle.endBattle();
+
+var cGuardMiss75 = windUpFixture('GuardianNoTrigger');
+finalizeFixture(cGuardMiss75);
+setRng(fixedRng(0.99)); // >= GUARDIAN_CHANCE (0.30) — acts normally instead
+var b75b = Game.Battle.start('plains_field_rat');
+b75b.monster.behavior = 'guardian';
+b75b.monster.techs = [];
+b75b.monster.hp = b75b.monster.hpMax = 100000;
+b75b.monster.damage = 100;
+var playerHpBefore75b = b75b.player.hitPoints;
+Game.Battle.attack();
+assert(!b75b.monsterGuard, 'a guardian monster at rng >= GUARDIAN_CHANCE does not guard, got ' + b75b.monsterGuard);
+assert(b75b.player.hitPoints < playerHpBefore75b, 'it acted normally instead — the player took damage');
+assert(b75b.log.some(function (l) { return / attacks for \d+ damage\.$/.test(l); }), 'normal-attack log line present');
+Game.Battle.endBattle();
+
+// =================== Test 76: v1.5 P3 — guardian halves the player's next action, then clears ===================
+console.log('\n=== Test 76: v1.5 P3 — a pending monster guard halves the player\'s next attack() damage to the monster (~GUARDIAN_REDUCTION vs a same-rng unguarded baseline), then clears ===');
+// Isolates the CONSUMPTION mechanic in attack() from the archetype's own trigger roll: the guard
+// is set directly on the battle (battle.monsterGuard is read/cleared in attack()/useTech()/
+// limitBreak() regardless of monster.behavior — the guardian archetype above is just ONE way it
+// gets set). A 'simple' (behavior absent) monster is used here so it never re-arms the guard on
+// its own turn, letting a clean 3-attack before/during/after comparison isolate the halving.
+var cGuardHalf76 = windUpFixture('GuardianHalving');
+finalizeFixture(cGuardHalf76);
+setRng(fixedRng(0.10)); // clean single-hit turn (see Test 65's rng-safety analysis for this fixture)
+var b76 = Game.Battle.start('plains_field_rat'); // behavior absent -> simple
+b76.monster.techs = [];
+b76.monster.hp = b76.monster.hpMax = 100000;
+b76.monster.armor = 0;
+var monsterHpBefore76a = b76.monster.hp;
+Game.Battle.attack(); // baseline, UNGUARDED hit
+var baselineDmg76 = monsterHpBefore76a - b76.monster.hp;
+assert(baselineDmg76 > 0, 'sanity: baseline unguarded hit dealt damage');
+
+b76.monsterGuard = true; // simulate a pending guard directly, isolating attack()'s consumption logic
+var monsterHpBefore76b = b76.monster.hp;
+Game.Battle.attack(); // this attack() should be halved
+var guardedDmg76 = monsterHpBefore76b - b76.monster.hp;
+assert(Math.abs(guardedDmg76 - Math.round(baselineDmg76 * (1 - BALANCE.GUARDIAN_REDUCTION))) <= 1, 'a pending guard halves the player\'s next attack() damage: baseline ' + baselineDmg76 + ', guarded ' + guardedDmg76 + ', expected ~' + Math.round(baselineDmg76 * (1 - BALANCE.GUARDIAN_REDUCTION)));
+assert(b76.log.some(function (l) { return l.indexOf('blunted by the guard') !== -1; }), 'the blunted hit is logged');
+assert(b76.monsterGuard === false, 'the guard flag is cleared after being consumed');
+
+var monsterHpBefore76c = b76.monster.hp;
+Game.Battle.attack(); // guard already consumed on the previous action -- this hit should be FULL damage again
+var afterDmg76 = monsterHpBefore76c - b76.monster.hp;
+assert(Math.abs(afterDmg76 - baselineDmg76) <= 1, 'after the guard is consumed, the next attack() deals full (unguarded) damage again: ' + afterDmg76 + ' ~= baseline ' + baselineDmg76);
+Game.Battle.endBattle();
+
+// =================== Test 77: v1.5 P3 — reactive holds a charge against a Defend, then releases past the cap ===================
+console.log('\n=== Test 77: v1.5 P3 reactive — a pending charge is HELD (not released) the first time the player Defends on the release turn (delays=1); a second consecutive Defend exceeds REACTIVE_MAX_CHARGE_DELAYS and it releases anyway, halved by that same Defend ===');
+var cReactive77 = windUpFixture('ReactiveHold');
+finalizeFixture(cReactive77);
+setRng(fixedRng(0.10)); // < TELEGRAPH_CHARGE_CHANCE (0.15) -- forces the wind-up, same safe constant as Test 65
+var b77 = Game.Battle.start('plains_field_rat');
+b77.monster.behavior = 'reactive';
+b77.monster.techs = [];
+b77.monster.hp = b77.monster.hpMax = 100000;
+b77.monster.damage = 100;
+Game.Battle.attack(); // player's turn; the monster's counter winds up
+assert(!!b77.charge && b77.charge.mult === BALANCE.AFFIX_CHARGED_MULT, 'sanity: a reactive monster winds up like telegraph, got ' + JSON.stringify(b77.charge));
+
+var playerHpBeforeHold77 = b77.player.hitPoints;
+Game.Battle.defend(); // the release turn -- but the player Defends instead of attacking
+assert(!!b77.charge, 'the charge is still pending -- it was HELD, not released');
+assert(b77.charge.delays === 1, 'the held charge records one delay, got ' + b77.charge.delays);
+assert(b77.player.hitPoints === playerHpBeforeHold77, 'a held charge deals no damage this turn');
+assert(b77.log.some(function (l) { return l.indexOf('holds its charge') !== -1; }), 'the hold is announced in the battle log');
+assert(!b77.log.some(function (l) { return l.indexOf('unleashes its charged blow') !== -1; }), 'sanity: no release happened this turn');
+
+Game.Battle.defend(); // Defend again -- delays (1) is no longer < REACTIVE_MAX_CHARGE_DELAYS (1), so it releases anyway
+var releaseLine77 = b77.log.filter(function (l) { return l.indexOf('unleashes its charged blow') !== -1; }).pop();
+assert(!!releaseLine77, 'the second consecutive Defend exceeds the delay cap -- the charge releases anyway');
+var releasedDmg77 = parseInt(releaseLine77.match(/for (\d+) damage/)[1], 10);
+assert(b77.charge === null, 'the charge is cleared after releasing');
+Game.Battle.endBattle();
+
+// Baseline: same fixture/rng, but the player does NOT Defend on the release turn (an ordinary
+// attack() instead) -- isolates the magnitude of the Defend halving on the release itself. The
+// hold doesn't change the release's own magnitude (chargeMult is fixed regardless of hold count),
+// so this baseline is a valid comparison for the delayed-then-released case above.
+var cBase77 = windUpFixture('ReactiveBaseline');
+finalizeFixture(cBase77);
+setRng(fixedRng(0.10));
+var bBase77 = Game.Battle.start('plains_field_rat');
+bBase77.monster.behavior = 'reactive';
+bBase77.monster.techs = [];
+bBase77.monster.hp = bBase77.monster.hpMax = 100000;
+bBase77.monster.damage = 100;
+Game.Battle.attack(); // wind-up
+assert(!!bBase77.charge, 'sanity: baseline also winds up');
+Game.Battle.attack(); // release turn, NOT defended -- no hold condition (defending is false), releases immediately on schedule
+var baseReleaseLine77 = bBase77.log.filter(function (l) { return l.indexOf('unleashes its charged blow') !== -1; }).pop();
+assert(!!baseReleaseLine77, 'baseline release happened on schedule (undefended, so no hold)');
+var baseReleasedDmg77 = parseInt(baseReleaseLine77.match(/for (\d+) damage/)[1], 10);
+assert(bBase77.charge === null, 'baseline charge cleared after releasing');
+assert(Math.abs(releasedDmg77 - Math.round(baseReleasedDmg77 * BALANCE.DEFEND_DAMAGE_MULT)) <= 1, 'the delayed-then-released charge is halved by the Defend that finally let it through: undefended baseline ' + baseReleasedDmg77 + ', delayed+defended ' + releasedDmg77 + ', expected ~' + Math.round(baseReleasedDmg77 * BALANCE.DEFEND_DAMAGE_MULT));
+Game.Battle.endBattle();
+
+// =================== Test 78: v1.5 P3 — boss script + behavior coexist ===================
+console.log('\n=== Test 78: v1.5 P3 boss integration — a boss with BOTH a `script` (HP-threshold) and a `behavior` (per-turn telegraph) still fires its script at the threshold AND exhibits its behavior ===');
+var c78 = makeCharacter({ name: 'BossCoexistTest' });
+c78.dexterity = 60; // playerFirst vs a level-32 boss
+c78.level = 32; // avoid Fear complicating the player's own hit (same fixture shape as Test 55)
+c78.strength = 100;
+Game.Character.recalcDerived(c78);
+c78.hitPoints = c78.hitPointsMax = 100000;
+c78.energy = c78.energyMax = 100000;
+setRng(fixedRng(0.99)); // clean hit: no monster dodge (~0.148 < 0.99), no wind-up (0.15 < 0.99)
+var b78 = Game.Battle.start('kastengard_custodian');
+assert(b78.monster.behavior === 'telegraph', 'sanity: kastengard_custodian carries the P3 telegraph behavior');
+b78.monster.techs = [];
+b78.monster.hpMax = 100000;
+b78.monster.hp = 50001; // one point above the 50% script threshold, same setup as Test 55
+var scriptEntry78 = b78.monster.script[0];
+var armorBefore78 = b78.monster.armor;
+
+Game.Battle.attack(); // crosses the script's 50% threshold this round; the monster's own counter this round does NOT wind up (rng 0.99)
+assert(scriptEntry78.fired === true, 'the boss script fired at its HP threshold, unaffected by the added behavior field');
+assert(b78.monster.armor === armorBefore78 + scriptEntry78.amount, 'the fortify script effect applied its usual flat amount, unchanged by v1.5 P3');
+assert(!b78.charge, 'sanity: no wind-up yet at rng 0.99');
+
+b78.monster.hp = b78.monster.hpMax; // reset well clear of the (already-fired, one-shot) threshold before forcing a wind-up
+setRng(fixedRng(0.10)); // < TELEGRAPH_CHARGE_CHANCE (0.15) -- forces the SAME boss's behavior to wind up on a later turn
+Game.Battle.attack();
+assert(!!b78.charge && b78.charge.mult === BALANCE.AFFIX_CHARGED_MULT, 'the SAME boss also exhibits its telegraph behavior (winds up) — script and behavior are independent and both fire, got ' + JSON.stringify(b78.charge));
+assert(b78.log.some(function (l) { return l.indexOf('rears back') !== -1; }), 'the wind-up is announced, same as any other telegraph-behavior monster');
+Game.Battle.endBattle();
+
+// =================== Test 79: v1.5 P3 regression — a simple monster never guards or holds a charge ===================
+console.log('\n=== Test 79: v1.5 P3 regression — a simple (behavior absent) monster never sets battle.monsterGuard across several rounds; a non-reactive telegraph monster never holds a released charge ===');
+var c79 = makeCharacter({ name: 'P3SimpleRegression' });
+c79.dexterity = 20;
+c79.hitPoints = c79.hitPointsMax = 100000;
+c79.energy = c79.energyMax = 100000;
+setRng(fixedRng(0.10)); // well below GUARDIAN_CHANCE (0.30) and TELEGRAPH_CHARGE_CHANCE (0.15) -- would trigger either if this monster carried guardian/telegraph/reactive
+var b79 = Game.Battle.start('plains_field_rat'); // behavior absent -> simple
+assert(b79.monster.behavior === undefined, 'sanity: plains_field_rat carries no behavior field');
+for (var round79 = 0; round79 < 5; round79++) {
+  if (b79.phase !== 'active') break;
+  Game.Battle.attack();
+}
+assert(!b79.monsterGuard, 'a simple monster never sets battle.monsterGuard across 5 rounds, got ' + b79.monsterGuard);
+assert(!b79.charge, 'a simple monster never sets battle.charge across 5 rounds (regression, same as Test 69)');
+Game.Battle.endBattle();
+
+// Also confirm the reactive-hold branch itself never fires for a non-reactive telegraph monster:
+// force a wind-up, then Defend during the would-be release turn -- it must release IMMEDIATELY,
+// not hold (holding is 'reactive'-exclusive).
+var cNoHold79 = windUpFixture('TelegraphNeverHolds');
+finalizeFixture(cNoHold79);
+setRng(fixedRng(0.10));
+var b79b = Game.Battle.start('plains_field_rat');
+b79b.monster.behavior = 'telegraph'; // NOT reactive
+b79b.monster.techs = [];
+b79b.monster.hp = b79b.monster.hpMax = 100000;
+b79b.monster.damage = 100;
+Game.Battle.attack(); // wind-up
+assert(!!b79b.charge, 'sanity: telegraph monster winds up');
+Game.Battle.defend(); // the release turn, Defended -- a telegraph (non-reactive) monster must NOT hold
+assert(b79b.charge === null, 'a non-reactive telegraph monster releases on schedule even when Defended -- it never holds (holding is reactive-exclusive)');
+assert(b79b.log.some(function (l) { return l.indexOf('unleashes its charged blow') !== -1; }), 'the release happened this turn, not held');
+assert(!b79b.log.some(function (l) { return l.indexOf('holds its charge') !== -1; }), 'sanity: no hold logged for a non-reactive monster');
+Game.Battle.endBattle();
 
 // =================== Summary ===================
 console.log('\n===================================');

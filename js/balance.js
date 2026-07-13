@@ -474,5 +474,21 @@ var BALANCE = {
   // damage term.
   CASTER_TECH_CHANCE: 0.75, // invented (v1.5 P2): caster-behavior monsters' tech inclination (vs the default 0.5); reuses the existing, already-balanced monster-tech path
   ENRAGE_HP_FRAC: 0.30, // invented (v1.5 P2): an enrage-behavior monster is "enraged" below this fraction of its max HP
-  ENRAGE_CHARGE_MULT: 1.5 // invented (v1.5 P2, RETUNED by the P2 acceptance re-sim): while enraged, wind-up chance x1.5 (0.15 -> 0.225). The initial 2.0 (->0.30) blew past the P0 +20% avg-DPS budget and dropped the L99 enrage cell to 80% win (contract floor 85%); 1.5 restores it while keeping a real death-throes threat. Ratchet: tune the new mechanic to the shipped contract (LEAD-PLAYBOOK §0.3)
+  ENRAGE_CHARGE_MULT: 1.5, // invented (v1.5 P2, RETUNED by the P2 acceptance re-sim): while enraged, wind-up chance x1.5 (0.15 -> 0.225). The initial 2.0 (->0.30) blew past the P0 +20% avg-DPS budget and dropped the L99 enrage cell to 80% win (contract floor 85%); 1.5 restores it while keeping a real death-throes threat. Ratchet: tune the new mechanic to the shipped contract (LEAD-PLAYBOOK §0.3)
+
+  // ==================== v1.5 P3: guardian + reactive archetypes (docs/SPEC-V1.5-MONSTER-AI.md §3) ====================
+  // guardian is the mirror of the player's own Defend (a self-mitigation term, not a damage term) --
+  // gated by the P3 sim (`/balance-sim`, N=350, docs/SPEC-V1.5-MONSTER-AI.md §6 "P3 guardian
+  // sim-gate"): modelled as monster effective-HP x 1/(1-chance*reduction) (the over-armoring/
+  // energy-stall lens used by the v1.2 armor-cap incidents). Even a generous effHP x1.40 envelope
+  // held 100% win / 0 stall at L40 and L100 (fights only stretch ~9->13 rounds against a ~120-action
+  // energy budget). LOCKED at effHP x1.18 (P_g*R=0.15) for a comfortable margin under that envelope.
+  GUARDIAN_CHANCE: 0.30, // invented, LOCKED v1.5 P3 sim-gate: per-turn chance a guardian monster guards instead of acting
+  GUARDIAN_REDUCTION: 0.50, // invented, LOCKED v1.5 P3 sim-gate: a guard reduces the damage of the player's NEXT action (attack/useTech/limitBreak) against this monster by this fraction
+  // reactive re-times the EXISTING telegraph (§2) based on the player's Defend -- it adds no new
+  // damage or HP term of its own (the charge it eventually releases is the same AFFIX_CHARGED_MULT
+  // hit telegraph/caster/enrage already use), so per the P3 sim-gate it needs no numeric gate; its
+  // only free parameter is how many times a single charge may be held off, bounded here so a player
+  // cannot Defend-stall a charge forever ("the player can't stall forever" -- spec §3 table).
+  REACTIVE_MAX_CHARGE_DELAYS: 1 // invented (v1.5 P3): a reactive monster may hold a pending charge past a player Defend at most this many times before releasing regardless
 };

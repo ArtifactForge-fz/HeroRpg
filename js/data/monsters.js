@@ -799,6 +799,11 @@ Game.Data.monsters = [
     name: 'Matriarch of the High Camp',
     level: 18,
     boss: true,
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): telegraph archetype — a pack
+    // matriarch winding up a heavy blow is an apt thematic fit for the first real "watch the
+    // wind-up" boss lesson. `behavior` (per-turn action choice) is independent of `script` below
+    // (HP-threshold trigger) — both fire; see js/core/battle.js monsterAct/runBossScript.
+    behavior: 'telegraph',
     // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST enrage (amount 1.12, under
     // the 1.25 ceiling) — the Matriarch rallies her pack for a last stand.
     script: [
@@ -975,6 +980,11 @@ Game.Data.monsters = [
     name: 'The Juneros Leviathan',
     level: 25,
     boss: true,
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): enrage archetype — a brutish
+    // beast boss (boss-lite death-throes escalation) fits a Leviathan better than a magic-flavored
+    // caster. `behavior` and `script` are independent and both fire (see foothills_matriarch's
+    // comment above for the full citation).
+    behavior: 'enrage',
     // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST heal (amount 0.10, under
     // the 0.15 ceiling) — the Leviathan retreats into its own element to mend.
     script: [
@@ -1135,6 +1145,11 @@ Game.Data.monsters = [
     name: 'The Kastengard Custodian',
     level: 32,
     boss: true,
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): telegraph archetype — a sentry
+    // construct visibly powering up before it strikes, same thematic fit as the regular Kastengard
+    // Wardframe (js/data/monsters.js L26) sharing this flavor. `behavior` and `script` are
+    // independent and both fire (see foothills_matriarch's comment above for the full citation).
+    behavior: 'telegraph',
     // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST fortify (amount 6, ~7% of
     // this boss's own damage stat 83, under the ~15% ceiling) — the construct reroutes power to
     // its shell.
@@ -1281,6 +1296,16 @@ Game.Data.monsters = [
     name: "Eidas' Echo",
     level: 40,
     boss: true,
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
+    // empirically reverted. An earlier pass assigned 'enrage' here, but a real-RNG re-sim
+    // (tests/test_p6b_content.js Part 4, "eidas_echo simulated beats-check") showed a charged
+    // telegraph release can bypass this fight's HP-threshold-triggered healing (a single
+    // AFFIX_CHARGED_MULT=2.0 spike can cross the sim AI's heal-at-<40%-HP check AND the death
+    // threshold in the same hit, whereas the sim's own healing logic can only react BETWEEN
+    // actions) — win rate collapsed from ~70-85% to 30% (floor is >=60%). See
+    // foothills_matriarch/juneros_leviathan/kastengard_custodian for the archetype set that DID
+    // clear their re-sim; this and the other lair/finale bosses with a real-RNG win-rate floor
+    // test are left without a P3 behavior pending a dedicated boss-tuned re-sim (deferred).
     // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): two MODEST entries (heal 0.10 under
     // the 0.15 ceiling; enrage 1.15 under the 1.25 ceiling) — the projection first restabilizes,
     // then burns hottest as its own unmaking nears (a mild prelude to eidas_ascendant's later,
@@ -1528,6 +1553,13 @@ Game.Data.monsters = [
     name: 'The Majiku Warlord',
     level: 50,
     boss: true,
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
+    // empirically reverted. An earlier pass assigned 'telegraph' here, but the real-RNG re-sim
+    // (tests/test_p3_battle.js Test 32) collapsed from 87% win rate to 14-20% (floor is >=60%): a
+    // charged release (AFFIX_CHARGED_MULT=2.0) can bypass this fight's HP-threshold-triggered
+    // healing in one hit, which the sim's item-AI (mirrors a non-optimal player) can only react to
+    // BETWEEN actions. See eidas_echo's comment (same file) for the full citation; left without a
+    // P3 behavior pending a dedicated boss-tuned re-sim (deferred).
     // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST enrage (amount 1.15, under
     // the 1.25 ceiling) — the Warlord rallies his war-camp for the killing blow. Re-simmed (P3):
     // majiku_warlord's real-RNG win-rate floor test (tests/test_p3_battle.js Test 32) stays
@@ -1742,6 +1774,10 @@ Game.Data.monsters = [
     name: 'The Majiku Ridge-Chieftain',
     level: 60,
     boss: true,
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
+    // empirically reverted (same real-RNG win-rate-floor collapse documented on majiku_warlord's
+    // and eidas_echo's entries in this file, tests/test_p3_battle.js Test 35); left without a P3
+    // behavior pending a dedicated boss-tuned re-sim (deferred).
     // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST fortify (amount 16, ~7% of
     // this boss's own damage stat 223, under the ~15% ceiling) — the Chieftain digs in behind his
     // host's shieldwall. Re-simmed (P3): test_p3_battle.js Test 35's real-RNG floor stays
@@ -1956,6 +1992,10 @@ Game.Data.monsters = [
     name: 'The Ukai Deep-Dweller',
     level: 70,
     boss: true,
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
+    // empirically reverted (same real-RNG win-rate-floor collapse documented on majiku_warlord's
+    // and eidas_echo's entries in this file, tests/test_p3_battle.js Test 38); left without a P3
+    // behavior pending a dedicated boss-tuned re-sim (deferred).
     // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST heal (amount 0.10, under the
     // 0.15 ceiling) — the cave-dwelling thing draws strength from the old stone. Re-simmed (P3):
     // test_p3_battle.js Test 38's real-RNG floor stays comfortably above its >=60% floor with this
@@ -2179,6 +2219,10 @@ Game.Data.monsters = [
     name: 'Estari Warden-Prime',
     level: 80,
     boss: true,
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
+    // empirically reverted (same real-RNG win-rate-floor collapse documented on majiku_warlord's
+    // and eidas_echo's entries in this file, tests/test_p3_battle.js Test 41); left without a P3
+    // behavior pending a dedicated boss-tuned re-sim (deferred).
     // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST fortify (amount 21, ~7% of
     // this boss's own damage stat 293, under the ~15% ceiling) — the ward-construct channels the
     // Wellspring itself. Re-simmed (P3): test_p3_battle.js Test 41's real-RNG floor stays
@@ -2408,6 +2452,10 @@ Game.Data.monsters = [
     name: 'Society Anima-Horror',
     level: 90,
     boss: true,
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
+    // empirically reverted (same real-RNG win-rate-floor collapse documented on majiku_warlord's
+    // and eidas_echo's entries in this file, tests/test_p3_battle.js Test 44); left without a P3
+    // behavior pending a dedicated boss-tuned re-sim (deferred).
     // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): MODEST enrage (amount 1.12, under
     // the 1.25 ceiling) — the Horror's hunger sharpens as it nears its own end. Re-simmed (P3):
     // test_p3_battle.js Test 44's real-RNG floor stays comfortably above its >=60% floor with this
@@ -2656,6 +2704,11 @@ Game.Data.monsters = [
     name: 'Eidas Ascendant',
     level: 100,
     boss: true,
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
+    // empirically reverted. This fight is ALREADY the game's costliest by design (header comment
+    // above) with the least win-rate headroom of any boss; the same real-RNG collapse documented
+    // on majiku_warlord's and eidas_echo's entries in this file (tests/test_p3_battle.js Test 47)
+    // applies here too. Left without a P3 behavior pending a dedicated boss-tuned re-sim (deferred).
     // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): deliberately the flavor-richest
     // but NUMERICALLY MILDEST script in the game — this fight is already the hardest in the game
     // (see the header comment above), so it gets a single scripted Curse (25% outgoing-damage
