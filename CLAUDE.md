@@ -18,9 +18,11 @@ high levels (Fear-spared healing sustain) — deferred, documented in DESIGN §4
    turned out to be archived (camp robbery: `forum/t-756.md`; 95% hunt chance: `forum/t-755.md`;
    tier-class names: `site/homepage_2006.md`).
 3. **Never touch `D:\Claude - collection folder\Test game generation\`** — unrelated project.
-4. **Workflow (user-directed):** the lead session (strongest available model — Opus as of the
-   2026-07-12 Fable handoff) does scoping, specs, sim gates, planning, and review; implementation
-   and mechanical work goes to Sonnet subagents. **Read `docs/LEAD-PLAYBOOK.md` at the start of
+4. **Workflow (user-directed):** the lead session does scoping, specs, sim gates, planning, and
+   review; implementation and mechanical work goes to Sonnet subagents. **Lead model = Fable**
+   (user-directed 2026-07-13, reverting the 2026-07-12 Opus handoff). The lead model is set by the
+   session's own model (the model picker / `/model`), not something a running session can switch
+   for itself — start or set the session to Fable to lead. **Read `docs/LEAD-PLAYBOOK.md` at the start of
    any dev cycle** — it is the Fable-era process handoff (sim methodology, delegation briefs,
    review protocol, failure-mode catalog). The recurring procedures are project skills:
    `/balance-sim` (mandatory before locking any combat constant), `/delegate-review` (spawn
