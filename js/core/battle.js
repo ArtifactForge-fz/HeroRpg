@@ -303,6 +303,67 @@ Game.Battle = (function () {
     battle.playerStatuses.push({ type: 'curse', name: 'Curse', turnsLeft: BALANCE.CURSE_DURATION });
   }
 
+  // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a, D4): the Conjurer's Summon Elemental always
+  // auto-attunes to the enemy's WEAKEST Anima grade (lowest resistance multiplier — negative
+  // values are vulnerabilities, so a vulnerability always wins over an unlisted/neutral grade at
+  // 0) so the servitor is always effective, mirroring the archived "align to the enemy's
+  // weakness" grade game. Ties resolve to whichever grade sorts first below (arbitrary — spec:
+  // "ties -> any"). A monster with no resistances at all (or none of the seven listed grades)
+  // naturally falls through to the fixed default 'Fire' (spec D4), since every grade then reads
+  // 0 and Fire is checked first.
+  var SERVITOR_GRADES = ['Fire', 'Water', 'Wind', 'Earth', 'Star', 'Light', 'Dark']; // archived Anima-grade roster, DESIGN.md §5
+  function pickWeaknessGrade(monster) {
+    var res = (monster && monster.resistances) || {};
+    var best = 'Fire';
+    var bestVal = null;
+    for (var i = 0; i < SERVITOR_GRADES.length; i++) {
+      var g = SERVITOR_GRADES[i];
+      var val = typeof res[g] === 'number' ? res[g] : 0;
+      if (bestVal === null || val < bestVal) {
+        bestVal = val;
+        best = g;
+      }
+    }
+    return best;
+  }
+
+  // Ticks the monster's per-battle statuses (currently only the Conjurer's 'servitor' rider) once
+  // per round, mirroring tickPlayerStatuses below exactly but on the OTHER side of the fight.
+  // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a): the servitor is NOT a second combatant — no HP,
+  // never targeted, and this function never calls monsterAct, so it can never grant the monster an
+  // extra action. Its damage routes through the SAME variance/grade-resistance/Magic-Armor
+  // mitigation pipeline as any other graded tech hit (guardrail: "no unmitigated 'true' tick"),
+  // including Fear and Curse — the servitor reads the caster's own Anima the same way a live cast
+  // would, so it cannot be used to bypass either debuff's discipline.
+  function tickMonsterStatuses(battle) {
+    if (isOver(battle)) return;
+    var remaining = [];
+    var statuses = battle.monster.statuses || [];
+    for (var i = 0; i < statuses.length; i++) {
+      var st = statuses[i];
+      if (st.type === 'servitor' && battle.monster.hp > 0) {
+        var fear = fearMultiplier(battle);
+        var curseMult = playerCurseMultiplier(battle);
+        var base = techEffectivePower(battle.player, { effect: 'damage', power: st.power }) * fear * curseMult;
+        var glancing = rng() < BALANCE.GLANCING_CHANCE;
+        var raw = rollVariance(base);
+        if (glancing) raw *= BALANCE.GLANCING_MULT;
+        raw = applyResistance(battle.monster, st.grade, raw);
+        var dmg = Math.max(1, Math.round(raw - battle.monster.magicArmor));
+        battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
+        log(battle, 'Your ' + st.name + ' strikes the ' + battle.monster.name + (glancing ? ' (glancing)' : '') + ' for ' + dmg + ' damage.');
+      }
+      st.turnsLeft -= 1;
+      if (st.turnsLeft > 0) {
+        remaining.push(st);
+      } else if (st.type === 'servitor') {
+        log(battle, 'Your Elemental Servitor fades away.');
+      }
+    }
+    battle.monster.statuses = remaining;
+    checkEnd(battle);
+  }
+
   // Ticks the player's per-battle statuses (poison damage, buff duration) once per full round.
   function tickPlayerStatuses(battle) {
     if (isOver(battle)) return;
@@ -577,6 +638,9 @@ Game.Battle = (function () {
     runBossScript(battle);
     monsterAct(battle);
     tickPlayerStatuses(battle);
+    // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a): the Conjurer's Elemental Servitor tick, same
+    // round-resolution slot as the player-status tick just above it.
+    tickMonsterStatuses(battle);
   }
 
   // ---------------- Player actions ----------------
@@ -815,6 +879,29 @@ Game.Battle = (function () {
         turnsLeft: tech.buffDuration || 3
       });
       log(battle, 'You cast ' + tech.name + ' — Damage +' + tech.power + ' for ' + (tech.buffDuration || 3) + ' turns.');
+    } else if (tech.effect === 'summon') {
+      // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a): the Conjurer's "Elemental Servitor" — NOT a
+      // second combatant (the engine is strictly 1v1; archived dev quote, forum/t-449.md: "there
+      // won't be summons in battle. It's just 1v1"). A persistent battle-transient DoT rider
+      // stored on the ENEMY's own status list (battle.monster.statuses, already an empty array
+      // from deepCopyMonster/start()), so it reuses the identical tick/removal machinery as a
+      // player-side status — just ticked by tickMonsterStatuses (above) instead of
+      // tickPlayerStatuses. Deals NO immediate damage here — only the round tick strikes. Grade
+      // auto-picks the monster's own weakest Anima grade (pickWeaknessGrade, D4) so the Conjurer
+      // needs no Fire/Water/Wind/Earth tech variants. One servitor at a time: re-summoning
+      // REPLACES the existing entry rather than stacking a second (spec: "One servitor at a time").
+      var servitorGrade = pickWeaknessGrade(battle.monster);
+      battle.monster.statuses = (battle.monster.statuses || []).filter(function (st) {
+        return st.type !== 'servitor';
+      });
+      battle.monster.statuses.push({
+        type: 'servitor',
+        name: 'Elemental Servitor',
+        turnsLeft: tech.servitorTurns,
+        power: tech.servitorPower,
+        grade: servitorGrade
+      });
+      log(battle, 'You summon an Elemental Servitor, attuned to ' + servitorGrade + ' Anima — it will strike the ' + battle.monster.name + ' each round.');
     } else {
       // 'damage' | 'drain'
       // v1.4 P3 (G2) Warded champion affix: the FIRST hostile (damage/drain) tech the player

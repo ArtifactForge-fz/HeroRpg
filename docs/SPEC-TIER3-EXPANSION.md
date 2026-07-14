@@ -183,6 +183,28 @@ combat math and needs a real sim of its own (§3a). Both are covered below:
   already respects. Use `/balance-sim` at L60/80/100.
 - No change to the boss/at-level difficulty contract is expected; the sim's job is to prove that.
 
+### P5 SIM RESULTS — LOCKED 2026-07-13 (`/balance-sim`, N=300, L70 fixtures, seeded)
+
+- **Servitor retuned 14→50** (`tech_summon_elemental.servitorPower`). The provisional 14 (naive
+  "5 ticks ≈ one Reckoning" pre-mitigation math) floored at ~1 dmg/tick — flat Magic Armor per tick
+  punishes multi-hit (L70 Int-build: eff(14)=54 vs boss MA 56; scaling is eff ≈ P×(1+Int/50)). At 50,
+  each tick ≈55–60% of a Magus Reckoning post-mitigation. **Result:** at-level Conjurer 3.0 rounds vs
+  Magus 3.5 (both 100%); vs a Light-weak/Dark-resistant boss Conjurer 98.3%/6.7 rounds/1.2 consumables
+  vs Magus 93.3%/10.9/2.8 — the auto-weakness niche working (a Star-resistant boss flips it); baseline
+  classless mage 54.7% on the same boss, so capstones help without making bosses free (real cost:
+  ~50% HP + consumables). energyCost 35 / turns 5 unchanged.
+- **Band retunes (tier ordering):** Warden `magic_armor_flat` 16→**12** (+20%, the Tier-3 ceiling,
+  = Shadowknight's Dragon's Fire), Warden `hp_max_flat` 55→**48** (+20% over Iron Vitality 40; stays
+  below the Legendary Heir's 50), Cleric `hp_max_flat` 55→**42** (+20% over Vital Reserves 35).
+  The provisional 55s would have out-HP'd a Legendary — wrong tier ordering.
+- **Berserker (attack-only passives):** at-level vs a telegraph monster **98.7%** (floor 85%), faster
+  than classless (6.9 vs 9.3 rounds); vs the boss 20.7% for a bare auto-attacker — the glass-cannon
+  risk is real (high-risk/high-reward, not a strict upgrade); the suite's canonical prepared-fixture
+  boss floors stay green.
+- Sim-policy note for future reads: warrior-line class techs are Int-scaled (`techEffectivePower`)
+  like the shipped trio — a pure-Str fixture must NOT spam them (that artifact produced a bogus 34.7%
+  berserker cell in the first sim pass); test melee passives attack-only.
+
 ---
 
 ## 7. Content volume & icons

@@ -30,23 +30,13 @@
 // v1.2 Phase 2 REVISION (docs/SPEC-V1.2.md Phase 2; docs/SPEC-FULL-LEVEL-ARC.md §5): the two-tier
 // model above becomes THREE tiers, and Runeblade of Kuraan moves off tier 3 into a dedicated
 // Legendary slot (tier: 4) alongside two brand-new invented Legendaries, so tier 3 is exclusively
-// the archived third-branch roster:
+// the archived third-branch roster. (v1.5 P4 below SUPERSEDES this phase's "branch convergence"
+// unlock rule with branching — see that section for the current model; this paragraph is kept for
+// history.)
 //   - Third tier (tier: 3) at level 60 via "The Master's Calling" (js/data/quests.js
 //     masters_calling) — re-gated from the original v1.2 unlock of level 38 to level 60
 //     (level-arc F4, docs/SPEC-ARC-BANDS.md Band B "tier-3 class re-gates here") now that
-//     content spans to 100, converging ONE PER BASE LINE from whichever tier-2 branch the hero
-//     took (arc §5 "branch convergence" — pinned decision, NOT a second branch-of-2 like tier 2):
-//       Warrior (Gladiator OR Crusader) -> Shadowknight
-//       Magician (Wizard OR Sage)       -> Magus
-//       Thief (Rogue OR Mercenary)      -> Gambit
-//     So a tier-3 class's `baseClass` is the TIER-1 line id ('warrior'/'magician'/'thief'), NOT a
-//     tier-2 id — Game.Classes.thirdTierOptionsFor(c) resolves it off baseClassIdsObtained(c),
-//     mirroring advancedOptionsFor(c)'s baseClass matching. Shadowknight/Gambit ability NAMES are
-//     archived (homepage_2006.md); Magus's ability names and all three classes' concrete
-//     numbers/effects are invented. 3 abilities each (2 passive + 1 signature classOnly tech) —
-//     tuned roughly +20% over the stronger of the two tier-2 sibling abilities per effect (the
-//     "≤+25% over the prior tier" discipline already used for the tier-2 pass, see gladiator's
-//     comments below), a controlled step up, NOT the tier-1->tier-2 jump repeated.
+//     content spans to 100.
 //   - Legendary tier (tier: 4, display-only "Legendary" header) now holds THREE classes, each
 //     with its own special, mutually-independent unlock route (obtaining one does not block
 //     obtaining another — see js/core/battle.js onWin and js/core/classes.js checkRelicUnlock):
@@ -518,22 +508,40 @@ Game.Data.classes = [
   // =====================================================================================
   // THIRD TIER (tier: 3) — obtained at level 60 via "The Master's Calling" (js/data/quests.js
   // masters_calling; re-gated from level 38 to level 60 by level-arc F4, docs/SPEC-ARC-BANDS.md
-  // Band B), converging ONE PER BASE LINE from either tier-2 sibling (v1.2 Phase 2;
-  // docs/SPEC-V1.2.md Phase 2 "branch convergence" — pinned). baseClass is the TIER-1 line id,
-  // not a tier-2 id, per Game.Classes.thirdTierOptionsFor. 3 abilities each (2 passive + 1
-  // signature classOnly tech), tuned ~+20% over the stronger tier-2 sibling per effect.
+  // Band B). v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md) [revised]: BRANCHING replaces the v1.2 Phase 2
+  // "branch convergence" rule — each of the SIX tier-2 classes now offers its OWN two Tier-3
+  // options (12 total, not 3), so baseClass here is a TIER-2 id (e.g. 'gladiator'), not a tier-1
+  // line id. Game.Classes.thirdTierOptionsFor(c) resolves it off advancedClassIdsObtained(c) (the
+  // tier-2 branch actually taken), mirroring advancedOptionsFor(c)'s tier-1 baseClass matching one
+  // tier up. The 3 originally-shipped classes (Shadowknight/Magus/Gambit) are RE-HOMED under one
+  // specific tier-2 parent per §2/D1 of the spec (their abilities are unchanged, only baseClass
+  // moved); 9 new classes fill the other tier-2 branch + both options of the other four tier-2
+  // classes. Mapping (tier-2 -> [option A, option B]):
+  //   Gladiator (offense)   -> Shadowknight (shipped) / Berserker   (glass cannon, no defense)
+  //   Crusader  (defense)   -> Paladin (offense-leaning holy)       / Warden      (anti-magic wall)
+  //   Wizard    (spell dmg) -> Magus (shipped, burst nuke)          / Conjurer    (summon-based DoT, §3a)
+  //   Sage      (support)   -> Cleric (restoration)                 / Seer        (foresight/support)
+  //   Rogue     (crit/dodge)-> Gambit (shipped)                     / Assassin    (burst crit)
+  //   Mercenary (versatile) -> Ranger (skirmisher)                  / Dragoon     (heavy hybrid)
+  // 3 abilities each (2 passive + 1 signature classOnly tech), tuned ~+20% over the stronger
+  // tier-2 sibling per effect (existing band: damage_pct 0.13-0.19, magic_armor_flat 12,
+  // energy_max_flat 36, gold_pct 0.12, dodge_flat 0.10). classLevelCost pattern 3/3/5 throughout.
+  // Legacy note (§5, no save-version change): a save that obtained e.g. Shadowknight as a
+  // Crusader under the OLD convergence rule keeps it fully functional — obtaining is permanent
+  // and classBonus/activation never read baseClass; only the *offer* logic (thirdTierOptionsFor)
+  // changed, so no migration was written or needed.
   // =====================================================================================
 
-  // ---------- Shadowknight (baseClass: warrior; archived name + ability names, homepage_2006.md
-  // "Tier 4 Update") — converges Gladiator (offense) OR Crusader (defense) ----------
+  // ---------- Shadowknight (baseClass: gladiator [v1.5 P4 re-home, was 'warrior']; archived name
+  // + ability names, homepage_2006.md "Tier 4 Update") — Gladiator's offense-leaning option,
+  // paired with Berserker below ----------
   {
     id: 'shadowknight',
     name: 'Shadowknight',
-    desc: 'A Warrior who has walked past both the arena\'s spectacle and the standard\'s discipline ' +
-      'into something darker — battle-scarred, dark-Anima-touched, and answerable to neither ' +
-      'Gladiator nor Crusader alone. Converges from Warrior, whichever advanced path was taken.',
+    desc: 'A Warrior who has walked past the arena\'s spectacle into something darker — ' +
+      'battle-scarred and dark-Anima-touched. The Gladiator\'s offense-leaning Tier-3 calling.',
     tier: 3,
-    baseClass: 'warrior',
+    baseClass: 'gladiator',
     legendary: false,
     abilities: [
       {
@@ -568,16 +576,16 @@ Game.Data.classes = [
     ]
   },
 
-  // ---------- Magus (baseClass: magician; archived name, homepage_2006.md; corroborated
-  // forum/t-787.md) — converges Wizard (damage) OR Sage (healing/support); invented abilities ---
+  // ---------- Magus (baseClass: wizard [v1.5 P4 re-home, was 'magician']; archived name,
+  // homepage_2006.md; corroborated forum/t-787.md) — Wizard's burst-nuke option, paired with
+  // Conjurer's summon-based sustained damage below; invented abilities ---
   {
     id: 'magus',
     name: 'Magus',
-    desc: 'A Magician who has pushed past both raw spell damage and restorative craft into true ' +
-      'command over uncategorized Anima — the Academy\'s rarely-awarded caster capstone. ' +
-      'Converges from Magician, whichever advanced path was taken.',
+    desc: 'A Magician who has pushed raw spell damage into true command over uncategorized Anima ' +
+      '— the Academy\'s rarely-awarded caster capstone. The Wizard\'s burst-nuke Tier-3 calling.',
     tier: 3,
-    baseClass: 'magician',
+    baseClass: 'wizard',
     legendary: false,
     abilities: [
       {
@@ -609,17 +617,16 @@ Game.Data.classes = [
     ]
   },
 
-  // ---------- Gambit (baseClass: thief; archived name + ability names, homepage_2006.md;
-  // archived quest name "A Gambler's Life") — converges Rogue (crits/dodge) OR Mercenary
-  // (versatility) ----------
+  // ---------- Gambit (baseClass: rogue [v1.5 P4 re-home, was 'thief']; archived name + ability
+  // names, homepage_2006.md; archived quest name "A Gambler's Life") — Rogue's luck/gamble
+  // option, paired with Assassin below ----------
   {
     id: 'gambit',
     name: 'Gambit',
     desc: 'A Thief who has turned pure opportunism into a professional gamble — every fight a bet ' +
-      'placed on nerve, luck, and a blade thrown true. Converges from Thief, whichever advanced ' +
-      'path was taken.',
+      'placed on nerve, luck, and a blade thrown true. The Rogue\'s luck-and-gamble Tier-3 calling.',
     tier: 3,
-    baseClass: 'thief',
+    baseClass: 'rogue',
     legendary: false,
     abilities: [
       {
@@ -649,6 +656,388 @@ Game.Data.classes = [
         classLevelCost: 5,
         desc: 'The archived signature that gives the class its name — a thrown blade gambled on a ' +
           'roll of the dice, hitting far harder than a careful strike ever could when the roll goes well.'
+      }
+    ]
+  },
+
+  // ---------- Berserker (baseClass: gladiator; NAME [archived] forum/t-449.md, Dark Musician:
+  // "Beserker: A brutall warrior,very strong" — proposed, not itself flagged "Accepted:" in-
+  // thread but explicitly cited as usable per docs/SPEC-TIER3-EXPANSION.md §2) — Gladiator's
+  // glass-cannon option, paired with Shadowknight above. NO defensive passive BY DESIGN (spec §3/
+  // §6): top-of-band damage paid for with the missing defensive passive, so it reads as a high-
+  // risk/high-reward pick rather than a strict upgrade — sim its survivability before locking. ---
+  {
+    id: 'berserker',
+    name: 'Berserker',
+    desc: 'A Gladiator who has abandoned every trace of caution for pure, reckless offense — ' +
+      'nothing at all held back in defense. The Gladiator\'s glass-cannon Tier-3 calling.',
+    tier: 3,
+    baseClass: 'gladiator',
+    legendary: false,
+    abilities: [
+      {
+        id: 'berserker_bloodlust',
+        name: 'Bloodlust',
+        kind: 'passive',
+        effect: 'damage_pct',
+        power: 0.16, // invented: provisional (docs/SPEC-TIER3-EXPANSION.md Part B) — top of the Tier-3 damage_pct band (0.13-0.19); Berserker leans hardest into offense of any Tier-3 class, paid for by carrying no defensive passive at all. Pending lead's P5 balance-sanity sim.
+        classLevelCost: 3,
+        desc: 'Every wound taken only feeds the rage — +16% Damage.'
+      },
+      {
+        id: 'berserker_frenzied_pace',
+        name: 'Frenzied Pace',
+        kind: 'passive',
+        effect: 'double_attack_flat',
+        power: 0.06, // invented: +20% over Gladiator's Relentless Assault (0.05), within the tier's ≤+25% discipline
+        classLevelCost: 3,
+        desc: 'A whirlwind of blows with no thought spared for guard — flat +6% chance of a Double Attack.'
+      },
+      {
+        id: 'berserker_frenzy',
+        name: 'Frenzy',
+        kind: 'tech',
+        techId: 'tech_berserker_frenzy',
+        classLevelCost: 5,
+        desc: 'A reckless, all-or-nothing flurry of blows that abandons any pretense of defense for raw physical damage. Berserker class technique.'
+      }
+    ]
+  },
+
+  // ---------- Paladin (baseClass: crusader; NAME [archived] forum/t-449.md, Dragolas77's accepted
+  // Shadowknight description: "A dark soldier, the opposite of a paladin" — Paladin is referenced,
+  // not itself a submitted class, per docs/SPEC-TIER3-EXPANSION.md §2 D2) — Crusader's offense-
+  // leaning holy option, paired with Warden below ----------
+  {
+    id: 'paladin',
+    name: 'Paladin',
+    desc: 'A Crusader who carries the Light forward as a weapon, not only a shield — armored ' +
+      'devotion turned toward striking down what threatens the innocent. The Crusader\'s ' +
+      'offense-leaning Tier-3 calling.',
+    tier: 3,
+    baseClass: 'crusader',
+    legendary: false,
+    abilities: [
+      {
+        id: 'paladin_holy_bulwark',
+        name: 'Holy Bulwark',
+        kind: 'passive',
+        effect: 'armor_flat',
+        power: 16, // invented: +~14% over Crusader's Bulwark (14) — modest since Righteous Fury below also spends part of this class's Tier-3 budget on damage_pct. Provisional (Part B), pending lead's P5 sim.
+        classLevelCost: 3,
+        desc: 'Light-blessed plate turns aside blows a common Crusader\'s armor could not — flat +16 Armor.'
+      },
+      {
+        id: 'paladin_righteous_fury',
+        name: 'Righteous Fury',
+        kind: 'passive',
+        effect: 'damage_pct',
+        power: 0.10, // invented: new stat line — Crusader's own tier-2 kit has no damage_pct — set at the low end of the Tier-3 damage_pct band (0.13-0.19) since Holy Bulwark above already carries this class's armor weight. Provisional (Part B), pending lead's P5 sim.
+        classLevelCost: 3,
+        desc: 'Devotion sharpened into a weapon — +10% Damage.'
+      },
+      {
+        id: 'paladin_smite',
+        name: 'Smite',
+        kind: 'tech',
+        techId: 'tech_paladin_smite',
+        classLevelCost: 5,
+        desc: 'A Light-grade blow called down on an enemy with the full weight of the Crusader\'s faith behind it. Paladin class technique.'
+      }
+    ]
+  },
+
+  // ---------- Warden (baseClass: crusader; NAME [archived] forum/t-449.md, Daelin: "Warden
+  // (different from Warcraft one) ... Powerful defensive mage, adept at creating barriers and
+  // striking its enemies with powerful magical attacks" — Nerevar: "The Warden is a possibility;
+  // I'll consider it") — Crusader's anti-magic-wall option, paired with Paladin above ----------
+  {
+    id: 'warden',
+    name: 'Warden',
+    desc: 'A Crusader who has turned the Light entirely toward endurance — a standing wall of ' +
+      'wards that hostile Anima breaks against. The Crusader\'s defense-maximalist Tier-3 calling.',
+    tier: 3,
+    baseClass: 'crusader',
+    legendary: false,
+    abilities: [
+      {
+        id: 'warden_barrier_ward',
+        name: 'Barrier Ward',
+        kind: 'passive',
+        effect: 'magic_armor_flat',
+        power: 12, // invented, RETUNED v1.5 P5 (was provisional 16 = +60% over Crusader's Wardskin 10, outside the tier's ≤+25% per-effect discipline): 12 = +20%, the established Tier-3 magic_armor_flat ceiling (matches Shadowknight's Dragon's Fire). Warden's wall identity comes from the ceiling-level ward + the roster's top Tier-3 HP passive below + its barrier tech, not from breaking the band.
+        classLevelCost: 3,
+        desc: 'A standing barrier of protective Anima, thicker than any common Crusader\'s ward — flat +12 Magic Armor.'
+      },
+      {
+        id: 'warden_stalwart_frame',
+        name: 'Stalwart Frame',
+        kind: 'passive',
+        effect: 'hp_max_flat',
+        power: 48, // invented, RETUNED v1.5 P5 (was provisional 55, which would EXCEED the Legendary Heir of the Echo's hp_max_flat 50 — wrong tier ordering): 48 = +20% over Crusader's Iron Vitality (40), the band step, and the Tier-3 roster's top HP passive while staying below the Legendary tier.
+        classLevelCost: 3,
+        desc: 'A body built to outlast whatever a barrier alone cannot stop — +48 max HP.'
+      },
+      {
+        id: 'warden_bulwark_strike',
+        name: 'Bulwark Strike',
+        kind: 'tech',
+        techId: 'tech_warden_bulwark',
+        classLevelCost: 5,
+        desc: 'A Light-grade blow driven through the Warden\'s own barrier, turning defense briefly into attack. Warden class technique.'
+      }
+    ]
+  },
+
+  // ---------- Conjurer (baseClass: wizard; NAME [archived] derives from the archived Conjuration
+  // skill (reference/manual/Skills.md), which DESIGN.md §3 already defines as "summoned/DoT
+  // effects" — see docs/SPEC-TIER3-EXPANSION.md §2/§3a) — Wizard's summon-based SUSTAINED option,
+  // paired with Magus's burst above. The one class in this batch needing a small new battle
+  // mechanic; see its signature tech below and js/core/battle.js useTech/tickMonsterStatuses. -----
+  {
+    id: 'conjurer',
+    name: 'Conjurer',
+    desc: 'A Wizard who channels Anima into a lingering, semi-autonomous elemental rather than a ' +
+      'single burst — patient, sustained damage in place of a Magus\'s single verdict. The ' +
+      'Wizard\'s summon-based Tier-3 calling.',
+    tier: 3,
+    baseClass: 'wizard',
+    legendary: false,
+    abilities: [
+      {
+        id: 'conjurer_bound_conduit',
+        name: 'Bound Conduit',
+        kind: 'passive',
+        effect: 'energy_max_flat',
+        power: 36, // invented: +20% over Wizard's Overcharged Reserves (30) — matches Magus's own Overflowing Wellspring (36), its Wizard-line sibling; a deeper well to keep re-summoning the servitor per spec §3a. Provisional (Part B), pending lead's P5 sim.
+        classLevelCost: 3,
+        desc: 'A deeper well of Energy, kept full for summoning again the moment the last servitor fades — flat +36 max Energy.'
+      },
+      {
+        id: 'conjurer_warding_sigil',
+        name: 'Warding Sigil',
+        kind: 'passive',
+        effect: 'magic_armor_flat',
+        power: 12, // invented: matches Wizard's own Mind Over Matter (12) rather than exceeding it — per spec §3a the Conjurer's Tier-3 "step up" is concentrated in the summon mechanic itself plus Bound Conduit's Energy well, not this defensive passive. FLAGGED for the lead's sign-off (T0 numbers lock).
+        classLevelCost: 3,
+        desc: 'A standing sigil of protective Anima, drawn from the same discipline that binds the servitor — flat +12 Magic Armor.'
+      },
+      {
+        id: 'conjurer_summon_elemental',
+        name: 'Summon Elemental',
+        kind: 'tech',
+        techId: 'tech_summon_elemental',
+        classLevelCost: 5,
+        desc: 'Binds a lingering Elemental Servitor to the battle, auto-attuned to the enemy\'s weakest Anima grade — it strikes automatically each round until it fades. NOT a second combatant (the battle stays strictly 1v1): a persistent damage rider, not a fighter with its own HP or turn. Conjurer class technique.'
+      }
+    ]
+  },
+
+  // ---------- Cleric (baseClass: sage; NAME [archived] forum/t-449.md, Nerevar's own suggested
+  // caster-name list: "…Channeler, Cleric, Enchanter, Seer, Adept, Mystic, Priest…" — Sage was the
+  // name ultimately chosen from this same list back then; Cleric/Seer below revive two of its
+  // unused siblings for the two Sage Tier-3 options, per docs/SPEC-TIER3-EXPANSION.md §2 D2) —
+  // Sage's restoration option, paired with Seer below ----------
+  {
+    id: 'cleric',
+    name: 'Cleric',
+    desc: 'A Sage who has turned every study toward restoration — the deepest, surest healing the ' +
+      'Academy\'s caster line can offer. The Sage\'s restoration-focused Tier-3 calling.',
+    tier: 3,
+    baseClass: 'sage',
+    legendary: false,
+    abilities: [
+      {
+        id: 'cleric_vital_communion',
+        name: 'Vital Communion',
+        kind: 'passive',
+        effect: 'hp_max_flat',
+        power: 42, // invented, RETUNED v1.5 P5 (was provisional 55 = +57% over parent, and would exceed the Legendary Heir's 50): 42 = +20% over Sage's Vital Reserves (35), the band step. Cleric's longevity identity rides its Greater Restoration heal, not an out-of-band HP pool; Warden (48) keeps the roster's top Tier-3 HP slot.
+        classLevelCost: 3,
+        desc: 'A body tempered to endure the longest healing vigil — +42 max HP.'
+      },
+      {
+        id: 'cleric_wellspring_of_faith',
+        name: 'Wellspring of Faith',
+        kind: 'passive',
+        effect: 'energy_max_flat',
+        power: 36, // invented: +20% over Sage's Deep Wellspring (30), matching Magus/Conjurer's own energy_max_flat step. Provisional (Part B), pending lead's P5 sim.
+        classLevelCost: 3,
+        desc: 'A well of Energy deep enough to keep mending wounds long after a common Sage runs dry — flat +36 max Energy.'
+      },
+      {
+        id: 'cleric_greater_restoration',
+        name: 'Greater Restoration',
+        kind: 'tech',
+        techId: 'tech_greater_restoration',
+        classLevelCost: 5,
+        desc: 'A Light-grade restoration deeper than even a Sage\'s Greater Mending. Cleric class technique.'
+      }
+    ]
+  },
+
+  // ---------- Seer (baseClass: sage; NAME [archived] forum/t-449.md, same dev caster-name list as
+  // Cleric above) — Sage's foresight/support option, paired with Cleric above ----------
+  {
+    id: 'seer',
+    name: 'Seer',
+    desc: 'A Sage who studied the fight itself rather than the wound — reading an enemy\'s ' +
+      'openings a half-step before they land. The Sage\'s foresight-and-support Tier-3 calling.',
+    tier: 3,
+    baseClass: 'sage',
+    legendary: false,
+    abilities: [
+      {
+        id: 'seer_foresight',
+        name: 'Foresight',
+        kind: 'passive',
+        effect: 'dodge_flat',
+        power: 0.10, // invented: new stat line — Sage's own tier-2 kit has no dodge_flat — set at the established Tier-3 dodge_flat ceiling (matches Gambit's Gambler's Nerve, also 0.10). Provisional (Part B), pending lead's P5 sim.
+        classLevelCost: 3,
+        desc: 'A half-second\'s warning before a blow lands is all a Seer needs — flat +10% chance to dodge any attack.'
+      },
+      {
+        id: 'seer_clairvoyant_reserves',
+        name: 'Clairvoyant Reserves',
+        kind: 'passive',
+        effect: 'energy_max_flat',
+        power: 30, // invented: matches Sage's own Deep Wellspring (30) rather than exceeding it — this class's Tier-3 "step up" is concentrated in Foresight's new dodge_flat line and its Seer's Ward tech instead. FLAGGED for the lead's sign-off (T0 numbers lock).
+        classLevelCost: 3,
+        desc: 'A calm, steady well of Energy, undisturbed by what a Seer already saw coming — flat +30 max Energy.'
+      },
+      {
+        id: 'seer_seers_ward',
+        name: "Seer's Ward",
+        kind: 'tech',
+        techId: 'tech_seers_ward',
+        classLevelCost: 5,
+        desc: 'A moment of foresight woven into a battle-chant, hardening resolve and adding to Damage for a few turns. Seer class technique.'
+      }
+    ]
+  },
+
+  // ---------- Assassin (baseClass: rogue; NAME [archived] forum/t-449.md, Daelin: "Assassin ...
+  // Cunning Hero, adept at stealing and assassination" — proposed, then Nerevar declined it as
+  // "nearly a duplicate of my Rogue," which is exactly why it fits as Rogue's OWN Tier-3 option
+  // per docs/SPEC-TIER3-EXPANSION.md §2 D2) — Rogue's burst-crit option, paired with Gambit above ---
+  {
+    id: 'assassin',
+    name: 'Assassin',
+    desc: 'A Rogue who traded the gambler\'s nerve for a killer\'s patience — every strike aimed ' +
+      'to end a fight in as few blows as possible. The Rogue\'s burst-crit Tier-3 calling.',
+    tier: 3,
+    baseClass: 'rogue',
+    legendary: false,
+    abilities: [
+      {
+        id: 'assassin_killing_instinct',
+        name: 'Killing Instinct',
+        kind: 'passive',
+        effect: 'damage_pct',
+        power: 0.15, // invented: +25% over Rogue's Opportunist (0.12) — exactly at the tier discipline's cap, same precedent as Gambit's Gambler's Nerve
+        classLevelCost: 3,
+        desc: 'Every strike aimed at the single fastest way to end the fight — +15% Damage.'
+      },
+      {
+        id: 'assassin_predators_speed',
+        name: "Predator's Speed",
+        kind: 'passive',
+        effect: 'double_attack_flat',
+        power: 0.06, // invented: new stat line — Rogue's own tier-2 kit has no double_attack_flat — matches Gladiator/Berserker's own double_attack_flat scale (0.05-0.06). Provisional (Part B), pending lead's P5 sim.
+        classLevelCost: 3,
+        desc: 'A second strike arrives before the first opening even closes — flat +6% chance of a Double Attack.'
+      },
+      {
+        id: 'assassin_lethal_strike',
+        name: 'Lethal Strike',
+        kind: 'tech',
+        techId: 'tech_lethal_strike',
+        classLevelCost: 5,
+        desc: 'A precise, brutal strike aimed at ending the fight in a single opening. Assassin class technique.'
+      }
+    ]
+  },
+
+  // ---------- Ranger (baseClass: mercenary; NAME [archived] forum/t-449.md, Shrinrokon: "Ranger
+  // (Formerly Hunter) ... Uses Melee and Ranged weapons to attack" — listed among the thread's
+  // "Accepted Classes") — Mercenary's skirmisher option, paired with Dragoon below ----------
+  {
+    id: 'ranger',
+    name: 'Ranger',
+    desc: 'A Mercenary who has specialized into a fast, ranged-leaning skirmisher — always ' +
+      'finding an angle to strike from and the footwork to avoid the answer. The Mercenary\'s ' +
+      'skirmisher Tier-3 calling.',
+    tier: 3,
+    baseClass: 'mercenary',
+    legendary: false,
+    abilities: [
+      {
+        id: 'ranger_marksmans_eye',
+        name: "Marksman's Eye",
+        kind: 'passive',
+        effect: 'damage_pct',
+        power: 0.12, // invented: +20% over Mercenary's Hired Muscle (0.10)
+        classLevelCost: 3,
+        desc: 'A trained eye finds the opening a plain Mercenary\'s swing would miss — +12% Damage.'
+      },
+      {
+        id: 'ranger_woodland_step',
+        name: 'Woodland Step',
+        kind: 'passive',
+        effect: 'dodge_flat',
+        power: 0.08, // invented: new stat line — Mercenary's own tier-2 kit has no dodge_flat — matches Rogue's tier-2 Quickstep (0.08) exactly. Provisional (Part B), pending lead's P5 sim.
+        classLevelCost: 3,
+        desc: 'Light, practiced footwork honed for a skirmisher who never plans to stand still — flat +8% chance to dodge any attack.'
+      },
+      {
+        id: 'ranger_volley',
+        name: "Ranger's Volley",
+        kind: 'tech',
+        techId: 'tech_ranger_volley',
+        classLevelCost: 5,
+        desc: 'Two quick, ranged-leaning strikes loosed in close succession. Ranger class technique.'
+      }
+    ]
+  },
+
+  // ---------- Dragoon (baseClass: mercenary; NAME [archived] forum/t-449.md, Dragolas77: "Dragoon
+  // (formerly Dragon Knight) ... A swordsman dedicated to the dragons. Skilled in transformation
+  // magic and sword fighting" — explicitly "Accepted:" by the dev) — Mercenary's heavy-hybrid
+  // option, paired with Ranger above ----------
+  {
+    id: 'dragoon',
+    name: 'Dragoon',
+    desc: 'A Mercenary who has armored up rather than spread thin — a heavier hybrid built to ' +
+      'trade blows and armor in equal measure. The Mercenary\'s heavy-hybrid Tier-3 calling.',
+    tier: 3,
+    baseClass: 'mercenary',
+    legendary: false,
+    abilities: [
+      {
+        id: 'dragoon_dragons_might',
+        name: "Dragon's Might",
+        kind: 'passive',
+        effect: 'damage_pct',
+        power: 0.12, // invented: +20% over Mercenary's Hired Muscle (0.10)
+        classLevelCost: 3,
+        desc: 'Old dragon-sworn discipline behind every swing — +12% Damage.'
+      },
+      {
+        id: 'dragoon_scaled_plating',
+        name: 'Scaled Plating',
+        kind: 'passive',
+        effect: 'armor_flat',
+        power: 14, // invented: +40% over Mercenary's Battle-Tested (10) — a touch above the usual per-effect step since Dragoon is the roster's heavy-hybrid option. Provisional (Part B), pending lead's P5 sim.
+        classLevelCost: 3,
+        desc: 'Dragon-scale-patterned plate, heavier than a common Mercenary would carry — flat +14 Armor.'
+      },
+      {
+        id: 'dragoon_leap',
+        name: "Dragoon's Leap",
+        kind: 'tech',
+        techId: 'tech_dragoon_leap',
+        classLevelCost: 5,
+        desc: 'A heavy, leaping strike that lands with the full weight of Dragoon plate behind it. Dragoon class technique.'
       }
     ]
   },

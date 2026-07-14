@@ -684,6 +684,155 @@ Game.Data.techs = [
   },
 
   // =====================================================================
+  // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md): the 9 NEW Tier-3 classOnly signature techs, one per
+  // js/data/classes.js's 9 new Tier-3 classes (branching — see that file's THIRD TIER header
+  // comment). Same shape/mitigation precedent as the v1.2 Phase 2 block above: non-graded
+  // (grade: null) damage ignores Magic Armor and is rolled against the Intelligence hit/miss
+  // check; a graded (elemental) tech is mitigated by Magic Armor and resistances as normal.
+  // Power/energyCost numbers are PROVISIONAL (Part B brief) within the established Tier-3 band —
+  // the lead's P5 balance-sanity sim tunes final numbers; see js/data/classes.js's per-ability
+  // comments for how each anchors (or deliberately doesn't) to its Tier-2 parent.
+  // =====================================================================
+  {
+    id: 'tech_berserker_frenzy',
+    name: 'Frenzy',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null, // invented: non-elemental, matches the Warrior-line precedent (tech_crushing_blow/tech_execution_blow/tech_shadow_blade) — ignores Magic Armor per Phase 1 item 7
+    energyCost: 32, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
+    power: 72, // invented: +9% over Shadowknight's Shadow Blade (66) — Berserker's glass-cannon identity is carried mostly by its passives (Bloodlust/Frenzied Pace), not a runaway tech number
+    effect: 'damage',
+    classOnly: true,
+    classId: 'berserker',
+    desc: 'A reckless, all-or-nothing flurry of blows that abandons any pretense of defense for raw physical damage. Berserker class technique.'
+  },
+  {
+    id: 'tech_paladin_smite',
+    name: 'Smite',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: 'Light', // archived: "Healing spells use the Light grade" (Recent_Updates.md) — Paladin's holy damage reuses the same grade, mitigated by Magic Armor/resistances like any elemental tech
+    energyCost: 30, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
+    power: 60, // invented: provisional Part B brief number, within the tier-3 elemental-damage band
+    effect: 'damage',
+    classOnly: true,
+    classId: 'paladin',
+    desc: 'A Light-grade blow called down on an enemy with the full weight of the Crusader\'s faith behind it. Paladin class technique.'
+  },
+  {
+    id: 'tech_warden_bulwark',
+    name: 'Bulwark Strike',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: 'Light', // invented: same Light-grade convention as tech_radiant_smite/tech_paladin_smite (Crusader line's Light-Anima flavor) — mitigated by Magic Armor/resistances
+    energyCost: 28, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
+    power: 52, // invented: provisional Part B brief number, within the tier-3 elemental-damage band
+    effect: 'damage',
+    classOnly: true,
+    classId: 'warden',
+    desc: 'A Light-grade blow driven through the Warden\'s own barrier, turning defense briefly into attack. Warden class technique.'
+  },
+  // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a): the Conjurer's "Elemental Servitor" — a NEW
+  // effect kind, 'summon'. NOT a second combatant (the battle engine stays strictly 1v1; archived
+  // dev quote, forum/t-449.md: "there won't be summons in battle. It's just 1v1") — casting it
+  // places a persistent battle-transient DoT rider on the ENEMY's own status list
+  // (battle.monster.statuses), auto-attuned to whichever Anima grade the enemy resists LEAST (see
+  // js/core/battle.js pickWeaknessGrade), then struck automatically each round by
+  // tickMonsterStatuses — never targeted, never grants the monster an extra action, no HP of its
+  // own. servitorPower/servitorTurns are PROVISIONAL (Part B brief) — the lead's P5 sim calibrates
+  // damage-per-Energy vs. Magus's Anima Reckoning burst (spec §3a/§6).
+  {
+    id: 'tech_summon_elemental',
+    name: 'Summon Elemental',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null, // the servitor's OWN grade is chosen at cast time (auto-weakness, js/core/battle.js pickWeaknessGrade), not a fixed grade on the tech itself
+    energyCost: 35, // invented: provisional Part B brief number — paid ONCE per summon, not per tick (the class's "pay Energy once, get free recurring damage" identity, spec §3a)
+    servitorPower: 50, // invented, LOCKED v1.5 P5 sim: per-tick base power, Int-scaled via techEffectivePower like any spell. The provisional 14 (naive "5 ticks ≈ one 84-power Reckoning" pre-mitigation math) floored at ~1 dmg/tick — flat monster Magic Armor per tick punishes multi-hit (L70 Int-build: eff(14)=54 vs boss MA 56). At 50, each tick lands ≈55-60% of a Magus Reckoning post-mitigation; 5 ticks ≈ 2.7 Reckonings for one 35-Energy cast = the energy-efficient attrition niche vs Magus's faster, costlier burst (spec §3a). The auto-weakness grade also makes it the better tool vs nuke-resistant bosses — a niche, not a strict upgrade.
+    servitorTurns: 5, // invented: provisional Part B brief number — capped duration so a long boss fight isn't trivialized (spec §3a guardrail)
+    effect: 'summon',
+    classOnly: true,
+    classId: 'conjurer',
+    desc: 'Binds a lingering Elemental Servitor to the battle, auto-attuned to the enemy\'s weakest Anima grade — it strikes automatically each round for 5 rounds until it fades. Pay Energy once for recurring damage while you spend your own turns elsewhere. Conjurer class technique.'
+  },
+  {
+    id: 'tech_greater_restoration',
+    name: 'Greater Restoration',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: 'Light', // archived: "Healing spells use the Light grade" (Recent_Updates.md)
+    energyCost: 34, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
+    power: 96, // invented: +37% over Sage's Greater Mending (70) — Cleric is Sage's dedicated restoration option, so its signature heal leads the healing-tech band. Provisional (Part B).
+    effect: 'heal',
+    classOnly: true,
+    classId: 'cleric',
+    desc: 'A Light-grade restoration deeper than even a Sage\'s Greater Mending. Cleric class technique.'
+  },
+  {
+    id: 'tech_seers_ward',
+    name: "Seer's Ward",
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: 'Light', // invented: foresight/protective flavor, matches the archived Light-grade convention for support/ward effects used elsewhere (Wardskin/Crusader line)
+    energyCost: 26, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
+    power: 40, // invented: provisional Part B brief number — flat +Damage buff, well above tech_warcry_2's 12 since Seer has no other damage passive to lean on (Foresight/Clairvoyant Reserves are both non-offensive)
+    buffDuration: 4, // invented: matches tech_warcry_2/tech_focus_1's buff-duration convention (no separate `buffType` field exists in the shipped buff-tech shape — see js/core/battle.js useTech's `effect === 'buff'` branch, which reads only `power`/`buffDuration`)
+    effect: 'buff',
+    classOnly: true,
+    classId: 'seer',
+    desc: 'A moment of foresight woven into a battle-chant, hardening resolve and adding to Damage for a few turns. Seer class technique.'
+  },
+  {
+    id: 'tech_lethal_strike',
+    name: 'Lethal Strike',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null, // invented: non-elemental, matches the Thief-line precedent (tech_quick_stab/tech_efficient_strike/tech_dice_throw) — ignores Magic Armor per Phase 1 item 7
+    energyCost: 30, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
+    power: 68, // invented: provisional Part B brief number, within the tier-3 non-elemental band (Shadow Blade 66 / Vault Reckoning 73)
+    effect: 'damage',
+    classOnly: true,
+    classId: 'assassin',
+    desc: 'A precise, brutal strike aimed at ending the fight in a single opening. Assassin class technique.'
+  },
+  {
+    id: 'tech_ranger_volley',
+    name: "Ranger's Volley",
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null, // invented: non-elemental physical volley — matches the Thief-line precedent, ignores Magic Armor
+    energyCost: 30, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
+    power: 34, // invented: provisional Part B brief number — PER HIT (see hits: 2 below); mirrors tech_shadowstep_strike's two-hit shape (js/core/battle.js useTech `hits` loop)
+    hits: 2, // invented: this tech resolves as two successive strikes (see js/core/battle.js useTech), same mechanic as Rogue's Shadowstep Strike
+    effect: 'damage',
+    classOnly: true,
+    classId: 'ranger',
+    desc: 'Two quick, ranged-leaning strikes loosed in close succession. Ranger class technique.'
+  },
+  {
+    id: 'tech_dragoon_leap',
+    name: "Dragoon's Leap",
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null, // invented: non-elemental physical strike — Dragoon's lineage is a heavy hybrid melee fighter, not a caster
+    energyCost: 30, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
+    power: 65, // invented: provisional Part B brief number, within the tier-3 non-elemental band
+    effect: 'damage',
+    classOnly: true,
+    classId: 'dragoon',
+    desc: 'A heavy, leaping strike that lands with the full weight of Dragoon plate behind it. Dragoon class technique.'
+  },
+
+  // =====================================================================
   // Feature C (user-directed): weapon techniques. Early melee play was Attack-spam while magic
   // builds got a starter tech (see character.js grantStarterTech); these give the four weapon
   // skills their own Academy-learnable chains. Shape: `weaponTech: true` + `powerMult` (a

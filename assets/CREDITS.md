@@ -270,3 +270,30 @@ Same CC0 source/pipeline; verified PNGs, byte-hash-distinct:
 | provision_honeyed_mead | item/food/honeycomb |
 | provision_spice_tea | item/potion/orange |
 | provision_foragers_bundle | item/food/fruit |
+
+## v1.5 P4 icons — Tier-3 branching expansion (docs/SPEC-TIER3-EXPANSION.md), reused tiles
+
+No network access was available for this pass, so the 9 new `classOnly` signature techs (one per
+new Tier-3 class, see `js/data/classes.js`/`js/data/techs.js`) each **reuse an existing icon file**
+by thematic fit, rather than pulling new art — explicitly allowed per `test_icons.js`/CLAUDE.md
+("Techs MAY reuse existing tiles (only monster icons must be byte-distinct)"). All 9 source files
+are themselves real DCSS art from earlier passes (v1.2 Phase 2 pass above, or the Level-Arc
+real-icon pass, which — per its "SUPERSEDES all six band placeholder sections" note — replaced
+every band tech rank, including `tech_firebolt_5`/`tech_impale_5`/`tech_impale_7`, with real
+`gui/spells/…` tiles; `shield_ironbound_kite` is a real DCSS shield tile per that same pass):
+
+| new game id (v1.5 P4) | copied from (existing file) | why |
+|---|---|---|
+| tech_berserker_frenzy | tech_execution_blow.png | heavy, full-strength melee finisher — Berserker's Gladiator-line sibling already owns this look |
+| tech_paladin_smite | tech_radiant_smite.png | literal "smite" — Crusader-line Light-grade precedent |
+| tech_warden_bulwark | shield_ironbound_kite.png | bulwark/shield theme for the anti-magic-wall class |
+| tech_summon_elemental | tech_firebolt_5.png | fire/elemental tile for the summon (auto-weakness grade is chosen at runtime, not fixed art) |
+| tech_greater_restoration | tech_greater_mending.png | direct heal-tech reuse — Cleric is Sage's restoration option |
+| tech_seers_ward | tech_focus_1.png | existing buff-tech tile (foresight/focus) |
+| tech_lethal_strike | tech_impale_5.png | piercing burst strike |
+| tech_ranger_volley | tech_flurry_2.png | multi-hit tile, matches the tech's own `hits: 2` shape |
+| tech_dragoon_leap | tech_impale_7.png | heavy leaping/piercing strike, a different rank than Lethal Strike's tile |
+
+Icon presence verified by `tests/test_icons.js` Test 3 (all player-usable techs, incl. classOnly);
+byte-distinctness is NOT required or checked for tech icons (only monsters), so the intentional
+reuse above passes cleanly.
