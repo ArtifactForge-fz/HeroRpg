@@ -1,8 +1,10 @@
 # SPEC — v1.5 Reactive Monster Behavior (telegraphs & behavior archetypes)
 
-**Status:** Backlog, not started. Authored 2026-07-12. **Depends on v1.4 landing** (generalizes the
-G2 boss-script/affix machinery to standard monsters). Sequence as the v1.5 headliner, after v1.4
-merges to `main`.
+**Status:** SHIPPED in v1.5.0 (2026-07-13, branch `v1.5`) — P0–P3 complete, all sim gates recorded
+in §6 (P0 constants LOCKED, P1/P2 acceptance re-sims, P3 guardian gate + the boss finding).
+**Scope reduction (user-approved, option 1):** boss-telegraph integration DEFERRED to a boss-tuned
+pass (see §6 P3 finding + the CLAUDE.md backlog); only Matriarch/Leviathan/Custodian ship a
+behavior. Authored 2026-07-12.
 **Owner model:** lead (Opus) scopes/reviews + owns the sim gate; Sonnet subagents implement, each
 with a full up-front brief (CLAUDE.md cardinal rule 4). `/balance-sim` is mandatory before locking
 any combat constant here.

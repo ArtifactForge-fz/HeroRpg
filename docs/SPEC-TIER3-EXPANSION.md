@@ -1,7 +1,10 @@
 # SPEC — Tier-3 Expansion (branching: two options per Tier-2 class at level 60)
 
-**Status:** Backlog, not started. Authored 2026-07-12 (user-directed). Un-versioned (candidate for a
-future content release; orthogonal to the v1.5 monster-AI work).
+**Status:** SHIPPED in v1.5.0 (2026-07-13, branch `v1.5`, T0–T3 as P4–P5 of the v1.5 cycle) — D0–D5
+resolved (12-total branching; Shadowknight→Gladiator/Magus→Wizard/Gambit→Rogue re-home; archived
+names incl. the summon-based Conjurer; single auto-weakness summon tech; no new classBonus effect
+kind needed). P5 sim results LOCKED in §6 (servitorPower 14→50; Warden 12/48; Cleric 42). Authored
+2026-07-12 (user-directed).
 **Owner model:** lead (Opus) scopes/reviews + owns the balance-sanity sim; Sonnet subagents
 implement the data + plumbing with a full up-front brief (CLAUDE.md cardinal rule 4).
 **Relationship to authority:** **[revised]** — overrides the v1.2 "branch **convergence**" pinned

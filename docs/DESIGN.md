@@ -112,13 +112,24 @@ Archived balance rules (`Recent_Updates.md`):
   Warrior → **Gladiator** (offense) / **Crusader** (defense); Magician → **Wizard** (damage) /
   **Sage** (healing/support); Thief → **Rogue** (crits/dodge) / **Mercenary** (versatility)
   [all six names archived]. 4 stronger abilities each. Base class remains obtained and slottable.
-- **Tier-3 class at level 60** (shipped at level 38 in v1.2; re-gated to level 60 by the
-  level-arc's F4 phase, `docs/SPEC-ARC-BANDS.md` Band B "tier-3 class re-gates here", once
-  content spanned to 100) via "The Master's Calling", converging one-per-line: Warrior line →
-  **Shadowknight** (abilities Shadow Blade / Inner Fire / Dragon's Fire), Magician line →
-  **Magus**, Thief line → **Gambit** (Lucky Coin / Dice Throw). Class names + the
-  Shadowknight/Gambit ability names are **[archived]** (`homepage_2006.md`, `forum/t-787.md`);
-  effects/numbers **[invented]**.
+- **Tier-3 class at level 60** via "The Master's Calling" (shipped at level 38 in v1.2; re-gated
+  to 60 by the level-arc's F4 phase). **[revised] v1.5 BRANCHING** (`docs/SPEC-TIER3-EXPANSION.md`,
+  supersedes the v1.2 one-per-line convergence): each **Tier-2** class offers its own two Tier-3
+  options — Gladiator → **Shadowknight** / **Berserker**; Crusader → **Paladin** / **Warden**;
+  Wizard → **Magus** / **Conjurer**; Sage → **Cleric** / **Seer**; Rogue → **Gambit** /
+  **Assassin**; Mercenary → **Ranger** / **Dragoon**. **12 Tier-3 classes**, 2 passives + 1
+  signature classOnly tech each. All names **[archived]** (`homepage_2006.md`, `forum/t-449.md`
+  create-a-class thread, `forum/t-787.md`; Conjurer from the archived Conjuration skill,
+  `Skills.md`); effects/numbers **[invented]**, tuned inside the Tier-3 band (≤+25% per effect
+  over the Tier-2 parent, below the Legendary tier; sim-locked, spec §6).
+  - **The Conjurer is summon-based [invented, 1v1-safe]:** its Summon Elemental places an
+    "Elemental Servitor" — a battle-transient DoT rider on the enemy, auto-attuned to the enemy's
+    weakest Anima grade, ticking Int-scaled damage each round through the full mitigation
+    pipeline. NOT a second combatant (the archived 1v1 rule, `forum/t-449.md` "no summons in
+    battle", is preserved — the servitor has no HP, is never targeted, and never grants the
+    monster an action). Its niche is energy-efficient attrition vs the Magus's burst.
+  - Legacy note: saves holding an old-convergence combo (e.g. a Crusader with Shadowknight) keep
+    it fully functional; only future offers follow the new branching.
 - **Three hidden Legendary classes (tier 4):** Runeblade of Kuraan (boss kill), Vaultbreaker
   (boss-combination quest), Heir of the Echo (relic route) — each obtained independently, one per
   save. **[invented]** beyond the archived "Legendary, one per server" concept.
@@ -197,6 +208,34 @@ purchases, deactivation wipe):
   16-round fights) — the **+40% cap is load-bearing**, not decorative, and restored 93.7–100%.
   Warded is a one-action tax the pure-attack sim fixture can't exercise (no techs); it is
   spot-checked against a caster build in P3's own suite instead.
+- **v1.5 — Reactive monster behavior (telegraphs & archetypes)** [archived intent,
+  `homepage_2006.md` Hero 6.5 plan: "Revamped Monster AI… **Intelligent reactions based on hero
+  actions**"; mechanics **[invented]**, sim-locked — `docs/SPEC-V1.5-MONSTER-AI.md`]: standard
+  monsters carry a data-driven `behavior` field read by ONE interpreter in `monsterAct` (never
+  per-monster branches). **`simple`** (absent — the default, today's AI); **`telegraph`** — winds
+  up one turn ("rears back, gathering force!") then releases a **charged hit at ×2.0** through
+  the normal damage pipeline; **`caster`** — telegraph-capable with a raised (0.75) tech
+  inclination; **`enrage`** — wind-up chance ×1.5 below 30% of its max HP; **`guardian`** — never
+  telegraphs, instead may spend its turn raising a guard that halves the player's whole next
+  action (the mirror of Defend); **`reactive`** — holds a pending charge if the player Defends
+  into it (once — then it releases regardless), punishing pre-Defending and rewarding a timed
+  read. **The player's two answers:** Defend halves a charged hit; **Interrupt** — any player
+  action dealing ≥15% of the monster's max HP (or any Limit Break, even a dodged one) shatters
+  the charge outright — the risk being that a failed burst eats the full hit. All state is
+  battle-transient (`battle.charge` / `battle.monsterGuard`); one RNG surface; no save change.
+  **Complexity is graded along the journey:** starting areas (≤L10) stay 100% `simple`
+  (test-enforced); mid-bands seed a minority of telegraphs/casters; **66.7% of L40+ standard
+  monsters run a non-simple behavior** (≥60% target, test-enforced). Constants locked by the
+  P0/P2/P3 sim gates (spec §6): charge chance 0.15 (avg-DPS budget ≤+20%, binding cell L100 at
+  87.8–98% for a never-reacting player), `ENRAGE_CHARGE_MULT` retuned 2.0→1.5 when the L99
+  enrage cell hit 80% (ratchet), guardian 0.30/0.50 (effHP ×1.18 — bounded, no energy-stall).
+  **Accepted limitation (user-approved, option 1):** boss-telegraph integration is DEFERRED — a
+  boss's charged release can spike past the player's heal threshold and death in one hit (7
+  bosses fell to 5–30% win in the suite's floor tests), so only 3 lower-level bosses
+  (Matriarch/telegraph, Leviathan/enrage, Custodian/telegraph — re-simmed 85–88% win,
+  winnable-but-costly) carry a behavior; the other 8 keep their v1.4 G2 scripts unchanged. A
+  boss-tuned telegraph pass (lower boss charge multiplier + heal-before-death guarantee, own sim
+  gate) is future work.
 - Monsters: have levels, elements/resistances by Anima grade, can use techniques (v2.1 added 24
   monster techs), bosses are harder. XP/loot cutoff: enemy more than 5 levels below you yields
   nothing.
@@ -384,6 +423,12 @@ Eidolons/v3.0 systems, arcade. Pets (`heropet.php` existed) — deferred, no des
      **Provisions** items (§6); quest-journal **active cap of 3** + **28 `requiresQuest` chain
      edges** (§7); Town screen master→detail (§8). Save v9→v10 (AP only). Balance gated by a
      dedicated P0 simulation (below).
+   - **v1.5 actual — reactive monsters + Tier-3 branching** (`docs/SPEC-V1.5-MONSTER-AI.md`,
+     `docs/SPEC-TIER3-EXPANSION.md`): monster behavior archetypes with telegraphed charged hits +
+     the Defend/Interrupt read, graded along the journey (§4); Tier-3 convergence → **branching**
+     — 9 new archived-name classes (roster **15 → 24 across 3 tiers + 3 Legendaries**) incl. the
+     summon-based **Conjurer** (§3); 9 new class techs. No save change (stays v10); every
+     constant locked by the P0/P2/P3/P5 sim gates recorded in the two specs.
 4. **Balance oracle**: encode every archived number as a named constant in one `balance.js` file
    with a comment citing its reference file, so archived vs invented stays auditable in code.
    - **v1.4 P0 sim** (`docs/SPEC-V1.4-GAMEPLAY.md` P0 RESULTS, 2026-07-12, 300 trials/cell, real
