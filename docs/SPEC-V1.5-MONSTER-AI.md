@@ -1,8 +1,10 @@
 # SPEC — v1.5 Reactive Monster Behavior (telegraphs & behavior archetypes)
 
-**Status:** Backlog, not started. Authored 2026-07-12. **Depends on v1.4 landing** (generalizes the
-G2 boss-script/affix machinery to standard monsters). Sequence as the v1.5 headliner, after v1.4
-merges to `main`.
+**Status:** SHIPPED in v1.5.0 (2026-07-13, branch `v1.5`) — P0–P3 complete, all sim gates recorded
+in §6 (P0 constants LOCKED, P1/P2 acceptance re-sims, P3 guardian gate + the boss finding).
+**Scope reduction (user-approved, option 1):** boss-telegraph integration DEFERRED to a boss-tuned
+pass (see §6 P3 finding + the CLAUDE.md backlog); only Matriarch/Leviathan/Custodian ship a
+behavior. Authored 2026-07-12.
 **Owner model:** lead (Opus) scopes/reviews + owns the sim gate; Sonnet subagents implement, each
 with a full up-front brief (CLAUDE.md cardinal rule 4). `/balance-sim` is mandatory before locking
 any combat constant here.
@@ -159,6 +161,72 @@ counterable:
 - **Respect the two standing hazards:** don't worsen the 5-down Fear sustain issue (DESIGN §4) and
   don't re-introduce over-armoring (charged *tech* hits route through Magic Armor; charged physical
   through Armor — keep the ~half-a-hit armor cap intact).
+
+### P0 RESULTS — LOCKED 2026-07-12 (ephemeral sim, scratchpad `v15_p0_sim.js`)
+
+Method: trusted level-appropriate warrior fixture vs. an at-level regular monster; swept a uniform
+monster-damage multiplier D (the average-DPS-equivalent of "charge chance P × multiplier M", i.e.
+`avgDPS = 1 + P·(M−1)`), 250 trials/cell. Telegraph is a %-of-damage mechanic so the budget as a %
+generalizes; V1 re-sims the **real burst** mechanic across the full grid (uniform-D understates burst
+lumpiness — it's a necessary, not sufficient, gate).
+
+- **Binding cell is L100.** L40 held **100% win even at D=1.50** (regulars are soft vs. a geared
+  warrior — and starting areas stay `simple` anyway, no telegraphs early). At L100 (moon_anima_devourer,
+  a non-reacting player): D=1.0→100%, **D=1.1→99.6%, D=1.2→98.0%**, D=1.3→89.6%, D=1.5→**49.6%**.
+- **Telegraph DPS budget: ≤ +20% average monster DPS** (keeps L100 ≥98% for a player who NEVER reacts;
+  +30% is the ragged 85% edge — no margin, rejected).
+- **LOCKED constants for V1:**
+  - `AFFIX_CHARGED_MULT = 2.0` — a charged hit = 2× a normal hit. At L100 that's ~40–50% of player HP
+    *after* mitigation (a real threat, **not** a one-shot — corroborates the burst lens; higher M
+    risks one-shots and is rejected).
+  - `TELEGRAPH_CHARGE_CHANCE = 0.15` per eligible telegraphing-monster turn → avg DPS **+15%**
+    (L100 ≈ 99%, comfortable margin under the +20% budget). Tunable up toward 0.20 in V1 if telegraphs
+    feel too rare, never past the +20% budget.
+  - `INTERRUPT_THRESHOLD` (§2a, M6): **provisional 0.15 × monster max HP**, scaled per level; a normal
+    strong hit can clear it, a weak one can't, and a Limit Break always does. **V1 refines this with
+    the real mechanic** (it's the one constant a uniform-DPS model can't pin down).
+- **V1 re-sim requirement (non-negotiable):** the real burst mechanic across at-level / boss /
+  5-down at L10/40/70/100, for non-reacting AND reacting players, confirming (a) no at-level cell
+  drops below 85%, (b) no new spike-kill at-level, (c) the 5-down cell stays at its shipped
+  (near-0%) rate — telegraphs must not *widen* the known Fear limitation.
+
+**P1 acceptance re-sim (2026-07-12, real mechanic, worst-case non-Defending melee, N=400):** at-level
+held **L40 98.8% / L100 87.8%** win (baseline 100% both) — above the 85% floor. The real burst runs
+harsher than the uniform-DPS P0 proxy at L100 (87.8% vs ~99% modelled — the lumpiness the proxy
+understates), but within contract; a Defending player recovers most of the margin. Charge chance 0.15
+stays as locked; the **full P3 grid re-sim** (Defend policy + low-damage builds + boss/5-down at
+L10/70) is where final tuning happens — if aggregate feel is too punishing, charge chance is a
+data-only tweak downward.
+
+**P2 acceptance re-sim (2026-07-12, real caster/enrage/telegraph monsters, N=400):** caught a
+regression — `enrage` at L99 hit **80% win** because its charge boost (×2 → 0.30) blew past the P0
++20% budget in the death window. Ratchet fix (LEAD-PLAYBOOK §0.3): retuned `ENRAGE_CHARGE_MULT`
+2.0→1.5 (enraged 0.225). Post-retune all archetype at-level cells clear 85%: caster 97–99.5%,
+telegraph 93–99.8%, **enrage L78 92% / L99 86%**. Journey data pass: L≤10 all `simple`; **66.7% of
+L40+ non-boss monsters non-`simple`** (≥60% target), test-enforced.
+
+**P3 guardian sim-gate (2026-07-12, `/balance-sim`, N=350):** modelled `guardian` self-mitigation as
+monster effective-HP ×`1/(1−chance·reduction)` (the over-armoring/energy-stall lens). Generous
+envelope — even effHP **×1.40** (P_g·R=0.29) held **100% win, 0 stall** at L40 & L100 (fight stretches
+only ~9→13 rounds vs a ~120-action energy budget; bounded absorption never triggers the classic
+over-armoring stall). **LOCKED: `GUARDIAN_CHANCE = 0.30`, `GUARDIAN_REDUCTION = 0.50`** (P_g·R=0.15,
+effHP ×1.18, +2 rounds — comfortably inside). `reactive` adds no damage/HP term (it re-times the
+existing telegraph based on player actions), so it needs no numeric gate — its interaction is locked
+by the final full-grid re-sim.
+
+**P3 delivery + boss finding (2026-07-12) — ACCEPTED LIMITATION (scope reduction).** guardian +
+reactive shipped and the guard/charge-hold logic reviewed clean (mirrors the player Defend exactly;
+bounded delay). **Boss integration hit a real balance wall:** a boss charged release (×2.0 on top of
+boss damage premiums) can spike the player past their heal-item threshold AND death in a single hit —
+the suite's own boss floor-tests dropped 7 bosses to 5–30% win (floor 60%). Ratchet fix
+(LEAD-PLAYBOOK §0.3): reverted `behavior` on those 7; **only 3 lower-level bosses ship a behavior**
+(foothills_matriarch/telegraph, juneros_leviathan/enrage, kastengard_custodian/telegraph — lead
+re-sim, prepared player, N=300: **85–88% win, 70–75% HP left, 2+ consumables** — winnable-but-costly,
+holds). The other 8 bosses keep their v1.4 G2 HP-threshold scripts unchanged. **Boss-telegraph
+integration is DEFERRED** to a dedicated boss-tuned pass (needs a boss-specific lower charged
+multiplier or a "heal-fires-before-death" guarantee — its own sim gate). This does NOT affect the
+spec's primary goal ("extend to most standard monsters"), which P1/P2 fully met (66.7% of L40+
+standard monsters non-`simple`).
 
 ---
 

@@ -2,10 +2,13 @@
 
 Single-player browser remake of **herorpg.net** (2004–2008, dead), reconstructed from Wayback
 Machine scrapes. Static HTML/CSS/JS, no build step, no dependencies — open `index.html` via
-`file://`. **Shipped: v1.3.1 (save version 9) on `main`. In flight: v1.4 gameplay on branch
-`v1.4-gameplay`** — spec `docs/SPEC-V1.4-GAMEPLAY.md`; P0 sim gate + G5 quest pacing landed so
-far. One accepted known limitation: the 5-levels-down=death contract isn't fully enforced at
-high levels (Fear-spared healing sustain) — deferred, documented in DESIGN §4.
+`file://`. **Shipped: v1.5.0 (save version 10)** — v1.4 gameplay + mobile, v1.4.1/.2 UX info
+passes, and v1.5 (reactive monster behavior + Tier-3 branching/24-class roster + the Conjurer
+summoner) are all released; see "Recently completed" below. Two accepted known limitations:
+the 5-levels-down=death contract isn't fully enforced at high levels (Fear-spared healing
+sustain — DESIGN §4), and boss-telegraph integration is deferred (a boss charged hit can spike
+past heal+death in one blow; 3 low bosses carry behaviors, the other 8 keep their v1.4 scripts —
+DESIGN §4 / SPEC-V1.5-MONSTER-AI §6).
 
 ## Cardinal rules
 
@@ -18,9 +21,11 @@ high levels (Fear-spared healing sustain) — deferred, documented in DESIGN §4
    turned out to be archived (camp robbery: `forum/t-756.md`; 95% hunt chance: `forum/t-755.md`;
    tier-class names: `site/homepage_2006.md`).
 3. **Never touch `D:\Claude - collection folder\Test game generation\`** — unrelated project.
-4. **Workflow (user-directed):** the lead session (strongest available model — Opus as of the
-   2026-07-12 Fable handoff) does scoping, specs, sim gates, planning, and review; implementation
-   and mechanical work goes to Sonnet subagents. **Read `docs/LEAD-PLAYBOOK.md` at the start of
+4. **Workflow (user-directed):** the lead session does scoping, specs, sim gates, planning, and
+   review; implementation and mechanical work goes to Sonnet subagents. **Lead model = Fable**
+   (user-directed 2026-07-13, reverting the 2026-07-12 Opus handoff). The lead model is set by the
+   session's own model (the model picker / `/model`), not something a running session can switch
+   for itself — start or set the session to Fable to lead. **Read `docs/LEAD-PLAYBOOK.md` at the start of
    any dev cycle** — it is the Fable-era process handoff (sim methodology, delegation briefs,
    review protocol, failure-mode catalog). The recurring procedures are project skills:
    `/balance-sim` (mandatory before locking any combat constant), `/delegate-review` (spawn
@@ -139,6 +144,34 @@ rebuilds it after every commit so a deployable single-file build always matches 
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
 re-enable it. Never build/ship from a tree with red suites.
 
+## Recently completed (2026-07-13) — v1.5.0 (branch `v1.5`, merged to `main`)
+
+Specs: `docs/SPEC-V1.5-MONSTER-AI.md` + `docs/SPEC-TIER3-EXPANSION.md`, both marked shipped with
+their sim results inline. Two features, one release, save version unchanged (10):
+- **Reactive monster behavior (P0–P3):** telegraphed charged hits (wind-up → ×2.0 release) with a
+  two-sided answer — Defend halves, Interrupt (≥15% of monster max HP in one action, or any Limit
+  Break) shatters; archetypes `simple`/`telegraph`/`caster`/`enrage`/`guardian`/`reactive` via ONE
+  interpreter in `monsterAct` (never per-monster branches); journey-graded (≤L10 100% simple,
+  test-enforced; 66.7% of L40+ non-simple). Sim-gated at every phase; P2's gate caught and retuned
+  ENRAGE_CHARGE_MULT 2.0→1.5 (ratchet). **Boss-telegraph deferred (user option 1):** only
+  Matriarch/Leviathan/Custodian carry behaviors (re-simmed 85–88% win); a boss charged hit spikes
+  past heal+death in one blow — future boss-tuned pass needs a lower boss multiplier + a
+  heal-before-death guarantee, own sim gate.
+- **Tier-3 branching + Conjurer (P4–P5):** [revised] convergence → branching, each Tier-2 → 2
+  Tier-3 options at L60 (`thirdTierOptionsFor` re-keyed to `advancedClassIdsObtained`; tier-3
+  `baseClass` is now a TIER-2 id); 9 new archived-name classes (roster 15→24), 9 classOnly techs
+  (icons reuse DCSS tiles — only monsters need byte-distinctness). The **Conjurer** summoner:
+  `tech_summon_elemental` → an Elemental Servitor DoT rider on `battle.monster.statuses`,
+  auto-attuned via `pickWeaknessGrade`, ticked by `tickMonsterStatuses` through the full mitigation
+  pipeline — 1v1 preserved (archived rule). P5 sim retuned servitorPower 14→50 (flat Magic Armor
+  per tick floors small hits — the naive pre-mitigation calibration was ~useless), Warden 16→12 +
+  55→48, Cleric 55→42 (the 55s would out-HP the Legendary Heir's 50 — tier ordering).
+- Legacy saves keep old-convergence combos fully functional (test-covered); no migration.
+- Process notes: one P4 spawn was lost to a session usage limit (clean restart, no tree damage);
+  lead-model handoff Opus→Fable happened mid-cycle (cardinal rule 4 updated); sim-policy gotcha
+  recorded in SPEC-TIER3 §6 — warrior-line class techs are Int-scaled, test melee passives
+  attack-only or the fixture poisons the cell.
+
 ## Recently completed (2026-07-11) — v1.3.1 bugfix release (merged to `main`, `3df44ea`)
 
 Full-codebase review (3 parallel reviews: core correctness / UX / mechanics+data) is committed
@@ -203,38 +236,24 @@ Artifact not redeployed (claude.ai publishing on hold; see Deployment).
 
 ## Backlog (user-approved ideas, not started)
 
-- **Full 100+ level arc** — spec at `docs/SPEC-FULL-LEVEL-ARC.md` (backlogged 2026-07-10). Extends
-  the condensed ~1–40 arc to the archived level-100 cap (`homepage_2006/2007`); phased F1–F5, with
-  F1 (balance-to-100 simulation) the gating de-risk step. Do after the current in-flight build.
 - **Online / web-hosted mode** — spec at `docs/SPEC-ONLINE-HOSTING.md` (backlogged 2026-07-10).
   Persistent global chat + cross-device character retention, "similar to the original." Options 0–3
   ladder (recommend BaaS, e.g. Supabase); phased O1–O5, with O1 (a localStorage-preserving
   persistence-adapter seam) the offline-safe prerequisite that keeps the `file://` build + suites
-  intact. Orthogonal to the level arc; [revised] reopens the chat feature cut in DESIGN.md §9.
+  intact. [revised] reopens the chat feature cut in DESIGN.md §9.
 - **Endgame loop** — spec at `docs/SPEC-ENDGAME-LOOP.md` (backlogged 2026-07-12). Fixes the "XP
   stream goes dead at LEVEL_CAP=100" gap with a horizontal post-cap loop: the **Colosseum**
   (archived: `forum/f-84.md`) — **Ascension** difficulty tiers + rotating **Trials**, **Relics**
   (archived: `Classes.md`) as the gear chase, **Honor** (archived: `forum/f-87.md`) as prestige,
   plus MMO-inspired single-player variants (Relic sets, Codex/achievements, Bounty board). Phased
-  E0–E4, E0 (Ascension-scaling sim) the gate. **Depends on v1.4 landing** (reuses AP + champion
-  affixes); save v10→v11.
-- **v1.5 Reactive monster behavior** — spec at `docs/SPEC-V1.5-MONSTER-AI.md` (backlogged
-  2026-07-12; user-directed as the v1.5 headliner). Telegraphed heavy attacks + reusable behavior
-  archetypes (`simple`/`telegraph`/`caster`/`enrage`/`guardian`/`reactive`) that make Defend a real
-  read; extended to most standard monsters but **graded along the journey** (starting areas stay
-  `simple`, complexity ramps north). [archived intent] `homepage_2006.md` "Intelligent reactions
-  based on hero actions"; generalizes the v1.4 G2 boss-script interpreter — **depends on v1.4**.
-  Phased V0–V4, V0 (`/balance-sim`) the gate; **no save change** (data + transient only).
-- **Tier-3 expansion (branching)** — spec at `docs/SPEC-TIER3-EXPANSION.md` (backlogged 2026-07-12,
-  user-directed). [revised] replaces the v1.2 Tier-3 *convergence* (2 tier-2 → 1) with *branching*:
-  each of the 6 Tier-2 classes offers **2** Tier-3 options at L60 → **12** Tier-3 classes (roster
-  15→24). All new names archived from the 2004 create-a-class thread (`forum/t-449.md`: Berserker,
-  Paladin, Warden, Conjurer, Cleric, Seer, Assassin, Ranger, Dragoon); the 3 shipped classes
-  (Shadowknight/Magus/Gambit) re-home under one Tier-2 parent. Reuses the tier machinery
-  (`thirdTierOptionsFor` re-keyed to tier-2 via a new `advancedClassIdsObtained`); **no save bump**.
-  One Wizard option, the **Conjurer**, is summon-based (§3a) — an invented 1v1-safe "Elemental
-  Servitor": a persistent battle-transient DoT rider (reuses the Poison tick pipeline), NOT a second
-  combatant; the one new class needing a small battle mechanic + a `/balance-sim`. Phased T0–T3.
+  E0–E4, E0 (Ascension-scaling sim) the gate. v1.4 dependency (AP + champion affixes) now shipped —
+  unblocked; save v10→v11.
+- **Boss-tuned telegraph pass** — deferred from v1.5 (user option 1; DESIGN §4 accepted
+  limitation). Bring the 8 script-only bosses into the behavior system: needs a boss-specific
+  lower charged multiplier and/or a heal-fires-before-death guarantee, gated by its own
+  `/balance-sim` (a boss charged hit currently spikes past the player's heal threshold and death
+  in one blow — 7 bosses fell to 5–30% win when naively tagged).
 - Unique champion abilities (beyond stat multipliers); Eidolon system (`manual/Version_3.0.md`);
-  pets (`heropet.php` existed, no data survived). (Tier-3 classes Shadowknight/Magus/Gambit and the
-  Curse affliction — formerly backlog — shipped in v1.2.)
+  pets (`heropet.php` existed, no data survived). (Shipped since first listed: tier-3 trio + Curse
+  in v1.2; the full level-100 arc in v1.3 (`SPEC-FULL-LEVEL-ARC.md`); reactive monsters + Tier-3
+  branching in v1.5.)

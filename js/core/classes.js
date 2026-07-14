@@ -71,7 +71,8 @@ Game.Classes = (function () {
 
   // Ids of every tier-2 (advanced) class the character has OBTAINED — used by the "Master's
   // Calling" tier-3 capstone quest's acceptance gate (requiresAdvancedClass, js/core/quests.js
-  // accept()), mirroring baseClassIdsObtained above for requiresBaseClass.
+  // accept()), mirroring baseClassIdsObtained above for requiresBaseClass. Also drives
+  // thirdTierOptionsFor below (v1.5 P4 branching, docs/SPEC-TIER3-EXPANSION.md).
   function advancedClassIdsObtained(c) {
     if (!c || !c.classes) return [];
     return Object.keys(c.classes).filter(function (id) {
@@ -80,15 +81,22 @@ Game.Classes = (function () {
     });
   }
 
-  // v1.2 Phase 2 (docs/SPEC-V1.2.md Phase 2): the tier-3 class whose baseClass matches the
-  // player's obtained tier-1 base class — mirrors advancedOptionsFor exactly, but keyed off
-  // baseClassIdsObtained (the TIER-1 line, not the tier-2 branch) per the "branch convergence"
-  // rule: Shadowknight/Magus/Gambit's baseClass is 'warrior'/'magician'/'thief', not a tier-2 id,
-  // so this naturally resolves to exactly ONE option per obtained base line (not two, unlike
-  // advancedOptionsFor) — Runeblade/Vaultbreaker/Heir of the Echo (tier 4) are excluded by the
-  // strict tier === 3 check, same as advancedOptionsFor excludes them via tier === 2.
+  // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §1/§4): [revised] BRANCHING — supersedes the v1.2
+  // Phase 2 "branch convergence" rule (docs/SPEC-V1.2.md Phase 2). Each TIER-2 class now offers
+  // its own two Tier-3 options, mirroring advancedOptionsFor exactly, one tier up: keyed off
+  // advancedClassIdsObtained(c) (the TIER-2 branch actually taken), NOT baseClassIdsObtained(c)
+  // (the tier-1 line) — a tier-3 class's `baseClass` is now a TIER-2 id (js/data/classes.js), so
+  // e.g. a Gladiator is offered Shadowknight/Berserker while a Crusader (same tier-1 Warrior line)
+  // is offered Paladin/Warden instead — a real, differentiated choice per tier-2 branch rather
+  // than one class converged from either sibling. Runeblade/Vaultbreaker/Heir of the Echo (tier 4)
+  // are excluded by the strict tier === 3 check, same as advancedOptionsFor excludes them via
+  // tier === 2. A character holding several tier-2 classes (e.g. via debug helpers) gets the
+  // union of their options, matching advancedOptionsFor's own generic-over-multiple-bases
+  // behavior. Legacy note (§5): a save with an "impossible" combo obtained under the OLD
+  // convergence rule (e.g. a Crusader who obtained Shadowknight) keeps that class fully
+  // functional — only future OFFERS are affected, never anything already obtained.
   function thirdTierOptionsFor(c) {
-    var bases = baseClassIdsObtained(c);
+    var bases = advancedClassIdsObtained(c);
     if (!bases.length) return [];
     var list = Game.Data.classes || [];
     var out = [];

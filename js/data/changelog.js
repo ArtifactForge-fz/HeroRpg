@@ -12,6 +12,37 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.5.0',
+    date: '2026-07-13',
+    title: 'Living Monsters & The Twelve Callings',
+    saveVersion: 10,
+    highlights: [
+      'Monsters can now fight with intent. Many will rear back to gather force for a heavy ' +
+        'charged blow — when you see the wind-up, brace with Defend to blunt it, or answer with ' +
+        'a hard enough strike (any Limit Break will do) to shatter the charge outright. Gamble ' +
+        'on a weak hit, though, and you will eat the full blow.',
+      'Different foes bring different tempers: casters weave far more techniques, brutes grow ' +
+        'more eager to charge as they near death, guardians raise their shield and blunt your ' +
+        'next swing, and a rare few will hold their charge back until your guard drops. The ' +
+        'lands near home stay as simple as ever — the deeper north you travel, the craftier ' +
+        'the wilds become.',
+      'Three bosses — the Foothills Matriarch, the Juneros Leviathan, and the Kastengard ' +
+        'Custodian — now fight with tempers of their own.',
+      'The Master\'s Calling at level 60 has grown from three paths to twelve: every advanced ' +
+        'class now faces a true choice between two callings. Gladiators may become the ' +
+        'Shadowknight or the reckless Berserker; Crusaders the Paladin or the unbreakable ' +
+        'Warden; Wizards the Magus or the Conjurer; Sages the Cleric or the Seer; Rogues the ' +
+        'Gambit or the Assassin; Mercenaries the Ranger or the Dragoon.',
+      'The new Conjurer commands what no hero of Van Arius has before: its Summon Elemental ' +
+        'binds an Elemental Servitor to the battle, attuned to whichever Anima grade your enemy ' +
+        'resists least, striking on its own each round while you fight on — pay Energy once and ' +
+        'let it work.',
+      'Nine new class techniques arrive with the new callings, from the Berserker\'s frenzy to ' +
+        'the Dragoon\'s leaping strike.'
+    ]
+  },
+
+  {
     version: 'v1.4.2',
     date: '2026-07-12',
     title: 'Academy Technique Info',

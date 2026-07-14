@@ -303,6 +303,67 @@ Game.Battle = (function () {
     battle.playerStatuses.push({ type: 'curse', name: 'Curse', turnsLeft: BALANCE.CURSE_DURATION });
   }
 
+  // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a, D4): the Conjurer's Summon Elemental always
+  // auto-attunes to the enemy's WEAKEST Anima grade (lowest resistance multiplier — negative
+  // values are vulnerabilities, so a vulnerability always wins over an unlisted/neutral grade at
+  // 0) so the servitor is always effective, mirroring the archived "align to the enemy's
+  // weakness" grade game. Ties resolve to whichever grade sorts first below (arbitrary — spec:
+  // "ties -> any"). A monster with no resistances at all (or none of the seven listed grades)
+  // naturally falls through to the fixed default 'Fire' (spec D4), since every grade then reads
+  // 0 and Fire is checked first.
+  var SERVITOR_GRADES = ['Fire', 'Water', 'Wind', 'Earth', 'Star', 'Light', 'Dark']; // archived Anima-grade roster, DESIGN.md §5
+  function pickWeaknessGrade(monster) {
+    var res = (monster && monster.resistances) || {};
+    var best = 'Fire';
+    var bestVal = null;
+    for (var i = 0; i < SERVITOR_GRADES.length; i++) {
+      var g = SERVITOR_GRADES[i];
+      var val = typeof res[g] === 'number' ? res[g] : 0;
+      if (bestVal === null || val < bestVal) {
+        bestVal = val;
+        best = g;
+      }
+    }
+    return best;
+  }
+
+  // Ticks the monster's per-battle statuses (currently only the Conjurer's 'servitor' rider) once
+  // per round, mirroring tickPlayerStatuses below exactly but on the OTHER side of the fight.
+  // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a): the servitor is NOT a second combatant — no HP,
+  // never targeted, and this function never calls monsterAct, so it can never grant the monster an
+  // extra action. Its damage routes through the SAME variance/grade-resistance/Magic-Armor
+  // mitigation pipeline as any other graded tech hit (guardrail: "no unmitigated 'true' tick"),
+  // including Fear and Curse — the servitor reads the caster's own Anima the same way a live cast
+  // would, so it cannot be used to bypass either debuff's discipline.
+  function tickMonsterStatuses(battle) {
+    if (isOver(battle)) return;
+    var remaining = [];
+    var statuses = battle.monster.statuses || [];
+    for (var i = 0; i < statuses.length; i++) {
+      var st = statuses[i];
+      if (st.type === 'servitor' && battle.monster.hp > 0) {
+        var fear = fearMultiplier(battle);
+        var curseMult = playerCurseMultiplier(battle);
+        var base = techEffectivePower(battle.player, { effect: 'damage', power: st.power }) * fear * curseMult;
+        var glancing = rng() < BALANCE.GLANCING_CHANCE;
+        var raw = rollVariance(base);
+        if (glancing) raw *= BALANCE.GLANCING_MULT;
+        raw = applyResistance(battle.monster, st.grade, raw);
+        var dmg = Math.max(1, Math.round(raw - battle.monster.magicArmor));
+        battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
+        log(battle, 'Your ' + st.name + ' strikes the ' + battle.monster.name + (glancing ? ' (glancing)' : '') + ' for ' + dmg + ' damage.');
+      }
+      st.turnsLeft -= 1;
+      if (st.turnsLeft > 0) {
+        remaining.push(st);
+      } else if (st.type === 'servitor') {
+        log(battle, 'Your Elemental Servitor fades away.');
+      }
+    }
+    battle.monster.statuses = remaining;
+    checkEnd(battle);
+  }
+
   // Ticks the player's per-battle statuses (poison damage, buff duration) once per full round.
   function tickPlayerStatuses(battle) {
     if (isOver(battle)) return;
@@ -334,42 +395,134 @@ Game.Battle = (function () {
     if (isOver(battle)) return;
     var monster = battle.monster;
     // v1.4 P3 (G2) Frenzied champion affix: counts monster actions this battle (every action,
-    // hit/dodged/tech alike) — tracked on the battle object, never the shared monster def.
+    // hit/dodged/tech/telegraph-wind-up alike) — tracked on the battle object, never the shared
+    // monster def.
     battle.monsterActionsTaken = (battle.monsterActionsTaken || 0) + 1;
 
-    // Choose action: a known monster tech (50% inclination) if affordable, else basic attack.
-    var usedTech = null;
-    var affordable = [];
-    var list = monster.techs || [];
-    for (var i = 0; i < list.length; i++) {
-      var t = getTech(list[i]);
-      if (t && t.energyCost <= monster.energy) affordable.push(t);
-    }
-    if (affordable.length > 0 && rng() < 0.5) {
-      usedTech = affordable[Math.floor(rng() * affordable.length)];
-    }
-
-    // Energy: monster attacks also cost monster energy (spec). Basic attacks cost the reduced
-    // monster rate (see BALANCE.MONSTER_ATTACK_ENERGY_COST); techs cost their listed energyCost.
-    var cost = usedTech ? usedTech.energyCost : BALANCE.MONSTER_ATTACK_ENERGY_COST;
-    monster.energy = Math.max(0, monster.energy - cost);
-
-    // Feature C: Defend halves the damage of the monster's very next action, hit or dodged, then
-    // clears — captured now so a dodged attack still consumes the guard (the monster "acted";
-    // only its resulting damage, if any, is affected by the flag).
+    // Feature C: Defend halves the damage of the monster's very next action, hit or dodged (or a
+    // v1.5 telegraph wind-up below, which deals no damage at all) — then clears. Captured up front
+    // (moved here unchanged from just before the old dodge-roll spot) so the wind-up branch, which
+    // returns before that old capture point ever ran, still consumes any pending guard uniformly —
+    // Defend always answers the monster's very next action, whatever it turns out to be.
     var defending = !!battle.playerDefending;
     battle.playerDefending = false;
+
+    // v1.5 P2/P3 (docs/SPEC-V1.5-MONSTER-AI.md §3): archetype -> {windupChance, techChance}. ONE
+    // interpreter, no per-monster branches. `behavior` absent/'simple' keeps today's AI exactly
+    // (windupChance 0, the original 50% tech inclination). 'telegraph' adds the base wind-up
+    // chance on top of that same 50% inclination. 'caster' adds the same wind-up chance but raises
+    // tech inclination to CASTER_TECH_CHANCE (casts more, still can charge a heavy hit — the
+    // charged release itself is untouched, it reuses the basic-attack pipeline exactly as
+    // 'telegraph' does). 'enrage' keeps the 50% tech inclination but multiplies its wind-up chance
+    // by ENRAGE_CHARGE_MULT while below ENRAGE_HP_FRAC of its own max HP (more frequent charged
+    // hits in its death throes) — no new damage term, just a higher roll into the same charge path.
+    // 'reactive' is telegraph-capable at the SAME base wind-up chance (50% tech inclination,
+    // unchanged) — its distinguishing behavior is the charge-hold reaction below, not a different
+    // windup/tech roll. 'guardian' leaves windupChance/techChance at their defaults entirely (it
+    // never telegraphs — its behavior is the pre-action guard check below, not a charge at all).
+    var windupChance = 0;
+    var techChance = 0.5;
+    if (monster.behavior === 'telegraph') {
+      windupChance = BALANCE.TELEGRAPH_CHARGE_CHANCE;
+    } else if (monster.behavior === 'caster') {
+      windupChance = BALANCE.TELEGRAPH_CHARGE_CHANCE;
+      techChance = BALANCE.CASTER_TECH_CHANCE;
+    } else if (monster.behavior === 'enrage') {
+      windupChance = BALANCE.TELEGRAPH_CHARGE_CHANCE;
+      if (monster.hp / monster.hpMax < BALANCE.ENRAGE_HP_FRAC) windupChance *= BALANCE.ENRAGE_CHARGE_MULT;
+    } else if (monster.behavior === 'reactive') {
+      windupChance = BALANCE.TELEGRAPH_CHARGE_CHANCE;
+    }
+
+    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §2, §2a): telegraph wind-up/release. A charge already
+    // pending from a previous turn always releases THIS turn — checked first, so no fresh wind-up
+    // roll happens while one is already charging. `behavior` absent/'simple' (windupChance 0) never
+    // reaches the wind-up branch at all (today's AI, unchanged).
+    var releasing = !!battle.charge;
+    var chargeMult = 1;
+
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'reactive'): the archived "intelligent reactions
+    // based on hero actions" — when a pending charge would release THIS turn and the player
+    // Defended this same turn (the `defending` local captured at the very top of this function),
+    // a reactive monster HOLDS the charge instead of releasing into the guard, up to
+    // REACTIVE_MAX_CHARGE_DELAYS times per charge (so a player cannot Defend-stall a charge
+    // forever — past the cap it releases anyway, still subject to that turn's Defend halving via
+    // the ordinary `defending` path below). A no-damage hold: costs the monster's turn exactly
+    // like a wind-up does, no rng roll (a deterministic read of the player's own action, not a
+    // proc). Checked BEFORE the `releasing` branch below so a held charge is never also cleared by
+    // it in the same turn.
+    if (releasing && monster.behavior === 'reactive' && defending &&
+      (battle.charge.delays || 0) < BALANCE.REACTIVE_MAX_CHARGE_DELAYS) {
+      battle.charge.delays = (battle.charge.delays || 0) + 1;
+      log(battle, 'The ' + monster.name + ' holds its charge, watching your guard.');
+      checkEnd(battle);
+      return;
+    }
+
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): the mirror of the player's own Defend
+    // — before the normal action choice, a guardian monster may guard itself instead of acting:
+    // costs its turn, deals no damage, spends no energy, exactly like the player's Defend costs
+    // theirs. windupChance is 0 for guardian (never telegraphs, see above), so `releasing` is
+    // always false here for it; this check still sits behind `!releasing` defensively in case a
+    // future archetype combination ever sets both.
+    if (monster.behavior === 'guardian' && !releasing && rng() < BALANCE.GUARDIAN_CHANCE) {
+      battle.monsterGuard = true; // battle-transient only, never the shared def, never persisted
+      log(battle, 'The ' + monster.name + ' raises its guard!');
+      checkEnd(battle);
+      return;
+    }
+
+    if (releasing) {
+      chargeMult = battle.charge.mult;
+      battle.charge = null;
+    } else if (windupChance > 0 && rng() < windupChance) {
+      // Wind up instead of acting: no damage, no energy spent — but it still counts as the
+      // monster's turn (monsterActionsTaken already incremented above). battle.charge lives only
+      // on the battle object (never the shared monster def, never persisted) — same discipline as
+      // the Frenzied affix's monsterActionsTaken counter.
+      battle.charge = { mult: BALANCE.AFFIX_CHARGED_MULT };
+      log(battle, 'The ' + monster.name + ' rears back, gathering force!');
+      checkEnd(battle);
+      return;
+    }
+
+    // Choose action: a known monster tech (techChance inclination, computed above per archetype)
+    // if affordable, else basic attack. A releasing charge always takes the basic-attack path
+    // below (no tech roll) — it reuses that exact pipeline verbatim, with `chargeMult` applied to
+    // `base` further down (do NOT fork the pipeline — docs/SPEC-V1.5-MONSTER-AI.md §2).
+    var usedTech = null;
+    if (!releasing) {
+      var affordable = [];
+      var list = monster.techs || [];
+      for (var i = 0; i < list.length; i++) {
+        var t = getTech(list[i]);
+        if (t && t.energyCost <= monster.energy) affordable.push(t);
+      }
+      if (affordable.length > 0 && rng() < techChance) {
+        usedTech = affordable[Math.floor(rng() * affordable.length)];
+      }
+    }
+
+    // Energy: monster attacks also cost monster energy (spec). Basic attacks — including a
+    // charged release, which is a basic attack — cost the reduced monster rate (see BALANCE.
+    // MONSTER_ATTACK_ENERGY_COST); techs cost their listed energyCost.
+    var cost = usedTech ? usedTech.energyCost : BALANCE.MONSTER_ATTACK_ENERGY_COST;
+    monster.energy = Math.max(0, monster.energy - cost);
 
     // Player dodge roll (Dodge skill + Dex). v1.2 Phase 1 item 3: a successful dodge grants Dodge
     // skill XP at the proc site (use-based skill system; addSkillXp already enforces the 2L+1 cap).
     if (rng() < playerDodgeChance(battle.player)) {
-      log(battle, 'You dodge the ' + monster.name + "'s " + (usedTech ? usedTech.name : 'attack') + '!');
+      log(battle, 'You dodge the ' + monster.name + "'s " + (releasing ? 'charged blow' : (usedTech ? usedTech.name : 'attack')) + '!');
       Game.Character.addSkillXp(battle.player, 'Dodge', BALANCE.DODGE_SKILL_XP_PER_PROC);
       checkEnd(battle);
       return;
     }
 
     var base = usedTech ? usedTech.power : monster.damage;
+    // v1.5 P1: a charged release = normal basic-attack damage x AFFIX_CHARGED_MULT, applied to
+    // `base` BEFORE the rest of this pipeline (variance/glancing/mitigation/Fear/defending) below —
+    // reuses it verbatim, same as every other action.
+    if (releasing) base *= chargeMult;
     // v1.4 P3 (G2) Frenzied champion affix: escalating +5%/action, capped +40% (LOCKED by the P0
     // sim — docs/SPEC-V1.4-GAMEPLAY.md P0 RESULTS item 2; the uncapped version broke the >=85% win
     // floor at L90/100). Applies to the raw base power, upstream of the same variance/glancing/
@@ -397,7 +550,7 @@ Game.Battle = (function () {
     if (defending) dmg = Math.max(1, Math.round(dmg * BALANCE.DEFEND_DAMAGE_MULT));
 
     battle.player.hitPoints = Math.max(0, battle.player.hitPoints - dmg);
-    log(battle, monster.name + (usedTech ? ' uses ' + usedTech.name : ' attacks') +
+    log(battle, (releasing ? 'The ' + monster.name + ' unleashes its charged blow' : monster.name + (usedTech ? ' uses ' + usedTech.name : ' attacks')) +
       (glancing ? ' — a glancing blow —' : '') + ' for ' + dmg + ' damage.');
 
     // v1.4 P3 (G2) Vampiric champion affix: heals the monster for 25% of the damage it just dealt
@@ -485,6 +638,9 @@ Game.Battle = (function () {
     runBossScript(battle);
     monsterAct(battle);
     tickPlayerStatuses(battle);
+    // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a): the Conjurer's Elemental Servitor tick, same
+    // round-resolution slot as the player-status tick just above it.
+    tickMonsterStatuses(battle);
   }
 
   // ---------------- Player actions ----------------
@@ -495,9 +651,31 @@ Game.Battle = (function () {
     return battle && !isOver(battle) && battle.player.energy > 0;
   }
 
+  // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §2a): Interrupt — the offensive answer to a monster's
+  // telegraph wind-up. Call sites (attack(), useTech()'s damage/drain branch, limitBreak()) invoke
+  // this AFTER the player's damage for that action has fully resolved (all hits/rounds summed into
+  // `dealtDamage`). A Limit Break always interrupts regardless of its own damage (even a dodged
+  // one); any other action needs to clear INTERRUPT_THRESHOLD_HP_FRAC of the monster's OWN max HP.
+  // Below threshold, battle.charge is left UNTOUCHED — it releases in full on the monster's very
+  // next turn (the player gambled on the burst check and lost the window). A no-op whenever no
+  // charge is pending, so it is safe to call unconditionally after every damaging player action.
+  function tryInterruptCharge(battle, dealtDamage, isLimitBreak) {
+    if (!battle.charge) return;
+    var threshold = Math.round(battle.monster.hpMax * BALANCE.INTERRUPT_THRESHOLD_HP_FRAC);
+    if (isLimitBreak || dealtDamage >= threshold) {
+      battle.charge = null;
+      log(battle, "The " + battle.monster.name + "'s charge collapses!");
+    }
+  }
+
   function attack() {
     var battle = Game.state.battle;
     if (!battle || isOver(battle)) return battle;
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): snapshot+clear any pending monster
+    // guard right at the top, mirroring monsterAct's own `defending` capture exactly — the guard
+    // answers whatever the player's very next action in this function turns out to be.
+    var guarding = battle.monsterGuard;
+    battle.monsterGuard = false;
     if (!canAct(battle)) {
       log(battle, 'You are out of Energy — you can only flee or fall.');
       return battle;
@@ -524,6 +702,10 @@ Game.Battle = (function () {
       Game.Character.addSkillXp(battle.player, 'Double Attack', BALANCE.DOUBLE_ATTACK_SKILL_XP_PER_PROC);
     }
 
+    // v1.5 P1: sums every hit this action lands (main hit(s) + the dual-wield offhand swing below)
+    // so tryInterruptCharge (called once, after all of this action's damage has resolved) checks
+    // the ACTION's total against the interrupt threshold, not any single swing in isolation.
+    var totalDmgDealt = 0;
     for (var i = 0; i < hits; i++) {
       if (battle.monster.hp <= 0) break;
       if (rng() < monsterDodgeChance(battle.monster)) {
@@ -534,8 +716,12 @@ Game.Battle = (function () {
       var raw = rollVariance(baseDamage);
       if (glancing) raw *= BALANCE.GLANCING_MULT;
       var dmg = Math.max(1, Math.round(raw - battle.monster.armor));
+      // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): a pending guard halves THIS action's
+      // final damage-to-monster, floored at 1 — mirrors the player's own Defend halving exactly.
+      if (guarding) dmg = Math.max(1, Math.round(dmg * (1 - BALANCE.GUARDIAN_REDUCTION)));
       battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
-      log(battle, 'You strike the ' + battle.monster.name + (glancing ? ' with a glancing blow' : '') + ' for ' + dmg + ' damage.');
+      totalDmgDealt += dmg;
+      log(battle, 'You strike the ' + battle.monster.name + (glancing ? ' with a glancing blow' : '') + ' for ' + dmg + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
     }
 
     // v1.2 Phase 1 item 5 (Dual Wield): when BOTH the weapon and offhand slots hold a weapon
@@ -561,12 +747,20 @@ Game.Battle = (function () {
           var rawOff = rollVariance(offhandBase);
           if (glancingOff) rawOff *= BALANCE.GLANCING_MULT;
           var dmgOff = Math.max(1, Math.round(rawOff - battle.monster.armor));
+          // v1.5 P3 ('guardian'): the offhand swing is part of the SAME player action, so it is
+          // reduced by the same pending guard as the main hit(s) above.
+          if (guarding) dmgOff = Math.max(1, Math.round(dmgOff * (1 - BALANCE.GUARDIAN_REDUCTION)));
           battle.monster.hp = Math.max(0, battle.monster.hp - dmgOff);
-          log(battle, 'Your offhand strikes the ' + battle.monster.name + (glancingOff ? ' with a glancing blow' : '') + ' for ' + dmgOff + ' damage.');
+          totalDmgDealt += dmgOff;
+          log(battle, 'Your offhand strikes the ' + battle.monster.name + (glancingOff ? ' with a glancing blow' : '') + ' for ' + dmgOff + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
         }
         Game.Character.addSkillXp(battle.player, 'Dual Wield', 1);
       }
     }
+
+    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §2a): Interrupt check — a no-op unless a telegraph
+    // charge is pending.
+    tryInterruptCharge(battle, totalDmgDealt, false);
 
     if (checkEnd(battle)) return battle;
     finishRound(battle);
@@ -601,6 +795,10 @@ Game.Battle = (function () {
   function useTech(techId) {
     var battle = Game.state.battle;
     if (!battle || isOver(battle)) return battle;
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): snapshot+clear any pending monster
+    // guard right at the top, same discipline as attack() above.
+    var guarding = battle.monsterGuard;
+    battle.monsterGuard = false;
     if (!canAct(battle)) {
       log(battle, 'You are out of Energy — you can only flee or fall.');
       return battle;
@@ -681,6 +879,29 @@ Game.Battle = (function () {
         turnsLeft: tech.buffDuration || 3
       });
       log(battle, 'You cast ' + tech.name + ' — Damage +' + tech.power + ' for ' + (tech.buffDuration || 3) + ' turns.');
+    } else if (tech.effect === 'summon') {
+      // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a): the Conjurer's "Elemental Servitor" — NOT a
+      // second combatant (the engine is strictly 1v1; archived dev quote, forum/t-449.md: "there
+      // won't be summons in battle. It's just 1v1"). A persistent battle-transient DoT rider
+      // stored on the ENEMY's own status list (battle.monster.statuses, already an empty array
+      // from deepCopyMonster/start()), so it reuses the identical tick/removal machinery as a
+      // player-side status — just ticked by tickMonsterStatuses (above) instead of
+      // tickPlayerStatuses. Deals NO immediate damage here — only the round tick strikes. Grade
+      // auto-picks the monster's own weakest Anima grade (pickWeaknessGrade, D4) so the Conjurer
+      // needs no Fire/Water/Wind/Earth tech variants. One servitor at a time: re-summoning
+      // REPLACES the existing entry rather than stacking a second (spec: "One servitor at a time").
+      var servitorGrade = pickWeaknessGrade(battle.monster);
+      battle.monster.statuses = (battle.monster.statuses || []).filter(function (st) {
+        return st.type !== 'servitor';
+      });
+      battle.monster.statuses.push({
+        type: 'servitor',
+        name: 'Elemental Servitor',
+        turnsLeft: tech.servitorTurns,
+        power: tech.servitorPower,
+        grade: servitorGrade
+      });
+      log(battle, 'You summon an Elemental Servitor, attuned to ' + servitorGrade + ' Anima — it will strike the ' + battle.monster.name + ' each round.');
     } else {
       // 'damage' | 'drain'
       // v1.4 P3 (G2) Warded champion affix: the FIRST hostile (damage/drain) tech the player
@@ -723,6 +944,9 @@ Game.Battle = (function () {
         }
       }
 
+      // v1.5 P1: sums every hit this cast lands so tryInterruptCharge (below, after the loop)
+      // checks the CAST's total against the interrupt threshold, not any single hit in isolation.
+      var totalDmgDealt = 0;
       for (var h = 0; h < hitCount; h++) {
         if (battle.monster.hp <= 0) break;
         var base, mitigation;
@@ -751,8 +975,12 @@ Game.Battle = (function () {
         if (glancing) raw *= BALANCE.GLANCING_MULT;
         raw = applyResistance(battle.monster, tech.grade, raw);
         var dmg = Math.max(1, Math.round(raw - mitigation));
+        // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): a pending guard halves THIS
+        // action's final damage-to-monster per hit, floored at 1 (same as attack()'s main hit).
+        if (guarding) dmg = Math.max(1, Math.round(dmg * (1 - BALANCE.GUARDIAN_REDUCTION)));
         battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
-        log(battle, (tech.weaponTech ? 'You strike with ' : 'You cast ') + tech.name + (glancing ? ' (glancing)' : '') + ' for ' + dmg + ' damage.');
+        totalDmgDealt += dmg;
+        log(battle, (tech.weaponTech ? 'You strike with ' : 'You cast ') + tech.name + (glancing ? ' (glancing)' : '') + ' for ' + dmg + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
 
         if (tech.effect === 'drain') {
           var drained = Math.round(dmg * 0.5); // invented: Absorption drains return half the damage as HP
@@ -762,6 +990,10 @@ Game.Battle = (function () {
           log(battle, 'You absorb ' + drained + ' HP from the ' + battle.monster.name + '.');
         }
       }
+      // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §2a): Interrupt check — scoped to this damage/drain
+      // branch only (a heal/buff cast never reaches here, so it can never accidentally interrupt
+      // with a false dealtDamage=0 >= threshold read). A no-op unless a telegraph charge is pending.
+      tryInterruptCharge(battle, totalDmgDealt, false);
     }
 
     if (checkEnd(battle)) return battle;
@@ -910,6 +1142,10 @@ Game.Battle = (function () {
   function limitBreak() {
     var battle = Game.state.battle;
     if (!battle || isOver(battle)) return battle;
+    // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): snapshot+clear any pending monster
+    // guard right at the top, same discipline as attack()/useTech() above.
+    var guarding = battle.monsterGuard;
+    battle.monsterGuard = false;
     var c = battle.player;
 
     var lbId = getLimitBreakId(c);
@@ -946,6 +1182,7 @@ Game.Battle = (function () {
 
     // Hurricane Blow (magician line): ignores the monster's dodge roll for this strike — auto-connects.
     var bypassDodge = (lbId === 'hurricane_blow');
+    var lbDealtDmg = 0; // v1.5 P1: 0 when dodged — a Limit Break still always interrupts (below)
     if (!bypassDodge && rng() < monsterDodgeChance(battle.monster)) {
       log(battle, 'The ' + battle.monster.name + ' dodges your ' + lbDef.name + '!');
     } else {
@@ -954,9 +1191,19 @@ Game.Battle = (function () {
       if (glancing) raw *= BALANCE.GLANCING_MULT;
       raw *= BALANCE.LB_DAMAGE_MULT;
       var dmg = Math.max(1, Math.round(raw - battle.monster.armor));
+      // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): a pending guard halves this Limit
+      // Break's final damage-to-monster too, floored at 1 — "the whole next player action".
+      if (guarding) dmg = Math.max(1, Math.round(dmg * (1 - BALANCE.GUARDIAN_REDUCTION)));
       battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
-      log(battle, 'Your ' + lbDef.name + (glancing ? ' — a glancing blow —' : '') + ' slams into the ' + battle.monster.name + ' for ' + dmg + ' damage.');
+      lbDealtDmg = dmg;
+      log(battle, 'Your ' + lbDef.name + (glancing ? ' — a glancing blow —' : '') + ' slams into the ' + battle.monster.name + ' for ' + dmg + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
     }
+
+    // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §2a): a Limit Break ALWAYS interrupts a pending
+    // telegraph charge, regardless of its own damage (isLimitBreak=true short-circuits the
+    // threshold check in tryInterruptCharge) — even a dodged Limit Break still breaks the charge.
+    // A no-op unless a charge is pending.
+    tryInterruptCharge(battle, lbDealtDmg, true);
 
     // Flavor riders (spec §5: "deliberately TINY... not sim-gated, keep them cosmetic-scale").
     // Granted on USE, regardless of whether the strike above connected or was dodged.

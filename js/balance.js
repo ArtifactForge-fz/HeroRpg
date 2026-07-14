@@ -451,5 +451,44 @@ var BALANCE = {
   // the area's own forage table (js/data/areas.js `forage: [itemIds]`), hunting-areas-only, same as
   // Game.World.camp(). Numbers [invented].
   FORAGE_SUCCESS: 0.70, // invented
-  FORAGE_SECOND_ITEM: 0.30 // invented: chance of a SECOND item on an already-successful forage
+  FORAGE_SECOND_ITEM: 0.30, // invented: chance of a SECOND item on an already-successful forage
+
+  // ==================== v1.5 P1: Monster telegraph core + Interrupt (docs/SPEC-V1.5-MONSTER-AI.md §2, §2a) ====================
+  // Intent [archived]: reference/site/homepage_2006.md (Hero 6.5 plan) "Revamped Monster AI:
+  // Scripted abilities ... status effects, item usage; Intelligent reactions based on hero
+  // actions ... Strategic boss battles." The telegraph wind-up/release mechanic and the
+  // Interrupt/stagger answer are [invented] within that intent. Numbers LOCKED by the P0 sim
+  // (docs/SPEC-V1.5-MONSTER-AI.md §6 "P0 RESULTS — LOCKED"): a uniform-monster-damage-multiplier
+  // sweep (trusted warrior fixture vs at-level regular, 250 trials/cell) found L100 the binding
+  // cell — a NON-reacting player held 98-99.6% win up to the avgDPS +20% budget (D=1.2); +30%
+  // (D=1.5) collapsed to a ragged 49.6% and was rejected. V1's real-burst re-sim requirement is
+  // tracked in the spec, not re-run here (P1 ships the LOCKED provisional numbers).
+  AFFIX_CHARGED_MULT: 2.0, // invented, LOCKED v1.5 P0: a charged telegraph hit = 2x a normal hit (~40-50% of an L100 player's HP after mitigation — a real threat, not a one-shot)
+  TELEGRAPH_CHARGE_CHANCE: 0.15, // invented, LOCKED v1.5 P0: per eligible telegraph-monster turn; avg DPS +15% (L100 ~99% win for a non-reacting player, comfortable margin under the +20% sim budget)
+  INTERRUPT_THRESHOLD_HP_FRAC: 0.15, // invented, LOCKED v1.5 P0 (provisional per spec §10 M6 — a flat fraction, not yet level-scaled): a player hit >= 15% of the monster's OWN max HP cancels its charge; a Limit Break always cancels regardless of its damage
+
+  // ==================== v1.5 P2: caster + enrage archetypes (docs/SPEC-V1.5-MONSTER-AI.md §3) ====================
+  // Provisional [invented] — the lead runs a P2 acceptance re-sim + the P3 full-grid re-sim
+  // validates the final numbers (spec §3 table + §6). Both archetypes reuse the P0-simmed
+  // telegraph/charged-hit math verbatim (windup chance / AFFIX_CHARGED_MULT); neither adds a new
+  // damage term.
+  CASTER_TECH_CHANCE: 0.75, // invented (v1.5 P2): caster-behavior monsters' tech inclination (vs the default 0.5); reuses the existing, already-balanced monster-tech path
+  ENRAGE_HP_FRAC: 0.30, // invented (v1.5 P2): an enrage-behavior monster is "enraged" below this fraction of its max HP
+  ENRAGE_CHARGE_MULT: 1.5, // invented (v1.5 P2, RETUNED by the P2 acceptance re-sim): while enraged, wind-up chance x1.5 (0.15 -> 0.225). The initial 2.0 (->0.30) blew past the P0 +20% avg-DPS budget and dropped the L99 enrage cell to 80% win (contract floor 85%); 1.5 restores it while keeping a real death-throes threat. Ratchet: tune the new mechanic to the shipped contract (LEAD-PLAYBOOK §0.3)
+
+  // ==================== v1.5 P3: guardian + reactive archetypes (docs/SPEC-V1.5-MONSTER-AI.md §3) ====================
+  // guardian is the mirror of the player's own Defend (a self-mitigation term, not a damage term) --
+  // gated by the P3 sim (`/balance-sim`, N=350, docs/SPEC-V1.5-MONSTER-AI.md §6 "P3 guardian
+  // sim-gate"): modelled as monster effective-HP x 1/(1-chance*reduction) (the over-armoring/
+  // energy-stall lens used by the v1.2 armor-cap incidents). Even a generous effHP x1.40 envelope
+  // held 100% win / 0 stall at L40 and L100 (fights only stretch ~9->13 rounds against a ~120-action
+  // energy budget). LOCKED at effHP x1.18 (P_g*R=0.15) for a comfortable margin under that envelope.
+  GUARDIAN_CHANCE: 0.30, // invented, LOCKED v1.5 P3 sim-gate: per-turn chance a guardian monster guards instead of acting
+  GUARDIAN_REDUCTION: 0.50, // invented, LOCKED v1.5 P3 sim-gate: a guard reduces the damage of the player's NEXT action (attack/useTech/limitBreak) against this monster by this fraction
+  // reactive re-times the EXISTING telegraph (§2) based on the player's Defend -- it adds no new
+  // damage or HP term of its own (the charge it eventually releases is the same AFFIX_CHARGED_MULT
+  // hit telegraph/caster/enrage already use), so per the P3 sim-gate it needs no numeric gate; its
+  // only free parameter is how many times a single charge may be held off, bounded here so a player
+  // cannot Defend-stall a charge forever ("the player can't stall forever" -- spec §3 table).
+  REACTIVE_MAX_CHARGE_DELAYS: 1 // invented (v1.5 P3): a reactive monster may hold a pending charge past a player Defend at most this many times before releasing regardless
 };

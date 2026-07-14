@@ -1,15 +1,17 @@
-// Phase 6a/v1.1 + v1.2 Phase 2 exit tests — four-tier class system (DESIGN.md §3 v1.1 revision;
-// docs/SPEC-V1.2.md Phase 2): Base tier (Warrior/Magician/Thief, level 5, "First Calling") ->
-// Advanced tier (Gladiator/Crusader/Wizard/Sage/Rogue/Mercenary, level 30, "Trials of Ascension")
-// -> Third tier (Shadowknight/Magus/Gambit, level 60 (re-gated from 38 by level-arc F4), "The
-// Master's Calling", ONE per base line via branch convergence) -> Legendary (Runeblade of
+// Phase 6a/v1.1 + v1.2 Phase 2 + v1.5 P4 exit tests — four-tier class system (DESIGN.md §3 v1.1
+// revision; docs/SPEC-V1.2.md Phase 2; docs/SPEC-TIER3-EXPANSION.md v1.5 P4): Base tier
+// (Warrior/Magician/Thief, level 5, "First Calling") -> Advanced tier (Gladiator/Crusader/Wizard/
+// Sage/Rogue/Mercenary, level 30, "Trials of Ascension") -> Third tier (12 classes, level 60
+// (re-gated from 38 by level-arc F4), "The Master's Calling", TWO per tier-2 class via v1.5 P4
+// BRANCHING — supersedes the old branch-convergence rule) -> Legendary (Runeblade of
 // Kuraan/Vaultbreaker/Heir of the Echo, each
 // with its own mutually-independent special unlock route). Covers obtain/activate/deactivate,
 // class XP/levels, ability purchase incl. passive + tech hooks, class-only tech battle gating,
-// advancedOptionsFor/thirdTierOptionsFor, classChoice quest turn-ins (fixed array + 'advanced'/
-// 'tier3' sentinels), save v6->v7 migration (rogue->thief re-basing), and all 3 Legendary unlock
-// routes (boss-kill, boss-combination quest, item-triggered relic). Via the fakedom shim;
-// randomness stubbed via Game.Battle._rng.
+// advancedOptionsFor/thirdTierOptionsFor (now tier-2-keyed), classChoice quest turn-ins (fixed
+// array + 'advanced'/'tier3' sentinels), save v6->v7 migration (rogue->thief re-basing), the v1.5
+// P4 legacy "impossible combo" load path (§5), and all 3 Legendary unlock routes (boss-kill,
+// boss-combination quest, item-triggered relic). Via the fakedom shim; randomness stubbed via
+// Game.Battle._rng.
 
 var vm = require('vm');
 var fs = require('fs');
@@ -149,24 +151,30 @@ var ADVANCED_PAIRS = {
   magician: ['wizard', 'sage'],
   thief: ['rogue', 'mercenary']
 };
-// v1.2 Phase 2 (docs/SPEC-V1.2.md Phase 2): ONE tier-3 class per base line (branch convergence —
-// baseClass is the tier-1 line id, not a tier-2 id).
-var THIRD_TIER = {
-  warrior: 'shadowknight',
-  magician: 'magus',
-  thief: 'gambit'
+// v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md): TWO tier-3 classes per TIER-2 class (BRANCHING —
+// supersedes the old v1.2 Phase 2 branch-convergence rule). baseClass is now a tier-2 id.
+var THIRD_TIER_PAIRS = {
+  gladiator: ['shadowknight', 'berserker'],
+  crusader: ['paladin', 'warden'],
+  wizard: ['magus', 'conjurer'],
+  sage: ['cleric', 'seer'],
+  rogue: ['gambit', 'assassin'],
+  mercenary: ['ranger', 'dragoon']
 };
 var LEGENDARY_IDS = ['runeblade_of_kuraan', 'vaultbreaker', 'heir_of_the_echo'];
 var CLASS_TECH_IDS = [
   'tech_crushing_blow', 'tech_anima_surge', 'tech_quick_stab', 'tech_shadowstep_strike',
   'tech_execution_blow', 'tech_radiant_smite', 'tech_arcane_cataclysm', 'tech_greater_mending',
   'tech_efficient_strike', 'tech_runic_severance',
-  'tech_shadow_blade', 'tech_anima_reckoning', 'tech_dice_throw', 'tech_vault_reckoning', 'tech_echoing_judgment'
+  'tech_shadow_blade', 'tech_anima_reckoning', 'tech_dice_throw', 'tech_vault_reckoning', 'tech_echoing_judgment',
+  // v1.5 P4: the 9 new Tier-3 classOnly signature techs (docs/SPEC-TIER3-EXPANSION.md Part B).
+  'tech_berserker_frenzy', 'tech_paladin_smite', 'tech_warden_bulwark', 'tech_summon_elemental',
+  'tech_greater_restoration', 'tech_seers_ward', 'tech_lethal_strike', 'tech_ranger_volley', 'tech_dragoon_leap'
 ];
 
 // =================== Test 0: data sanity ===================
-console.log('\n=== Test 0: four-tier class/tech/quest data sanity (v1.2 Phase 2) ===');
-assert(Game.Data.classes.length === 15, '15 classes defined (3 base + 6 advanced + 3 third-tier + 3 legendary), got ' + Game.Data.classes.length);
+console.log('\n=== Test 0: four-tier class/tech/quest data sanity (v1.5 P4 branching) ===');
+assert(Game.Data.classes.length === 24, '24 classes defined (3 base + 6 advanced + 12 third-tier + 3 legendary), got ' + Game.Data.classes.length);
 
 BASE_IDS.forEach(function (id) {
   var cd = Game.Classes.getClass(id);
@@ -183,15 +191,19 @@ Object.keys(ADVANCED_PAIRS).forEach(function (baseId) {
   });
 });
 
-// v1.2 Phase 2: tier-3 roster — baseClass is the TIER-1 line id (branch convergence), 3 abilities
-// each (2 passive + 1 signature classOnly tech).
-Object.keys(THIRD_TIER).forEach(function (baseId) {
-  var tierId = THIRD_TIER[baseId];
-  var cd = Game.Classes.getClass(tierId);
-  assert(cd && cd.tier === 3 && !cd.legendary && cd.baseClass === baseId,
-    tierId + ' is a tier-3 class with baseClass ' + baseId + ' (the TIER-1 line id), got baseClass=' + (cd && cd.baseClass));
-  assert(cd.abilities.length === 3, tierId + ' has 3 abilities, got ' + (cd ? cd.abilities.length : 'undefined'));
+// v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md): tier-3 roster — BRANCHING, baseClass is now a TIER-2 id,
+// 2 classes per tier-2 (12 total), 3 abilities each (2 passive + 1 signature classOnly tech).
+var THIRD_TIER_IDS = [];
+Object.keys(THIRD_TIER_PAIRS).forEach(function (tier2Id) {
+  THIRD_TIER_PAIRS[tier2Id].forEach(function (tierId) {
+    THIRD_TIER_IDS.push(tierId);
+    var cd = Game.Classes.getClass(tierId);
+    assert(cd && cd.tier === 3 && !cd.legendary && cd.baseClass === tier2Id,
+      tierId + ' is a tier-3 class with baseClass ' + tier2Id + ' (a TIER-2 id, v1.5 P4 branching), got baseClass=' + (cd && cd.baseClass));
+    assert(cd.abilities.length === 3, tierId + ' has 3 abilities, got ' + (cd ? cd.abilities.length : 'undefined'));
+  });
 });
+assert(THIRD_TIER_IDS.length === 12, '12 tier-3 classes total (2 per tier-2 class), got ' + THIRD_TIER_IDS.length);
 
 var legendary = Game.Classes.getClass('runeblade_of_kuraan');
 assert(legendary && legendary.legendary === true && legendary.tier === 4, 'runeblade_of_kuraan exists, legendary, tier 4 (v1.2 Phase 2 renumber off tier 3)');
@@ -716,38 +728,58 @@ try {
   console.error('FAIL: UI smoke test threw: ' + e.stack);
 }
 
-// =================== Test 17: thirdTierOptionsFor — correct single option per base; ===================
-// =================== Runeblade/legendaries excluded from BOTH advancedOptionsFor and ===========
-// =================== thirdTierOptionsFor, for every base line (v1.2 Phase 2) ====================
-console.log('\n=== Test 17: thirdTierOptionsFor(c) resolves the correct single tier-3 option per base; Runeblade/legendaries excluded from advancement options ===');
+// =================== Test 17: thirdTierOptionsFor — correct 2-option pair per obtained tier-2 ===
+// =================== class (v1.5 P4 BRANCHING); union for multi-tier-2 characters; Runeblade/ =====
+// =================== legendaries excluded from BOTH advancedOptionsFor and thirdTierOptionsFor ====
+console.log('\n=== Test 17: thirdTierOptionsFor(c) resolves the correct 2-option pair per obtained tier-2 class (v1.5 P4 branching); Runeblade/legendaries excluded from advancement options ===');
 var c17 = makeCharacter({ name: 'ThirdTierOptionsTester' });
-assert(Game.Classes.thirdTierOptionsFor(c17).length === 0, 'no base class obtained -> no tier-3 options');
+assert(Game.Classes.thirdTierOptionsFor(c17).length === 0, 'no tier-2 class obtained -> no tier-3 options');
+// Obtaining only the TIER-1 base (no tier-2) grants no tier-3 options either — thirdTierOptionsFor
+// is keyed off advancedClassIdsObtained (tier-2), not baseClassIdsObtained (tier-1), under branching.
 Game.Classes.obtainClass(c17, 'warrior');
-assert(Game.Classes.thirdTierOptionsFor(c17).join(',') === 'shadowknight', 'warrior base -> [shadowknight], got ' + JSON.stringify(Game.Classes.thirdTierOptionsFor(c17)));
-var c17b = makeCharacter({ name: 'ThirdTierOptionsTester2' });
-Game.Classes.obtainClass(c17b, 'magician');
-assert(Game.Classes.thirdTierOptionsFor(c17b).join(',') === 'magus', 'magician base -> [magus], got ' + JSON.stringify(Game.Classes.thirdTierOptionsFor(c17b)));
-var c17c = makeCharacter({ name: 'ThirdTierOptionsTester3' });
-Game.Classes.obtainClass(c17c, 'thief');
-assert(Game.Classes.thirdTierOptionsFor(c17c).join(',') === 'gambit', 'thief base -> [gambit], got ' + JSON.stringify(Game.Classes.thirdTierOptionsFor(c17c)));
+assert(Game.Classes.thirdTierOptionsFor(c17).length === 0, 'tier-1 base alone (no tier-2) -> still no tier-3 options under v1.5 P4 branching');
+
+Object.keys(THIRD_TIER_PAIRS).forEach(function (tier2Id) {
+  var probe = makeCharacter({ name: 'ThirdTierPair_' + tier2Id });
+  Game.Classes.obtainClass(probe, tier2Id);
+  var expected = THIRD_TIER_PAIRS[tier2Id].slice().sort().join(',');
+  var got = Game.Classes.thirdTierOptionsFor(probe).slice().sort().join(',');
+  assert(got === expected, tier2Id + ' (tier-2) -> [' + expected + '], got ' + got);
+});
+
+// A character holding SEVERAL tier-2 classes gets the union of their tier-3 options.
+var c17u = makeCharacter({ name: 'ThirdTierUnion' });
+Game.Classes.obtainClass(c17u, 'gladiator');
+Game.Classes.obtainClass(c17u, 'wizard');
+var unionOpts17 = Game.Classes.thirdTierOptionsFor(c17u).slice().sort().join(',');
+assert(unionOpts17 === 'berserker,conjurer,magus,shadowknight', 'union of gladiator+wizard tier-3 options, got ' + unionOpts17);
 
 BASE_IDS.forEach(function (baseId) {
   var probe = makeCharacter({ name: 'ExcludeProbe_' + baseId });
   Game.Classes.obtainClass(probe, baseId);
   var advOpts = Game.Classes.advancedOptionsFor(probe);
-  var tierOpts = Game.Classes.thirdTierOptionsFor(probe);
   LEGENDARY_IDS.forEach(function (legId) {
     assert(advOpts.indexOf(legId) === -1, legId + ' excluded from advancedOptionsFor (' + baseId + ' base)');
-    assert(tierOpts.indexOf(legId) === -1, legId + ' excluded from thirdTierOptionsFor (' + baseId + ' base)');
   });
-  // Cross-tier exclusion: tier-3 ids never leak into advancedOptionsFor, tier-2 ids never leak
-  // into thirdTierOptionsFor (both share the exact same baseClass values under branch convergence).
-  Object.keys(THIRD_TIER).forEach(function (b) {
-    assert(advOpts.indexOf(THIRD_TIER[b]) === -1, THIRD_TIER[b] + ' excluded from advancedOptionsFor');
+  Object.keys(THIRD_TIER_PAIRS).forEach(function (t2) {
+    THIRD_TIER_PAIRS[t2].forEach(function (t3) {
+      assert(advOpts.indexOf(t3) === -1, t3 + ' (tier-3) excluded from advancedOptionsFor');
+    });
   });
+});
+
+Object.keys(THIRD_TIER_PAIRS).forEach(function (tier2Id) {
+  var probe2 = makeCharacter({ name: 'ExcludeProbe2_' + tier2Id });
+  Game.Classes.obtainClass(probe2, tier2Id);
+  var tierOpts = Game.Classes.thirdTierOptionsFor(probe2);
+  LEGENDARY_IDS.forEach(function (legId) {
+    assert(tierOpts.indexOf(legId) === -1, legId + ' excluded from thirdTierOptionsFor (' + tier2Id + ' tier-2)');
+  });
+  // Cross-tier exclusion: the tier-2 id itself (and every OTHER tier-2 id) never leaks into
+  // thirdTierOptionsFor's own output (distinct namespace — tier === 3 check).
   Object.keys(ADVANCED_PAIRS).forEach(function (b) {
     ADVANCED_PAIRS[b].forEach(function (advId) {
-      assert(tierOpts.indexOf(advId) === -1, advId + ' excluded from thirdTierOptionsFor');
+      assert(tierOpts.indexOf(advId) === -1, advId + ' (tier-2) excluded from thirdTierOptionsFor');
     });
   });
 });
@@ -770,9 +802,11 @@ assert(acceptWithAdv18.ok === true, 'accept succeeds once an advanced (tier-2) c
 c18.dexterity = 999;
 winBattle('eidas_echo');
 assert(Game.Quests.canTurnIn('masters_calling') === true, 'masters_calling ready to turn in after the eidas_echo kill');
-assert(Game.Classes.thirdTierOptionsFor(c18).join(',') === 'shadowknight', 'thirdTierOptionsFor resolves to [shadowknight] for a warrior base');
-var wrongBranch18 = Game.Quests.turnIn('masters_calling', 'magus'); // wrong base line (magician branch, warrior base)
-assert(wrongBranch18.ok === false, 'turnIn rejects magus for a warrior-base hero: ' + wrongBranch18.message);
+// v1.5 P4 branching: c18 obtained the TIER-2 'gladiator' (not just the tier-1 'warrior' base), so
+// thirdTierOptionsFor now resolves to Gladiator's OWN pair, not a single warrior-line convergence.
+assert(Game.Classes.thirdTierOptionsFor(c18).slice().sort().join(',') === 'berserker,shadowknight', 'thirdTierOptionsFor resolves to [berserker, shadowknight] for a gladiator (tier-2), got ' + JSON.stringify(Game.Classes.thirdTierOptionsFor(c18)));
+var wrongBranch18 = Game.Quests.turnIn('masters_calling', 'magus'); // wrong tier-2 line (magus now hangs off wizard, c18 has gladiator)
+assert(wrongBranch18.ok === false, 'turnIn rejects magus for a gladiator hero: ' + wrongBranch18.message);
 assert(Game.Classes.isObtained(c18, 'magus') === false, 'magus NOT obtained after the rejected attempt');
 var rightBranch18 = Game.Quests.turnIn('masters_calling', 'shadowknight');
 assert(rightBranch18.ok === true, 'turnIn accepts shadowknight for a warrior-base hero: ' + rightBranch18.message);
@@ -845,6 +879,218 @@ assert(Game.Classes.isObtained(c21, 'runeblade_of_kuraan') === true, 'Runeblade 
 Game.Inventory.addItem(c21, 'quest_eidas_echo_seal');
 assert(Game.Classes.isObtained(c21, 'heir_of_the_echo') === true, 'Heir of the Echo ALSO obtained — Runeblade did not block it');
 assert(Game.Classes.isObtained(c21, 'vaultbreaker') === false, 'vaultbreaker still NOT obtained (its own route was never triggered here)');
+
+// =================== Test 22 (v1.5 P4): obtain/activate/buyAbility/classBonus for two of the ===
+// =================== new Tier-3 classes at once (Paladin primary + Ranger secondary) ============
+console.log('\n=== Test 22 (v1.5 P4): obtain/activate/buyAbility/classBonus for two NEW Tier-3 classes held simultaneously (Paladin + Ranger) ===');
+var c22 = makeCharacter({ name: 'NewClassTester' });
+setLevel(c22, 60);
+c22.currentLocation = 'eldor';
+var obtainPaladin22 = Game.Classes.obtainClass(c22, 'paladin');
+assert(obtainPaladin22.ok === true, 'paladin obtained: ' + obtainPaladin22.message);
+var obtainRanger22 = Game.Classes.obtainClass(c22, 'ranger');
+assert(obtainRanger22.ok === true, 'ranger obtained: ' + obtainRanger22.message);
+assert(Game.Classes.activate(c22, 'paladin', 'primary').ok === true, 'paladin activated as primary');
+assert(Game.Classes.activate(c22, 'ranger', 'secondary').ok === true, 'ranger activated as secondary');
+Game.Classes.addClassXp(c22, Game.Classes.classXpForLevel(20)); // plenty of class levels (grants to BOTH slots, primary full + secondary half)
+
+var dmgPctBefore22 = Game.Classes.classBonus(c22, 'damage_pct');
+var buyHolyBulwark22 = Game.Classes.buyAbility(c22, 'paladin', 'paladin_holy_bulwark');
+assert(buyHolyBulwark22.ok === true, "Paladin's Holy Bulwark purchased: " + buyHolyBulwark22.message);
+var buyRighteousFury22 = Game.Classes.buyAbility(c22, 'paladin', 'paladin_righteous_fury');
+assert(buyRighteousFury22.ok === true, "Paladin's Righteous Fury purchased: " + buyRighteousFury22.message);
+var buyMarksmansEye22 = Game.Classes.buyAbility(c22, 'ranger', 'ranger_marksmans_eye');
+assert(buyMarksmansEye22.ok === true, "Ranger's Marksman's Eye purchased: " + buyMarksmansEye22.message);
+var buyWoodlandStep22 = Game.Classes.buyAbility(c22, 'ranger', 'ranger_woodland_step');
+assert(buyWoodlandStep22.ok === true, "Ranger's Woodland Step purchased: " + buyWoodlandStep22.message);
+
+var paladinDef22 = Game.Classes.getClass('paladin');
+var rangerDef22 = Game.Classes.getClass('ranger');
+var expectedDmgPct22 = Game.Classes.getAbility(paladinDef22, 'paladin_righteous_fury').power +
+  Game.Classes.getAbility(rangerDef22, 'ranger_marksmans_eye').power;
+var dmgPctAfter22 = Game.Classes.classBonus(c22, 'damage_pct');
+assert(Math.abs(dmgPctAfter22 - (dmgPctBefore22 + expectedDmgPct22)) < 1e-9,
+  'classBonus(damage_pct) sums BOTH active new classes\' passives (Paladin\'s Righteous Fury + Ranger\'s Marksman\'s Eye), expected +' + expectedDmgPct22 + ', got delta ' + (dmgPctAfter22 - dmgPctBefore22));
+assert(Game.Classes.classBonus(c22, 'armor_flat') === Game.Classes.getAbility(paladinDef22, 'paladin_holy_bulwark').power,
+  'classBonus(armor_flat) reflects Paladin\'s Holy Bulwark alone (Ranger has none), got ' + Game.Classes.classBonus(c22, 'armor_flat'));
+assert(Game.Classes.classBonus(c22, 'dodge_flat') === Game.Classes.getAbility(rangerDef22, 'ranger_woodland_step').power,
+  'classBonus(dodge_flat) reflects Ranger\'s Woodland Step alone (Paladin has none), got ' + Game.Classes.classBonus(c22, 'dodge_flat'));
+
+var deactivatePaladin22 = Game.Classes.deactivate(c22, 'primary');
+assert(deactivatePaladin22.ok === true, 'paladin deactivated: ' + deactivatePaladin22.message);
+assert(Game.Classes.classBonus(c22, 'armor_flat') === 0, 'deactivating Paladin drops classBonus(armor_flat) back to 0');
+
+// =================== Test 23 (v1.5 P4): a NEW class's classOnly tech is battle-castable while ===
+// =================== active and refused while inactive, incl. a GRADED (Light) tech's mitigation ==
+console.log("\n=== Test 23 (v1.5 P4): Paladin's Smite (graded Light tech) usable while active, refused while inactive ===");
+var c23 = makeCharacter({ name: 'NewTechBuyer' });
+setLevel(c23, 60);
+c23.currentLocation = 'eldor';
+Game.Classes.obtainClass(c23, 'paladin');
+Game.Classes.activate(c23, 'paladin', 'primary');
+Game.Classes.addClassXp(c23, Game.Classes.classXpForLevel(20));
+var buySmite23 = Game.Classes.buyAbility(c23, 'paladin', 'paladin_smite');
+assert(buySmite23.ok === true, 'Smite purchased: ' + buySmite23.message);
+assert(c23.techs.indexOf('tech_paladin_smite') !== -1, 'tech_paladin_smite added to c.techs');
+c23.techSets[0][0] = 'tech_paladin_smite';
+
+c23.hitPoints = c23.hitPointsMax; c23.energy = c23.energyMax;
+setRng(fixedRng(0.5));
+var battle23 = Game.Battle.start('plains_field_rat');
+battle23.monster.hp = 999;
+var beforeHp23 = battle23.monster.hp;
+Game.Battle.useTech('tech_paladin_smite');
+assert(battle23.monster.hp < beforeHp23, "Paladin's Smite (Light-grade, Magic-Armor-mitigated) lands damage while Paladin is active (hp " + beforeHp23 + ' -> ' + battle23.monster.hp + ')');
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+var deactivatePaladin23 = Game.Classes.deactivate(c23, 'primary');
+assert(deactivatePaladin23.ok === true, 'paladin deactivated: ' + deactivatePaladin23.message);
+c23.techs.push('tech_paladin_smite'); // re-add to c.techs to isolate the class-active gate specifically (deactivate already stripped it, matching Test 11's pattern)
+c23.techSets[0][0] = 'tech_paladin_smite';
+c23.hitPoints = c23.hitPointsMax; c23.energy = c23.energyMax;
+var battle23b = Game.Battle.start('plains_field_rat');
+battle23b.monster.hp = 999;
+var beforeHp23b = battle23b.monster.hp;
+Game.Battle.useTech('tech_paladin_smite');
+assert(battle23b.monster.hp === beforeHp23b, "Paladin's Smite does NOT land while Paladin is inactive, even if slotted (hp unchanged at " + battle23b.monster.hp + ')');
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// =================== Test 24 (v1.5 P4 §3a): the Conjurer's Elemental Servitor ===================
+console.log("\n=== Test 24 (v1.5 P4 §3a): Conjurer's Elemental Servitor — auto-weakness grade, per-round tick, replace-not-stack, expiry, transient on battle end ===");
+var summonTechDef24 = Game.Battle.getTech('tech_summon_elemental');
+assert(summonTechDef24 && summonTechDef24.effect === 'summon' && summonTechDef24.classOnly === true && summonTechDef24.classId === 'conjurer',
+  'tech_summon_elemental exists with effect "summon", classOnly, classId conjurer');
+
+var c24 = makeCharacter({ name: 'ConjurerTester' });
+setLevel(c24, 60);
+c24.currentLocation = 'eldor';
+c24.intelligence = 50; // representative caster build so the servitor's tick is clearly, measurably nonzero
+Game.Character.recalcDerived(c24);
+Game.Classes.obtainClass(c24, 'conjurer');
+Game.Classes.activate(c24, 'conjurer', 'primary');
+Game.Classes.addClassXp(c24, Game.Classes.classXpForLevel(20));
+var buySummon24 = Game.Classes.buyAbility(c24, 'conjurer', 'conjurer_summon_elemental');
+assert(buySummon24.ok === true, 'Summon Elemental purchased: ' + buySummon24.message);
+c24.techSets[0][0] = 'tech_summon_elemental';
+
+c24.hitPoints = c24.hitPointsMax; c24.energy = c24.energyMax;
+// rng fixed at 0.5: no dodge, no glancing, and rollVariance's uniform-in-[1-v,1+v] formula
+// collapses to exactly the base value at the midpoint — deterministic tick damage.
+setRng(fixedRng(0.5));
+// estari_construct_sentinel: resistances { Earth: 0.5, Water: -0.25 } — Water is its ONLY
+// vulnerability (lowest resistance value), so the auto-weakness pick must be Water, not the
+// Fire default (D4's default only applies when NO grade is negative/lower than the others).
+var battle24 = Game.Battle.start('estari_construct_sentinel');
+assert(battle24.monster.statuses.length === 0, 'no servitor present before casting');
+var actionsBeforeSummon24 = battle24.monsterActionsTaken || 0;
+var hpBeforeSummon24 = battle24.monster.hp;
+Game.Battle.useTech('tech_summon_elemental');
+assert(battle24.monster.statuses.length === 1, 'exactly one servitor status present after casting');
+var servitor24 = battle24.monster.statuses[0];
+assert(servitor24.type === 'servitor' && servitor24.name === 'Elemental Servitor', 'servitor entry shaped correctly, got ' + JSON.stringify(servitor24));
+assert(servitor24.grade === 'Water', "auto-weakness picked the monster's ONLY vulnerability (Water, -0.25) over its Earth resistance (+0.5) or any neutral grade, got " + servitor24.grade);
+assert(servitor24.turnsLeft === summonTechDef24.servitorTurns - 1, 'servitor.turnsLeft already decremented once by the SAME-ROUND tick in finishRound (mirrors Poison\'s own apply-then-tick-this-round convention), got ' + servitor24.turnsLeft + ' (servitorTurns=' + summonTechDef24.servitorTurns + ')');
+assert(battle24.monster.hp < hpBeforeSummon24, "the servitor's same-round tick already dealt damage this round (hp " + hpBeforeSummon24 + ' -> ' + battle24.monster.hp + ')');
+assert((battle24.monsterActionsTaken || 0) === actionsBeforeSummon24 + 1, 'the servitor granted the monster NO extra action — exactly one monsterAct (the normal counter-attack) ran this round, not two');
+
+// Re-summon REPLACES, not stacks.
+Game.Battle.useTech('tech_summon_elemental');
+assert(battle24.monster.statuses.length === 1, 'STILL exactly one servitor after re-summoning (replace, not stack)');
+assert(battle24.monster.statuses[0].turnsLeft === summonTechDef24.servitorTurns - 1, "the replaced servitor is freshly re-ticked from a FULL servitorTurns, not stacked on top of the old one's remaining turns");
+
+// Tick it down to expiry (defend() needs no weapon, so it isolates the servitor tick cleanly).
+var turnsToExpire24 = summonTechDef24.servitorTurns - 1;
+for (var t24 = 0; t24 < turnsToExpire24 && battle24.phase === 'active'; t24++) {
+  Game.Battle.defend();
+}
+if (battle24.phase === 'active') {
+  assert(battle24.monster.statuses.filter(function (st) { return st.type === 'servitor'; }).length === 0,
+    'servitor removed once its servitorTurns (' + summonTechDef24.servitorTurns + ') fully elapse, got statuses=' + JSON.stringify(battle24.monster.statuses));
+} else {
+  // The servitor's own recurring damage killed the monster before it expired naturally — an
+  // equally valid outcome of "strong vs. a long fight" (spec §3a) and still proves the tick fired
+  // every round; the battle-end branch below re-covers the transience assertion independently.
+  assert(battle24.phase === 'won', 'if the battle ended before the servitor expired, it must be because the servitor\'s own ticks won the fight, got phase=' + battle24.phase);
+  Game.Battle.endBattle();
+}
+
+// Battle-transient: absent on a fresh battle, even against the same monster with the same class active.
+var battle24b = Game.Battle.start('estari_construct_sentinel');
+assert(battle24b.monster.statuses.length === 0, 'a fresh battle starts with NO servitor carried over from the previous battle (battle-transient, never persisted)');
+Game.Battle.useTech('tech_summon_elemental');
+assert(battle24b.monster.statuses.length === 1, 'servitor re-summoned in the new battle');
+Game.Battle.flee();
+Game.Battle.endBattle();
+assert(Game.state.battle === null, 'battle object (and its monster.statuses) discarded after endBattle');
+
+// D4 default: a monster with NO resistances at all falls through to the fixed default grade (Fire).
+var c24c = makeCharacter({ name: 'ConjurerDefaultGrade' });
+setLevel(c24c, 60);
+c24c.currentLocation = 'eldor';
+Game.Classes.obtainClass(c24c, 'conjurer');
+Game.Classes.activate(c24c, 'conjurer', 'primary');
+Game.Classes.addClassXp(c24c, Game.Classes.classXpForLevel(20));
+Game.Classes.buyAbility(c24c, 'conjurer', 'conjurer_summon_elemental');
+c24c.techSets[0][0] = 'tech_summon_elemental';
+c24c.hitPoints = c24c.hitPointsMax; c24c.energy = c24c.energyMax;
+setRng(fixedRng(0.5));
+var battle24c = Game.Battle.start('plains_field_rat'); // resistances: {} — no grade is more negative than any other
+Game.Battle.useTech('tech_summon_elemental');
+assert(battle24c.monster.statuses[0].grade === 'Fire', 'a monster with no resistances at all defaults to Fire (D4), got ' + battle24c.monster.statuses[0].grade);
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// =================== Test 25 (v1.5 P4 §5, legacy): a hand-crafted save with a Crusader who ======
+// =================== obtained Shadowknight under the OLD convergence rule (now "impossible" =====
+// =================== under branching, since Shadowknight's baseClass is now gladiator) loads =====
+// =================== intact and BOTH classes remain fully usable — no migration strips anything ===
+console.log('\n=== Test 25 (v1.5 P4 §5): legacy Crusader+Shadowknight combo (impossible under new branching) loads intact and both remain usable ===');
+var legacyComboChar = makeV6Character({
+  level: 60, xp: BALANCE.XP_TO_LEVEL(60),
+  classes: {
+    crusader: { classXp: 200, classLevelsEarned: 4, classLevelsSpent: 0, abilities: [] },
+    shadowknight: { classXp: 500, classLevelsEarned: 8, classLevelsSpent: 3, abilities: ['shadowknight_inner_fire'] }
+  },
+  primaryClass: 'crusader',
+  secondaryClass: 'shadowknight',
+  techs: ['tech_shadow_blade'],
+  techSets: [['tech_shadow_blade', null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null]]
+});
+localStorageStore['herorpg_save'] = JSON.stringify({ version: 6, state: { character: legacyComboChar } });
+var loadedLegacyCombo = Game.Save.load();
+assert(loadedLegacyCombo !== null, 'legacy Crusader+Shadowknight save loads without error through the full v6->v10 migration chain');
+assert(!!loadedLegacyCombo.character.classes.crusader, 'classes.crusader preserved');
+assert(!!loadedLegacyCombo.character.classes.shadowknight, 'classes.shadowknight preserved — an "impossible" combo under the NEW branching rule (Shadowknight now re-homed to gladiator), kept per §5 [revised]: obtaining is permanent, no migration strips or re-keys it');
+assert(loadedLegacyCombo.character.classes.shadowknight.abilities.indexOf('shadowknight_inner_fire') !== -1, "shadowknight's previously-purchased ability survives migration untouched");
+assert(loadedLegacyCombo.character.primaryClass === 'crusader' && loadedLegacyCombo.character.secondaryClass === 'shadowknight', 'both active slots preserved');
+
+Game.state = loadedLegacyCombo;
+Game.state.battle = null;
+var legacyC = loadedLegacyCombo.character;
+legacyC.currentLocation = 'eldor';
+var legacyBonus = Game.Classes.classBonus(legacyC, 'damage_pct');
+assert(legacyBonus > 0, "the legacy Shadowknight's already-purchased Inner Fire passive still contributes to classBonus while active (damage_pct=" + legacyBonus + ')');
+
+legacyC.hitPoints = legacyC.hitPointsMax;
+legacyC.energy = legacyC.energyMax;
+setRng(fixedRng(0.5));
+var legacyBattle = Game.Battle.start('plains_field_rat');
+legacyBattle.monster.hp = 999;
+var legacyHpBefore = legacyBattle.monster.hp;
+Game.Battle.useTech('tech_shadow_blade');
+assert(legacyBattle.monster.hp < legacyHpBefore, "legacy Shadowknight's class tech is still fully usable in battle (still active in the secondary slot), hp " + legacyHpBefore + ' -> ' + legacyBattle.monster.hp);
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// Only the OFFER logic changed, not the already-obtained class: this Crusader is now offered
+// Paladin/Warden (its own tier-2 pair), NOT Shadowknight — Shadowknight remains obtained but is
+// no longer re-offerable, matching §5/§10's "returning players see new offers" note.
+var legacyOffers = Game.Classes.thirdTierOptionsFor(legacyC).slice().sort().join(',');
+assert(legacyOffers === 'paladin,warden', "thirdTierOptionsFor now offers [paladin, warden] for this Crusader (only future OFFERS changed), got " + legacyOffers);
+assert(legacyOffers.indexOf('shadowknight') === -1, 'shadowknight no longer appears as a future OFFER for a Crusader, even though it remains obtained and usable');
 
 // =================== Summary ===================
 console.log('\n===================================');
