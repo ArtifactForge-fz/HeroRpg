@@ -17,7 +17,7 @@ var BALANCE = {
   GOLD_PER_PLATINUM: 100, // archived: Gold.md ("100 Gold pieces equals 1 Platinum piece")
   ANIMA_SHARDS_CAP: 999, // archived: Anima_Shards.md ("maximum of 999 Anima Shards at any time")
 
-  XP_TO_LEVEL: function (n) { return Math.round(50 * Math.pow(n - 1, 1.8)); }, // invented: DESIGN.md §10 open decision 1; cumulative XP to reach level n, so level 1 = 0 (characters start at 0 XP)
+  XP_TO_LEVEL: function (n) { return Math.round(50 * Math.pow(n - 1, 2.0)); }, // [revised] v1.6 P2 (SPEC-V1.6-REBALANCE.md §6.2, PG-1): exponent 1.8 -> 2.0, LOCKED by the lead's P0 progression calc; cumulative XP to reach level n, so level 1 = 0 (characters start at 0 XP)
   // F1 balance-to-100 (docs/SPEC-FULL-LEVEL-ARC.md §2/§9-F1, D1): the game's archived design target
   // was a level cap, not an open-ended climb -- homepage_2007.md (2007-05-25): "The game was
   // originally designed based on a level-100 cap, though we have decided to extend that to a
@@ -28,6 +28,15 @@ var BALANCE = {
   // single point that reads this to stop leveling; xpNeededForNext/xpIntoCurrentLevel special-case
   // level >= LEVEL_CAP so the "XP to next level" UI never divides by a zero/undefined delta.
   LEVEL_CAP: 100,
+  // v1.6 P2 re-pace (SPEC-V1.6-REBALANCE.md §6.2, PG-1, REVIEW-2026-07-16.md): the shipped curve
+  // above (exponent 1.8) leveled far too fast per playtest feedback -- flat ~3.5-5 kills/level
+  // across the WHOLE 1-100 range, only ~2 kills at the very start. The lead's P0 progression calc
+  // (deterministic, sim_v16_prog.js) raised the exponent to 2.0: total kills-to-100 roughly DOUBLE
+  // (396 -> 912, a ~2.3x slowdown), and the curve stays exactly as flat/wall-free as before (F1's
+  // finding that MONSTER_XP's linear reward outpaces the marginal XP curve at every exponent tried
+  // still holds at 2.0 -- no late-game grind cliff). [revised] deliberate ratchet exception
+  // (CLAUDE.md cardinal rule 4 / LEAD-PLAYBOOK §0.3): the user is directing a re-tune of a shipped
+  // constant because the shipped pace was judged wrong, not adding a new mechanic around it.
   // F1 balance-to-100 sim finding (docs/SPEC-FULL-LEVEL-ARC.md D2): the F1 exit-gate sim
   // (scratchpad sim_f1_progression.js, real engine via node vm, sampled actions-per-kill at 15
   // levels 1-100 against at-level regulars) extended XP_TO_LEVEL UNCHANGED through level 100 and
@@ -101,7 +110,8 @@ var BALANCE = {
   // invented: skill XP granted per use, declining once the player outlevels the monster.
   // archived direction only: Recent_Updates.md 2007-04-21 ("Skill experience now sharply
   // declines when your level is greater than your opponent's").
-  SKILL_XP_PER_USE: 8,
+  // [SKILL_XP_PER_USE removed v1.6 P2: superseded by SKILL_XP_PER_MON_LEVEL below (PG-3) --
+  // grepped clean, nothing else in js/ or tests/ reads it after this phase's changes.]
   SKILL_XP_MIN_PER_USE: 1,
 
   // invented: simple flat DoT status length/damage for the Phase 3 Poison effect (DESIGN.md §4
@@ -555,5 +565,33 @@ var BALANCE = {
   // base term, punishing any non-STR build (a Dex/Int caster at STR 5 capped at 50 weight).
   // [invented], LOCKED calc (SPEC-V1.6-REBALANCE.md §6.1). capacity = BASE + STR*PER_STR.
   CARRY_CAPACITY_BASE: 50,
-  CARRY_CAPACITY_PER_STR: 6
+  CARRY_CAPACITY_PER_STR: 6,
+
+  // ==================== v1.6 P2: Progression (docs/SPEC-V1.6-REBALANCE.md §3/§6.2, PG-1..PG-4) ====================
+  // Playtest triage: docs/REVIEW-2026-07-16.md. All numbers LOCKED by the lead's P0 progression
+  // calc (SPEC-V1.6-REBALANCE.md §6.2) — implemented verbatim here, not re-tuned.
+
+  // PG-1: caps the previously-uncapped Fury XP bonus (js/core/battle.js onWin: furyBonus = 1 +
+  // min(fury*FURY_XP_PER_TICK, FURY_XP_CAP)). A long Fury streak could inflate combat+skill XP
+  // without bound; precedent for capping an escalating Fury-adjacent bonus: AFFIX_FRENZIED_CAP
+  // (+40%) above. [revised], LOCKED calc.
+  FURY_XP_CAP: 0.25,
+
+  // PG-3: skill-XP granted per qualifying use now scales with the DEFEATED MONSTER's level instead
+  // of a flat rate (js/core/battle.js onWin's skill-XP award block) — the old flat 8/win left a
+  // mained skill needing ~3,200 wins to reach skill 50, and 90% of the archived skill range
+  // (2*level+1) paid zero combat benefit past the old weapon/armor caps (REVIEW-2026-07-16.md
+  // PG-3; those caps were already raised in P1 above). base = round(monsterLevel *
+  // SKILL_XP_PER_MON_LEVEL), still floored at SKILL_XP_MIN_PER_USE and still subject to the
+  // archived >5-level decline (Recent_Updates.md 2007-04-21) and the Fury bonus above. [revised],
+  // LOCKED calc.
+  SKILL_XP_PER_MON_LEVEL: 0.6,
+
+  // PG-2: class-XP award fractions (js/core/classes.js addClassXp) — primary and secondary no
+  // longer receive the FULL / HALF combat-XP amount outright; both are scaled down further so a
+  // class spans a meaningful slice of its tier band instead of unlocking in a handful of kills
+  // (the shipped curve let a tier-3 class fully unlock in ~2-3 kills — REVIEW-2026-07-16.md PG-2).
+  // Paired with the steepened classXpForLevel curve (js/core/classes.js). [revised], LOCKED calc.
+  CLASS_XP_FRACTION_PRIMARY: 0.5,
+  CLASS_XP_FRACTION_SECONDARY: 0.25
 };

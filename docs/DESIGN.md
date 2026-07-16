@@ -93,6 +93,17 @@ Race (Human/Arkan) → distribute **5 skill points, max 3 per skill** → name +
 - Areas and items gate on level (`Level.md`).
 - **XP curve: [invented]** — nothing archived. Design target: level 30 (first class) reachable in a
   few hours of play.
+- **v1.6 P2 re-pace [revised]** (`docs/SPEC-V1.6-REBALANCE.md` §6.2, PG-1/PG-3; playtest triage
+  `docs/REVIEW-2026-07-16.md`): the shipped curve leveled far too fast (flat ~3.5-5 kills/level
+  across the whole 1-100 range) and skill leveling was far too slow (flat 8 skill-XP/win, ~3,200
+  wins to reach skill 50) — opposite problems from the same review. `XP_TO_LEVEL`'s exponent went
+  1.8 → 2.0 (~2.3x more kills to L100, still no grind wall); skill-XP-per-use now scales with the
+  **defeated monster's level** (`SKILL_XP_PER_MON_LEVEL`) instead of a flat rate, so a mained skill
+  reaches useful levels by mid-game rather than never; the Fury XP bonus (previously uncapped) is
+  capped at +25% (`FURY_XP_CAP`), mirroring the Frenzied champion affix's own +40% cap. All numbers
+  LOCKED by the lead's P0 progression calc, a deliberate ratchet exception (CLAUDE.md cardinal rule
+  4 / LEAD-PLAYBOOK §0.3) — the user directed a re-tune of shipped constants because the shipped
+  pace was judged wrong in both directions.
 
 ### Skills — [archived list, use-based]
 18 skills, leveled by use in combat (`Skills.md`): Swords, Polearms, Knives, Light/Medium/Heavy
@@ -145,6 +156,18 @@ Archived balance rules (`Recent_Updates.md`):
     monster an action). Its niche is energy-efficient attrition vs the Magus's burst.
   - Legacy note: saves holding an old-convergence combo (e.g. a Crusader with Shadowknight) keep
     it fully functional; only future offers follow the new branching.
+  - **v1.6 P2 — class pacing steepened [revised]** (`docs/SPEC-V1.6-REBALANCE.md` §6.2, PG-2;
+    `docs/REVIEW-2026-07-16.md`): the shipped class-XP curve capped out at ~class level 8-13, so a
+    tier-3 class fully unlocked its abilities in ~2-3 kills and a tier-1 class in ~13 — "all
+    abilities in a few combats" per the playtest. `classXpForLevel` steepened round(30·(n-1)^1.6)
+    → round(120·(n-1)^1.9), AND the Primary/Secondary award itself is now further scaled down
+    (`CLASS_XP_FRACTION_PRIMARY` 0.5 / `CLASS_XP_FRACTION_SECONDARY` 0.25, `js/core/classes.js
+    addClassXp`) instead of the shipped full/half combat-XP rate. Net (P0 calc): tier-3 full-unlock
+    ~2-3 → ~37 kills, tier-2 → ~86, tier-1 → ~192 — a class now grows across a meaningful slice of
+    play. Legacy-safe: `classLevelsEarned`/`classLevelsSpent` are banked per-character and only
+    ever increment forward from new class-XP grants, never recomputed retroactively from
+    `classXp` against the curve — an existing save keeps every already-earned class level and
+    ability untouched; only future leveling slows down. LOCKED by the P0 progression calc.
 - **Three hidden Legendary classes (tier 4):** Runeblade of Kuraan (boss kill), Vaultbreaker
   (boss-combination quest), Heir of the Echo (relic route) — each obtained independently, one per
   save. **[invented]** beyond the archived "Legendary, one per server" concept.
@@ -442,6 +465,9 @@ Eidolons/v3.0 systems, arcade. Pets (`heropet.php` existed) — deferred, no des
 ## 10. Open design decisions (resolved)
 
 1. **XP curve**: quadratic-ish (`xpToLevel(n) = 50·n^1.8` ballpark), tune so level 30 ≈ 3–4 h.
+   - **v1.6 P2 [revised]** (`docs/SPEC-V1.6-REBALANCE.md` §6.2): exponent 1.8 → 2.0 (playtest:
+     leveling was judged far too fast); see the §3 Progression subsection above for the full note
+     (also covers the paired skill-XP and class-XP re-pace, PG-1..PG-3).
 2. **Save**: localStorage, versioned JSON, export/import string for backup.
 3. **Content volume v1**: levels 1–40 playable; 2 towns (Eldor, Ju`Mak) + 5 hunting areas; ~60
    items; ~35 monsters + 4 bosses; ~30 techs; ~12 quests; 3 classes.

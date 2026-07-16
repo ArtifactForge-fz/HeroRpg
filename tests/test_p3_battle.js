@@ -360,7 +360,11 @@ assert(r5.ap === BALANCE.AP_PER_WIN(b5.monster.level), 'regular win grants BALAN
 assert(c5.ap === r5.ap, 'character.ap credited with the AP reward');
 // skill xp: Swords was at cap 3 -> addSkillXp must not raise it
 assert(c5.skills['Swords'].level === 3, 'weapon skill did not exceed cap 2L+1=3');
-assert(r5.skillXp['Swords'] === BALANCE.SKILL_XP_PER_USE, 'weapon skill XP granted at full rate (monster not below player)');
+// v1.6 P2 (PG-3, SPEC-V1.6-REBALANCE.md §6.2): skill-XP-per-use now scales with the monster's
+// level (SKILL_XP_PER_MON_LEVEL) instead of a flat rate — plains_field_rat is level 1, so
+// round(1*0.6)=1, still at the SKILL_XP_MIN_PER_USE floor (no decline, no Fury bonus here).
+var expectedSwordsXp5 = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(b5.monster.level * BALANCE.SKILL_XP_PER_MON_LEVEL));
+assert(r5.skillXp['Swords'] === expectedSwordsXp5, 'weapon skill XP scales with monster level (monster not below player), expected ' + expectedSwordsXp5 + ', got ' + r5.skillXp['Swords']);
 
 // loot claim success
 var potions = c5.inventory.filter(function (i) { return i === 'potion_minor_healing'; }).length;
@@ -495,21 +499,28 @@ assert(c7i.level === 2, 'sanity: the kill leveled the player up to 2 (was exactl
 assert(c7i.fury === 1, 'v1.3.1 fix 5: Fury ticks for an at-or-above-level kill judged by the PRE-kill level, even though this very kill leveled the player up (got fury=' + c7i.fury + ')');
 Game.Battle.endBattle();
 
-// =================== Test 8: skill xp decline between 1 and 4 levels above ===================
-console.log('\n=== Test 8: skill XP declines when outleveling the monster ===');
+// =================== Test 8: skill xp scales with monster level, then declines 1-4 levels above ===================
+console.log('\n=== Test 8: skill XP scales with monster level, then declines when outleveling the monster ===');
 var c8 = makeCharacter({ name: 'DeclineTest' });
-c8.level = 4; // 3 levels above the rat -> decline factor 1 - 3/5 = 0.4 -> round(8*0.4)=3
-c8.xp = BALANCE.XP_TO_LEVEL(4);
+// v1.6 P2 (PG-3, SPEC-V1.6-REBALANCE.md §6.2): skill-XP-per-use now scales with the monster's
+// level (base = round(monsterLevel*0.6)) instead of a flat rate — a level-1 monster's base is
+// already at the SKILL_XP_MIN_PER_USE floor and can't demonstrate the decline any more, so this
+// test now uses a level-20 regular (juneros_riptide_hunter: no behavior/poison/curse, a clean
+// fixture) instead of plains_field_rat, to keep the archived decline (Recent_Updates.md
+// 2007-04-21) a real, visible effect on top of the level-scaled base.
+c8.level = 23; // 3 levels above the level-20 monster below -> decline factor 1 - 3/5 = 0.4
+c8.xp = BALANCE.XP_TO_LEVEL(23);
 c8.strength = 60;
+c8.dexterity = 999; // act first regardless of the monster's effective dex (= its level, 20)
 Game.Character.recalcDerived(c8);
 c8.hitPoints = c8.hitPointsMax;
 setRng(fixedRng(0.99));
-var b8 = Game.Battle.start('plains_field_rat');
+var b8 = Game.Battle.start('juneros_riptide_hunter');
 b8.monster.hp = 1;
 setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.99, 0.99, 0.99], 0.99));
 Game.Battle.attack();
-var expectedPerUse = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(BALANCE.SKILL_XP_PER_USE * (1 - 3 / BALANCE.XP_LOOT_CUTOFF_LEVELS)));
-assert(b8.rewards.skillXp['Swords'] === expectedPerUse, 'declined skill XP: got ' + b8.rewards.skillXp['Swords'] + ', expected ' + expectedPerUse);
+var expectedPerUse = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(b8.monster.level * BALANCE.SKILL_XP_PER_MON_LEVEL * (1 - 3 / BALANCE.XP_LOOT_CUTOFF_LEVELS)));
+assert(b8.rewards.skillXp['Swords'] === expectedPerUse, 'declined skill XP (level-scaled base then declined): got ' + b8.rewards.skillXp['Swords'] + ', expected ' + expectedPerUse);
 Game.Battle.endBattle();
 
 // =================== Test 9: tech gating + resistance ===================
@@ -3813,7 +3824,10 @@ Game.Battle.useTech('tech_firebolt_1'); // Evocation -> techsUsedThisBattle['Evo
 b83.monster.hp = 1; // let the next hit land the killing blow
 Game.Battle.attack();
 assert(b83.phase === 'won', 'sanity: the rat died on the finishing blow');
-var expectedPerUse83 = BALANCE.SKILL_XP_PER_USE; // fury=0, at/above the monster's level -> no decline, no fury bonus
+// v1.6 P2 (PG-3, SPEC-V1.6-REBALANCE.md §6.2): base skill-XP-per-use now scales with the
+// monster's level (plains_field_rat is level 1 -> round(1*0.6)=1, at the floor) instead of the
+// removed flat SKILL_XP_PER_USE; fury=0, at/above the monster's level -> no decline, no fury bonus.
+var expectedPerUse83 = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(b83.monster.level * BALANCE.SKILL_XP_PER_MON_LEVEL));
 var expectedMagicXp83 = Math.max(1, Math.round(expectedPerUse83 * (1 + c83.intelligence * BALANCE.INT_SKILL_XP_PER_POINT)));
 assert(b83.rewards.skillXp['Swords'] === expectedPerUse83,
   'weapon skill-XP (Swords) is UNAFFECTED by Intelligence, expected ' + expectedPerUse83 + ', got ' + b83.rewards.skillXp['Swords']);
@@ -3838,6 +3852,69 @@ assert(b83b.phase === 'won', 'sanity: the rat died to the rod-wielder\'s attack'
 assert(b83b.rewards.skillXp['Rods'] === expectedMagicXp83,
   'Rods skill-XP is ALSO Int-scaled via the weapon-skill route (same rate as a magic school), expected ' + expectedMagicXp83 + ', got ' + b83b.rewards.skillXp['Rods']);
 Game.Battle.endBattle();
+
+// =================== Test 84 (v1.6 P2): XP_TO_LEVEL exponent 2.0, Fury XP cap, skill-XP monster-level scaling ===================
+console.log('\n=== Test 84 (v1.6 P2): XP_TO_LEVEL exponent 2.0 (PG-1), Fury XP bonus capped at +25% (PG-1), skill-XP-per-use scales with monster level (PG-3) ===');
+
+// --- XP_TO_LEVEL exponent 1.8 -> 2.0: spot-check a few cumulative values, and confirm the total
+// kills/XP-to-100 roughly doubled vs the old curve (SPEC-V1.6-REBALANCE.md §6.2: 396->912 kills,
+// ~2.3x). Math.pow(k, 2) is exact for these small integers, so these are precise, not float-fuzzy.
+assert(BALANCE.XP_TO_LEVEL(1) === 0, 'XP_TO_LEVEL(1) === 0 (level-1 baseline), got ' + BALANCE.XP_TO_LEVEL(1));
+assert(BALANCE.XP_TO_LEVEL(2) === 50, 'XP_TO_LEVEL(2) === 50 under the v1.6 exponent-2.0 curve (50*(1)^2), got ' + BALANCE.XP_TO_LEVEL(2));
+assert(BALANCE.XP_TO_LEVEL(30) === 42050, 'XP_TO_LEVEL(30) === 42050 under the v1.6 exponent-2.0 curve (50*29^2), got ' + BALANCE.XP_TO_LEVEL(30));
+assert(BALANCE.XP_TO_LEVEL(100) === 490050, 'XP_TO_LEVEL(100) === 490050 under the v1.6 exponent-2.0 curve (50*99^2), got ' + BALANCE.XP_TO_LEVEL(100));
+var oldXpToLevel100 = Math.round(50 * Math.pow(99, 1.8)); // pre-v1.6 curve, computed inline ONLY as this test's own comparison yardstick (not a live game formula)
+var xpRatio100 = BALANCE.XP_TO_LEVEL(100) / oldXpToLevel100;
+assert(xpRatio100 > 2 && xpRatio100 < 3, 'v1.6 P2 (PG-1): total XP-to-100 roughly doubled vs the old 1.8-exponent curve (old=' + oldXpToLevel100 + ', new=' + BALANCE.XP_TO_LEVEL(100) + ', ratio=' + xpRatio100.toFixed(2) + ')');
+
+// --- Fury XP bonus caps at BALANCE.FURY_XP_CAP (+25%), was uncapped ---
+var cFuryCap = makeCharacter({ name: 'FuryCapTest' });
+cFuryCap.fury = 100; // 100*FURY_XP_PER_TICK(0.01) = +100% uncapped -- far past the +25% cap
+cFuryCap.strength = 60;
+Game.Character.recalcDerived(cFuryCap);
+cFuryCap.hitPoints = cFuryCap.hitPointsMax;
+setRng(fixedRng(0.99));
+var bFuryCap = Game.Battle.start('plains_field_rat');
+bFuryCap.monster.hp = 1;
+setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.99, 0.99, 0.99], 0.99));
+Game.Battle.attack();
+assert(bFuryCap.phase === 'won', 'sanity: the rat died to the finishing blow');
+var expectedCappedFuryXp = Math.round(bFuryCap.monster.xp * (1 + BALANCE.FURY_XP_CAP));
+var uncappedFuryXp = Math.round(bFuryCap.monster.xp * (1 + 100 * BALANCE.FURY_XP_PER_TICK));
+assert(expectedCappedFuryXp < uncappedFuryXp, 'sanity: the capped expectation is strictly less than the old uncapped formula would have given');
+assert(bFuryCap.rewards.xp === expectedCappedFuryXp, 'combat XP uses the Fury bonus CAPPED at +' + (BALANCE.FURY_XP_CAP * 100) + '% (FURY_XP_CAP), not the uncapped 1+fury*FURY_XP_PER_TICK (' + uncappedFuryXp + '), expected ' + expectedCappedFuryXp + ', got ' + bFuryCap.rewards.xp);
+Game.Battle.endBattle();
+
+// --- skill-XP-per-use scales with the DEFEATED MONSTER's level: a level-49 kill grants more
+// skill XP than a level-10 kill, both fought exactly at-level (levelDiff=0 -> no decline, isolating
+// the level-scaling term from the archived decline term, which Tests 7/7b/8 already cover). ---
+function killAtLevelAndGetSwordsXp(monsterId, playerLevel) {
+  var c = makeCharacter({ name: 'MonLevelSkillXpTest_' + monsterId });
+  c.level = playerLevel;
+  c.xp = BALANCE.XP_TO_LEVEL(playerLevel);
+  c.strength = 60;
+  c.dexterity = 999; // act first regardless of the monster's effective dex (= its level)
+  Game.Character.recalcDerived(c);
+  c.hitPoints = c.hitPointsMax;
+  setRng(fixedRng(0.99));
+  var b = Game.Battle.start(monsterId);
+  b.monster.hp = 1;
+  setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.99, 0.99, 0.99], 0.99));
+  Game.Battle.attack();
+  var swordsXp = b.rewards.skillXp['Swords'];
+  var monsterLevel = b.monster.level;
+  Game.Battle.endBattle();
+  return { swordsXp: swordsXp, monsterLevel: monsterLevel };
+}
+
+var lowLevelKill84 = killAtLevelAndGetSwordsXp('gares_majiku_raider', 10); // level 10, no behavior/poison/curse
+var highLevelKill84 = killAtLevelAndGetSwordsXp('majiku_ironclad_vanguard', 49); // level 49, telegraph behavior (harmless at rng 0.99)
+assert(highLevelKill84.swordsXp > lowLevelKill84.swordsXp,
+  'v1.6 P2 (PG-3): a level-' + highLevelKill84.monsterLevel + ' kill grants more skill XP than a level-' + lowLevelKill84.monsterLevel + ' kill (' + highLevelKill84.swordsXp + ' > ' + lowLevelKill84.swordsXp + ')');
+var expectedLow84 = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(lowLevelKill84.monsterLevel * BALANCE.SKILL_XP_PER_MON_LEVEL));
+var expectedHigh84 = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(highLevelKill84.monsterLevel * BALANCE.SKILL_XP_PER_MON_LEVEL));
+assert(lowLevelKill84.swordsXp === expectedLow84, 'level-10 kill skill XP matches round(monsterLevel*SKILL_XP_PER_MON_LEVEL), expected ' + expectedLow84 + ', got ' + lowLevelKill84.swordsXp);
+assert(highLevelKill84.swordsXp === expectedHigh84, 'level-49 kill skill XP matches round(monsterLevel*SKILL_XP_PER_MON_LEVEL), expected ' + expectedHigh84 + ', got ' + highLevelKill84.swordsXp);
 
 // =================== Summary ===================
 console.log('\n===================================');

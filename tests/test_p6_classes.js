@@ -435,7 +435,7 @@ assert(Game.Classes.isObtained(c7, 'gladiator') === true, 'gladiator obtained');
 assert(Game.Classes.isObtained(c7, 'crusader') === false, 'crusader NOT obtained (only the chosen branch)');
 assert(c7.quests['trials_of_eldor'].status === 'completed', 'trials_of_eldor marked completed');
 
-// =================== Test 8: addClassXp — primary full, secondary half, none unassigned ===================
+// =================== Test 8: addClassXp — primary/secondary fractions, none unassigned ===================
 console.log('\n=== Test 8: addClassXp rates + classLevelsEarned curve ===');
 var c8 = makeCharacter({ name: 'XpTester' });
 setLevel(c8, 30);
@@ -445,8 +445,10 @@ Game.Classes.obtainClass(c8, 'thief'); // obtained but left inactive on purpose
 Game.Classes.activate(c8, 'warrior', 'primary');
 Game.Classes.activate(c8, 'magician', 'secondary');
 Game.Classes.addClassXp(c8, 100);
-assert(c8.classes['warrior'].classXp === 100, 'primary (warrior) gained full 100 class XP, got ' + c8.classes['warrior'].classXp);
-assert(c8.classes['magician'].classXp === 50, 'secondary (magician) gained half, 50 class XP, got ' + c8.classes['magician'].classXp);
+// v1.6 P2 (PG-2, SPEC-V1.6-REBALANCE.md §6.2): primary/secondary no longer gain the full/half raw
+// amount outright — both are further scaled by CLASS_XP_FRACTION_PRIMARY (0.5) / _SECONDARY (0.25).
+assert(c8.classes['warrior'].classXp === Math.floor(100 * BALANCE.CLASS_XP_FRACTION_PRIMARY), 'primary (warrior) gained 100*CLASS_XP_FRACTION_PRIMARY class XP, got ' + c8.classes['warrior'].classXp);
+assert(c8.classes['magician'].classXp === Math.floor(100 * BALANCE.CLASS_XP_FRACTION_SECONDARY), 'secondary (magician) gained 100*CLASS_XP_FRACTION_SECONDARY class XP, got ' + c8.classes['magician'].classXp);
 assert(c8.classes['thief'].classXp === 0, 'inactive obtained class (thief) gained 0 class XP');
 var c8b = makeCharacter({ name: 'CurveTester' });
 setLevel(c8b, 30);
@@ -455,11 +457,14 @@ Game.Classes.activate(c8b, 'warrior', 'primary');
 var xpForLevel1 = Game.Classes.classXpForLevel(1);
 assert(xpForLevel1 === 0, 'classXpForLevel(1) === 0 (cumulative curve convention), got ' + xpForLevel1);
 var xpForLevel2 = Game.Classes.classXpForLevel(2);
-assert(xpForLevel2 === Math.round(30 * Math.pow(1, 1.6)), 'classXpForLevel(2) matches round(30*(n-1)^1.6), got ' + xpForLevel2);
-Game.Classes.addClassXp(c8b, xpForLevel2);
+// v1.6 P2 (PG-2): steepened round(30*(n-1)^1.6) -> round(120*(n-1)^1.9), LOCKED by the P0 calc.
+assert(xpForLevel2 === Math.round(120 * Math.pow(1, 1.9)), 'classXpForLevel(2) matches round(120*(n-1)^1.9), got ' + xpForLevel2);
+// addClassXp scales the raw amount down by CLASS_XP_FRACTION_PRIMARY before banking it — divide by
+// that fraction here so the character's PRIMARY slot nets exactly xpForLevel2 worth of class XP.
+Game.Classes.addClassXp(c8b, xpForLevel2 / BALANCE.CLASS_XP_FRACTION_PRIMARY);
 assert(c8b.classes['warrior'].classLevelsEarned === 1, 'classLevelsEarned incremented once at the level-2 threshold, got ' + c8b.classes['warrior'].classLevelsEarned);
 var xpForLevel3 = Game.Classes.classXpForLevel(3);
-Game.Classes.addClassXp(c8b, xpForLevel3 - xpForLevel2 + 5);
+Game.Classes.addClassXp(c8b, (xpForLevel3 - xpForLevel2 + 5) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
 assert(c8b.classes['warrior'].classLevelsEarned >= 2, 'classLevelsEarned climbs further with more class XP, got ' + c8b.classes['warrior'].classLevelsEarned);
 
 // =================== Test 9: buyAbility gating ===================
@@ -488,8 +493,9 @@ Game.Classes.obtainClass(c10, 'warrior');
 Game.Classes.activate(c10, 'warrior', 'primary');
 c10.currentLocation = 'eldor';
 var armorBefore10 = Game.Character.getArmor(c10);
-// Iron Hide costs 2, Brutal Strikes costs 3 -> need 5 unspent Class Levels.
-Game.Classes.addClassXp(c10, Game.Classes.classXpForLevel(6) + 20);
+// Iron Hide costs 2, Brutal Strikes costs 3 -> need 5 unspent Class Levels. Divide by
+// CLASS_XP_FRACTION_PRIMARY (v1.6 P2) so the primary slot nets the full intended raw amount.
+Game.Classes.addClassXp(c10, (Game.Classes.classXpForLevel(6) + 20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
 var unspent10 = Game.Classes.unspentClassLevels(c10, 'warrior');
 assert(unspent10 >= 5, 'enough unspent class levels for Iron Hide (2) + Brutal Strikes (3), got ' + unspent10);
 var buyIronHide = Game.Classes.buyAbility(c10, 'warrior', 'warrior_iron_hide');
@@ -510,7 +516,7 @@ setLevel(c11, 5);
 c11.currentLocation = 'eldor';
 Game.Classes.obtainClass(c11, 'warrior');
 Game.Classes.activate(c11, 'warrior', 'primary');
-Game.Classes.addClassXp(c11, Game.Classes.classXpForLevel(6) + 10);
+Game.Classes.addClassXp(c11, (Game.Classes.classXpForLevel(6) + 10) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
 var buyCrushingBlow = Game.Classes.buyAbility(c11, 'warrior', 'warrior_crushing_blow');
 assert(buyCrushingBlow.ok === true, 'Crushing Blow purchased: ' + buyCrushingBlow.message);
 assert(c11.techs.indexOf('tech_crushing_blow') !== -1, 'tech_crushing_blow added to c.techs');
@@ -553,7 +559,7 @@ c11c.currentLocation = 'eldor';
 Game.Classes.obtainClass(c11c, 'crusader');
 Game.Classes.activate(c11c, 'crusader', 'primary');
 // Iron Vitality (crusader_iron_vitality, hp_max_flat +40) costs 3 unspent Class Levels.
-Game.Classes.addClassXp(c11c, Game.Classes.classXpForLevel(10) + 100);
+Game.Classes.addClassXp(c11c, (Game.Classes.classXpForLevel(10) + 100) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
 var unspent11c = Game.Classes.unspentClassLevels(c11c, 'crusader');
 assert(unspent11c >= 3, 'enough unspent class levels for Iron Vitality (3), got ' + unspent11c);
 var hpMaxBefore11c = c11c.hitPointsMax;
@@ -573,7 +579,7 @@ setLevel(c12, 5);
 c12.currentLocation = 'eldor';
 Game.Classes.obtainClass(c12, 'magician');
 Game.Classes.activate(c12, 'magician', 'primary');
-Game.Classes.addClassXp(c12, Game.Classes.classXpForLevel(4) + 5);
+Game.Classes.addClassXp(c12, (Game.Classes.classXpForLevel(4) + 5) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
 var preWipeLevels = c12.classes['magician'].classLevelsEarned;
 assert(preWipeLevels > 0, 'magician earned some class levels before wipe test, got ' + preWipeLevels);
 Game.Classes.buyAbility(c12, 'magician', 'magician_arcane_reserves');
@@ -618,7 +624,7 @@ Game.Data.classes.forEach(function (cd) {
   var activateRes = Game.Classes.activate(sc, cd.id, 'primary');
   assert(activateRes.ok === true, 'sweep: ' + cd.id + ' activated as primary: ' + activateRes.message);
   var cheapest = cd.abilities.slice().sort(function (a, b) { return a.classLevelCost - b.classLevelCost; })[0];
-  Game.Classes.addClassXp(sc, Game.Classes.classXpForLevel(20)); // plenty of class levels for any tier
+  Game.Classes.addClassXp(sc, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY); // plenty of class levels for any tier
   var buyRes = Game.Classes.buyAbility(sc, cd.id, cheapest.id);
   assert(buyRes.ok === true, 'sweep: ' + cd.id + ' bought its cheapest ability (' + cheapest.id + '): ' + buyRes.message);
   assert(sc.classes[cd.id].abilities.indexOf(cheapest.id) !== -1, 'sweep: ' + cd.id + ' ability recorded as owned');
@@ -659,9 +665,10 @@ var loopActivateMerc = Game.Classes.activate(c15, 'mercenary', 'secondary');
 assert(loopActivateMerc.ok === true, 'loop: mercenary activated as secondary: ' + loopActivateMerc.message);
 
 // Grind class XP via Game._debug.addClassXp — enough for Quick Pockets (2) + Efficient Strike (4).
-// mercenary is the SECONDARY slot here (thief is primary), so addClassXp only grants it half rate
-// (js/core/classes.js addClassXp) — double the raw amount so mercenary itself nets the target.
-Game._debug.addClassXp(2 * (Game.Classes.classXpForLevel(8) + 20));
+// mercenary is the SECONDARY slot here (thief is primary), so addClassXp only grants it
+// CLASS_XP_FRACTION_SECONDARY (0.25, v1.6 P2 — was 0.5) of the raw amount — divide by that
+// fraction so mercenary itself nets the target.
+Game._debug.addClassXp((Game.Classes.classXpForLevel(8) + 20) / BALANCE.CLASS_XP_FRACTION_SECONDARY);
 var unspentLoop = Game.Classes.unspentClassLevels(c15, 'mercenary');
 assert(unspentLoop >= 6, 'loop: ground enough class levels for Quick Pockets (2) + Efficient Strike (4), unspent=' + unspentLoop);
 
@@ -817,7 +824,7 @@ assert(c18.quests['masters_calling'].status === 'completed', 'masters_calling ma
 c18.currentLocation = 'eldor';
 var activateSk18 = Game.Classes.activate(c18, 'shadowknight', 'primary');
 assert(activateSk18.ok === true, 'shadowknight activated as primary: ' + activateSk18.message);
-Game.Classes.addClassXp(c18, Game.Classes.classXpForLevel(20)); // plenty of class levels
+Game.Classes.addClassXp(c18, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY); // plenty of class levels
 var buySk18 = Game.Classes.buyAbility(c18, 'shadowknight', 'shadowknight_shadow_blade');
 assert(buySk18.ok === true, 'Shadow Blade purchased: ' + buySk18.message);
 assert(c18.techs.indexOf('tech_shadow_blade') !== -1, 'tech_shadow_blade added to c.techs');
@@ -892,7 +899,7 @@ var obtainRanger22 = Game.Classes.obtainClass(c22, 'ranger');
 assert(obtainRanger22.ok === true, 'ranger obtained: ' + obtainRanger22.message);
 assert(Game.Classes.activate(c22, 'paladin', 'primary').ok === true, 'paladin activated as primary');
 assert(Game.Classes.activate(c22, 'ranger', 'secondary').ok === true, 'ranger activated as secondary');
-Game.Classes.addClassXp(c22, Game.Classes.classXpForLevel(20)); // plenty of class levels (grants to BOTH slots, primary full + secondary half)
+Game.Classes.addClassXp(c22, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY); // plenty of class levels (grants to BOTH slots, primary CLASS_XP_FRACTION_PRIMARY + secondary CLASS_XP_FRACTION_SECONDARY)
 
 var dmgPctBefore22 = Game.Classes.classBonus(c22, 'damage_pct');
 var buyHolyBulwark22 = Game.Classes.buyAbility(c22, 'paladin', 'paladin_holy_bulwark');
@@ -928,7 +935,7 @@ setLevel(c23, 60);
 c23.currentLocation = 'eldor';
 Game.Classes.obtainClass(c23, 'paladin');
 Game.Classes.activate(c23, 'paladin', 'primary');
-Game.Classes.addClassXp(c23, Game.Classes.classXpForLevel(20));
+Game.Classes.addClassXp(c23, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
 var buySmite23 = Game.Classes.buyAbility(c23, 'paladin', 'paladin_smite');
 assert(buySmite23.ok === true, 'Smite purchased: ' + buySmite23.message);
 assert(c23.techs.indexOf('tech_paladin_smite') !== -1, 'tech_paladin_smite added to c.techs');
@@ -970,7 +977,7 @@ c24.intelligence = 50; // representative caster build so the servitor's tick is 
 Game.Character.recalcDerived(c24);
 Game.Classes.obtainClass(c24, 'conjurer');
 Game.Classes.activate(c24, 'conjurer', 'primary');
-Game.Classes.addClassXp(c24, Game.Classes.classXpForLevel(20));
+Game.Classes.addClassXp(c24, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
 var buySummon24 = Game.Classes.buyAbility(c24, 'conjurer', 'conjurer_summon_elemental');
 assert(buySummon24.ok === true, 'Summon Elemental purchased: ' + buySummon24.message);
 c24.techSets[0][0] = 'tech_summon_elemental';
@@ -1031,7 +1038,7 @@ setLevel(c24c, 60);
 c24c.currentLocation = 'eldor';
 Game.Classes.obtainClass(c24c, 'conjurer');
 Game.Classes.activate(c24c, 'conjurer', 'primary');
-Game.Classes.addClassXp(c24c, Game.Classes.classXpForLevel(20));
+Game.Classes.addClassXp(c24c, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
 Game.Classes.buyAbility(c24c, 'conjurer', 'conjurer_summon_elemental');
 c24c.techSets[0][0] = 'tech_summon_elemental';
 c24c.hitPoints = c24c.hitPointsMax; c24c.energy = c24c.energyMax;
@@ -1091,6 +1098,40 @@ Game.Battle.endBattle();
 var legacyOffers = Game.Classes.thirdTierOptionsFor(legacyC).slice().sort().join(',');
 assert(legacyOffers === 'paladin,warden', "thirdTierOptionsFor now offers [paladin, warden] for this Crusader (only future OFFERS changed), got " + legacyOffers);
 assert(legacyOffers.indexOf('shadowknight') === -1, 'shadowknight no longer appears as a future OFFER for a Crusader, even though it remains obtained and usable');
+
+// =================== Test 26 (v1.6 P2, PG-2): class pacing — a freshly-obtained class needs =====
+// =================== MANY more wins to reach its first ability than the old curve/fractions ======
+console.log('\n=== Test 26 (v1.6 P2): class-XP pacing (PG-2) — a class needs many more wins to reach its first ability than before ===');
+var c26 = makeCharacter({ name: 'ClassPacingTest' });
+setLevel(c26, 5);
+c26.currentLocation = 'eldor';
+Game.Classes.obtainClass(c26, 'warrior');
+Game.Classes.activate(c26, 'warrior', 'primary');
+var cheapestWarriorAbility26 = Game.Classes.getClass('warrior').abilities.slice().sort(function (a, b) { return a.classLevelCost - b.classLevelCost; })[0];
+
+// Drive the REAL addClassXp function repeatedly with a representative per-win combat-XP amount
+// (a level-5 kill) — the same integration point js/core/battle.js onWin uses
+// (Game.Classes.addClassXp(c, xpGain)) — counting how many "wins" it takes before enough Class
+// Levels are earned to afford the class's cheapest ability.
+var perWinXp26 = BALANCE.MONSTER_XP(5);
+var winsNeeded26 = 0;
+while (Game.Classes.unspentClassLevels(c26, 'warrior') < cheapestWarriorAbility26.classLevelCost && winsNeeded26 < 100000) {
+  Game.Classes.addClassXp(c26, perWinXp26);
+  winsNeeded26++;
+}
+assert(Game.Classes.unspentClassLevels(c26, 'warrior') >= cheapestWarriorAbility26.classLevelCost, 'sanity: enough class levels eventually earned to afford the cheapest ability, got winsNeeded=' + winsNeeded26);
+
+// Comparison yardstick ONLY (not a live game formula): the shipped pre-v1.6 curve
+// (round(30*(n-1)^1.6)) with the shipped pre-v1.6 fraction (primary received the FULL combat-XP
+// amount, no scale-down) — how many wins THAT would have needed for the same ability.
+function oldClassXpForLevel26(n) { return Math.round(30 * Math.pow(n - 1, 1.6)); }
+var oldEarned26 = 0, oldXp26 = 0, oldWins26 = 0;
+while (oldEarned26 < cheapestWarriorAbility26.classLevelCost && oldWins26 < 100000) {
+  oldXp26 += perWinXp26; // old: primary received the FULL combat-XP amount, no fraction
+  while (oldXp26 >= oldClassXpForLevel26(oldEarned26 + 2)) oldEarned26++;
+  oldWins26++;
+}
+assert(winsNeeded26 > oldWins26 * 3, 'v1.6 P2 (PG-2): a freshly-obtained class needs MANY more wins to reach its first ability than the old curve/fraction (' + winsNeeded26 + ' wins vs old ' + oldWins26 + ' wins)');
 
 // =================== Summary ===================
 console.log('\n===================================');

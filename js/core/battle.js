@@ -1356,8 +1356,12 @@ Game.Battle = (function () {
       return;
     }
 
-    // Combat XP with Fury bonus (archived: +1% per tick, Recent_Updates.md 2007-08-11).
-    var furyBonus = 1 + (c.fury || 0) * BALANCE.FURY_XP_PER_TICK;
+    // Combat XP with Fury bonus (archived: +1% per tick, Recent_Updates.md 2007-08-11). v1.6 P2
+    // (PG-1, SPEC-V1.6-REBALANCE.md §6.2): [revised] capped at BALANCE.FURY_XP_CAP (+25%) — the
+    // bonus was previously uncapped, letting a long Fury streak inflate combat AND skill XP (below)
+    // without bound; precedent: the Frenzied champion affix caps its own escalation at +40%
+    // (AFFIX_FRENZIED_CAP). LOCKED by the P0 progression calc.
+    var furyBonus = 1 + Math.min((c.fury || 0) * BALANCE.FURY_XP_PER_TICK, BALANCE.FURY_XP_CAP);
     // Enemy-variety pass: Champion encounters double XP/gold, guarantee the Anima Shard, and
     // double every drop chance (capped 0.95) — see balance.js CHAMPION_* comment.
     var championMult = monster.champion ? BALANCE.CHAMPION_REWARD_MULT : 1;
@@ -1393,14 +1397,19 @@ Game.Battle = (function () {
     var shardsGain = monster.champion ? 1 : (rng() < monster.shardChance ? 1 : 0);
     if (shardsGain) Game.Character.addShards(c, shardsGain);
 
-    // Skill XP per use: declines when the player outlevels the monster (archived direction:
-    // Recent_Updates.md 2007-04-21 "Skill experience now sharply declines when your level is
-    // greater than your opponent's"), from SKILL_XP_PER_USE down to SKILL_XP_MIN_PER_USE at
-    // the cutoff. Fury also boosts skill XP (archived: "+1% more combat and skill experience").
+    // Skill XP per use: v1.6 P2 (PG-3, SPEC-V1.6-REBALANCE.md §6.2) — [revised] the base rate now
+    // scales with the DEFEATED MONSTER's level (BALANCE.SKILL_XP_PER_MON_LEVEL) instead of a flat
+    // rate, so a high-level kill trains a mained skill meaningfully faster than a low-level one
+    // (the old flat 8/win left a mained skill needing ~3,200 wins to reach skill 50). Still
+    // declines when the player outlevels the monster (archived direction: Recent_Updates.md
+    // 2007-04-21 "Skill experience now sharply declines when your level is greater than your
+    // opponent's"), floored at SKILL_XP_MIN_PER_USE. Fury also boosts skill XP (archived: "+1%
+    // more combat and skill experience"), now capped alongside the combat-XP Fury bonus above.
+    // LOCKED by the P0 progression calc.
     var declineFactor = levelDiff > 0 ? Math.max(0, 1 - levelDiff / BALANCE.XP_LOOT_CUTOFF_LEVELS) : 1;
     var perUse = Math.max(
       BALANCE.SKILL_XP_MIN_PER_USE,
-      Math.round(BALANCE.SKILL_XP_PER_USE * declineFactor * furyBonus)
+      Math.round(monster.level * BALANCE.SKILL_XP_PER_MON_LEVEL * declineFactor * furyBonus)
     );
 
     var skillXpGranted = {};
