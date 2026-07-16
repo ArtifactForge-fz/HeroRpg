@@ -1335,11 +1335,19 @@ Game.Battle = (function () {
       // table even under the cutoff; XP, gold, shards, and any NON-quest_ loot remain fully cut,
       // exactly as before. Same top-down first-hit-wins convention as the main loot roll below
       // (CLAUDE.md "Content conventions"); still routes through the single rng() stub.
+      // v1.6 P3 (EI-3a, SPEC-V1.6-REBALANCE.md §3): quest_ entries are now ALSO gated on
+      // Game.Quests.materialStillUseful — skipped (no rng() consumed, same as if the entry didn't
+      // exist) once nothing can still need them, exactly like the main loot loop below.
       var cutoffLootId = null;
       var cutoffDrops = monster.drops || [];
       for (var cd = 0; cd < cutoffDrops.length; cd++) {
-        if (rng() < cutoffDrops[cd].chance) {
-          cutoffLootId = cutoffDrops[cd].itemId;
+        var cutoffDropDef = cutoffDrops[cd];
+        if (cutoffDropDef.itemId.indexOf('quest_') === 0 && Game.Quests && Game.Quests.materialStillUseful &&
+            !Game.Quests.materialStillUseful(c, cutoffDropDef.itemId)) {
+          continue;
+        }
+        if (rng() < cutoffDropDef.chance) {
+          cutoffLootId = cutoffDropDef.itemId;
           break;
         }
       }
@@ -1394,7 +1402,13 @@ Game.Battle = (function () {
     }
 
     // Anima Shards by chance — a Champion guarantees the shard, skipping the roll entirely.
-    var shardsGain = monster.champion ? 1 : (rng() < monster.shardChance ? 1 : 0);
+    // v1.6 P3 (EI-5, SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md EI-5) [invented]: floor the
+    // EFFECTIVE chance at BALANCE.SHARD_CHANCE_FLOOR rather than editing shardChance on ~100
+    // monster entries — early monsters were as low as 0.02-0.12, leaving shards a rare, mostly-
+    // endgame drop; the floor front-loads a meaningful trickle from level 1 without touching any
+    // already-tuned monster data (monsters at/above the floor are completely unaffected).
+    var effShardChance = Math.max(BALANCE.SHARD_CHANCE_FLOOR, monster.shardChance);
+    var shardsGain = monster.champion ? 1 : (rng() < effShardChance ? 1 : 0);
     if (shardsGain) Game.Character.addShards(c, shardsGain);
 
     // Skill XP per use: v1.6 P2 (PG-3, SPEC-V1.6-REBALANCE.md §6.2) — [revised] the base rate now
@@ -1456,12 +1470,24 @@ Game.Battle = (function () {
 
     // Loot roll -> pendingLoot, claimed via explicit Loot click (New_Player_Guide.md). A Champion
     // doubles every drop chance (capped 0.95) rather than granting a guaranteed drop outright.
+    // v1.6 P3 (EI-3a, SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md EI-3) [invented]: quest_
+    // materials stop dropping ONLY once nothing can still need them (Game.Quests.
+    // materialStillUseful) — gated BEFORE the rng() roll (no roll consumed), so the entry is
+    // treated exactly as if it were never in the table; every OTHER entry's roll sequence is
+    // completely undisturbed (CLAUDE.md "Content conventions": append-only, first-hit-wins). A
+    // fresh character with no quest state has nothing 'completed' yet, so this is a no-op for
+    // every existing save/test until quests actually get finished.
     var lootId = null;
     var drops = monster.drops || [];
     for (var d = 0; d < drops.length; d++) {
-      var dropChance = monster.champion ? Math.min(0.95, drops[d].chance * dropChanceMult(monster)) : drops[d].chance;
+      var dropDef = drops[d];
+      if (dropDef.itemId.indexOf('quest_') === 0 && Game.Quests && Game.Quests.materialStillUseful &&
+          !Game.Quests.materialStillUseful(c, dropDef.itemId)) {
+        continue;
+      }
+      var dropChance = monster.champion ? Math.min(0.95, dropDef.chance * dropChanceMult(monster)) : dropDef.chance;
       if (rng() < dropChance) {
-        lootId = drops[d].itemId;
+        lootId = dropDef.itemId;
         break;
       }
     }
@@ -1476,9 +1502,16 @@ Game.Battle = (function () {
     var stolenId = null;
     if (thieveryStealChance > 0 && rng() < thieveryStealChance) {
       for (var sd = 0; sd < drops.length; sd++) {
-        var stealDropChance = monster.champion ? Math.min(0.95, drops[sd].chance * dropChanceMult(monster)) : drops[sd].chance;
+        var stealDropDef = drops[sd];
+        // v1.6 P3 (EI-3a): same materialStillUseful gate as the main loot roll above — a stolen
+        // quest material is still a quest material.
+        if (stealDropDef.itemId.indexOf('quest_') === 0 && Game.Quests && Game.Quests.materialStillUseful &&
+            !Game.Quests.materialStillUseful(c, stealDropDef.itemId)) {
+          continue;
+        }
+        var stealDropChance = monster.champion ? Math.min(0.95, stealDropDef.chance * dropChanceMult(monster)) : stealDropDef.chance;
         if (rng() < stealDropChance) {
-          stolenId = drops[sd].itemId;
+          stolenId = stealDropDef.itemId;
           break;
         }
       }

@@ -1228,6 +1228,78 @@ console.log('\n=== Test 28: requiresQuest graph — no cycles, all targets resol
     'THE FINALE (the_ascendants_fall) chains behind the Band F spine quest the_red_moon_crossing, never behind side content');
 })();
 
+// =================== Test 29: v1.6 P3 EI-3a — Game.Quests.materialStillUseful drop gating ===================
+// SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md EI-3. This is the READ-ONLY helper js/core/
+// battle.js's drop loop consults to stop rolling a quest_ material once nothing can still need
+// it. CRITICAL SAFETY (documented past-bug class: "Heir of the Echo was unobtainable"): a
+// material must NEVER stop dropping while anything could still need it -- proven below via (i)
+// still-useful before/during a quest, (ii) stops once its only quest completes, and (iii) stays
+// useful as long as ANY referencing quest (of two) remains incomplete, plus the recipe safety net.
+console.log('\n=== Test 29: materialStillUseful — drops while active/unaccepted, stops once completed, never while ANY referencing quest remains incomplete ===');
+
+// Test subject: quest_majiku_venom_gland, required ONLY by eldor_dr_ferrier (levelMin 1, giver
+// Eldor -- a Human's own starting town, no travel/level-up needed). Deliberately NOT one of the
+// materials also consumed by a synthesis recipe (js/data/recipes.js) -- this test isolates the
+// pure quest-completion gating; the separate recipe safety net is proven further below with
+// quest_custodian_core_shard, which IS also a recipe input.
+var c29q = makeCharacter({ name: 'MaterialGateTest' });
+
+// (i) Not yet accepted (no c.quests entry at all) -- "when in doubt, keep dropping": the quest
+// hasn't even been offered/accepted yet, so its material must still be considered useful.
+assert(Game.Quests.materialStillUseful(c29q, 'quest_majiku_venom_gland') === true,
+  '(i) quest_majiku_venom_gland is still useful before eldor_dr_ferrier is even accepted');
+
+// (i) Active: accept the real quest through the real accept() flow.
+var accept29 = Game.Quests.accept('eldor_dr_ferrier');
+assert(accept29.ok, 'sanity: eldor_dr_ferrier accepted: ' + accept29.message);
+assert(Game.Quests.materialStillUseful(c29q, 'quest_majiku_venom_gland') === true,
+  '(i) quest_majiku_venom_gland is still useful while eldor_dr_ferrier is ACTIVE');
+
+// (ii) Completed (its ONLY referencing quest) -> the material finally stops being useful.
+c29q.quests['eldor_dr_ferrier'].status = 'completed';
+assert(Game.Quests.materialStillUseful(c29q, 'quest_majiku_venom_gland') === false,
+  '(ii) quest_majiku_venom_gland STOPS being useful once eldor_dr_ferrier (its only referencing quest) is completed');
+
+// (iii) CRITICAL SAFETY: inject a temporary SECOND quest requiring the SAME material (reversible
+// -- popped in the finally block below) and confirm the material keeps dropping for as long as
+// EITHER quest remains incomplete, only stopping once BOTH are completed.
+var fakeQuest29 = {
+  id: 'test_fake_quest_sharing_gland',
+  name: 'Test Fixture Quest (never real content)',
+  giver: { areaId: 'eldor', npc: 'Test' },
+  steps: [{ kind: 'collect', itemId: 'quest_majiku_venom_gland', count: 1 }],
+  rewards: {}
+};
+Game.Data.quests.push(fakeQuest29);
+try {
+  assert(Game.Quests.materialStillUseful(c29q, 'quest_majiku_venom_gland') === true,
+    '(iii) quest_majiku_venom_gland KEEPS dropping -- a second quest needing it is not yet accepted, even though eldor_dr_ferrier is already completed');
+  c29q.quests['test_fake_quest_sharing_gland'] = { status: 'active', progress: { kills: {}, touched: {}, visited: {} } };
+  assert(Game.Quests.materialStillUseful(c29q, 'quest_majiku_venom_gland') === true,
+    '(iii) quest_majiku_venom_gland KEEPS dropping while the second quest is ACTIVE (shared material, one quest still incomplete)');
+  c29q.quests['test_fake_quest_sharing_gland'].status = 'completed';
+  assert(Game.Quests.materialStillUseful(c29q, 'quest_majiku_venom_gland') === false,
+    'quest_majiku_venom_gland stops being useful only once EVERY referencing quest is completed');
+} finally {
+  Game.Data.quests.pop(); // never leave the fixture quest polluting Game.Data.quests for later runs
+}
+assert(Game.Data.quests.length === 43, 'sanity: fixture quest fully removed, back to 43 real quests');
+
+// Vacuously useful: an item referenced by NEITHER a quest NOR a recipe is never gated off (e.g.
+// quest_matriarch_horn, a pure boss-trophy per EI-4 -- "when in doubt, keep dropping").
+assert(Game.Quests.materialStillUseful(c29q, 'quest_matriarch_horn') === true,
+  'an unreferenced quest_ item (no quest, no recipe) is vacuously still-useful (never gated off)');
+
+// Recipe safety net (broader than the brief's literal wording, required by its OWN CRITICAL
+// clause): quest_custodian_core_shard feeds BOTH a one-shot quest (vaultbreakers_reckoning) AND
+// several repeatable synthesis recipes (js/data/recipes.js synth_kastengard_relic_blade/
+// synth_vault_reaver/synth_kastengard_wardweave) -- completing the quest must NOT strand the
+// still-repeatable synthesis route.
+var c29r = makeCharacter({ name: 'MaterialGateRecipeTest' });
+c29r.quests['vaultbreakers_reckoning'] = { status: 'completed', progress: { kills: {}, touched: {}, visited: {} } };
+assert(Game.Quests.materialStillUseful(c29r, 'quest_custodian_core_shard') === true,
+  'quest_custodian_core_shard stays useful after its only QUEST completes, because synthesis recipes still need it (recipes never complete)');
+
 // =================== Summary ===================
 console.log('\n===================================');
 if (failures === 0) {

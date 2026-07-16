@@ -57,12 +57,20 @@ loadScript('data/techs.js');
 loadScript('data/areas.js');
 loadScript('data/shrine.js');
 loadScript('data/recipes.js');
+// v1.6 P3 EI-3a (SPEC-V1.6-REBALANCE.md §3): loaded so Game.Quests.materialStillUseful is
+// available for battle.js's drop-loop gate to consult (Test 86 exercises the real integration,
+// not a stub) — purely additive: every OTHER test in this file makes fresh characters whose
+// c.quests is empty/undefined, so the newly-enabled `if (Game.Quests) …` hooks in battle.js/
+// world.js (recordKill/recordVisit) become real calls but still no-op immediately on an empty
+// quest map, same as when Game.Quests was absent.
+loadScript('data/quests.js');
 loadScript('data/classes.js');
 loadScript('data/statinfo.js');
 loadScript('core/character.js');
 loadScript('core/inventory.js');
 loadScript('core/battle.js');
 loadScript('core/world.js');
+loadScript('core/quests.js');
 loadScript('core/save.js');
 loadScript('core/classes.js');
 loadScript('ui/icons.js');
@@ -1473,17 +1481,37 @@ assert(hybridLines28.some(function (l) { return /recover 260 Energy/.test(l); })
 Game.Battle.endBattle();
 
 // =================== Test 29: shard-cost enhancement techs (v1.2 Phase 3 Content-B item 4) ===================
+// v1.6 P3 (EI-7, SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md EI-7): tech_warcry_1's shardCost
+// dropped 5->0 (Alteration's earliest, most-used buff is now free), so the "insufficient shards"
+// refusal demo below moved to tech_focus_1 (shardCost 8->5, still nonzero) — tech_warcry_1 instead
+// demonstrates the NEW free-cast behavior (always succeeds regardless of shards carried, even 0).
+// tech_warcry_2's shardCost is 15->10 (fixture amounts updated to match, same behavior covered).
 console.log('\n=== Test 29: shard-cost techs spend Anima Shards on cast, refuse cleanly when short ===');
+
+// v1.6 P3 EI-7 sanity: tech_warcry_1 is now FREE (shardCost 0) and casts successfully with ZERO
+// Anima Shards carried — the exact behavior EI-7 intended (early Alteration buff untaxed).
+var c29free = makeCharacter({ name: 'ShardTechFreeTest' });
+c29free.techs.push('tech_warcry_1');
+c29free.techSets[0][1] = 'tech_warcry_1';
+c29free.animaShards = 0;
+setRng(fixedRng(0.99));
+var b29free = Game.Battle.start('plains_field_rat');
+var tech29free = Game.Battle.getTech('tech_warcry_1');
+assert(tech29free.shardCost === 0, 'sanity: tech_warcry_1 (EI-7) carries shardCost 0');
+Game.Battle.useTech('tech_warcry_1');
+assert(c29free.animaShards === 0, 'v1.6 P3 EI-7: tech_warcry_1 casts with 0 Anima Shards carried (free), shards stay 0');
+assert(b29free.playerStatuses.some(function (s) { return s.type === 'buff' && s.power === tech29free.power; }), 'v1.6 P3 EI-7: tech_warcry_1 (free) still applies its buff');
+Game.Battle.endBattle();
 
 // Refusal: insufficient shards -> no Energy spent, no buff applied, shards untouched, distinct message.
 var c29 = makeCharacter({ name: 'ShardTechPoorTest' });
-c29.techs.push('tech_warcry_1');
-c29.techSets[0][1] = 'tech_warcry_1'; // slot 0 already holds the Swords starter tech (Cleave I)
-c29.animaShards = 4; // tech_warcry_1's shardCost is 5
+c29.techs.push('tech_focus_1');
+c29.techSets[0][1] = 'tech_focus_1'; // slot 0 already holds the Swords starter tech (Cleave I)
+c29.animaShards = 4; // v1.6 P3 EI-7: tech_focus_1's shardCost is now 5
 setRng(fixedRng(0.99));
 var b29 = Game.Battle.start('plains_field_rat');
 var energyBefore29 = b29.player.energy;
-Game.Battle.useTech('tech_warcry_1');
+Game.Battle.useTech('tech_focus_1');
 assert(b29.player.energy === energyBefore29, 'insufficient shards: no Energy spent');
 assert(c29.animaShards === 4, 'insufficient shards: shards unchanged');
 assert(!b29.playerStatuses.some(function (s) { return s.type === 'buff'; }), 'insufficient shards: no buff applied');
@@ -1492,14 +1520,14 @@ Game.Battle.endBattle();
 
 // Success: sufficient shards -> shards deducted by shardCost, Energy spent normally, buff applied.
 var c29b = makeCharacter({ name: 'ShardTechRichTest' });
-c29b.techs.push('tech_warcry_1');
-c29b.techSets[0][1] = 'tech_warcry_1';
+c29b.techs.push('tech_focus_1');
+c29b.techSets[0][1] = 'tech_focus_1';
 Game.Character.addShards(c29b, 20);
 setRng(fixedRng(0.99));
 var b29b = Game.Battle.start('plains_field_rat');
-var tech29b = Game.Battle.getTech('tech_warcry_1');
+var tech29b = Game.Battle.getTech('tech_focus_1');
 var energyBefore29b = b29b.player.energy;
-Game.Battle.useTech('tech_warcry_1');
+Game.Battle.useTech('tech_focus_1');
 assert(c29b.animaShards === 20 - tech29b.shardCost, 'sufficient shards: shardCost (' + tech29b.shardCost + ') deducted');
 assert(b29b.player.energy === energyBefore29b - tech29b.energyCost, 'sufficient shards: Energy still spent normally');
 assert(b29b.playerStatuses.some(function (s) { return s.type === 'buff' && s.power === tech29b.power; }), 'sufficient shards: buff applied');
@@ -1507,25 +1535,25 @@ Game.Battle.endBattle();
 
 // A second shard-cost tech (rank-2, gated behind rank 1 like the Cleave/Impale chains) also
 // refuses/spends correctly — confirms the wiring is generic (keyed off tech.shardCost), not a
-// tech_warcry_1 special case.
+// tech_focus_1 special case.
 var c29c = makeCharacter({ name: 'ShardTechRank2Test' });
 c29c.techs.push('tech_warcry_1', 'tech_warcry_2');
 c29c.techSets[0][1] = 'tech_warcry_2';
-c29c.animaShards = 10; // tech_warcry_2's shardCost is 15
+c29c.animaShards = 8; // v1.6 P3 EI-7: tech_warcry_2's shardCost is now 10
 setRng(fixedRng(0.99));
 var b29c = Game.Battle.start('plains_field_rat');
 Game.Battle.useTech('tech_warcry_2');
-assert(c29c.animaShards === 10, 'rank-2 shard tech also refuses cleanly when short (10 < 15)');
+assert(c29c.animaShards === 8, 'rank-2 shard tech also refuses cleanly when short (8 < 10)');
 assert(!b29c.playerStatuses.some(function (s) { return s.type === 'buff'; }), 'rank-2 shard tech refusal applies no buff');
-Game.Character.addShards(c29c, 10); // now has 20 >= 15
+Game.Character.addShards(c29c, 10); // now has 18 >= 10
 var tech29c = Game.Battle.getTech('tech_warcry_2');
 Game.Battle.useTech('tech_warcry_2');
-assert(c29c.animaShards === 20 - tech29c.shardCost, 'rank-2 shard tech spends its shardCost once affordable');
+assert(c29c.animaShards === 18 - tech29c.shardCost, 'rank-2 shard tech spends its shardCost once affordable');
 assert(b29c.playerStatuses.some(function (s) { return s.type === 'buff' && s.power === tech29c.power; }), 'rank-2 shard tech applies its buff once affordable');
 Game.Battle.endBattle();
 
 // Third shard-cost tech (Focus I) is also wired — sanity on the data side.
-assert(Game.Battle.getTech('tech_focus_1').shardCost === 8, 'sanity: Focus I (the third shard-cost tech) carries shardCost 8');
+assert(Game.Battle.getTech('tech_focus_1').shardCost === 5, 'sanity: Focus I (the third shard-cost tech) carries shardCost 5 (v1.6 P3 EI-7: was 8)');
 
 // =================== Test 30: Level-Arc Band A (Forests of Kuraan) monster formulas + boss premiums ===================
 console.log('\n=== Test 30: Band A regulars match the header formulas; majiku_warlord carries the F1 boss premiums ===');
@@ -1599,12 +1627,24 @@ if (rod45) {
 // Armor tapers the same way (1 + effectiveLevelReq), THEN the ARMOR-STACK CORRECTION divides that
 // by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor45 = 1 + 45; // 46 -- literal read
-var taperedArmor45 = correctedArmor(45); // 43 / 2 = 22
-['light_body_kuraan_windweave', 'medium_body_reclaimers_hauberk', 'heavy_body_kuraan_bulwark_plate', 'shield_kuraan_wardbulwark'].forEach(function (id) {
+var taperedArmor45 = correctedArmor(45); // 43 / 2 = 22 -- the PRE-EI-2 corrected value
+// v1.6 P3 (EI-2, SPEC-V1.6-REBALANCE.md §6.1, REVIEW-2026-07-16.md EI-2): light_body_kuraan_windweave/
+// medium_body_reclaimers_hauberk/heavy_body_kuraan_bulwark_plate were raised ABOVE the corrected
+// value above to restore a non-decreasing armor ladder against the unchanged levelReq<=35 tier
+// (see js/data/items.js EI-2 comments for the exact floor each was raised to); shield_kuraan_
+// wardbulwark's ARMOR was already monotonic and stays at the corrected value (only its magicArmor
+// was raised, tested separately elsewhere).
+var eiArmorExpected45 = {
+  light_body_kuraan_windweave: 31,
+  medium_body_reclaimers_hauberk: 31,
+  heavy_body_kuraan_bulwark_plate: 37,
+  shield_kuraan_wardbulwark: taperedArmor45
+};
+Object.keys(eiArmorExpected45).forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band A tier-45 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor45, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor45);
+  assert(it.armor === eiArmorExpected45[id], id + ' armor (' + it.armor + ') equals the v1.6 P3 EI-2 expected value ' + eiArmorExpected45[id]);
   assert(it.armor !== literalArmor45, id + ' armor is NOT the literal-formula value ' + literalArmor45);
 });
 
@@ -1769,12 +1809,22 @@ if (rod55) {
 // Armor tapers the same way (1 + effectiveLevelReq), THEN the ARMOR-STACK CORRECTION divides that
 // by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor55 = 1 + 55; // 56 -- literal read
-var taperedArmor55 = correctedArmor(55); // 50 / 2 = 25
-['light_body_steppewind_mantle', 'medium_body_hostguard_brigandine', 'heavy_body_ridgeplate_cuirass', 'shield_highland_bulwark'].forEach(function (id) {
+var taperedArmor55 = correctedArmor(55); // 50 / 2 = 25 -- the PRE-EI-2 corrected value
+// v1.6 P3 (EI-2): light_body_steppewind_mantle/medium_body_hostguard_brigandine/
+// heavy_body_ridgeplate_cuirass were raised ABOVE the corrected value to restore a non-decreasing
+// armor ladder (js/data/items.js EI-2 comments); shield_highland_bulwark's ARMOR is unchanged
+// (only its magicArmor was raised, tested separately elsewhere).
+var eiArmorExpected55 = {
+  light_body_steppewind_mantle: 31,
+  medium_body_hostguard_brigandine: 31,
+  heavy_body_ridgeplate_cuirass: 37,
+  shield_highland_bulwark: taperedArmor55
+};
+Object.keys(eiArmorExpected55).forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band B tier-55 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor55, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor55);
+  assert(it.armor === eiArmorExpected55[id], id + ' armor (' + it.armor + ') equals the v1.6 P3 EI-2 expected value ' + eiArmorExpected55[id]);
   assert(it.armor !== literalArmor55, id + ' armor is NOT the literal-formula value ' + literalArmor55);
 });
 // Sub-tier (levelReq 58) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
@@ -1954,12 +2004,22 @@ if (rod65) {
 // Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
 // divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor65 = 1 + 65; // 66 -- literal read
-var taperedArmor65 = correctedArmor(65); // 57 / 2 = 29
-['light_body_frosthold_veilcloak', 'medium_body_waystation_hauberk', 'heavy_body_glacial_bulwark_plate', 'shield_frosthold_bulwark'].forEach(function (id) {
+var taperedArmor65 = correctedArmor(65); // 57 / 2 = 29 -- the PRE-EI-2 corrected value
+// v1.6 P3 (EI-2): light_body_frosthold_veilcloak/medium_body_waystation_hauberk/
+// heavy_body_glacial_bulwark_plate were raised ABOVE the corrected value to restore a
+// non-decreasing armor ladder (js/data/items.js EI-2 comments); shield_frosthold_bulwark was
+// already monotonic (armor AND magicArmor) and is fully unchanged.
+var eiArmorExpected65 = {
+  light_body_frosthold_veilcloak: 31,
+  medium_body_waystation_hauberk: 31,
+  heavy_body_glacial_bulwark_plate: 37,
+  shield_frosthold_bulwark: taperedArmor65
+};
+Object.keys(eiArmorExpected65).forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band C tier-65 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor65, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor65);
+  assert(it.armor === eiArmorExpected65[id], id + ' armor (' + it.armor + ') equals the v1.6 P3 EI-2 expected value ' + eiArmorExpected65[id]);
   assert(it.armor !== literalArmor65, id + ' armor is NOT the literal-formula value ' + literalArmor65);
 });
 // Sub-tier (levelReq 68) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
@@ -2138,12 +2198,26 @@ if (rod75) {
 // Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
 // divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor75 = 1 + 75; // 76 -- literal read
-var taperedArmor75 = correctedArmor(75); // 64 / 2 = 32
-['light_body_wellspring_veil', 'medium_body_estari_brigandine', 'heavy_body_warden_plate', 'shield_estari_bulwark'].forEach(function (id) {
+var taperedArmor75 = correctedArmor(75); // 64 / 2 = 32 -- the PRE-EI-2 corrected value
+// v1.6 P3 (EI-2): heavy_body_warden_plate was raised ABOVE the corrected value (floored to the
+// unchanged levelReq-35 heavy_body_vault_bulwark's 37, js/data/items.js EI-2 comments);
+// light_body_wellspring_veil/medium_body_estari_brigandine/shield_estari_bulwark were ALREADY
+// monotonic against the regular (non-unique) ladder and stay at the corrected value -- the
+// levelReq-65 UNIQUE light_body_frostwalkers_shroud sits above light_body_wellspring_veil at this
+// tier, but uniques are a separate premium tier excluded from this ladder (see the AA-Exchange
+// guardrail precedent, tests/test_p4_world.js Test 0a2, and light_body_wellspring_veil's own
+// items.js comment).
+var eiArmorExpected75 = {
+  light_body_wellspring_veil: taperedArmor75,
+  medium_body_estari_brigandine: taperedArmor75,
+  heavy_body_warden_plate: 37,
+  shield_estari_bulwark: taperedArmor75
+};
+Object.keys(eiArmorExpected75).forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band D tier-75 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor75, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor75);
+  assert(it.armor === eiArmorExpected75[id], id + ' armor (' + it.armor + ') equals the v1.6 P3 EI-2 expected value ' + eiArmorExpected75[id]);
   assert(it.armor !== literalArmor75, id + ' armor is NOT the literal-formula value ' + literalArmor75);
 });
 // Sub-tier (levelReq 78) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
@@ -2322,12 +2396,24 @@ if (rod85) {
 // Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
 // divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor85 = 1 + 85; // 86 -- literal read
-var taperedArmor85 = correctedArmor(85); // 71 / 2 = 36
-['light_body_skysilk_shroud', 'medium_body_spireguard_brigandine', 'heavy_body_spireward_plate', 'shield_spireward_aegis'].forEach(function (id) {
+var taperedArmor85 = correctedArmor(85); // 71 / 2 = 36 -- the PRE-EI-2 corrected value
+// v1.6 P3 (EI-2): heavy_body_spireward_plate was raised ABOVE the corrected value (floored to the
+// unchanged levelReq-35 heavy_body_vault_bulwark's 37); light_body_skysilk_shroud/
+// medium_body_spireguard_brigandine/shield_spireward_aegis were already monotonic against the
+// regular (non-unique) ladder and stay at the corrected value -- the levelReq-75 UNIQUE
+// light_body_estari_anima_shroud sits above light_body_skysilk_shroud at this tier, but uniques
+// are excluded from this ladder (AA-Exchange guardrail precedent, Test 0a2).
+var eiArmorExpected85 = {
+  light_body_skysilk_shroud: taperedArmor85,
+  medium_body_spireguard_brigandine: taperedArmor85,
+  heavy_body_spireward_plate: 37,
+  shield_spireward_aegis: taperedArmor85
+};
+Object.keys(eiArmorExpected85).forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band E tier-85 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor85, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor85);
+  assert(it.armor === eiArmorExpected85[id], id + ' armor (' + it.armor + ') equals the v1.6 P3 EI-2 expected value ' + eiArmorExpected85[id]);
   assert(it.armor !== literalArmor85, id + ' armor is NOT the literal-formula value ' + literalArmor85);
 });
 // Sub-tier (levelReq 88) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
@@ -2521,12 +2607,24 @@ if (rod95) {
 // Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
 // divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor95 = 1 + 95; // 96 -- literal read
-var taperedArmor95 = correctedArmor(95); // 78 / 2 = 39
-['light_body_moonveil_shroud', 'medium_body_sanctum_brigandine', 'heavy_body_redmoon_plate', 'shield_redmoon_aegis'].forEach(function (id) {
+var taperedArmor95 = correctedArmor(95); // 78 / 2 = 39 -- the PRE-EI-2 corrected value
+// v1.6 P3 (EI-2): all four of these were already monotonic against the regular (non-unique)
+// ladder and stay at the corrected value here (no changes were needed at this band) -- the
+// levelReq-85 UNIQUE light_body_anima_scoured_wraps sits above light_body_moonveil_shroud at this
+// tier, but uniques are excluded from this ladder (AA-Exchange guardrail precedent, Test 0a2). The
+// AA-Exchange ap_body_tourney_regalia (levelReq 100, tested elsewhere) IS floored to exactly
+// light_body_moonveil_shroud's 39/12 -- its own inversion was real (below this tier), unlike these.
+var eiArmorExpected95 = {
+  light_body_moonveil_shroud: taperedArmor95,
+  medium_body_sanctum_brigandine: taperedArmor95,
+  heavy_body_redmoon_plate: taperedArmor95,
+  shield_redmoon_aegis: taperedArmor95
+};
+Object.keys(eiArmorExpected95).forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band F tier-95 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor95, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor95);
+  assert(it.armor === eiArmorExpected95[id], id + ' armor (' + it.armor + ') equals the v1.6 P3 EI-2 expected value ' + eiArmorExpected95[id]);
   assert(it.armor !== literalArmor95, id + ' armor is NOT the literal-formula value ' + literalArmor95);
 });
 // Sub-tier (levelReq 98) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
@@ -3915,6 +4013,118 @@ var expectedLow84 = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(lowLevelKi
 var expectedHigh84 = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(highLevelKill84.monsterLevel * BALANCE.SKILL_XP_PER_MON_LEVEL));
 assert(lowLevelKill84.swordsXp === expectedLow84, 'level-10 kill skill XP matches round(monsterLevel*SKILL_XP_PER_MON_LEVEL), expected ' + expectedLow84 + ', got ' + lowLevelKill84.swordsXp);
 assert(highLevelKill84.swordsXp === expectedHigh84, 'level-49 kill skill XP matches round(monsterLevel*SKILL_XP_PER_MON_LEVEL), expected ' + expectedHigh84 + ', got ' + highLevelKill84.swordsXp);
+
+// =================== Test 85: v1.6 P3 EI-5 — Anima Shard chance floor ===================
+console.log('\n=== Test 85: EI-5 shard-chance floor (BALANCE.SHARD_CHANCE_FLOOR) raises a low-shardChance monster\'s EFFECTIVE roll ===');
+assert(BALANCE.SHARD_CHANCE_FLOOR === 0.10, 'sanity: SHARD_CHANCE_FLOOR is 0.10');
+var ratDef85 = Game.Battle.getMonsterDef('plains_field_rat');
+assert(ratDef85.shardChance < BALANCE.SHARD_CHANCE_FLOOR, 'sanity: plains_field_rat.shardChance (' + ratDef85.shardChance + ') is BELOW the floor');
+
+function killRatForShard85(shardRoll) {
+  var c = makeCharacter({ name: 'ShardFloorTest' });
+  c.strength = 40;
+  Game.Character.recalcDerived(c);
+  setRng(fixedRng(0.99));
+  var b = Game.Battle.start('plains_field_rat');
+  b.monster.hp = 1;
+  setRng(seqRng([0.99, 0.99, 0.99, 0.5, /* gold */ 0.99, /* shard */ shardRoll, /* drop */ 0.99], 0.99));
+  Game.Battle.attack();
+  var shards = b.rewards.shards;
+  Game.Battle.endBattle();
+  return shards;
+}
+
+assert(killRatForShard85(0.05) === 1, 'v1.6 P3 EI-5: roll 0.05 (>= monster.shardChance 0.02, but < SHARD_CHANCE_FLOOR 0.10) STILL yields a shard');
+assert(killRatForShard85(0.01) === 1, 'sanity: roll 0.01 (< monster.shardChance 0.02, would have hit even pre-EI-5) yields a shard');
+assert(killRatForShard85(0.15) === 0, 'sanity: roll 0.15 (>= SHARD_CHANCE_FLOOR 0.10) does NOT yield a shard -- the floor is a real probability boundary, not an unconditional grant');
+// Champions are unaffected (still an unconditional guarantee, bypassing the roll entirely).
+(function () {
+  var c = makeCharacter({ name: 'ShardFloorChampionTest' });
+  setRng(fixedRng(0.99));
+  var b = Game.Battle.start('plains_field_rat', { champion: true });
+  b.monster.hp = 1;
+  setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.99, 0.99, 0.99], 0.99));
+  Game.Battle.attack();
+  assert(b.rewards.shards === 1, 'sanity: a champion kill still guarantees 1 shard, unaffected by the floor');
+  Game.Battle.endBattle();
+})();
+
+// =================== Test 86: v1.6 P3 EI-3a — drop-loop integration (quest_ materials gated on materialStillUseful) ===================
+console.log('\n=== Test 86: EI-3a drop-loop integration — IDENTICAL rng sequence, different outcome based on quest completion ===');
+function killScoutForLoot86(quests) {
+  var c = makeCharacter({ name: 'DropGateTest' });
+  c.quests = quests;
+  setRng(fixedRng(0.99));
+  var b = Game.Battle.start('majiku_forest_scout');
+  b.monster.hp = 1;
+  // majiku_forest_scout's drops: knife_thieves_edge(0.05), potion_healing(0.08), quest_majiku_venom_gland(0.5, appended last)
+  setRng(seqRng([0.99, 0.99, 0.99, 0.5, /* gold */ 0.99, /* shard */ 0.99, /* drop entry1 miss */ 0.99, /* drop entry2 miss */ 0.99, /* drop entry3 (quest mat) */ 0.3], 0.99));
+  Game.Battle.attack();
+  var loot = b.pendingLoot;
+  Game.Battle.endBattle();
+  return loot;
+}
+
+var lootWhileUnaccepted86 = killScoutForLoot86({});
+assert(lootWhileUnaccepted86 === 'quest_majiku_venom_gland',
+  'sanity: with eldor_dr_ferrier not yet accepted, quest_majiku_venom_gland still rolls and hits (entries 1/2 miss, entry3 -- the quest material -- hits at roll 0.3 < chance 0.5)');
+
+var lootAfterCompleted86 = killScoutForLoot86({ eldor_dr_ferrier: { status: 'completed', progress: { kills: {}, touched: {}, visited: {} } } });
+assert(lootAfterCompleted86 === null,
+  'v1.6 P3 EI-3a: the IDENTICAL rng sequence now yields NO drop -- quest_majiku_venom_gland is skipped (materialStillUseful=false) once eldor_dr_ferrier is completed, and nothing else hits');
+
+var lootStillActive86 = killScoutForLoot86({ eldor_dr_ferrier: { status: 'active', progress: { kills: {}, touched: {}, visited: {} } } });
+assert(lootStillActive86 === 'quest_majiku_venom_gland',
+  'v1.6 P3 EI-3a: quest_majiku_venom_gland KEEPS dropping while eldor_dr_ferrier is still ACTIVE (not yet completed)');
+
+// =================== Test 87: v1.6 P3 EI-2 — programmatic armor/magicArmor monotonicity check ===================
+console.log('\n=== Test 87: EI-2 armor ladder is non-decreasing by levelReq, per class+slot (uniques excluded -- separate premium tier) ===');
+// Mirrors the per-band spot-checks above with a single generic algorithm: for EACH class+slot
+// group (Light/Medium/Heavy Armor body/head/legs/feet, Shields offhand), walk items in ascending
+// levelReq order and assert armor (and, where present, magicArmor) never decreases ACROSS
+// distinct levelReq tiers (items sharing the SAME levelReq are never compared against each
+// other — only strictly-lower tiers set the floor a tier must meet). Unique-tagged items are
+// EXCLUDED (a separate premium tier per the AA-Exchange guardrail precedent, Test 0a2 in
+// tests/test_p4_world.js) -- this mirrors exactly how the EI-2 fix itself was derived. 'cursed'
+// items are ALSO excluded: ring_of_the_hollow_king (levelReq 1, armor 18) is a deliberate
+// risk/reward trap predating this pass entirely (levelReq<=35, out of EI-2's own scope), not a
+// normal progression-ladder rung.
+(function () {
+  var armorSkills = ['Light Armor', 'Medium Armor', 'Heavy Armor', 'Shields'];
+  var groups = {};
+  Game.Data.items.forEach(function (it) {
+    if (armorSkills.indexOf(it.skill) === -1) return;
+    if (it.tags && (it.tags.indexOf('unique') !== -1 || it.tags.indexOf('cursed') !== -1)) return;
+    var key = it.skill + '|' + it.slot;
+    (groups[key] = groups[key] || []).push(it);
+  });
+  var groupCount = 0;
+  Object.keys(groups).forEach(function (key) {
+    groupCount++;
+    var byLvl = {};
+    groups[key].forEach(function (it) { (byLvl[it.levelReq] = byLvl[it.levelReq] || []).push(it); });
+    var lvls = Object.keys(byLvl).map(Number).sort(function (a, b) { return a - b; });
+    var floorArmor = -1, floorMagic = -1;
+    var violations = [];
+    lvls.forEach(function (lvl) {
+      var tierMaxArmor = -1, tierMaxMagic = -1;
+      byLvl[lvl].forEach(function (it) {
+        var armor = it.armor || 0;
+        var magic = it.magicArmor; // undefined if the item never carries magicArmor
+        if (armor < floorArmor) violations.push(it.id + ' (lvl' + lvl + ') armor ' + armor + ' < the floor set by a LOWER levelReq tier (' + floorArmor + ')');
+        tierMaxArmor = Math.max(tierMaxArmor, armor);
+        if (magic !== undefined) {
+          if (magic < floorMagic) violations.push(it.id + ' (lvl' + lvl + ') magicArmor ' + magic + ' < the floor set by a LOWER levelReq tier (' + floorMagic + ')');
+          tierMaxMagic = Math.max(tierMaxMagic, magic);
+        }
+      });
+      floorArmor = Math.max(floorArmor, tierMaxArmor);
+      floorMagic = Math.max(floorMagic, tierMaxMagic);
+    });
+    assert(violations.length === 0, 'v1.6 P3 EI-2: ' + key + ' is non-decreasing by levelReq (armor and magicArmor)' + (violations.length ? ': ' + violations.join('; ') : ''));
+  });
+  assert(groupCount >= 8, 'sanity: checked at least 8 class/slot groups (got ' + groupCount + ')');
+})();
 
 // =================== Summary ===================
 console.log('\n===================================');

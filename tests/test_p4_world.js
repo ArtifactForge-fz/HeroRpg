@@ -149,6 +149,65 @@ var huntingAreas = Game.Data.areas.filter(function (a) { return a.type === 'hunt
 huntingAreas.forEach(function (a) {
   assert(Array.isArray(a.forage) && a.forage.length >= 2 && a.forage.length <= 4, a.id + ' has a forage table of 2-4 ids, got ' + (a.forage ? a.forage.length : 'none'));
 });
+
+// v1.6 P3 EI-4 (SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md EI-4) [revised]: boss-only
+// materials (quest_matriarch_horn/quest_leviathan_scale/quest_custodian_core_shard) must NEVER
+// appear in ANY location forage table — they leaked into foothills/juneros/kastengard's forage
+// tables (the "boss items via forage" bug), letting a hero get a boss-gated material without
+// ever fighting the boss. STANDING RULE: materials that gate boss-tier gear/content are
+// boss-drop-only.
+var BOSS_ONLY_MATERIALS = ['quest_matriarch_horn', 'quest_leviathan_scale', 'quest_custodian_core_shard'];
+Game.Data.areas.forEach(function (a) {
+  BOSS_ONLY_MATERIALS.forEach(function (matId) {
+    assert((a.forage || []).indexOf(matId) === -1, 'v1.6 P3 EI-4: ' + a.id + '\'s forage table does NOT contain the boss-only material ' + matId);
+  });
+});
+// Sanity: confirm these materials still drop from their OWN boss monster (removed from forage,
+// not from the boss's drop table — EI-4 only touches location forage, never monster drops).
+assert(Game.Battle.getMonsterDef('foothills_matriarch').drops.some(function (d) { return d.itemId === 'quest_matriarch_horn'; }), 'sanity: quest_matriarch_horn still drops from foothills_matriarch (boss-drop-only, not forage)');
+assert(Game.Battle.getMonsterDef('juneros_leviathan').drops.some(function (d) { return d.itemId === 'quest_leviathan_scale'; }), 'sanity: quest_leviathan_scale still drops from juneros_leviathan (boss-drop-only, not forage)');
+assert(Game.Battle.getMonsterDef('kastengard_custodian').drops.some(function (d) { return d.itemId === 'quest_custodian_core_shard'; }), 'sanity: quest_custodian_core_shard still drops from kastengard_custodian (boss-drop-only, not forage)');
+
+// v1.6 P3 EI-6 (SPEC-V1.6-REBALANCE.md §3/§6.2, REVIEW-2026-07-16.md EI-6) [invented]/[revised]:
+// the full 6-rung camp/tent ladder LOCKED by the lead's P0 sim gate (levelReq/tentQuality/value):
+// 1/0.20/10, 10/0.35/120, 25/0.45/500, 45/0.55/1500, 65/0.65/4000, 85/0.75/9000.
+var TENT_LADDER = [
+  { id: 'tent_ragged_bedroll', levelReq: 1, tentQuality: 0.20, value: 10 },
+  { id: 'tent_travelers_tent', levelReq: 10, tentQuality: 0.35, value: 120 },
+  { id: 'tent_expedition_pavilion', levelReq: 25, tentQuality: 0.45, value: 500 },
+  { id: 'tent_reclaimers_war_tent', levelReq: 45, tentQuality: 0.55, value: 1500 },
+  { id: 'tent_frosthold_expedition_yurt', levelReq: 65, tentQuality: 0.65, value: 4000 },
+  { id: 'tent_skysilk_sanctuary', levelReq: 85, tentQuality: 0.75, value: 9000 }
+];
+TENT_LADDER.forEach(function (rung) {
+  var it = Game.Inventory.getItem(rung.id);
+  assert(!!it, 'v1.6 P3 EI-6: tent ladder rung exists: ' + rung.id);
+  if (!it) return;
+  assert(it.tags && it.tags.indexOf('tent') !== -1, rung.id + ' carries the tent tag');
+  assert(it.levelReq === rung.levelReq, rung.id + ' levelReq === ' + rung.levelReq + ', got ' + it.levelReq);
+  assert(it.tentQuality === rung.tentQuality, rung.id + ' tentQuality === ' + rung.tentQuality + ', got ' + it.tentQuality);
+  assert(it.value === rung.value, rung.id + ' value === ' + rung.value + ', got ' + it.value);
+});
+// The ladder is monotonically increasing on every axis, and this rung set is EXACTLY every tent
+// in items.js (no orphaned/extra tent ids).
+for (var ti = 1; ti < TENT_LADDER.length; ti++) {
+  assert(TENT_LADDER[ti].levelReq > TENT_LADDER[ti - 1].levelReq, 'tent ladder levelReq strictly increases at rung ' + ti);
+  assert(TENT_LADDER[ti].tentQuality > TENT_LADDER[ti - 1].tentQuality, 'tent ladder tentQuality strictly increases at rung ' + ti);
+  assert(TENT_LADDER[ti].value > TENT_LADDER[ti - 1].value, 'tent ladder value strictly increases at rung ' + ti);
+}
+var allTentItems = Game.Data.items.filter(function (it) { return it.tags && it.tags.indexOf('tent') !== -1; });
+assert(allTentItems.length === TENT_LADDER.length, 'exactly ' + TENT_LADDER.length + ' tent items exist in items.js, got ' + allTentItems.length);
+// New tents are sold in a level-appropriate town shop (js/data/areas.js), not just data-defined.
+var soldAnywhere = function (itemId) {
+  return Game.Data.areas.some(function (a) {
+    return (a.facilities || []).some(function (f) {
+      return f.type === 'shop' && (f.stock || []).indexOf(itemId) !== -1;
+    });
+  });
+};
+['tent_reclaimers_war_tent', 'tent_frosthold_expedition_yurt', 'tent_skysilk_sanctuary'].forEach(function (id) {
+  assert(soldAnywhere(id), 'v1.6 P3 EI-6: new tent ' + id + ' is sold in at least one town shop');
+});
 var eldor = Game.World.getArea('eldor');
 ['shop', 'synthesis', 'inn', 'vault', 'academy', 'shrine'].forEach(function (t) {
   assert(!!Game.World.getFacility(eldor, t), 'Eldor has facility: ' + t);
@@ -638,9 +697,9 @@ var c3b = makeCharacter({ name: 'CampTentTest' });
 Game.World.travelTo('plains_of_averast');
 c3b.hitPoints = 1;
 c3b.energy = 1;
-Game.Inventory.addItem(c3b, 'tent_travelers_tent'); // tentQuality 0.5
+Game.Inventory.addItem(c3b, 'tent_travelers_tent'); // v1.6 P3 EI-6: tentQuality 0.5 -> 0.35 (rung 2/6 of the LOCKED ladder, SPEC-V1.6-REBALANCE.md §6.2)
 var res3b = Game.World.camp();
-var expectedHp3b = Math.min(c3b.hitPointsMax, 1 + Math.round(c3b.hitPointsMax * 0.5));
+var expectedHp3b = Math.min(c3b.hitPointsMax, 1 + Math.round(c3b.hitPointsMax * 0.35));
 assert(c3b.hitPoints === expectedHp3b, 'better tent restores more HP: got ' + c3b.hitPoints + ', expected ' + expectedHp3b);
 
 // camp fails in town
@@ -929,7 +988,7 @@ var res5d = Game.World.buy('tent_ragged_bedroll');
 assert(res5d.ok === false && /weight/i.test(res5d.message), 'buy fails over capacity: ' + res5d.message);
 assert(Game.Character.goldTotalAsGold(c5b) === goldBeforeCap, 'gold not charged when buy fails over capacity');
 
-// sell: inventory only, not equipped; 50% rate
+// sell: inventory only, not equipped; BALANCE.SHOP_SELL_RATE (v1.6 P3 EI-1: 0.5 -> 0.35)
 var c5e = makeCharacter({ name: 'SellTest' });
 var potion = 'potion_minor_healing';
 Game.Inventory.addItem(c5e, potion);
@@ -938,7 +997,7 @@ var invCountBefore = c5e.inventory.filter(function (i) { return i === potion; })
 var res5e = Game.World.sell(potion);
 assert(res5e.ok === true, 'sell succeeds: ' + res5e.message);
 var expectedPayout = Math.floor(Game.Inventory.getItem(potion).value * BALANCE.SHOP_SELL_RATE);
-assert(Game.Character.goldTotalAsGold(c5e) === goldBefore5e + expectedPayout, 'sell pays floor(value*0.5): expected +' + expectedPayout);
+assert(Game.Character.goldTotalAsGold(c5e) === goldBefore5e + expectedPayout, 'sell pays floor(value*SHOP_SELL_RATE): expected +' + expectedPayout);
 assert(c5e.inventory.filter(function (i) { return i === potion; }).length === invCountBefore - 1, 'sold item removed from inventory');
 
 // cannot sell equipped item

@@ -565,6 +565,59 @@ Game.Quests = (function () {
     };
   }
 
+  // ---------------- Material-still-useful gating (v1.6 P3, EI-3a) ----------------
+
+  // v1.6 P3 EI-3a (SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md EI-3) [invented]: read-only
+  // helper — mutates nothing — used by js/core/battle.js's drop loop to stop rolling a `quest_`
+  // material once nothing can possibly still need it. Quest materials previously rolled forever,
+  // even long after every quest requiring them was turned in (0 gold value, pure inventory
+  // clutter — REVIEW-2026-07-16.md EI-3).
+  //
+  // CRITICAL SAFETY (documented past-bug class: "Heir of the Echo was unobtainable" after an
+  // earlier drop-table edit, see docs/REVIEW-2026-07-11.md) — a quest material must NEVER stop
+  // dropping while anything could still need it. Two independent "still needed" sources; either
+  // one is enough to keep it dropping:
+  //   1. Game.Data.recipes (js/data/recipes.js) — synthesis is repeatable and never "completes",
+  //      so an itemId used as a recipe INPUT stays useful forever regardless of quest state.
+  //      Several boss materials feed BOTH a one-shot quest turn-in AND an unrelated, repeatable
+  //      gear-synthesis recipe (e.g. quest_custodian_core_shard: vaultbreakers_reckoning's collect
+  //      step AND synth_kastengard_relic_blade/synth_vault_reaver/synth_kastengard_wardweave) —
+  //      gating purely on quest completion would strand the synthesis route forever after the
+  //      quest is turned in. This check is broader than the brief's literal wording (which only
+  //      names quest steps) but is required by the brief's OWN critical clause; flagged for lead
+  //      review.
+  //   2. Any quest whose steps (kind 'collect') or whose acceptItems reference itemId, for as long
+  //      as that quest is not yet 'completed' for this character — active, OR no entry at all (not
+  //      yet accepted/offered, since a quest still gated behind a prerequisite or a level floor
+  //      will still need the material once it opens up; "when in doubt, keep dropping").
+  //
+  // An itemId referenced by NEITHER a recipe NOR any quest returns true (vacuously still-useful —
+  // e.g. quest_matriarch_horn is a pure boss-trophy flavor item tied to no quest or recipe at all;
+  // an unreferenced quest_ item is never the thing this gate is meant to stop).
+  function materialStillUseful(c, itemId) {
+    var recipes = (Game.Data && Game.Data.recipes) || [];
+    for (var r = 0; r < recipes.length; r++) {
+      if ((recipes[r].inputs || []).indexOf(itemId) !== -1) return true;
+    }
+
+    var list = Game.Data.quests || [];
+    var referencedByAnyQuest = false;
+    for (var i = 0; i < list.length; i++) {
+      var quest = list[i];
+      var needsIt = false;
+      var steps = quest.steps || [];
+      for (var s = 0; s < steps.length; s++) {
+        if (steps[s].kind === 'collect' && steps[s].itemId === itemId) { needsIt = true; break; }
+      }
+      if (!needsIt && quest.acceptItems && quest.acceptItems.indexOf(itemId) !== -1) needsIt = true;
+      if (!needsIt) continue;
+      referencedByAnyQuest = true;
+      var e = (c && c.quests) ? c.quests[quest.id] : null;
+      if (!e || e.status !== 'completed') return true; // active, or not yet accepted -- still needed
+    }
+    return !referencedByAnyQuest; // every referencing quest completed -> false; never referenced -> vacuously true
+  }
+
   return {
     getQuest: getQuest,
     entry: entry,
@@ -581,7 +634,8 @@ Game.Quests = (function () {
     stepProgressText: stepProgressText,
     turnIn: turnIn,
     inventoryCount: inventoryCount,
-    rewardItemsFit: rewardItemsFit
+    rewardItemsFit: rewardItemsFit,
+    materialStillUseful: materialStillUseful
   };
 })();
 

@@ -335,8 +335,13 @@ Game.Data.areas = [
     lair: { monsterId: 'foothills_matriarch', minLevel: 18, name: 'Matriarch’s High Camp' },
     facilities: [],
     // v1.4 P4 (G4): Forage table — the Frost Ram Hide (js/data/monsters.js foothills_frost_ram)
-    // and the Matriarch's Horn quest material from this area's own gate-boss, plus one provision.
-    forage: ['provision_spice_tea', 'quest_frostram_hide', 'quest_matriarch_horn'],
+    // and one provision.
+    // v1.6 P3 EI-4 (SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md EI-4) [revised]: removed
+    // quest_matriarch_horn -- a boss-only material (foothills_matriarch, this area's own gate-boss)
+    // had leaked into this area's FORAGE table too, letting a hero get it without ever fighting the
+    // boss. STANDING RULE: materials that gate boss-tier gear/content are boss-drop-only -- never
+    // also placed in a location forage table.
+    forage: ['provision_spice_tea', 'quest_frostram_hide'],
     desc: 'Rocky slopes climbing toward the mountain wall no Human or Arkan has ever crossed (Averast.md). Something with teeth guards the high passes.'
   },
 
@@ -352,9 +357,13 @@ Game.Data.areas = [
     lair: { monsterId: 'juneros_leviathan', minLevel: 25, name: 'The Deep Shoal' },
     facilities: [],
     // v1.4 P4 (G4): Forage table — leans materials at this level: the graded B-Class Crystal/Sphere
-    // I already dropped here (js/data/monsters.js juneros_tidewalker/juneros_reefstalker), the
-    // Drowned Settler's Locket, and the Leviathan Scale from this area's own gate-boss.
-    forage: ['crystal_bclass_1', 'sphere_bclass_1', 'quest_settler_locket', 'quest_leviathan_scale'],
+    // I already dropped here (js/data/monsters.js juneros_tidewalker/juneros_reefstalker) and the
+    // Drowned Settler's Locket.
+    // v1.6 P3 EI-4 (SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md EI-4) [revised]: removed
+    // quest_leviathan_scale -- a boss-only material (juneros_leviathan, this area's own gate-boss)
+    // had leaked into this area's FORAGE table too. STANDING RULE: materials that gate boss-tier
+    // gear/content are boss-drop-only -- never also placed in a location forage table.
+    forage: ['crystal_bclass_1', 'sphere_bclass_1', 'quest_settler_locket'],
     desc: 'A wind-scoured isle in the inland sea west of Averast, home to a scatter of small human settlements clinging to its shores (Averast.md). The deep shoal beyond them holds something far older than any settler.'
   },
 
@@ -371,9 +380,12 @@ Game.Data.areas = [
     lair: { monsterId: 'kastengard_custodian', minLevel: 32, name: 'The Custodian’s Vault' },
     facilities: [],
     // v1.4 P4 (G4): Forage table — the graded B-Class Crystal/Sphere II already dropped here
-    // (js/data/monsters.js kastengard_wardframe/kastengard_anima_wraith), the Society Ledger Page,
-    // and the Custodian Core Shard from this area's own gate-boss.
-    forage: ['crystal_bclass_2', 'sphere_bclass_2', 'quest_society_ledger_page', 'quest_custodian_core_shard'],
+    // (js/data/monsters.js kastengard_wardframe/kastengard_anima_wraith) and the Society Ledger Page.
+    // v1.6 P3 EI-4 (SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md EI-4) [revised]: removed
+    // quest_custodian_core_shard -- a boss-only material (kastengard_custodian, this area's own
+    // gate-boss) had leaked into this area's FORAGE table too. STANDING RULE: materials that gate
+    // boss-tier gear/content are boss-drop-only -- never also placed in a location forage table.
+    forage: ['crystal_bclass_2', 'sphere_bclass_2', 'quest_society_ledger_page'],
     desc: 'Far to the northeast, the abandoned base the Society of Modern Magic called Kastengard (Chapter_I.md). Its outer halls stir with old wardframes and Anima long left untended.'
   },
 
@@ -509,6 +521,9 @@ Game.Data.areas = [
           'heavy_body_kuraan_bulwark_plate', 'heavy_head_kuraan_warhelm',
           'light_legs_kuraan_ward_leggings', 'medium_feet_reclaimers_boots', 'heavy_legs_kuraan_greatplate_legguards',
           'tent_expedition_pavilion',
+          // v1.6 P3 EI-6 (SPEC-V1.6-REBALANCE.md §3/§6.2): the rung-4/6 tent (levelReq 45,
+          // tentQuality 0.55) — Kuraan Reclamation Camp (minLevel 44) is this ladder rung's home.
+          'tent_reclaimers_war_tent',
           'potion_vault_reserve',
           'crystal_cclass_1', 'crystal_cclass_2', 'sphere_cclass_1', 'sphere_cclass_2',
           'stone_energy_kuraan', 'stone_energy_greater',
@@ -649,6 +664,12 @@ Game.Data.areas = [
           'heavy_body_glacial_bulwark_plate', 'heavy_head_glacial_warhelm',
           'light_legs_frosthold_ward_leggings', 'medium_feet_waystation_boots', 'heavy_legs_glacial_greatplate_legguards',
           'tent_expedition_pavilion',
+          // v1.6 P3 EI-6 (SPEC-V1.6-REBALANCE.md §3/§6.2): rungs 5/6 and 6/6 (levelReq 65/85,
+          // tentQuality 0.65/0.75). Frosthold Waystation (minLevel 65) is rung 5's home, and — since
+          // it's currently the only town serving the whole 61-100 range (REVIEW-2026-07-16.md CF-1,
+          // deferred to a future content pass) — rung 6 (levelReq 85) is sold here too rather than
+          // being unobtainable; splitting the late hub will let CF-1 move it to a higher-level town.
+          'tent_frosthold_expedition_yurt', 'tent_skysilk_sanctuary',
           'potion_vault_reserve',
           'crystal_eclass_1', 'crystal_eclass_2', 'sphere_eclass_1', 'sphere_eclass_2',
           'stone_energy_frosthold',

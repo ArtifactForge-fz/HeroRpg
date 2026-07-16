@@ -407,10 +407,18 @@ var finale = Game.Data.quests.filter(function (q) { return q.id === 'echo_of_eid
 assert(finale.levelMin === 36, 'echo_of_eidas levelMin 36');
 assert(finale.giver.areaId === 'eldor', 'echo_of_eidas given in eldor');
 assert(finale.rewards.trainingPoints === 5, 'echo_of_eidas grants 5 Training Points');
-assert(finale.rewards.items.indexOf('tent_expedition_pavilion') !== -1, 'echo_of_eidas grants the top-tier tent');
+assert(finale.rewards.items.indexOf('tent_expedition_pavilion') !== -1, 'echo_of_eidas grants tent_expedition_pavilion');
+// v1.6 P3 EI-6 (SPEC-V1.6-REBALANCE.md §3/§6.2, REVIEW-2026-07-16.md EI-6): tent_expedition_pavilion
+// is NO LONGER the top-tier tent -- it was re-stated to rung 3/6 of the new full-range camp-heal
+// ladder (tentQuality 0.75 -> 0.45); the new top rung is tent_skysilk_sanctuary (levelReq 85,
+// tentQuality 0.75). echo_of_eidas (js/data/quests.js, a level-36 finale reward) still grants
+// tent_expedition_pavilion unchanged -- js/data/quests.js is OUT OF SCOPE for this P3 economy pass
+// (not in the file list), so its "reward the top-tier tent" intent is now stale flavor and should
+// be revisited in a future content pass (flagged for the lead); the reward ITSELF (same item id,
+// same effect) is unaffected. This assertion now checks the item's own LOCKED rung value instead
+// of a "genuinely the max" claim that is no longer true by design.
 var topTent = Game.Inventory.getItem('tent_expedition_pavilion');
-var allTentQualities = Game.Data.items.filter(function (it) { return it.tags && it.tags.indexOf('tent') !== -1; }).map(function (it) { return it.tentQuality; });
-assert(topTent.tentQuality === Math.max.apply(null, allTentQualities), 'tent_expedition_pavilion is genuinely the highest tentQuality tent in items.js');
+assert(topTent.tentQuality === 0.45, 'tent_expedition_pavilion carries its v1.6 P3 EI-6 rung-3/6 value (0.45), got ' + topTent.tentQuality);
 
 // =====================================================================
 // Part 2c: Phase 9 unique equipment (js/data/items.js) — monster-only, never sold, never

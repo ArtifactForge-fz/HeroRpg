@@ -468,6 +468,15 @@ Game.Data.items = [
   },
 
   // ---------- Tents (DESIGN.md §6: camping heal fraction, used Phase 4) ----------
+  // v1.6 P3 EI-6 (SPEC-V1.6-REBALANCE.md §3/§6.2, REVIEW-2026-07-16.md EI-6) [invented]/[revised]:
+  // the shipped 3-tent ladder capped out at the BEST tentQuality (0.75) at levelReq 10 for 260
+  // gold, a near-full camp heal buyable almost immediately with 90 further levels of content still
+  // ahead — the exact "camp scaling goes very hard" complaint. Re-stats these 3 (SAME ids — saves
+  // store ids) to the first three rungs of a full-range 6-tent ladder LOCKED by the lead's P0 sim
+  // gate (levelReq/tentQuality/value): 1/0.20/10, 10/0.35/120, 25/0.45/500, 45/0.55/1500, 65/0.65/
+  // 4000, 85/0.75/9000 — the remaining 3 rungs are new items appended below. Camp-heal code
+  // (js/core/world.js bestTentQuality) is UNCHANGED; it already reads best owned tentQuality
+  // generically, so the new/re-stated rungs need no code change, only data + shop placement.
   {
     id: 'tent_ragged_bedroll',
     name: 'Ragged Bedroll',
@@ -477,7 +486,7 @@ Game.Data.items = [
     levelReq: 1,
     value: 10,
     tags: ['tent'],
-    tentQuality: 0.25,
+    tentQuality: 0.20, // v1.6 P3 EI-6: was 0.25 (rung 1/6 of the LOCKED ladder)
     desc: 'A thin bedroll that takes the worst of the chill off the ground.'
   },
   {
@@ -486,10 +495,10 @@ Game.Data.items = [
     slot: 'none',
     skill: null,
     weight: 7,
-    levelReq: 5,
-    value: 80,
+    levelReq: 10, // v1.6 P3 EI-6: was 5 (rung 2/6 of the LOCKED ladder)
+    value: 120, // v1.6 P3 EI-6: was 80
     tags: ['tent'],
-    tentQuality: 0.5,
+    tentQuality: 0.35, // v1.6 P3 EI-6: was 0.5
     desc: 'A proper canvas tent that makes camping in the wild almost comfortable.'
   },
   {
@@ -498,11 +507,52 @@ Game.Data.items = [
     slot: 'none',
     skill: null,
     weight: 10,
-    levelReq: 10,
-    value: 260,
+    levelReq: 25, // v1.6 P3 EI-6: was 10 (rung 3/6 of the LOCKED ladder)
+    value: 500, // v1.6 P3 EI-6: was 260
+    tags: ['tent'],
+    tentQuality: 0.45, // v1.6 P3 EI-6: was 0.75 -- no longer the ladder's top rung
+    desc: 'A sturdy waxed-canvas pavilion used by Eldor survey expeditions into the ruins and riverlands.'
+  },
+  // ---------- New EI-6 rungs (4/6, 5/6, 6/6): NEW ids, sold in a level-appropriate town (js/data/
+  // areas.js) — Kuraan Reclamation Camp (44), Frosthold Waystation (65, also the only town
+  // currently serving the 61-100 range — see CF-1, deferred). Icons: assets/icons/tent_*.png,
+  // copied from tent_expedition_pavilion.png (items may reuse tiles; only monster icons must be
+  // byte-distinct, CLAUDE.md).
+  {
+    id: 'tent_reclaimers_war_tent',
+    name: "Reclaimer's War-Tent",
+    slot: 'none',
+    skill: null,
+    weight: 12,
+    levelReq: 45, // v1.6 P3 EI-6 (rung 4/6 of the LOCKED ladder)
+    value: 1500,
+    tags: ['tent'],
+    tentQuality: 0.55,
+    desc: "A reinforced war-tent standard-issue at the Kuraan Reclamation Camp, warm enough for a column bivouacked deep in reclaimed fringe woods."
+  },
+  {
+    id: 'tent_frosthold_expedition_yurt',
+    name: 'Frosthold Expedition Yurt',
+    slot: 'none',
+    skill: null,
+    weight: 14,
+    levelReq: 65, // v1.6 P3 EI-6 (rung 5/6 of the LOCKED ladder)
+    value: 4000,
+    tags: ['tent'],
+    tentQuality: 0.65,
+    desc: 'A felted, wind-braced yurt favored by Frosthold Waystation expeditions ranging the Glacial Approach, warm enough to sleep soundly through the coldest watch.'
+  },
+  {
+    id: 'tent_skysilk_sanctuary',
+    name: 'Skysilk Sanctuary',
+    slot: 'none',
+    skill: null,
+    weight: 6,
+    levelReq: 85, // v1.6 P3 EI-6 (rung 6/6 of the LOCKED ladder, top of the tent line)
+    value: 9000,
     tags: ['tent'],
     tentQuality: 0.75,
-    desc: 'A sturdy waxed-canvas pavilion used by Eldor survey expeditions into the ruins and riverlands.'
+    desc: "A Skysilk canopy woven with warding thread, light enough to carry to the Skyspire's own heights and warded well enough to rest safely there — the finest camp shelter left in Van Arius."
   },
 
   // ---------- Potions (combat-usable, heal) ----------
@@ -1607,6 +1657,14 @@ Game.Data.items = [
   // sword_kastengard_relic_blade levelReq35/statReq44); value is an invented economy continuation
   // of the existing per-tier growth curve (no archived value formula survived — see this file's
   // header comment).
+  // v1.6 P3 EI-1 (SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md EI-1) [revised]: every shop-sold
+  // equipment piece (slot != 'none', not tagged 'unique' -- those are monster-drop-only and never
+  // sold) from levelReq 45 through the rest of the arc (Bands A-F, this section through the end of
+  // the file) has its `value` field x1.5 (rounded) from the number the per-tier growth curve above
+  // would otherwise give -- one of three EI-1 gold-curbing levers (with SHOP_SELL_RATE 0.5->0.35,
+  // js/balance.js, and the L41+ monster gold trim, js/data/monsters.js), so best-in-slot gear costs
+  // more kills to buy. Uniques and AA-Exchange ('ap_' ids, priced in Advantage Points via costAp,
+  // not gold -- js/data/areas.js) are UNCHANGED; damage/armor/magicArmor/statReqs are untouched.
   // =====================================================================
 
   // ---------- Weapons: tier (levelReq 45), one per weapon skill ----------
@@ -1619,7 +1677,7 @@ Game.Data.items = [
     weight: 7,
     levelReq: 45,
     statReqs: { strength: 54 },
-    value: 1750,
+    value: 2625,
     tags: [],
     desc: 'A reforged blade carried by the first heroes to push back into the Forests of Kuraan, its edge marked with a reclamation-band sigil.'
   },
@@ -1632,7 +1690,7 @@ Game.Data.items = [
     weight: 9,
     levelReq: 45,
     statReqs: { strength: 54 },
-    value: 1750,
+    value: 2625,
     tags: [],
     desc: 'A long Arkan lance carried at the front of the reclamation column, its runework updated for the fight to take Kuraan back.'
   },
@@ -1645,7 +1703,7 @@ Game.Data.items = [
     weight: 3,
     levelReq: 45,
     statReqs: { dexterity: 54 },
-    value: 1750,
+    value: 2625,
     tags: [],
     desc: "A curved knife shaped from Kuraan fringewood and a Majiku scout's own fang, favored by scouts retaking the border."
   },
@@ -1658,7 +1716,7 @@ Game.Data.items = [
     weight: 4,
     levelReq: 45,
     statReqs: { intelligence: 54 },
-    value: 1750,
+    value: 2625,
     tags: [],
     desc: "A captured Majiku ward-rod, its bindings unpicked and reforged by Arkan battlemages into a conduit that turns the enemy's own wards against them."
   },
@@ -1671,7 +1729,7 @@ Game.Data.items = [
     weight: 4,
     levelReq: 45,
     statReqs: { strength: 54 },
-    value: 1750,
+    value: 2625,
     tags: [],
     desc: "Banded gauntlets issued to the reclamation camp's front-line brawlers, heavy enough to break a Majiku shield-wall."
   },
@@ -1682,12 +1740,20 @@ Game.Data.items = [
     name: 'Kuraan Wardbulwark',
     slot: 'offhand',
     skill: 'Shields',
-    armor: 22, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22.
-    magicArmor: 7, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 14 / 2 = 7.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22; 14 / 2 = 7.
+    // v1.6 P3 EI-2 review note (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2): NOT
+    // raised -- the non-unique Shields/offhand magicArmor ladder (6, 7, 8, 9, 10, 11, 12 at
+    // levelReq 15/45/55/65/75/85/95) is already monotonic once the levelReq-21 UNIQUE
+    // shield_coral_wardens_bulwark is excluded from the ladder (uniques are a separate premium tier
+    // -- see the AA-Exchange guardrail, tests/test_p4_world.js Test 0a2, which forbids the opposite
+    // pull: a non-unique/AP item must never be raised to match or exceed a unique). Armor (22) was
+    // already monotonic and is also untouched.
+    armor: 22,
+    magicArmor: 7,
     weight: 8,
     levelReq: 45,
     statReqs: { strength: 54 },
-    value: 1840,
+    value: 2760,
     tags: [],
     desc: 'A broad shield banded with reclaimed Arkan wardplate, warded against both Majiku steel and Majiku hexcraft alike.'
   },
@@ -1698,11 +1764,13 @@ Game.Data.items = [
     name: 'Kuraan Windweave Robe',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 22, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22.
-    magicArmor: 7, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 14 / 2 = 7.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22 (pre-EI-2 value); magicArmor 14 / 2 = 7 (pre-EI-2 value).
+    // v1.6 P3 EI-2 (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2) [revised]: raised armor 22->31 and magicArmor 7->10 -- the divisor-2 correction left this (and every Light Armor/body arc piece through levelReq 65) BELOW the unchanged levelReq-30 light_body_kastengard_wardweave's 31 armor/10 magicArmor, a non-monotonic ladder (the exact EI-2 finding: REVIEW-2026-07-16.md). Floored to the levelReq<=35 ceiling; minimal fix, no other field touched.
+    armor: 31,
+    magicArmor: 10,
     weight: 3,
     levelReq: 45,
-    value: 1850,
+    value: 2775,
     tags: [],
     desc: 'A silk-and-ward weave cut for scouts moving quietly through the reclaimed fringe woods.'
   },
@@ -1715,7 +1783,7 @@ Game.Data.items = [
     magicArmor: 7, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 14 / 2 = 7.
     weight: 2,
     levelReq: 45,
-    value: 1820,
+    value: 2730,
     tags: [],
     desc: "A matching hood to the Windweave Robe, its warding thread tuned against the Majiku's own war-shaman curses."
   },
@@ -1724,10 +1792,12 @@ Game.Data.items = [
     name: "Reclaimer's Hauberk",
     slot: 'body',
     skill: 'Medium Armor',
-    armor: 22, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22 (pre-EI-2 value).
+    // v1.6 P3 EI-2 (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2) [revised]: raised 22->31 -- the divisor-2 correction left this Medium Armor/body arc piece BELOW the unchanged levelReq-32 medium_body_custodian_plate's 31 armor, a non-monotonic ladder. Floored to the levelReq<=35 ceiling; minimal fix, no other field touched.
+    armor: 31,
     weight: 6,
     levelReq: 45,
-    value: 1850,
+    value: 2775,
     tags: [],
     desc: 'Boiled leather and iron rivets, standard issue to every hero mustered at the Kuraan Reclamation Camp.'
   },
@@ -1739,7 +1809,7 @@ Game.Data.items = [
     armor: 22, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22.
     weight: 6,
     levelReq: 45,
-    value: 1830,
+    value: 2745,
     tags: [],
     desc: "Greaves fitted for long marches through Kuraan's reclaimed undergrowth."
   },
@@ -1748,11 +1818,13 @@ Game.Data.items = [
     name: 'Kuraan Bulwark Plate',
     slot: 'body',
     skill: 'Heavy Armor',
-    armor: 22, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 43 / 2 = 22 (pre-EI-2 value).
+    // v1.6 P3 EI-2 (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2) [revised]: raised 22->37 -- the divisor-2 correction left every Heavy Armor/body arc piece through levelReq 85 BELOW the unchanged levelReq-35 heavy_body_vault_bulwark's 37, a non-monotonic armor ladder. Floored to 37 (the levelReq<=35 ceiling for this class/slot); minimal fix, no other field touched.
+    armor: 37,
     weight: 10,
     levelReq: 45,
     statReqs: { strength: 48 },
-    value: 1900,
+    value: 2850,
     tags: [],
     desc: "Heavy plate hammered at the reclamation camp's own forge, thick enough to stand a Majiku Warlord's charge."
   },
@@ -1765,7 +1837,7 @@ Game.Data.items = [
     weight: 10,
     levelReq: 45,
     statReqs: { strength: 48 },
-    value: 1880,
+    value: 2820,
     tags: [],
     desc: 'A war-helm forged for the officers leading the push back into the fringe woods.'
   },
@@ -1780,7 +1852,7 @@ Game.Data.items = [
     magicArmor: 8, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 15 / 2 = 8.
     weight: 3,
     levelReq: 48,
-    value: 1950,
+    value: 2925,
     tags: [],
     desc: 'Warded leggings woven for the deeper reaches of Kuraan, where the fringe gives way to older, stranger wood.'
   },
@@ -1792,7 +1864,7 @@ Game.Data.items = [
     armor: 23, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 45 / 2 = 23.
     weight: 6,
     levelReq: 48,
-    value: 1930,
+    value: 2895,
     tags: [],
     desc: 'Sturdy boots re-soled at the reclamation camp for heroes ranging into the deep woods.'
   },
@@ -1805,7 +1877,7 @@ Game.Data.items = [
     weight: 10,
     levelReq: 48,
     statReqs: { strength: 50 },
-    value: 2000,
+    value: 3000,
     tags: [],
     desc: "Massive plate legguards salvaged and reforged from a fallen Majiku vanguard's own armor."
   },
@@ -1898,7 +1970,14 @@ Game.Data.items = [
     name: 'Kuraan Ashcloak',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 26, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 52 / 2 = 26.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 52 / 2 = 26.
+    // v1.6 P3 EI-2 review note (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2): NOT
+    // raised -- this is a UNIQUE (monster-drop-only) item; EI-2's non-decreasing-armor requirement
+    // targets the regular shop/AP ladder (the review's stated problem was a CRAFTABLE item beating
+    // shop tiers, not a unique-vs-unrelated-lower-tier-item comparison), and the codebase's own
+    // AA-Exchange guardrail (tests/test_p4_world.js Test 0a2) establishes that uniques sit ABOVE
+    // that ladder as a separate premium tier rather than being pulled into its monotonicity chain.
+    armor: 26,
     damage: 5, // hybrid: armor granting a weapon-like Damage bonus, matching the ashroot_ward_cloak precedent
     weight: 3,
     levelReq: 45,
@@ -1962,7 +2041,7 @@ Game.Data.items = [
     weight: 7,
     levelReq: 55,
     statReqs: { strength: 64 },
-    value: 2190,
+    value: 3285,
     tags: [],
     desc: 'A heavy reforged blade carried by the column pushing north into the Majiku\'s own border steppe, meant to break the host one lancer at a time.'
   },
@@ -1975,7 +2054,7 @@ Game.Data.items = [
     weight: 9,
     levelReq: 55,
     statReqs: { strength: 64 },
-    value: 2190,
+    value: 3285,
     tags: [],
     desc: 'A long Arkan-forged pike updated for the ridgeline fighting north of Kuraan, its head weighted to punch through Majiku hostguard plate.'
   },
@@ -1988,7 +2067,7 @@ Game.Data.items = [
     weight: 3,
     levelReq: 55,
     statReqs: { dexterity: 64 },
-    value: 2190,
+    value: 3285,
     tags: [],
     desc: 'A curved knife shaped from a Ridgehawk\'s own talon, favored by scouts ranging the open border steppe.'
   },
@@ -2001,7 +2080,7 @@ Game.Data.items = [
     weight: 4,
     levelReq: 55,
     statReqs: { intelligence: 64 },
-    value: 2190,
+    value: 3285,
     tags: [],
     desc: "A captured hostcaller shaman's own binding-rod, unpicked and reforged by Arkan battlemages into a conduit that turns the host's own ritual-craft back on it."
   },
@@ -2014,7 +2093,7 @@ Game.Data.items = [
     weight: 4,
     levelReq: 55,
     statReqs: { strength: 64 },
-    value: 2190,
+    value: 3285,
     tags: [],
     desc: 'Banded knuckles issued to the column\'s front-line brawlers, heavy enough to break a hostguard shield-wall on the ridgeline.'
   },
@@ -2025,12 +2104,16 @@ Game.Data.items = [
     name: 'Highland Bulwark',
     slot: 'offhand',
     skill: 'Shields',
-    armor: 25, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25.
-    magicArmor: 8, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 16 / 2 = 8.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25; 16 / 2 = 8.
+    // v1.6 P3 EI-2 review note: NOT raised -- same finding as shield_kuraan_wardbulwark above (the
+    // non-unique Shields/offhand magicArmor ladder is already monotonic once the levelReq-21
+    // UNIQUE shield_coral_wardens_bulwark is excluded).
+    armor: 25,
+    magicArmor: 8,
     weight: 8,
     levelReq: 55,
     statReqs: { strength: 64 },
-    value: 2300,
+    value: 3450,
     tags: [],
     desc: 'A broad shield banded with reclaimed Arkan wardplate, warded against both Majiku steel and hostcaller hexcraft alike.'
   },
@@ -2041,11 +2124,13 @@ Game.Data.items = [
     name: 'Steppewind Mantle',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 25, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25.
-    magicArmor: 8, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 16 / 2 = 8.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25 (pre-EI-2 value); magicArmor 16 / 2 = 8 (pre-EI-2 value).
+    // v1.6 P3 EI-2 (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2) [revised]: raised armor 25->31 and magicArmor 8->10, same non-decreasing fix as light_body_kuraan_windweave above (floored to the running levelReq<=35/45 ceiling of 31/10).
+    armor: 31,
+    magicArmor: 10,
     weight: 3,
     levelReq: 55,
-    value: 2310,
+    value: 3465,
     tags: [],
     desc: 'A wind-cut, ward-threaded mantle for scouts ranging the open border steppe ahead of the column.'
   },
@@ -2058,7 +2143,7 @@ Game.Data.items = [
     magicArmor: 8, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 16 / 2 = 8.
     weight: 2,
     levelReq: 55,
-    value: 2280,
+    value: 3420,
     tags: [],
     desc: "A matching cowl to the Steppewind Mantle, its warding thread tuned against the host's own hostcaller curses."
   },
@@ -2067,10 +2152,12 @@ Game.Data.items = [
     name: 'Hostguard Brigandine',
     slot: 'body',
     skill: 'Medium Armor',
-    armor: 25, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25 (pre-EI-2 value).
+    // v1.6 P3 EI-2 (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2) [revised]: raised 25->31, same non-decreasing-armor fix as medium_body_reclaimers_hauberk above (floored to the unchanged levelReq-32 medium_body_custodian_plate's 31).
+    armor: 31,
     weight: 6,
     levelReq: 55,
-    value: 2310,
+    value: 3465,
     tags: [],
     desc: 'Riveted brigandine standard-issue to every hero mustered against the Majiku host, patterned on captured hostguard plate.'
   },
@@ -2082,7 +2169,7 @@ Game.Data.items = [
     armor: 25, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25.
     weight: 6,
     levelReq: 55,
-    value: 2290,
+    value: 3435,
     tags: [],
     desc: 'Greaves fitted for long marches across the open steppe and the colder ridgelines beyond it.'
   },
@@ -2091,11 +2178,13 @@ Game.Data.items = [
     name: 'Ridgeplate Cuirass',
     slot: 'body',
     skill: 'Heavy Armor',
-    armor: 25, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 50 / 2 = 25 (pre-EI-2 value).
+    // v1.6 P3 EI-2 (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2) [revised]: raised 25->37, same non-decreasing-armor fix as heavy_body_kuraan_bulwark_plate above (floored to the unchanged levelReq-35 heavy_body_vault_bulwark's 37).
+    armor: 37,
     weight: 10,
     levelReq: 55,
     statReqs: { strength: 58 },
-    value: 2380,
+    value: 3570,
     tags: [],
     desc: "Heavy plate hammered at the reclamation camp's forge from Majiku ridgeline steel, thick enough to stand a Ridge-Chieftain's charge."
   },
@@ -2108,7 +2197,7 @@ Game.Data.items = [
     weight: 10,
     levelReq: 55,
     statReqs: { strength: 58 },
-    value: 2350,
+    value: 3525,
     tags: [],
     desc: 'A war-helm forged for the officers leading the push into the Majiku Highlands proper.'
   },
@@ -2123,7 +2212,7 @@ Game.Data.items = [
     magicArmor: 9, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 17 / 2 = 9.
     weight: 3,
     levelReq: 58,
-    value: 2440,
+    value: 3660,
     tags: [],
     desc: 'Warded leggings woven for the higher ridgelines, where the border steppe gives way to the Majiku host\'s own war-camps.'
   },
@@ -2135,7 +2224,7 @@ Game.Data.items = [
     armor: 26, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 52 / 2 = 26.
     weight: 6,
     levelReq: 58,
-    value: 2410,
+    value: 3615,
     tags: [],
     desc: 'Sturdy boots re-soled at the reclamation camp for heroes ranging deep into the war-camps.'
   },
@@ -2148,7 +2237,7 @@ Game.Data.items = [
     weight: 10,
     levelReq: 58,
     statReqs: { strength: 60 },
-    value: 2500,
+    value: 3750,
     tags: [],
     desc: "Massive plate legguards salvaged and reforged from a fallen hostguard vanguard's own armor."
   },
@@ -2241,7 +2330,11 @@ Game.Data.items = [
     name: 'Highland Ashmantle',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 30, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 60 / 2 = 30.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 60 / 2 = 30.
+    // v1.6 P3 EI-2 review note: NOT raised -- same reasoning as light_body_kuraan_ashcloak above
+    // (a UNIQUE item; EI-2's non-decreasing-armor ladder targets the regular shop/AP tier, not
+    // uniques, which sit above it per the AA-Exchange guardrail precedent).
+    armor: 30,
     damage: 6, // hybrid: armor granting a weapon-like Damage bonus, matching the kuraan_ashcloak precedent
     weight: 3,
     levelReq: 55,
@@ -2305,7 +2398,7 @@ Game.Data.items = [
     weight: 7,
     levelReq: 65,
     statReqs: { strength: 74 },
-    value: 2630,
+    value: 3945,
     tags: [],
     desc: 'A heavy blade forged for the waystation garrison holding the last Crown ground before the ice-fields give way to the Ukai\'s own undercaverns.'
   },
@@ -2318,7 +2411,7 @@ Game.Data.items = [
     weight: 9,
     levelReq: 65,
     statReqs: { strength: 74 },
-    value: 2630,
+    value: 3945,
     tags: [],
     desc: 'A long pike updated for fighting on open ice, its head weighted to punch through a frost-exile\'s banded plate.'
   },
@@ -2331,7 +2424,7 @@ Game.Data.items = [
     weight: 3,
     levelReq: 65,
     statReqs: { dexterity: 74 },
-    value: 2630,
+    value: 3945,
     tags: [],
     desc: 'A curved knife shaped from a glacial stalker\'s own frozen talon, favored by scouts ranging the open ice-fields.'
   },
@@ -2344,7 +2437,7 @@ Game.Data.items = [
     weight: 4,
     levelReq: 65,
     statReqs: { intelligence: 74 },
-    value: 2630,
+    value: 3945,
     tags: [],
     desc: "A captured Ukai cave warden's own ward-stone, unpicked and reforged by Arkan battlemages into a conduit that turns the cavern-dwellers' pride back on them."
   },
@@ -2357,7 +2450,7 @@ Game.Data.items = [
     weight: 4,
     levelReq: 65,
     statReqs: { strength: 74 },
-    value: 2630,
+    value: 3945,
     tags: [],
     desc: 'Banded knuckles issued to the waystation\'s front-line brawlers, heavy enough to crack a frost-exile\'s shield-wall on the ice.'
   },
@@ -2373,7 +2466,7 @@ Game.Data.items = [
     weight: 8,
     levelReq: 65,
     statReqs: { strength: 74 },
-    value: 2760,
+    value: 4140,
     tags: [],
     desc: 'A broad shield banded with reforged Majiku ridgeplate, warded against both frost-exile steel and Ukai ward-craft alike.'
   },
@@ -2384,11 +2477,13 @@ Game.Data.items = [
     name: 'Frosthold Veilcloak',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 29, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 57 / 2 = 29.
-    magicArmor: 9, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 18 / 2 = 9.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 57 / 2 = 29 (pre-EI-2 value); magicArmor 18 / 2 = 9 (pre-EI-2 value).
+    // v1.6 P3 EI-2 (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2) [revised]: raised armor 29->31 and magicArmor 9->10, same non-decreasing fix as light_body_kuraan_windweave above (floored to the running levelReq<=55 ceiling of 31/10).
+    armor: 31,
+    magicArmor: 10,
     weight: 3,
     levelReq: 65,
-    value: 2770,
+    value: 4155,
     tags: [],
     desc: 'A wind-and-ward weave cut for scouts moving quietly across the open ice ahead of the waystation garrison.'
   },
@@ -2401,7 +2496,7 @@ Game.Data.items = [
     magicArmor: 9, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 18 / 2 = 9.
     weight: 2,
     levelReq: 65,
-    value: 2740,
+    value: 4110,
     tags: [],
     desc: "A matching hood to the Veilcloak, its warding thread tuned against the frostwalkers' own anima-scarred curse."
   },
@@ -2410,10 +2505,12 @@ Game.Data.items = [
     name: 'Waystation Hauberk',
     slot: 'body',
     skill: 'Medium Armor',
-    armor: 29, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 57 / 2 = 29.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 57 / 2 = 29 (pre-EI-2 value).
+    // v1.6 P3 EI-2 (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2) [revised]: raised 29->31, same non-decreasing-armor fix as medium_body_reclaimers_hauberk above (floored to the unchanged levelReq-32 medium_body_custodian_plate's 31).
+    armor: 31,
     weight: 6,
     levelReq: 65,
-    value: 2770,
+    value: 4155,
     tags: [],
     desc: 'Boiled leather and iron rivets, standard issue to every hero mustered at Frosthold Waystation.'
   },
@@ -2425,7 +2522,7 @@ Game.Data.items = [
     armor: 29, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 57 / 2 = 29.
     weight: 6,
     levelReq: 65,
-    value: 2750,
+    value: 4125,
     tags: [],
     desc: "Greaves fitted for long marches across the open ice-fields toward the Ukai's own cave-mouths."
   },
@@ -2434,11 +2531,13 @@ Game.Data.items = [
     name: 'Glacial Bulwark Plate',
     slot: 'body',
     skill: 'Heavy Armor',
-    armor: 29, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 57 / 2 = 29.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 57 / 2 = 29 (pre-EI-2 value).
+    // v1.6 P3 EI-2 (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2) [revised]: raised 29->37, same non-decreasing-armor fix as heavy_body_kuraan_bulwark_plate above (floored to the unchanged levelReq-35 heavy_body_vault_bulwark's 37).
+    armor: 37,
     weight: 10,
     levelReq: 65,
     statReqs: { strength: 68 },
-    value: 2860,
+    value: 4290,
     tags: [],
     desc: "Heavy plate hammered at Frosthold's own forge, thick enough to stand a Deep-Dweller's own vanguard."
   },
@@ -2451,7 +2550,7 @@ Game.Data.items = [
     weight: 10,
     levelReq: 65,
     statReqs: { strength: 68 },
-    value: 2820,
+    value: 4230,
     tags: [],
     desc: 'A war-helm forged for the officers leading the push across the ice toward the Ukai Undercaverns.'
   },
@@ -2466,7 +2565,7 @@ Game.Data.items = [
     magicArmor: 10, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 19 / 2 = 10.
     weight: 3,
     levelReq: 68,
-    value: 2930,
+    value: 4395,
     tags: [],
     desc: 'Warded leggings woven for the deeper approach, where the open ice gives way to the Ukai\'s own cave-mouths.'
   },
@@ -2478,7 +2577,7 @@ Game.Data.items = [
     armor: 30, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 59 / 2 = 30.
     weight: 6,
     levelReq: 68,
-    value: 2890,
+    value: 4335,
     tags: [],
     desc: 'Sturdy boots re-soled at Frosthold for heroes ranging into the undercaverns proper.'
   },
@@ -2491,7 +2590,7 @@ Game.Data.items = [
     weight: 10,
     levelReq: 68,
     statReqs: { strength: 70 },
-    value: 3000,
+    value: 4500,
     tags: [],
     desc: "Massive plate legguards salvaged and reforged from a fallen Ukai deep vanguard's own armor."
   },
@@ -2647,7 +2746,7 @@ Game.Data.items = [
     weight: 7,
     levelReq: 75,
     statReqs: { strength: 84 },
-    value: 3070,
+    value: 4605,
     tags: [],
     desc: "A heavy blade forged from a fallen sublevel warden's own ward-plating, tuned by Frosthold's smiths to strike where Estari construct-hide runs thinnest."
   },
@@ -2660,7 +2759,7 @@ Game.Data.items = [
     weight: 9,
     levelReq: 75,
     statReqs: { strength: 84 },
-    value: 3070,
+    value: 4605,
     tags: [],
     desc: "A long pike weighted to punch clean through a ruin vanguard's reforged plating, its haft warded against the Wellspring's own stray discharge."
   },
@@ -2673,7 +2772,7 @@ Game.Data.items = [
     weight: 3,
     levelReq: 75,
     statReqs: { dexterity: 84 },
-    value: 3070,
+    value: 4605,
     tags: [],
     desc: "A curved blade shaped from a shattered anima conduit's own crystal casing, favored by scouts working the Estari sublevels' tighter corridors."
   },
@@ -2686,7 +2785,7 @@ Game.Data.items = [
     weight: 4,
     levelReq: 75,
     statReqs: { intelligence: 84 },
-    value: 3070,
+    value: 4605,
     tags: [],
     desc: "A captured wellspring warden's own ward-core, unpicked and reforged by Arkan battlemages into a conduit that draws on the taboo seam without breaking the Council of Three's ban outright."
   },
@@ -2699,7 +2798,7 @@ Game.Data.items = [
     weight: 4,
     levelReq: 75,
     statReqs: { strength: 84 },
-    value: 3070,
+    value: 4605,
     tags: [],
     desc: "Banded gauntlets cast from a sublevel warden's own broken fists, heavy enough to crack a ruin vanguard's plating in a single blow."
   },
@@ -2715,7 +2814,7 @@ Game.Data.items = [
     weight: 8,
     levelReq: 75,
     statReqs: { strength: 84 },
-    value: 3220,
+    value: 4830,
     tags: [],
     desc: "A broad shield banded with reforged construct plating, warded against both the sublevels' crushing blows and the Wellspring's own stray Anima discharge."
   },
@@ -2726,11 +2825,16 @@ Game.Data.items = [
     name: 'Wellspring Veil',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 32, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 64 / 2 = 32.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 64 / 2 = 32.
+    // v1.6 P3 EI-2 review note: NOT raised -- the non-unique Light Armor/body ladder is already
+    // monotonic here (32 >= the preceding non-unique tier, 31) once the levelReq-65 UNIQUE
+    // light_body_frostwalkers_shroud is excluded from the ladder (uniques are a separate premium
+    // tier -- AA-Exchange guardrail precedent, tests/test_p4_world.js Test 0a2).
+    armor: 32,
     magicArmor: 10, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 20 / 2 = 10.
     weight: 3,
     levelReq: 75,
-    value: 3230,
+    value: 4845,
     tags: [],
     desc: 'A ward-weave cut for scouts moving quietly through the Estari sublevels ahead of the waystation column.'
   },
@@ -2743,7 +2847,7 @@ Game.Data.items = [
     magicArmor: 10, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 20 / 2 = 10.
     weight: 2,
     levelReq: 75,
-    value: 3200,
+    value: 4800,
     tags: [],
     desc: "A matching hood to the Wellspring Veil, its warding thread tuned against the excavators' own anima-scarred curse."
   },
@@ -2755,7 +2859,7 @@ Game.Data.items = [
     armor: 32, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 64 / 2 = 32.
     weight: 6,
     levelReq: 75,
-    value: 3230,
+    value: 4845,
     tags: [],
     desc: 'Boiled leather and salvaged construct-plate rivets, standard issue to every hero pushing into the Estari sublevels.'
   },
@@ -2767,7 +2871,7 @@ Game.Data.items = [
     armor: 32, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 64 / 2 = 32.
     weight: 6,
     levelReq: 75,
-    value: 3210,
+    value: 4815,
     tags: [],
     desc: 'Greaves fitted for the long, careful descent through sealed sublevels toward the Anima Wellspring itself.'
   },
@@ -2776,11 +2880,13 @@ Game.Data.items = [
     name: 'Warden Plate',
     slot: 'body',
     skill: 'Heavy Armor',
-    armor: 32, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 64 / 2 = 32.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 64 / 2 = 32 (pre-EI-2 value).
+    // v1.6 P3 EI-2 (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2) [revised]: raised 32->37, same non-decreasing-armor fix as heavy_body_kuraan_bulwark_plate above (floored to the unchanged levelReq-35 heavy_body_vault_bulwark's 37).
+    armor: 37,
     weight: 10,
     levelReq: 75,
     statReqs: { strength: 78 },
-    value: 3340,
+    value: 5010,
     tags: [],
     desc: "Heavy plate hammered at Frosthold's own forge from salvaged warden-plating, thick enough to stand a ruin vanguard's own charge."
   },
@@ -2793,7 +2899,7 @@ Game.Data.items = [
     weight: 10,
     levelReq: 75,
     statReqs: { strength: 78 },
-    value: 3290,
+    value: 4935,
     tags: [],
     desc: 'A war-helm forged for the officers leading the push down through the Estari sublevels toward the Wellspring.'
   },
@@ -2808,7 +2914,7 @@ Game.Data.items = [
     magicArmor: 11, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 21 / 2 = 11.
     weight: 3,
     levelReq: 78,
-    value: 3420,
+    value: 5130,
     tags: [],
     desc: 'Warded leggings woven for the deepest approach, where the sublevels finally open onto the Anima Wellspring itself.'
   },
@@ -2820,7 +2926,7 @@ Game.Data.items = [
     armor: 33, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 66 / 2 = 33.
     weight: 6,
     levelReq: 78,
-    value: 3370,
+    value: 5055,
     tags: [],
     desc: 'Sturdy boots re-soled at Frosthold for heroes ranging into the Wellspring proper.'
   },
@@ -2833,7 +2939,7 @@ Game.Data.items = [
     weight: 10,
     levelReq: 78,
     statReqs: { strength: 80 },
-    value: 3500,
+    value: 5250,
     tags: [],
     desc: "Massive plate legguards salvaged and reforged from a fallen Estari ruin vanguard's own armor."
   },
@@ -2989,7 +3095,7 @@ Game.Data.items = [
     weight: 7,
     levelReq: 85,
     statReqs: { strength: 94 },
-    value: 3540,
+    value: 5310,
     tags: [],
     desc: "A heavy blade forged from a fallen Skyspire warden's own ward-plating, tuned by Frosthold's smiths to strike where a Society remnant's own hexwork runs thinnest."
   },
@@ -3002,7 +3108,7 @@ Game.Data.items = [
     weight: 9,
     levelReq: 85,
     statReqs: { strength: 94 },
-    value: 3540,
+    value: 5310,
     tags: [],
     desc: "A long halberd weighted to punch clean through a sentinel's reforged plating, its haft warded against the sanctum's own stray discharge."
   },
@@ -3015,7 +3121,7 @@ Game.Data.items = [
     weight: 3,
     levelReq: 85,
     statReqs: { dexterity: 94 },
-    value: 3540,
+    value: 5310,
     tags: [],
     desc: "A curved blade taken off a battlemage who never followed Eidas to the red moon, favored by scouts working the Skyspire's tighter spans."
   },
@@ -3028,7 +3134,7 @@ Game.Data.items = [
     weight: 4,
     levelReq: 85,
     statReqs: { intelligence: 94 },
-    value: 3540,
+    value: 5310,
     tags: [],
     desc: "A captured arcanist's own ward-core, unpicked and reforged by Arkan battlemages into a conduit that draws on the Skyspire's stray Anima without repeating the Society's own mistakes."
   },
@@ -3041,7 +3147,7 @@ Game.Data.items = [
     weight: 4,
     levelReq: 85,
     statReqs: { strength: 94 },
-    value: 3540,
+    value: 5310,
     tags: [],
     desc: "Banded gauntlets cast from a lower warden's own broken fists, heavy enough to crack a sentinel's plating in a single blow."
   },
@@ -3057,7 +3163,7 @@ Game.Data.items = [
     weight: 8,
     levelReq: 85,
     statReqs: { strength: 94 },
-    value: 3700,
+    value: 5550,
     tags: [],
     desc: "A broad shield banded with reforged construct plating, warded against both the spans' crushing blows and the sanctum's own stray Anima discharge."
   },
@@ -3068,11 +3174,15 @@ Game.Data.items = [
     name: 'Skysilk Shroud',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 36, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 71 / 2 = 36.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 71 / 2 = 36.
+    // v1.6 P3 EI-2 review note: NOT raised -- same finding as light_body_wellspring_veil above (the
+    // non-unique ladder is already monotonic once the levelReq-75 UNIQUE
+    // light_body_estari_anima_shroud is excluded).
+    armor: 36,
     magicArmor: 11, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 22 / 2 = 11.
     weight: 3,
     levelReq: 85,
-    value: 3710,
+    value: 5565,
     tags: [],
     desc: 'A ward-weave cut for scouts moving quietly through the Skyspire\'s lower spans ahead of the waystation column.'
   },
@@ -3085,7 +3195,7 @@ Game.Data.items = [
     magicArmor: 11, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 22 / 2 = 11.
     weight: 2,
     levelReq: 85,
-    value: 3680,
+    value: 5520,
     tags: [],
     desc: "A matching hood to the Skysilk Shroud, its warding thread tuned against the Society remnant's own hexwork."
   },
@@ -3097,7 +3207,7 @@ Game.Data.items = [
     armor: 36, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 71 / 2 = 36.
     weight: 6,
     levelReq: 85,
-    value: 3710,
+    value: 5565,
     tags: [],
     desc: 'Boiled leather and salvaged construct-plate rivets, standard issue to every hero pushing onto the Skyspire\'s lower spans.'
   },
@@ -3109,7 +3219,7 @@ Game.Data.items = [
     armor: 36, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 71 / 2 = 36.
     weight: 6,
     levelReq: 85,
-    value: 3690,
+    value: 5535,
     tags: [],
     desc: 'Greaves fitted for the long climb up the Skyspire\'s lower spans toward the Society\'s last sanctum.'
   },
@@ -3118,11 +3228,13 @@ Game.Data.items = [
     name: 'Spireward Plate',
     slot: 'body',
     skill: 'Heavy Armor',
-    armor: 36, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 71 / 2 = 36.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 71 / 2 = 36 (pre-EI-2 value).
+    // v1.6 P3 EI-2 (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2) [revised]: raised 36->37, same non-decreasing-armor fix as heavy_body_kuraan_bulwark_plate above (floored to the unchanged levelReq-35 heavy_body_vault_bulwark's 37).
+    armor: 37,
     weight: 10,
     levelReq: 85,
     statReqs: { strength: 88 },
-    value: 3820,
+    value: 5730,
     tags: [],
     desc: "Heavy plate hammered at Frosthold's own forge from salvaged ward-plating, thick enough to stand a sentinel's own charge."
   },
@@ -3135,7 +3247,7 @@ Game.Data.items = [
     weight: 10,
     levelReq: 85,
     statReqs: { strength: 88 },
-    value: 3770,
+    value: 5655,
     tags: [],
     desc: 'A war-helm forged for the officers leading the climb up the Skyspire toward the Society\'s last sanctum.'
   },
@@ -3150,7 +3262,7 @@ Game.Data.items = [
     magicArmor: 12, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 23 / 2 = 12.
     weight: 3,
     levelReq: 88,
-    value: 3900,
+    value: 5850,
     tags: [],
     desc: 'Warded leggings woven for the highest approach, where the spans finally open onto the Society\'s own upper sanctum.'
   },
@@ -3162,7 +3274,7 @@ Game.Data.items = [
     armor: 37, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 73 / 2 = 37.
     weight: 6,
     levelReq: 88,
-    value: 3850,
+    value: 5775,
     tags: [],
     desc: 'Sturdy boots re-soled at Frosthold for heroes ranging into the Skyspire\'s upper spans.'
   },
@@ -3175,7 +3287,7 @@ Game.Data.items = [
     weight: 10,
     levelReq: 88,
     statReqs: { strength: 90 },
-    value: 3980,
+    value: 5970,
     tags: [],
     desc: "Massive plate legguards salvaged and reforged from a fallen Skyspire sentinel's own armor."
   },
@@ -3333,7 +3445,7 @@ Game.Data.items = [
     weight: 7,
     levelReq: 95,
     statReqs: { strength: 104 },
-    value: 4040,
+    value: 6060,
     tags: [],
     desc: "A heavy blade re-forged at Frosthold from a moon-bridge sentinel's own ward-plating, its edge tuned to bite where Eidas's divine-race servitors run thinnest."
   },
@@ -3346,7 +3458,7 @@ Game.Data.items = [
     weight: 9,
     levelReq: 95,
     statReqs: { strength: 104 },
-    value: 4040,
+    value: 6060,
     tags: [],
     desc: "A long halberd weighted for the crossing itself, its haft warded against whatever the red moon's own light does to ordinary steel."
   },
@@ -3359,7 +3471,7 @@ Game.Data.items = [
     weight: 3,
     levelReq: 95,
     statReqs: { dexterity: 104 },
-    value: 4040,
+    value: 6060,
     tags: [],
     desc: "A curved blade taken off a divine-race initiate, favored by scouts working the sanctum's tighter passages."
   },
@@ -3372,7 +3484,7 @@ Game.Data.items = [
     weight: 4,
     levelReq: 95,
     statReqs: { intelligence: 104 },
-    value: 4040,
+    value: 6060,
     tags: [],
     desc: "A captured exemplar's own ward-core, unpicked and reforged by Arkan battlemages into a conduit that draws on the red moon's own light without repeating Eidas's mistake."
   },
@@ -3385,7 +3497,7 @@ Game.Data.items = [
     weight: 4,
     levelReq: 95,
     statReqs: { strength: 104 },
-    value: 4040,
+    value: 6060,
     tags: [],
     desc: "Banded gauntlets cast from a ward-colossus's own broken fists, heavy enough to crack a sentinel's plating in a single blow."
   },
@@ -3401,7 +3513,7 @@ Game.Data.items = [
     weight: 8,
     levelReq: 95,
     statReqs: { strength: 104 },
-    value: 4200,
+    value: 6300,
     tags: [],
     desc: "A broad shield banded with reforged construct plating, warded against both the bridge's crushing blows and the sanctum's own stray Anima discharge."
   },
@@ -3412,11 +3524,16 @@ Game.Data.items = [
     name: 'Moonveil Shroud',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 39, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 78 / 2 = 39.
+    // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 78 / 2 = 39.
+    // v1.6 P3 EI-2 review note: NOT raised -- same finding as light_body_wellspring_veil above (the
+    // non-unique ladder is already monotonic once the levelReq-85 UNIQUE
+    // light_body_anima_scoured_wraps is excluded). This is also the exact ceiling the AA-Exchange
+    // ap_body_tourney_regalia (levelReq 100, below) is floored against -- see its own EI-2 note.
+    armor: 39,
     magicArmor: 12, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 24 / 2 = 12.
     weight: 3,
     levelReq: 95,
-    value: 4210,
+    value: 6315,
     tags: [],
     desc: 'A ward-weave cut for scouts crossing the Moon-Bridge ahead of the waystation column.'
   },
@@ -3429,7 +3546,7 @@ Game.Data.items = [
     magicArmor: 12, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 24 / 2 = 12.
     weight: 2,
     levelReq: 95,
-    value: 4160,
+    value: 6240,
     tags: [],
     desc: "A matching hood to the Moonveil Shroud, its warding thread tuned against a divine-race initiate's own hexwork."
   },
@@ -3441,7 +3558,7 @@ Game.Data.items = [
     armor: 39, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 78 / 2 = 39.
     weight: 6,
     levelReq: 95,
-    value: 4210,
+    value: 6315,
     tags: [],
     desc: 'Boiled leather and salvaged construct-plate rivets, standard issue to every hero pushing onto the Moon-Bridge.'
   },
@@ -3453,7 +3570,7 @@ Game.Data.items = [
     armor: 39, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 78 / 2 = 39.
     weight: 6,
     levelReq: 95,
-    value: 4170,
+    value: 6255,
     tags: [],
     desc: "Greaves fitted for the long crossing toward Eidas's own sanctum."
   },
@@ -3466,7 +3583,7 @@ Game.Data.items = [
     weight: 10,
     levelReq: 95,
     statReqs: { strength: 98 },
-    value: 4300,
+    value: 6450,
     tags: [],
     desc: "Heavy plate hammered at Frosthold's own forge from salvaged ward-plating, thick enough to stand a colossus's own charge."
   },
@@ -3479,7 +3596,7 @@ Game.Data.items = [
     weight: 10,
     levelReq: 95,
     statReqs: { strength: 98 },
-    value: 4250,
+    value: 6375,
     tags: [],
     desc: 'A war-helm forged for the officers leading the crossing toward the red moon.'
   },
@@ -3494,7 +3611,7 @@ Game.Data.items = [
     magicArmor: 13, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 25 / 2 = 13.
     weight: 3,
     levelReq: 98,
-    value: 4380,
+    value: 6570,
     tags: [],
     desc: "Warded leggings woven for the last approach, where the bridge finally gives way to Eidas's own sanctum."
   },
@@ -3506,7 +3623,7 @@ Game.Data.items = [
     armor: 40, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 80 / 2 = 40.
     weight: 6,
     levelReq: 98,
-    value: 4330,
+    value: 6495,
     tags: [],
     desc: 'Sturdy boots re-soled at Frosthold for heroes ranging into the sanctum itself.'
   },
@@ -3519,7 +3636,7 @@ Game.Data.items = [
     weight: 10,
     levelReq: 98,
     statReqs: { strength: 100 },
-    value: 4460,
+    value: 6690,
     tags: [],
     desc: "Massive plate legguards salvaged and reforged from a fallen ward-colossus's own armor."
   },
@@ -3684,7 +3801,8 @@ Game.Data.items = [
     name: 'Gold-Plated Boots',
     slot: 'feet',
     skill: 'Medium Armor',
-    armor: 22,
+    // v1.6 P3 EI-2 (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2) [revised]: raised 22->23 -- the levelReq-48 medium_feet_reclaimers_boots (armor 23) raised the running floor for this class/slot above this AA-Exchange piece's own 22; minimal fix to restore non-decreasing armor.
+    armor: 23,
     weight: 5,
     levelReq: 50,
     value: 35,
@@ -3714,8 +3832,17 @@ Game.Data.items = [
     name: 'Tourney Regalia',
     slot: 'body',
     skill: 'Light Armor',
-    armor: 38,
-    magicArmor: 10,
+    // v1.6 P3 EI-2 (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2) [revised]: raised
+    // armor 38->39 and magicArmor 10->12 -- this AA-Exchange (non-unique) piece was BELOW the
+    // regular ladder's own levelReq-95 tier (light_body_moonveil_shroud, armor 39/magicArmor 12),
+    // a real non-decreasing-armor inversion. Floored to EXACTLY moonveil_shroud's values (a tie,
+    // not a raise past it) -- the codebase's own AA-Exchange guardrail (tests/test_p4_world.js Test
+    // 0a2: "no ap_* item may outclass same-levelReq-or-lower non-unique gear") caps this piece at
+    // the best NON-unique comparable, so it cannot be raised any higher even though the levelReq-95
+    // UNIQUE light_body_voidmoon_wraps (47/-) sits above it -- uniques are excluded from both sides
+    // of this fix (see light_body_moonveil_shroud's own note above).
+    armor: 39,
+    magicArmor: 12,
     weight: 3,
     levelReq: 100,
     value: 50,

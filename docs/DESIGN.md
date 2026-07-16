@@ -356,6 +356,52 @@ purchases, deactivation wipe):
   archived "over 20", `Version_2.1_Changes.md`; removes **Cursed** items for a value-based fee and
   cleanses **Haunting** — `Cursed.md`).
 - Camping in hunting areas: partial HP restore, scaled by tent quality; tents sold in shops.
+  - **v1.6 — Economy re-tune (P3, `SPEC-V1.6-REBALANCE.md` §3/§6, playtest triage
+    `REVIEW-2026-07-16.md` EI-1..EI-7).** Gold flowed too fast and bought too much too soon; the
+    tent ladder maxed out at level 10; a synthesized mid-arc robe outclassed two full gear tiers;
+    boss materials leaked into forage tables; Anima Shards were a rare early-game trickle; quest
+    junk never stopped cluttering the backpack. All **[revised]/[invented]** (deliberate re-tune
+    of shipped constants, CLAUDE.md cardinal rule 4 / ratchet exception, user-directed):
+    - **Camp/tent ladder [invented]/[revised]**: extended from 3 tents (capping at 0.75 quality by
+      level 10) to a full 6-rung ladder spanning the whole level range — levelReq/tentQuality/value
+      1/0.20/10, 10/0.35/120, 25/0.45/500, 45/0.55/1500, 65/0.65/4000, 85/0.75/9000 (LOCKED by the
+      lead's P0 sim gate). Camp-heal code is unchanged; it already reads the best owned tent
+      generically.
+    - **Gold curbing [revised]**: `SHOP_SELL_RATE` 0.5→0.35; the L41+ regular-monster gold formula
+      (`goldMin = 50+2·(level−41)`, `goldMax = 2·goldMin`) trimmed ×0.75 (boss premiums untouched,
+      a separate hand-tuned formula); top-tier shop equipment (levelReq ≥45, non-unique) value
+      ×1.5 — three independent levers so best-in-slot gear and the top tent are real, late-game
+      gold sinks rather than a quick buy.
+    - **Item-ladder monotonicity [revised]**: `ARMOR_STACK_DIVISOR` (`js/balance.js` F1 CONVENTION
+      NOTES, `SPEC-FULL-LEVEL-ARC.md`) had halved only
+      levelReq>35 arc armor, leaving several arc tiers reading numerically worse than the
+      unchanged levelReq≤35 piece directly below them (a synthesized levelReq-30 robe beating
+      levelReq-45/55 shop armor). Re-derived so armor/magicArmor is non-decreasing by levelReq
+      within each armor class+slot (levelReq≤35 pieces themselves untouched); uniques and
+      AA-Exchange items stay excluded from this ladder (a separate premium/convenience tier, per
+      the existing AP no-arbitrage guardrail above). The offending synthesis recipe
+      (`synth_kastengard_wardweave`) also gained a gate-boss material requirement, bringing it in
+      line with its levelReq 30–35 sibling recipes (which all already required one).
+    - **Boss-forage leak fix [revised]**: the three lair-boss-only materials
+      (Matriarch's Horn/Leviathan Scale/Custodian Core Shard) are removed from their hunting
+      areas' `forage:` tables — **standing rule**: materials that gate boss-tier gear/content are
+      boss-drop-only, never also placed in a location forage table.
+    - **Anima Shard supply floor [invented]**: the effective shard chance on a kill is floored at
+      `SHARD_CHANCE_FLOOR` (0.10) rather than editing ~100 monster entries, so early monsters (as
+      low as 0.02) still give a meaningful trickle from level 1; champions are unaffected (already
+      an unconditional guarantee). Paired with an Alteration shard-tax rebalance
+      (`tech_warcry_1` 5→0 shards, `tech_focus_1` 8→5, `tech_warcry_2` 15→10 — Alteration was the
+      only school taxed at all).
+    - **Quest-material drop gating [invented]**: a `quest_`-prefixed material stops being rolled
+      on a kill once nothing can still need it (`Game.Quests.materialStillUseful` — active/
+      unaccepted quests, and any synthesis recipe still consuming it, both count as "still
+      needed"). **Standing safety rule** (documented past-bug class — an earlier drop-table edit
+      once made a Legendary-class material unobtainable): a quest material must never stop
+      dropping while anything could still need it; when in doubt, keep it dropping. The existing
+      5-level loot-cutoff exemption for quest materials is preserved, now also subject to this
+      gate. Paired with a UI fix: the sell/discard confirmation prompt is skipped for a quest
+      material that has become genuinely spent this way (still shown for one a quest is actively
+      collecting, and for `unique` items).
   - **v1.4 — Foraging**, a second camp-style action **[archived concept, `forum/t-449.md`:
     "Luck determines what kind of items you can Forage for"; [revised] keying]**: the remake has
     no Luck stat, so availability instead follows each hunting area's own `forage:` item table

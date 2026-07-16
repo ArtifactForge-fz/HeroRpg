@@ -139,7 +139,12 @@ var BALANCE = {
   // inflate-into-irrelevance regression; it continues an already-accepted trend, still a real
   // (double-digit-percent) cost at the cap. Left UNCHANGED -- no slope retune needed.
 
-  SHOP_SELL_RATE: 0.5, // invented: sale price = floor(item.value * 0.5); no archived sell-back rate survived
+  // v1.6 P3 EI-1 (SPEC-V1.6-REBALANCE.md §3/§6, REVIEW-2026-07-16.md EI-1) [revised]: 0.5 -> 0.35 --
+  // a 50% sell-back rate was one of three drivers behind "gold buys everything trivially" (paired
+  // with the L41+ monster gold trim and the top-tier equipment value raise, see balance.js's v1.6
+  // P3 header note below). Deliberate ratchet exception (user-directed re-tune of a shipped
+  // constant, CLAUDE.md cardinal rule 4 / LEAD-PLAYBOOK §0.3).
+  SHOP_SELL_RATE: 0.35, // invented: sale price = floor(item.value * 0.35); no archived sell-back rate survived
 
   VAULT_DEPOSIT_FEE: 0, // archived: Recent_Updates.md 2007-08-01 "Vault revamped, can now store items and gold (safely)" — no fee mentioned, so none charged
 
@@ -593,5 +598,31 @@ var BALANCE = {
   // (the shipped curve let a tier-3 class fully unlock in ~2-3 kills — REVIEW-2026-07-16.md PG-2).
   // Paired with the steepened classXpForLevel curve (js/core/classes.js). [revised], LOCKED calc.
   CLASS_XP_FRACTION_PRIMARY: 0.5,
-  CLASS_XP_FRACTION_SECONDARY: 0.25
+  CLASS_XP_FRACTION_SECONDARY: 0.25,
+
+  // ==================== v1.6 P3: Economy & Items (docs/SPEC-V1.6-REBALANCE.md §3/§6, EI-1..EI-7) ====================
+  // Playtest triage: docs/REVIEW-2026-07-16.md.
+
+  // EI-5: floors the EFFECTIVE Anima Shard chance in js/core/battle.js onWin's shard roll
+  // (`Math.max(BALANCE.SHARD_CHANCE_FLOOR, monster.shardChance)`) rather than editing shardChance
+  // on ~100 monster entries -- early monsters were as low as 0.02-0.12 (REVIEW-2026-07-16.md EI-5),
+  // leaving shards a mostly-endgame drop. Champions still auto-grant 1 shard, unchanged; monsters
+  // already at/above the floor are completely unaffected. [invented].
+  SHARD_CHANCE_FLOOR: 0.10,
+
+  // EI-1: curb the too-fast gold economy (REVIEW-2026-07-16.md EI-1: "get money fast enough to buy
+  // all the best equipment you find"). [revised] shipped-constant re-tune (CLAUDE.md cardinal rule
+  // 4 / LEAD-PLAYBOOK §0.3 deliberate exception, per SPEC-V1.6-REBALANCE.md §0). SHOP_SELL_RATE
+  // itself is re-tuned IN PLACE above (Phase 1 baseline comment there now records 0.5->0.35); paired
+  // with the L41+ monster gold slope trim (js/data/monsters.js, x0.75) and the top-tier
+  // (levelReq>=45) shop equipment value x1.5 (js/data/items.js `value` fields) -- see SPEC §3 EI-1 row.
+
+  // EI-6: camp/tent ladder (js/data/items.js tent_* items) -- levelReq/tentQuality/value LOCKED by
+  // the lead's P0 sim gate (SPEC-V1.6-REBALANCE.md §6.2): 1/0.20/10, 10/0.35/120, 25/0.45/500,
+  // 45/0.55/1500, 65/0.65/4000, 85/0.75/9000. Re-stats the 3 shipped tents to the first three rungs
+  // (same ids) and adds 3 new tents for the 45/65/85 rungs (js/data/items.js; sold in appropriately
+  // levelled town shops, js/data/areas.js). Camp-heal code (js/core/world.js) is UNCHANGED -- it
+  // already reads best `tentQuality` generically. [invented]/[revised] (REVIEW-2026-07-16.md EI-6):
+  // makes the top (0.75) heal a late-game gold sink instead of an L10 buy. No shared formula here --
+  // each rung is a distinct item in js/data/items.js, same convention as every other equipment tier.
 };
