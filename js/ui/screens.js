@@ -889,7 +889,10 @@ Game.Screens = (function () {
         }, [
           techIcon(tech),
           el('span', { class: 'stat-name' }, [tech.name]),
-          el('span', { class: 'tinyfont' }, ['(' + (tech.skill || '?') + (tech.grade ? ', ' + tech.grade : '') + ', ' + tech.energyCost + ' energy)']),
+          // v1.6 P1 (CB-4, SPEC-V1.6-REBALANCE.md §6): show the ACTUAL Energy cost (Rod-discounted
+          // for an offensive tech while a Rod is equipped), via the same helper useTech charges
+          // from, so this readout never disagrees with battle.
+          el('span', { class: 'tinyfont' }, ['(' + (tech.skill || '?') + (tech.grade ? ', ' + tech.grade : '') + ', ' + Game.Battle.effectiveTechEnergyCost(c, tech) + ' energy)']),
           el('button', {
             class: 'button',
             onclick: function (ev) { if (ev && ev.stopPropagation) ev.stopPropagation(); Game.Infobox.openTech(tech, c); }
@@ -2273,11 +2276,16 @@ Game.Screens = (function () {
       (function (slotIdx) {
         var slottedId = set[slotIdx];
         var tech = slottedId ? getTechById(slottedId) : null;
-        var castable = tech && !over && canAct && c.energy >= tech.energyCost;
+        // v1.6 P1 (CB-4, SPEC-V1.6-REBALANCE.md §6): a Rod-discounted offensive tech may be
+        // affordable below its listed energyCost — check/display the SAME effective cost
+        // useTech will actually charge, so "castable" and the shown cost never disagree with
+        // what happens on click.
+        var techCost = tech ? Game.Battle.effectiveTechEnergyCost(c, tech) : 0;
+        var castable = tech && !over && canAct && c.energy >= techCost;
         // Fix #6: techs are also gated by canAct — explain why a tech is unusable when the
         // player is simply out of Energy, same wording as the Attack/Item buttons above.
         var slotTitle = tech
-          ? ((!over && !canAct) ? (tech.name + ' — ' + outOfEnergyMsg) : (tech.name + ' (' + tech.energyCost + ' energy)'))
+          ? ((!over && !canAct) ? (tech.name + ' — ' + outOfEnergyMsg) : (tech.name + ' (' + techCost + ' energy)'))
           : 'Empty slot';
         var slotChildren = [tech ? techIcon(tech) : el('span', { class: 'tinyfont' }, ['—'])];
         if (tech) {

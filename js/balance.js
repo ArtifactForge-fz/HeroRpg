@@ -213,7 +213,12 @@ var BALANCE = {
   // down is still lethal" contract. 0.10 brings the same maxed-investment matchups back down to
   // ~1-4% (in line with the skill=0 noise floor) while still meaningfully improving at-level and
   // boss fights (see the Phase-1 balance-sim report).
-  WEAPON_SKILL_DAMAGE_CAP: 0.10,
+  // [revised] v1.6 P1 (SPEC-V1.6-REBALANCE.md §6, PG-3/CB-3): re-tuned UP 0.10 -> 0.25, the lead's
+  // P0 sim-gate LOCKED value — 90% of the archived skill range (2*lvl+1) bought zero benefit past
+  // skill ~8 at the old cap (REVIEW-2026-07-16.md PG-3); P0 re-verified 5-levels-down is not
+  // worsened by the raise. Deliberate exception to the ratchet principle (user-directed re-tune of
+  // a shipped constant, CLAUDE.md cardinal rule 4 / LEAD-PLAYBOOK §0.3).
+  WEAPON_SKILL_DAMAGE_CAP: 0.25,
 
   // 2. Armor skill -> per-piece armor/magicArmor (js/core/inventory.js equippedArmorTotal/
   // equippedMagicArmorTotal). Scoped to items whose governing skill IS an armor skill (Light/
@@ -223,7 +228,11 @@ var BALANCE = {
   // retuned DOWN from the lead's starting cap 0.40 — see WEAPON_SKILL_DAMAGE_CAP's comment above;
   // the same balance-sim gate found 0.15 restores 5-levels-down lethality when combined with the
   // retuned weapon cap.
-  ARMOR_SKILL_ARMOR_CAP: 0.15,
+  // [revised] v1.6 P1 (SPEC-V1.6-REBALANCE.md §6, PG-3/CB-3): re-tuned UP 0.15 -> 0.30 in lockstep
+  // with WEAPON_SKILL_DAMAGE_CAP above — same PG-3 finding (armor-skill investment above ~skill 8
+  // bought nothing), same P0 sim-gate re-verification that 5-levels-down is not worsened.
+  // Deliberate exception to the ratchet principle (CLAUDE.md cardinal rule 4 / LEAD-PLAYBOOK §0.3).
+  ARMOR_SKILL_ARMOR_CAP: 0.30,
 
   // 3. Dodge & Double Attack gain skill XP at the proc site (js/core/battle.js monsterAct's dodge
   // branch / attack()'s double-attack branch) — addSkillXp already enforces the 2*level+1 cap.
@@ -490,5 +499,61 @@ var BALANCE = {
   // hit telegraph/caster/enrage already use), so per the P3 sim-gate it needs no numeric gate; its
   // only free parameter is how many times a single charge may be held off, bounded here so a player
   // cannot Defend-stall a charge forever ("the player can't stall forever" -- spec §3 table).
-  REACTIVE_MAX_CHARGE_DELAYS: 1 // invented (v1.5 P3): a reactive monster may hold a pending charge past a player Defend at most this many times before releasing regardless
+  REACTIVE_MAX_CHARGE_DELAYS: 1, // invented (v1.5 P3): a reactive monster may hold a pending charge past a player Defend at most this many times before releasing regardless
+
+  // ==================== v1.6 P1: Combat & Stats (docs/SPEC-V1.6-REBALANCE.md §3/§6, CB-1..CB-6) ====================
+  // Playtest triage: docs/REVIEW-2026-07-16.md. All numbers LOCKED by the lead's P0 sim gate
+  // (SPEC-V1.6-REBALANCE.md §6.1) — implemented verbatim here, not re-tuned.
+
+  // CB-1: penetration floor. DEFENSIVE-ONLY (monster->player, js/core/battle.js monsterAct) — a
+  // monster hit always deals >= round(raw*FLOOR) regardless of the player's Armor/Magic Armor,
+  // applied BEFORE Defend halving. Deliberately one-directional: a symmetric player->monster floor
+  // let under-levelled players guarantee-chunk high-armor monsters and blew open 5-levels-down in
+  // the P0 sim (SPEC-V1.6-REBALANCE.md §6.1) — the playtest complaint (light armor floors monster
+  // hits to 1) is entirely about the PLAYER taking too little, so only that direction is floored.
+  // [invented], LOCKED P0.
+  DAMAGE_PENETRATION_FLOOR: 0.30,
+
+  // CB-1: Endurance/Intelligence no longer feed Armor/Magic Armor 1:1 — [revised] (overrides the
+  // shipped 1:1 ratio, character.js getArmor/getMagicArmor). RECONCILED from the P0-provisional 0.5
+  // to 0.9 by the P1 review re-sim (scratchpad sim_v16_reconcile.js): the shipped lair-boss damage
+  // was tuned against the OLD 1:1 armor, so 0.5 crashed the modest 2-armor-slot boss fixture from
+  // ~85% win to 46%/31% (L50/L100), breaking the >=60% "winnable" contract (test_p3_battle.js Tests
+  // 32-47) — a ratchet violation (LEAD-PLAYBOOK §0.3: don't re-tune shipped bosses to fit a new
+  // constant). 0.9 keeps those bosses at ~78%/73% (safe 30-trial margin) while still trimming
+  // over-defense; the penetration floor above is the real fix for "regulars floor to 1" (it barely
+  // touches bosses, where the hit exceeds armor). A larger endurance nerf would require a separate
+  // boss-damage retune pass. LOCKED by the P1 review re-sim.
+  ENDURANCE_ARMOR_RATIO: 0.9,
+  INT_MAGIC_ARMOR_RATIO: 0.9,
+
+  // CB-2: magic-school skill level -> +% offensive (damage/drain) tech power, parallel to
+  // WEAPON_SKILL_DAMAGE_PER_LEVEL/_CAP above (js/core/battle.js techEffectivePower). [invented],
+  // LOCKED P0 — kept modest (0.15 cap, not the provisional 0.25 in SPEC §3) because a larger cap
+  // pushed the top-level 5-down caster cell too far (SPEC-V1.6-REBALANCE.md §6.1/§6.3).
+  MAGIC_SKILL_DAMAGE_PER_LEVEL: 0.015,
+  MAGIC_SKILL_DAMAGE_CAP: 0.15,
+
+  // CB-4: Rod caster identity (js/core/battle.js techEffectivePower/useTech). While a Rod is the
+  // equipped weapon: offensive-tech base power x(1+ROD_SPELL_MULT), and offensive-tech Energy cost
+  // x(1-ROD_TECH_ENERGY_DISCOUNT) — the discount is the lever that makes casting energy-competitive
+  // with a basic attack (SPEC-V1.6-REBALANCE.md §6.1: "0.5 reopened mid 5-down, 0.3 keeps it
+  // lethal"). Paired with the Rod `damage` halving (js/data/items.js) so a Rod's own melee swing no
+  // longer out-damages casting with it (CB-3/CB-4). [invented], LOCKED P0.
+  ROD_SPELL_MULT: 0.15,
+  ROD_TECH_ENERGY_DISCOUNT: 0.3,
+
+  // CB-2: Intelligence speeds skill-XP gain for magic-school skills AND Rods (js/core/battle.js
+  // onWin's skill-XP award block) — granted amount x(1+INT*rate). [archived]
+  // reference/manual/Intelligence.md: "Increases the Experience gained in ... Rods, Evocation,
+  // Conjuration, Alteration, Absorption, Abjuration" — previously unimplemented. Rate [invented]
+  // (no formula survived), LOCKED P0. Weapon (Swords/Polearms/Knives/Hand to Hand) and armor
+  // skill-XP are unaffected.
+  INT_SKILL_XP_PER_POINT: 0.01,
+
+  // CB-6: carry capacity (js/core/inventory.js carryCapacity) — was a bare strength*10 with no
+  // base term, punishing any non-STR build (a Dex/Int caster at STR 5 capped at 50 weight).
+  // [invented], LOCKED calc (SPEC-V1.6-REBALANCE.md §6.1). capacity = BASE + STR*PER_STR.
+  CARRY_CAPACITY_BASE: 50,
+  CARRY_CAPACITY_PER_STR: 6
 };

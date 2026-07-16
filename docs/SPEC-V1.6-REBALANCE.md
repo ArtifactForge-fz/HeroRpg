@@ -144,8 +144,8 @@ and `sim_v16_prog.js` (deterministic progression calc). Harness validated agains
 | Constant | LOCKED value | Notes |
 |---|---|---|
 | `DAMAGE_PENETRATION_FLOOR` | **0.30** | **DEFENSIVE-ONLY** — applies only monster→player (`monsterAct`), NOT player→monster. A player→monster floor let under-levelled players guarantee-chunk high-armor monsters and blew open 5-down; the feedback is entirely about the player taking too little, so the floor is one-directional. |
-| `ENDURANCE_ARMOR_RATIO` | **0.5** | `getArmor` uses `round(endurance·0.5)`. |
-| `INT_MAGIC_ARMOR_RATIO` | **0.5** | `getMagicArmor` symmetric; trims INT overload (CB-5). |
+| `ENDURANCE_ARMOR_RATIO` | **0.9** (was 0.5) | `getArmor` uses `round(endurance·0.9)`. **RECONCILED during P1 review:** the provisional 0.5 crashed the shipped modest-fixture lair bosses (~85%→46%/31% win) — shipped boss damage was tuned against 1:1 armor, so per the ratchet the constant fits the bosses, not vice-versa. The penetration floor is the real over-defense fix; this is a mild trim. (sim: `sim_v16_reconcile.js`) |
+| `INT_MAGIC_ARMOR_RATIO` | **0.9** (was 0.5) | `getMagicArmor` symmetric; keeps casters' magic defense near shipped. |
 | `MAGIC_SKILL_DAMAGE_PER_LEVEL` / `_CAP` | **0.015 / 0.15** | school level → +% offensive-tech power. Kept modest — larger caps push the top-level 5-down caster cell (see 6.3). |
 | `ROD_SPELL_MULT` | **0.15** | Rod equipped → offensive-tech base ×1.15 (caster identity). |
 | `ROD_TECH_ENERGY_DISCOUNT` | **0.3** | Rod equipped → offensive-tech energy cost ×0.7. This is the lever that makes casting energy-competitive; 0.5 reopened mid 5-down, 0.3 keeps it lethal (≤2%). |

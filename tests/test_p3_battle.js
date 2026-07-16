@@ -380,7 +380,11 @@ b5b.monster.hp = 1;
 setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.0, 0.0, 0.0], 0.99));
 Game.Battle.attack();
 assert(b5b.pendingLoot === 'potion_minor_healing', 'loot pending for over-capacity test');
-c5b.strength = 1; // capacity 10, starter kit alone outweighs it
+// v1.6 P1 (CB-6, SPEC-V1.6-REBALANCE.md §6): carryCapacity now carries a flat base term
+// (BALANCE.CARRY_CAPACITY_BASE=50), so a bare strength=1 no longer forces a tiny capacity the
+// way the old strength*10 formula did — force a deeply negative capacity instead so the starter
+// kit alone still outweighs it (the test's intent, "starter kit alone outweighs it", unchanged).
+c5b.strength = -1000;
 var res5b = Game.Battle.claimLoot();
 assert(res5b.ok === false && /weight/i.test(res5b.message), 'over-capacity claim fails with a message: "' + res5b.message + '"');
 assert(b5b.pendingLoot === 'potion_minor_healing', 'pendingLoot remains after failed claim');
@@ -1559,7 +1563,7 @@ function correctedArmor(levelReq) {
 }
 var band45WeaponIds = [
   'sword_kuraan_reclaimers_blade', 'polearm_arkan_vanguard_lance', 'knife_fringewood_fang',
-  'rod_majiku_wardbreaker', 'hth_reclaimers_gauntlets'
+  'hth_reclaimers_gauntlets'
 ];
 var literalDamage45 = 3 + 2 * 45; // 93 -- what a NON-tapered literal read would give
 var taperedDamage45 = 3 + 2 * taperedEffectiveLevelReq(45); // 87
@@ -1570,6 +1574,17 @@ band45WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage45, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage45);
   assert(it.damage !== literalDamage45, id + ' damage is NOT the literal-formula value ' + literalDamage45 + ' (the F1 taper must be applied)');
 });
+// v1.6 P1 (CB-4, SPEC-V1.6-REBALANCE.md §6): Rods carry the SAME tapered weapon damage as every
+// other weapon class above, further HALVED — Rods are now spell foci, not melee clubs; a Rod's
+// own basic-attack swing was cut so that casting with it, not meleeing with it, is the caster's
+// best play (js/data/items.js).
+var rodDamage45 = Math.max(1, Math.round(taperedDamage45 * 0.5));
+var rod45 = Game.Inventory.getItem('rod_majiku_wardbreaker');
+assert(!!rod45, 'Band A tier-45 weapon exists: rod_majiku_wardbreaker');
+if (rod45) {
+  assert(rod45.damage === rodDamage45, 'rod_majiku_wardbreaker damage (' + rod45.damage + ') equals the v1.6 P1 HALVED-tapered value ' + rodDamage45);
+  assert(rod45.damage !== literalDamage45, 'rod_majiku_wardbreaker damage is NOT the literal-formula value ' + literalDamage45);
+}
 // Armor tapers the same way (1 + effectiveLevelReq), THEN the ARMOR-STACK CORRECTION divides that
 // by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor45 = 1 + 45; // 46 -- literal read
@@ -1721,7 +1736,7 @@ assert(chieftain.xp === BALANCE.MONSTER_XP(60) * 3, 'majiku_ridge_chieftain xp c
 console.log('\n=== Test 34: Band B levelReq-55/58 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
 var band55WeaponIds = [
   'sword_majiku_hostbreaker', 'polearm_ridgewar_pike', 'knife_steppewind_edge',
-  'rod_hostcallers_ruin', 'hth_ridgeguard_knuckles'
+  'hth_ridgeguard_knuckles'
 ];
 var literalDamage55 = 3 + 2 * 55; // 113 -- what a NON-tapered literal read would give
 var taperedDamage55 = 3 + 2 * taperedEffectiveLevelReq(55); // 101
@@ -1732,6 +1747,14 @@ band55WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage55, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage55);
   assert(it.damage !== literalDamage55, id + ' damage is NOT the literal-formula value ' + literalDamage55 + ' (the F1 taper must be applied)');
 });
+// v1.6 P1 (CB-4): Rods carry the tapered weapon damage further HALVED (js/data/items.js).
+var rodDamage55 = Math.max(1, Math.round(taperedDamage55 * 0.5));
+var rod55 = Game.Inventory.getItem('rod_hostcallers_ruin');
+assert(!!rod55, 'Band B tier-55 weapon exists: rod_hostcallers_ruin');
+if (rod55) {
+  assert(rod55.damage === rodDamage55, 'rod_hostcallers_ruin damage (' + rod55.damage + ') equals the v1.6 P1 HALVED-tapered value ' + rodDamage55);
+  assert(rod55.damage !== literalDamage55, 'rod_hostcallers_ruin damage is NOT the literal-formula value ' + literalDamage55);
+}
 // Armor tapers the same way (1 + effectiveLevelReq), THEN the ARMOR-STACK CORRECTION divides that
 // by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor55 = 1 + 55; // 56 -- literal read
@@ -1897,7 +1920,7 @@ assert(deepDweller.xp === BALANCE.MONSTER_XP(70) * 3, 'ukai_deep_dweller xp carr
 console.log('\n=== Test 37: Band C levelReq-65/68 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
 var band65WeaponIds = [
   'sword_frosthold_vanguard_blade', 'polearm_glacial_warpike', 'knife_icebound_fang',
-  'rod_ukai_wardstone', 'hth_frostbound_knuckles'
+  'hth_frostbound_knuckles'
 ];
 var literalDamage65 = 3 + 2 * 65; // 133 -- what a NON-tapered literal read would give
 var taperedDamage65 = 3 + 2 * taperedEffectiveLevelReq(65); // 115
@@ -1909,6 +1932,14 @@ band65WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage65, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage65);
   assert(it.damage !== literalDamage65, id + ' damage is NOT the literal-formula value ' + literalDamage65 + ' (the F1 taper must be applied)');
 });
+// v1.6 P1 (CB-4): Rods carry the tapered weapon damage further HALVED (js/data/items.js).
+var rodDamage65 = Math.max(1, Math.round(taperedDamage65 * 0.5));
+var rod65 = Game.Inventory.getItem('rod_ukai_wardstone');
+assert(!!rod65, 'Band C tier-65 weapon exists: rod_ukai_wardstone');
+if (rod65) {
+  assert(rod65.damage === rodDamage65, 'rod_ukai_wardstone damage (' + rod65.damage + ') equals the v1.6 P1 HALVED-tapered value ' + rodDamage65);
+  assert(rod65.damage !== literalDamage65, 'rod_ukai_wardstone damage is NOT the literal-formula value ' + literalDamage65);
+}
 // Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
 // divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor65 = 1 + 65; // 66 -- literal read
@@ -2073,7 +2104,7 @@ assert(wardenPrime.xp === BALANCE.MONSTER_XP(80) * 3, 'estari_warden_prime xp ca
 console.log('\n=== Test 40: Band D levelReq-75/78 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
 var band75WeaponIds = [
   'sword_estari_wardblade', 'polearm_estari_warpike', 'knife_estari_shard_fang',
-  'rod_wellspring_conduit', 'hth_warden_gauntlets'
+  'hth_warden_gauntlets'
 ];
 var literalDamage75 = 3 + 2 * 75; // 153 -- what a NON-tapered literal read would give
 var taperedDamage75 = 3 + 2 * taperedEffectiveLevelReq(75); // 129
@@ -2085,6 +2116,14 @@ band75WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage75, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage75);
   assert(it.damage !== literalDamage75, id + ' damage is NOT the literal-formula value ' + literalDamage75 + ' (the F1 taper must be applied)');
 });
+// v1.6 P1 (CB-4): Rods carry the tapered weapon damage further HALVED (js/data/items.js).
+var rodDamage75 = Math.max(1, Math.round(taperedDamage75 * 0.5));
+var rod75 = Game.Inventory.getItem('rod_wellspring_conduit');
+assert(!!rod75, 'Band D tier-75 weapon exists: rod_wellspring_conduit');
+if (rod75) {
+  assert(rod75.damage === rodDamage75, 'rod_wellspring_conduit damage (' + rod75.damage + ') equals the v1.6 P1 HALVED-tapered value ' + rodDamage75);
+  assert(rod75.damage !== literalDamage75, 'rod_wellspring_conduit damage is NOT the literal-formula value ' + literalDamage75);
+}
 // Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
 // divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor75 = 1 + 75; // 76 -- literal read
@@ -2249,7 +2288,7 @@ assert(animaHorror.xp === BALANCE.MONSTER_XP(90) * 3, 'society_anima_horror xp c
 console.log('\n=== Test 43: Band E levelReq-85/88 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
 var band85WeaponIds = [
   'sword_spireward_blade', 'polearm_skyspire_halberd', 'knife_society_renegade_dirk',
-  'rod_anima_channeling_rod', 'hth_spireguard_gauntlets'
+  'hth_spireguard_gauntlets'
 ];
 var literalDamage85 = 3 + 2 * 85; // 173 -- what a NON-tapered literal read would give
 var taperedDamage85 = 3 + 2 * taperedEffectiveLevelReq(85); // 143
@@ -2261,6 +2300,14 @@ band85WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage85, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage85);
   assert(it.damage !== literalDamage85, id + ' damage is NOT the literal-formula value ' + literalDamage85 + ' (the F1 taper must be applied)');
 });
+// v1.6 P1 (CB-4): Rods carry the tapered weapon damage further HALVED (js/data/items.js).
+var rodDamage85 = Math.max(1, Math.round(taperedDamage85 * 0.5));
+var rod85 = Game.Inventory.getItem('rod_anima_channeling_rod');
+assert(!!rod85, 'Band E tier-85 weapon exists: rod_anima_channeling_rod');
+if (rod85) {
+  assert(rod85.damage === rodDamage85, 'rod_anima_channeling_rod damage (' + rod85.damage + ') equals the v1.6 P1 HALVED-tapered value ' + rodDamage85);
+  assert(rod85.damage !== literalDamage85, 'rod_anima_channeling_rod damage is NOT the literal-formula value ' + literalDamage85);
+}
 // Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
 // divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor85 = 1 + 85; // 86 -- literal read
@@ -2440,7 +2487,7 @@ Game.Data.monsters.forEach(function (m) {
 console.log('\n=== Test 46: Band F levelReq-95/98 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
 var band95WeaponIds = [
   'sword_redmoon_blade', 'polearm_moonbridge_halberd', 'knife_sanctum_fang',
-  'rod_lunar_conduit', 'hth_sanctum_gauntlets'
+  'hth_sanctum_gauntlets'
 ];
 var literalDamage95 = 3 + 2 * 95; // 193 -- what a NON-tapered literal read would give
 var taperedDamage95 = 3 + 2 * taperedEffectiveLevelReq(95); // 157
@@ -2452,6 +2499,14 @@ band95WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage95, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage95);
   assert(it.damage !== literalDamage95, id + ' damage is NOT the literal-formula value ' + literalDamage95 + ' (the F1 taper must be applied)');
 });
+// v1.6 P1 (CB-4): Rods carry the tapered weapon damage further HALVED (js/data/items.js).
+var rodDamage95 = Math.max(1, Math.round(taperedDamage95 * 0.5));
+var rod95 = Game.Inventory.getItem('rod_lunar_conduit');
+assert(!!rod95, 'Band F tier-95 weapon exists: rod_lunar_conduit');
+if (rod95) {
+  assert(rod95.damage === rodDamage95, 'rod_lunar_conduit damage (' + rod95.damage + ') equals the v1.6 P1 HALVED-tapered value ' + rodDamage95);
+  assert(rod95.damage !== literalDamage95, 'rod_lunar_conduit damage is NOT the literal-formula value ' + literalDamage95);
+}
 // Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
 // divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor95 = 1 + 95; // 96 -- literal read
@@ -3649,6 +3704,139 @@ Game.Battle.defend(); // the release turn, Defended -- a telegraph (non-reactive
 assert(b79b.charge === null, 'a non-reactive telegraph monster releases on schedule even when Defended -- it never holds (holding is reactive-exclusive)');
 assert(b79b.log.some(function (l) { return l.indexOf('unleashes its charged blow') !== -1; }), 'the release happened this turn, not held');
 assert(!b79b.log.some(function (l) { return l.indexOf('holds its charge') !== -1; }), 'sanity: no hold logged for a non-reactive monster');
+Game.Battle.endBattle();
+
+// =================== Test 80: v1.6 P1 (CB-1) — penetration floor is DEFENSIVE-ONLY ===================
+console.log('\n=== Test 80: v1.6 P1 penetration floor (CB-1, SPEC-V1.6-REBALANCE.md §6) — defensive-only ===');
+var c80 = makeCharacter({ name: 'FloorTest' });
+c80.level = 20; // matches the monster's level so Fear does not zero out the inflated Armor below
+c80.endurance = 100000; // absurdly high Armor so raw-mitigation would go deeply negative
+Game.Character.recalcDerived(c80);
+c80.hitPoints = c80.hitPointsMax;
+setRng(seqRng([0.99, 0.99, 0.5], 0.5)); // dodge fail, glancing fail, variance neutral (x1.0)
+var hpBefore80 = c80.hitPoints;
+var b80 = Game.Battle.start('juneros_riptide_hunter'); // level 20, damage 43, no techs/behavior/curse -> clean rng sequence
+assert(b80.playerFirst === false, 'sanity: the level-20 monster (effective dex 20) outpaces the default-dex player, so it strikes first inside start()');
+var raw80 = b80.monster.damage; // neutral variance above, no frenzied/tech modifiers on a simple monster
+var expectedFloorDmg80 = Math.max(1, Math.round(raw80 * BALANCE.DAMAGE_PENETRATION_FLOOR));
+var actualDmg80 = hpBefore80 - c80.hitPoints;
+assert(actualDmg80 === expectedFloorDmg80,
+  'monster->player hit floors to round(raw*DAMAGE_PENETRATION_FLOOR)=' + expectedFloorDmg80 + ' despite huge Armor, got ' + actualDmg80);
+assert(actualDmg80 > 1, 'sanity: the floor is meaningfully above the old bare max(1,...) floor for this raw damage, got ' + actualDmg80);
+Game.Battle.endBattle();
+
+// The SAME huge-armor trick on the MONSTER side must NOT floor a player->monster hit — that
+// direction keeps the old max(1, raw-mitigation) with no percentage floor (LOCKED P0: a symmetric
+// floor let under-levelled players guarantee-chunk high-armor monsters and reopened 5-levels-down).
+var c80b = makeCharacter({ name: 'FloorTestOffense' });
+setRng(seqRng([0.99, 0.99, 0.99, 0.5], 0.5)); // double-attack fail, monster-dodge fail, glancing fail, variance neutral
+var b80b = Game.Battle.start('plains_field_rat');
+b80b.monster.armor = 100000; // absurdly high monster Armor
+var raw80b = Game.Character.getDamage(c80b); // fear=1, no curse/buff at level 1 vs level 1
+var mHpBefore80b = b80b.monster.hp;
+Game.Battle.attack();
+var actualDmg80b = mHpBefore80b - b80b.monster.hp;
+var wouldBeFloorDmg80b = Math.max(1, Math.round(raw80b * BALANCE.DAMAGE_PENETRATION_FLOOR));
+assert(actualDmg80b === 1, 'player->monster hit still floors to a bare 1 against absurd monster Armor (no percentage floor this direction), got ' + actualDmg80b);
+if (wouldBeFloorDmg80b > 1) {
+  assert(actualDmg80b !== wouldBeFloorDmg80b, 'sanity: confirms the 30% floor was NOT applied here (that would have been ' + wouldBeFloorDmg80b + ')');
+}
+Game.Battle.endBattle();
+
+// =================== Test 81: v1.6 P1 (CB-2) — magic-school skill level scales offensive tech power ===================
+console.log('\n=== Test 81: v1.6 P1 magic-school skill scaling of offensive tech power (CB-2, SPEC-V1.6-REBALANCE.md §6) ===');
+var techFirebolt81 = Game.Battle.getTech('tech_firebolt_1'); // Evocation, effect 'damage'
+var c81 = makeCharacter({ skills: { 'Evocation': 0 }, name: 'MagicSkillTest' });
+c81.intelligence = 20;
+var basePower81 = Game.Battle.techEffectivePower(c81, techFirebolt81); // skill level 0 -> magicSkillMult = 1
+var expectedBase81 = Math.round(techFirebolt81.power * (1 + c81.intelligence * 0.02));
+assert(basePower81 === expectedBase81, 'sanity: skill level 0 gives the unmodified Int-scaled power, got ' + basePower81 + ' expected ' + expectedBase81);
+c81.skills['Evocation'].level = 10;
+var raisedPower81 = Game.Battle.techEffectivePower(c81, techFirebolt81);
+var expectedMagicMult81 = 1 + Math.min(BALANCE.MAGIC_SKILL_DAMAGE_PER_LEVEL * 10, BALANCE.MAGIC_SKILL_DAMAGE_CAP);
+var expectedRaised81 = Math.round(techFirebolt81.power * (1 + c81.intelligence * 0.02) * expectedMagicMult81);
+assert(raisedPower81 === expectedRaised81, 'Evocation skill level 10 raises Firebolt I effective power to ' + expectedRaised81 + ', got ' + raisedPower81);
+assert(raisedPower81 > basePower81, 'magic-school skill investment raises offensive-tech damage');
+// the cap holds: an absurd skill level cannot exceed MAGIC_SKILL_DAMAGE_CAP's multiplier
+c81.skills['Evocation'].level = 999;
+var cappedPower81 = Game.Battle.techEffectivePower(c81, techFirebolt81);
+var expectedCapped81 = Math.round(techFirebolt81.power * (1 + c81.intelligence * 0.02) * (1 + BALANCE.MAGIC_SKILL_DAMAGE_CAP));
+assert(cappedPower81 === expectedCapped81, 'magic-school damage mult caps at MAGIC_SKILL_DAMAGE_CAP, got ' + cappedPower81 + ' expected ' + expectedCapped81);
+// heal techs are UNAFFECTED by the magic-school-skill mult (only the damage/drain branch reads it)
+var healTech81 = Game.Battle.getTech('tech_mend_wounds_1');
+c81.skills['Abjuration'].level = 15;
+var healPower81 = Game.Battle.techEffectivePower(c81, healTech81);
+var expectedHeal81 = Math.round(healTech81.power * (1 + c81.intelligence * 0.01));
+assert(healPower81 === expectedHeal81, 'heal techs are NOT scaled by the magic-school-skill mult, got ' + healPower81 + ' expected ' + expectedHeal81);
+
+// =================== Test 82: v1.6 P1 (CB-4) — Rod equipped boosts tech damage, cuts tech energy cost ===================
+console.log('\n=== Test 82: v1.6 P1 Rod caster identity — ROD_SPELL_MULT + ROD_TECH_ENERGY_DISCOUNT (CB-4) ===');
+var techFirebolt82 = Game.Battle.getTech('tech_firebolt_1');
+var c82 = makeCharacter({ skills: {}, name: 'RodTest' }); // no creation-skill investment -> starter kit equips a Sword, not a Rod
+c82.intelligence = 20;
+assert(Game.Inventory.getItem(c82.equipment.weapon).skill !== 'Rods', 'sanity: no Rod equipped yet');
+var powerNoRod82 = Game.Battle.techEffectivePower(c82, techFirebolt82);
+var costNoRod82 = Game.Battle.effectiveTechEnergyCost(c82, techFirebolt82);
+assert(costNoRod82 === techFirebolt82.energyCost, 'sanity: full Energy cost with no Rod equipped');
+Game.Inventory.addItem(c82, 'rod_apprentice_wand');
+var eqRod82 = Game.Inventory.equip(c82, 'rod_apprentice_wand');
+assert(eqRod82.ok, 'rod equips: ' + eqRod82.failures.join(';'));
+var powerWithRod82 = Game.Battle.techEffectivePower(c82, techFirebolt82);
+var expectedPowerWithRod82 = Math.round(techFirebolt82.power * (1 + c82.intelligence * 0.02) * (1 + BALANCE.ROD_SPELL_MULT));
+assert(powerWithRod82 === expectedPowerWithRod82,
+  'Rod equipped raises Firebolt I power by ROD_SPELL_MULT, expected ' + expectedPowerWithRod82 + ', got ' + powerWithRod82);
+assert(powerWithRod82 > powerNoRod82, 'Rod equipped strictly raises offensive-tech damage');
+var costWithRod82 = Game.Battle.effectiveTechEnergyCost(c82, techFirebolt82);
+var expectedCostWithRod82 = Math.round(techFirebolt82.energyCost * (1 - BALANCE.ROD_TECH_ENERGY_DISCOUNT));
+assert(costWithRod82 === expectedCostWithRod82,
+  'Rod equipped cuts Firebolt I Energy cost by ROD_TECH_ENERGY_DISCOUNT, expected ' + expectedCostWithRod82 + ', got ' + costWithRod82);
+assert(costWithRod82 < costNoRod82, 'Rod equipped strictly lowers offensive-tech Energy cost');
+// heal techs are unaffected by either Rod bonus (spell power OR energy discount)
+var healTech82 = Game.Battle.getTech('tech_mend_wounds_1');
+var healCostWithRod82 = Game.Battle.effectiveTechEnergyCost(c82, healTech82);
+assert(healCostWithRod82 === healTech82.energyCost, 'heal techs keep full Energy cost even with a Rod equipped');
+var healPowerWithRod82 = Game.Battle.techEffectivePower(c82, healTech82);
+var expectedHealPowerWithRod82 = Math.round(healTech82.power * (1 + c82.intelligence * 0.01));
+assert(healPowerWithRod82 === expectedHealPowerWithRod82, 'heal techs keep their unmodified power even with a Rod equipped');
+
+// =================== Test 83: v1.6 P1 (CB-2) — INT speeds magic-school/Rod skill-XP, not weapon skill-XP ===================
+console.log('\n=== Test 83: v1.6 P1 INT-scaled skill-XP for magic schools + Rods, weapon skills unaffected (CB-2) ===');
+var c83 = makeCharacter({ skills: {}, name: 'IntSkillXpTest' });
+c83.intelligence = 50;
+c83.techs.push('tech_firebolt_1');
+c83.techSets[0][0] = 'tech_firebolt_1';
+setRng(fixedRng(0.99)); // fails dodge/glancing/double-attack throughout; techsUsedThisBattle is set regardless of hit/miss
+var b83 = Game.Battle.start('plains_field_rat');
+b83.monster.hp = b83.monster.hpMax = 100000; // survive two non-lethal actions
+Game.Battle.attack(); // sets attackedThisBattle + equippedWeaponSkill='Swords' (starter weapon)
+Game.Battle.useTech('tech_firebolt_1'); // Evocation -> techsUsedThisBattle['Evocation']=true regardless of hit/miss
+b83.monster.hp = 1; // let the next hit land the killing blow
+Game.Battle.attack();
+assert(b83.phase === 'won', 'sanity: the rat died on the finishing blow');
+var expectedPerUse83 = BALANCE.SKILL_XP_PER_USE; // fury=0, at/above the monster's level -> no decline, no fury bonus
+var expectedMagicXp83 = Math.max(1, Math.round(expectedPerUse83 * (1 + c83.intelligence * BALANCE.INT_SKILL_XP_PER_POINT)));
+assert(b83.rewards.skillXp['Swords'] === expectedPerUse83,
+  'weapon skill-XP (Swords) is UNAFFECTED by Intelligence, expected ' + expectedPerUse83 + ', got ' + b83.rewards.skillXp['Swords']);
+assert(b83.rewards.skillXp['Evocation'] === expectedMagicXp83,
+  'magic-school skill-XP (Evocation) IS Int-scaled, expected ' + expectedMagicXp83 + ', got ' + b83.rewards.skillXp['Evocation']);
+assert(b83.rewards.skillXp['Evocation'] > b83.rewards.skillXp['Swords'],
+  'the Int-scaled magic-school skill-XP exceeds the flat weapon skill-XP for the same kill');
+Game.Battle.endBattle();
+
+// Rods grant skill-XP via the WEAPON-skill route (c.equippedWeaponSkill = 'Rods' when meleed
+// with) — that route must ALSO get the Int multiplier (Intelligence.md names Rods explicitly,
+// alongside the five magic schools).
+var c83b = makeCharacter({ skills: {}, name: 'IntSkillXpRodTest' });
+c83b.intelligence = 50;
+Game.Inventory.addItem(c83b, 'rod_apprentice_wand');
+Game.Inventory.equip(c83b, 'rod_apprentice_wand');
+setRng(fixedRng(0.99));
+var b83b = Game.Battle.start('plains_field_rat');
+b83b.monster.hp = 1;
+Game.Battle.attack();
+assert(b83b.phase === 'won', 'sanity: the rat died to the rod-wielder\'s attack');
+assert(b83b.rewards.skillXp['Rods'] === expectedMagicXp83,
+  'Rods skill-XP is ALSO Int-scaled via the weapon-skill route (same rate as a magic school), expected ' + expectedMagicXp83 + ', got ' + b83b.rewards.skillXp['Rods']);
 Game.Battle.endBattle();
 
 // =================== Summary ===================

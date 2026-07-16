@@ -346,7 +346,10 @@ assert(res7a.ok === true, 'boss quest accepted in Eldor');
 Game._debug.completeQuestStep('ruin_warden_boss');
 assert(Game.Quests.canTurnIn('ruin_warden_boss') === true, 'boss quest force-satisfied');
 var strengthBackup7 = c7.strength;
-c7.strength = 0; // capacity 0 -> reward tablet (weight 2) cannot fit
+// v1.6 P1 (CB-6, SPEC-V1.6-REBALANCE.md §6): carryCapacity now carries a flat base term
+// (BALANCE.CARRY_CAPACITY_BASE=50), so strength=0 no longer zeroes capacity — force it deeply
+// negative instead so the reward tablet (weight 2) still cannot fit.
+c7.strength = -1000;
 var goldBefore7 = Game.Character.goldTotalAsGold(c7);
 var tpBefore7 = c7.trainingPoints;
 var res7b = Game.Quests.turnIn('ruin_warden_boss');

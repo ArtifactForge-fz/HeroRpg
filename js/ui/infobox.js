@@ -169,7 +169,12 @@ Game.Infobox = (function () {
     if (tech.chain) {
       body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Chain']), e('span', {}, [tech.chain + ' (rank ' + tech.rank + ')'])]));
     }
-    body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Energy Cost']), e('span', {}, [String(tech.energyCost)])]));
+    // v1.6 P1 (CB-4, SPEC-V1.6-REBALANCE.md §6): show the Rod-discounted effective cost (when
+    // applicable) via the same helper useTech charges from, so this readout matches battle.
+    var displayEnergyCost = (character && Game.Battle && Game.Battle.effectiveTechEnergyCost)
+      ? Game.Battle.effectiveTechEnergyCost(character, tech)
+      : tech.energyCost;
+    body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Energy Cost']), e('span', {}, [String(displayEnergyCost)])]));
 
     // Feature C: weapon techniques carry no `power` field (js/data/techs.js) — their damage is a
     // multiplier on the wielded weapon's physical Damage stat, not a flat spell power, so the

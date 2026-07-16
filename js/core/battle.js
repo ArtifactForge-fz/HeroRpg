@@ -546,7 +546,13 @@ Game.Battle = (function () {
     var mitigation = (usedTech && usedTech.grade)
       ? Game.Character.getMagicArmor(battle.player) * fear
       : (Game.Character.getArmor(battle.player) + playerBuffArmorBonus(battle)) * fear;
-    var dmg = Math.max(1, Math.round(raw - mitigation));
+    // [invented] v1.6 P1 (CB-1, SPEC-V1.6-REBALANCE.md §6): penetration floor, DEFENSIVE-ONLY (this
+    // is the monster->player hit site) — a hit always deals at least round(raw*FLOOR) regardless of
+    // armor, applied BEFORE Defend halving. LOCKED by the P0 sim gate; deliberately NOT applied to
+    // any player->monster damage site (attack()/useTech()/limitBreak() keep the plain
+    // max(1, raw-mitigation) form) — see balance.js DAMAGE_PENETRATION_FLOOR comment for why this
+    // is one-directional.
+    var dmg = Math.max(1, Math.round(raw * BALANCE.DAMAGE_PENETRATION_FLOOR), Math.round(raw - mitigation));
     if (defending) dmg = Math.max(1, Math.round(dmg * BALANCE.DEFEND_DAMAGE_MULT));
 
     battle.player.hitPoints = Math.max(0, battle.player.hitPoints - dmg);
@@ -778,6 +784,28 @@ Game.Battle = (function () {
     return false;
   }
 
+  // v1.6 P1 (CB-4, SPEC-V1.6-REBALANCE.md §6): true while a Rod is the character's equipped
+  // weapon — shared by techEffectivePower's rod spell-power bonus and useTech's rod tech energy
+  // discount, so the guarded Game.Inventory lookup lives in one place. Rods carry a caster
+  // identity (spell focus), not a plain melee weapon.
+  function isRodEquipped(c) {
+    var weaponId = c.equipment && c.equipment.weapon;
+    var weapon = (weaponId && Game.Inventory && Game.Inventory.getItem) ? Game.Inventory.getItem(weaponId) : null;
+    return !!(weapon && weapon.skill === 'Rods');
+  }
+
+  // v1.6 P1 (CB-4, SPEC-V1.6-REBALANCE.md §6): the Energy cost useTech actually charges for a
+  // given tech — OFFENSIVE techs (damage/drain) cost less while a Rod is equipped (heal/buff/
+  // summon are untouched). Takes a bare character, not a battle, so the Techs screen (out of
+  // battle) and the in-battle tech grid (js/ui/screens.js) can show the SAME number this will
+  // actually charge, rather than duplicating the formula.
+  function effectiveTechEnergyCost(c, tech) {
+    var offensiveTech = (tech.effect === 'damage' || tech.effect === 'drain');
+    return (offensiveTech && isRodEquipped(c))
+      ? Math.round(tech.energyCost * (1 - BALANCE.ROD_TECH_ENERGY_DISCOUNT))
+      : tech.energyCost;
+  }
+
   // invented: Intelligence spell factors (DESIGN.md §4 "Intelligence factors spell damage";
   // Recent_Updates.md 2007-08-02). Also used by the Techs infobox "effective damage" display
   // (Version_2.1_Changes.md: "Tech dialog boxes show 'effective damage' which figures in
@@ -789,7 +817,14 @@ Game.Battle = (function () {
     if (tech.effect === 'buff') {
       return tech.power; // flat +damage
     }
-    return Math.round(tech.power * (1 + c.intelligence * 0.02)); // invented: Int spell-damage factor
+    // v1.6 P1 (CB-2/CB-4, SPEC-V1.6-REBALANCE.md §6): offensive (damage/drain) spell power also
+    // scales with the tech's governing magic-school skill level (parallels the weapon-skill damage
+    // term in Game.Character.getDamage), and gets a flat bonus while a Rod is equipped (Rods are
+    // the caster's weapon, CB-3/CB-4). Both LOCKED by the P0 sim gate.
+    var skillLevel = tech.skill ? ((c.skills[tech.skill] || {}).level || 0) : 0;
+    var magicSkillMult = 1 + Math.min(BALANCE.MAGIC_SKILL_DAMAGE_PER_LEVEL * skillLevel, BALANCE.MAGIC_SKILL_DAMAGE_CAP);
+    var rodMult = isRodEquipped(c) ? (1 + BALANCE.ROD_SPELL_MULT) : 1;
+    return Math.round(tech.power * (1 + c.intelligence * 0.02) * magicSkillMult * rodMult); // invented: Int spell-damage factor
   }
 
   function useTech(techId) {
@@ -830,7 +865,14 @@ Game.Battle = (function () {
       log(battle, 'You have no weapon equipped and cannot use ' + tech.name + '.');
       return battle;
     }
-    if (battle.player.energy < tech.energyCost) {
+    // v1.6 P1 (CB-4, SPEC-V1.6-REBALANCE.md §6): while a Rod is equipped, OFFENSIVE techs
+    // (damage/drain only — heal/buff/summon keep full cost) cost less Energy, making casting
+    // energy-competitive with a basic attack. Computed once (effectiveTechEnergyCost, shared with
+    // the Techs/battle UI so displayed costs never disagree with what's actually charged) and used
+    // for BOTH the affordability check below and the actual deduction further down. LOCKED by the
+    // P0 sim gate.
+    var effectiveEnergyCost = effectiveTechEnergyCost(battle.player, tech);
+    if (battle.player.energy < effectiveEnergyCost) {
       log(battle, 'Not enough Energy to use ' + tech.name + '.');
       return battle;
     }
@@ -845,7 +887,7 @@ Game.Battle = (function () {
       return battle;
     }
 
-    battle.player.energy = Math.max(0, battle.player.energy - tech.energyCost);
+    battle.player.energy = Math.max(0, battle.player.energy - effectiveEnergyCost);
     if (tech.skill) battle.techsUsedThisBattle[tech.skill] = true;
     if (tech.effect === 'buff' && tech.shardCost) {
       battle.player.animaShards -= tech.shardCost;
@@ -1362,16 +1404,31 @@ Game.Battle = (function () {
     );
 
     var skillXpGranted = {};
+    // v1.6 P1 (CB-2, SPEC-V1.6-REBALANCE.md §6): Intelligence speeds skill-XP gain for magic-
+    // school skills AND Rods — [archived] reference/manual/Intelligence.md ("Increases the
+    // Experience gained in ... Rods, Evocation, Conjuration, Alteration, Absorption, Abjuration"),
+    // previously unimplemented. Weapon (Swords/Polearms/Knives/Hand to Hand) and armor skill-XP
+    // below are UNAFFECTED — the multiplier only applies when the granted skill is in
+    // MAGIC_XP_SKILLS (a Rod grants its skill-XP via the WEAPON-skill route below, since Rods is
+    // c.equippedWeaponSkill when meleed with, so that loop needs the same check as the
+    // magic-school loop). LOCKED by the P0 sim/calc gate.
+    var intXpMult = 1 + c.intelligence * BALANCE.INT_SKILL_XP_PER_POINT;
     // Weapon skill, if the player attacked with a weapon this battle.
     if (battle.attackedThisBattle && c.equippedWeaponSkill) {
-      Game.Character.addSkillXp(c, c.equippedWeaponSkill, perUse);
-      skillXpGranted[c.equippedWeaponSkill] = perUse;
+      var weaponPerUse = MAGIC_XP_SKILLS[c.equippedWeaponSkill]
+        ? Math.max(1, Math.round(perUse * intXpMult))
+        : perUse;
+      Game.Character.addSkillXp(c, c.equippedWeaponSkill, weaponPerUse);
+      skillXpGranted[c.equippedWeaponSkill] = weaponPerUse;
     }
     // Magic-school skills for each school of tech used.
     for (var school in battle.techsUsedThisBattle) {
       if (!Object.prototype.hasOwnProperty.call(battle.techsUsedThisBattle, school)) continue;
-      Game.Character.addSkillXp(c, school, perUse);
-      skillXpGranted[school] = perUse;
+      var schoolPerUse = MAGIC_XP_SKILLS[school]
+        ? Math.max(1, Math.round(perUse * intXpMult))
+        : perUse;
+      Game.Character.addSkillXp(c, school, schoolPerUse);
+      skillXpGranted[school] = schoolPerUse;
     }
     // Armor skills worn while hit — foot armor excluded (archived: Recent_Updates.md
     // 2007-04-14 "Foot armor no longer contributes to skill experience").
@@ -1596,6 +1653,15 @@ Game.Battle = (function () {
 
   var ARMOR_SKILLS = ['Light Armor', 'Medium Armor', 'Heavy Armor', 'Shields'];
 
+  // v1.6 P1 (CB-2, SPEC-V1.6-REBALANCE.md §6): the skills whose skill-XP gain Intelligence speeds
+  // up ([archived] reference/manual/Intelligence.md) — the five magic schools plus Rods. Read by
+  // onWin's skill-XP award block above (hoisted var, same pattern as ARMOR_SKILLS: the whole IIFE
+  // body runs before onWin is ever called).
+  var MAGIC_XP_SKILLS = {
+    'Evocation': true, 'Conjuration': true, 'Alteration': true, 'Absorption': true, 'Abjuration': true,
+    'Rods': true
+  };
+
   // v1.4 P3 (G2): flavor line announced once, at battle start, next to the champion banner
   // (js/ui/screens.js renderBattle also shows the affix name beside [CHAMPION]) — the battle log
   // must teach players the rules (spec §4).
@@ -1624,6 +1690,7 @@ Game.Battle = (function () {
     canAct: canAct,
     isTechEquipped: isTechEquipped,
     techEffectivePower: techEffectivePower,
+    effectiveTechEnergyCost: effectiveTechEnergyCost,
     fearLevels: fearLevels,
     fearMultiplier: fearMultiplier,
     playerDodgeChance: playerDodgeChance,

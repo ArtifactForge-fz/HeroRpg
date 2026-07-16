@@ -68,6 +68,21 @@ delivery model as the original ("text-based, web 2.0", AJAX-era) and as the Avat
 - Derived: **Damage** (weapon + Str/Dex/Int depending on weapon class: Swords/Blunt/Polearms←Str,
   Knives←Dex, Rods←Int), **Armor** (equipment + Endurance), **Magic Armor** (Int).
 - Counters: Monster Kills, Player Kills (unimplemented in original — omit), Deaths.
+- **v1.6 P1 — Endurance/Intelligence armor ratios trimmed to 0.9 [revised]** (`docs/SPEC-V1.6-REBALANCE.md`
+  §6, CB-1/CB-5; playtest triage `docs/REVIEW-2026-07-16.md`): Armor and Magic Armor no longer take
+  Endurance/Intelligence 1:1 — both are now `round(stat * 0.9)` (`ENDURANCE_ARMOR_RATIO` /
+  `INT_MAGIC_ARMOR_RATIO`, `js/balance.js`). The real fix for "a mid-level character's Endurance
+  alone exceeds a same-level monster's whole hit, flooring damage to 1" (CB-1) is the penetration
+  floor below; this ratio is only a mild extra trim. It was RECONCILED from a provisional 0.5 during
+  the P1 review re-sim: 0.5 crashed the shipped modest-fixture lair bosses (~85%→46%/31% win at
+  L50/L100), breaking their `>=60%` contract, because shipped boss damage was tuned against the old
+  1:1 armor — re-tuning shipped bosses to fit a new constant would violate the ratchet principle, so
+  the constant was fit to the bosses instead. A larger defense nerf would need a separate boss-damage
+  retune pass. Still a deliberate, user-directed re-tune of shipped constants (ratchet exception).
+- **v1.6 P1 — carrying capacity gained a base term [invented]** (CB-6): `carryCapacity` is now
+  `CARRY_CAPACITY_BASE + strength * CARRY_CAPACITY_PER_STR` (50 + STR·6), not a bare `STR·10` — the
+  old formula gave a STR-5 caster only a 50-weight cap, punishing any non-Strength build for no
+  archived reason.
 
 ### Creation — [archived] (`New_Player_Guide.md`)
 Race (Human/Arkan) → distribute **5 skill points, max 3 per skill** → name + gender.
@@ -260,6 +275,34 @@ purchases, deactivation wipe):
   2007-04-21; heals/buffs always land, weapon techs roll monster dodge), and **non-elemental
   (grade:null) damage ignores defense** (2005 note — a grade:null tech's mitigation is 0; elemental
   techs still subtract Magic Armor). This resolves the prior code-vs-DESIGN contradiction.
+- **v1.6 P1 — combat & stats rebalance** (`docs/SPEC-V1.6-REBALANCE.md` §6, CB-1..CB-6; playtest
+  triage `docs/REVIEW-2026-07-16.md`), all numbers LOCKED by the lead's P0 sim gate:
+  - **Penetration floor [invented], DEFENSIVE-ONLY (CB-1):** a monster's hit on the player always
+    deals at least `round(raw * DAMAGE_PENETRATION_FLOOR)` (0.30) regardless of Armor/Magic Armor,
+    applied before Defend halving — answers "light armor floors nearly every hit to 1." Deliberately
+    one-directional: the player→monster damage sites (`attack`/`useTech`/`limitBreak`) are
+    UNCHANGED — a symmetric floor let under-levelled players guarantee-chunk high-armor monsters
+    and reopened the 5-levels-down contract in the P0 sim.
+  - **Weapon/armor skill caps raised [revised]:** `WEAPON_SKILL_DAMAGE_CAP` 0.10→0.25 and
+    `ARMOR_SKILL_ARMOR_CAP` 0.15→0.30 (§3 Skills) — the shipped caps left 90% of the archived skill
+    range (`2·lvl+1`) buying zero benefit past skill ~8 (PG-3); the P0 gate re-verified the
+    5-levels-down contract is not worsened by the raise. A user-directed exception to the ratchet
+    principle (shipped constants re-tuned).
+  - **Magic-school skill scales spell power [invented] (CB-2):** an offensive (damage/drain)
+    tech's power now also multiplies by `1 + min(MAGIC_SKILL_DAMAGE_PER_LEVEL · skillLevel,
+    MAGIC_SKILL_DAMAGE_CAP)` (0.015/level, capped +15%), keyed on the tech's own governing skill —
+    parallel to the weapon-skill damage term, so magic-school investment finally does something
+    past gating which tech ranks you can learn.
+  - **Rods are a caster's weapon, not a plain club [invented] (CB-4):** while a Rod is the equipped
+    weapon, offensive-tech power ×1.15 (`ROD_SPELL_MULT`) and offensive-tech Energy cost ×0.7
+    (`ROD_TECH_ENERGY_DISCOUNT`) — heal/buff/summon techs are unaffected. Paired with halving every
+    Rod's own `damage` field (`js/data/items.js`) so casting, not meleeing with the Rod, is the
+    caster's best play (CB-3).
+  - **Intelligence speeds magic-skill XP [archived]** (`reference/manual/Intelligence.md`:
+    "Increases the Experience gained in … Rods, Evocation, Conjuration, Alteration, Absorption,
+    Abjuration") — previously unimplemented. Skill-XP granted to a magic school or Rods is now
+    ×`(1 + intelligence · INT_SKILL_XP_PER_POINT)` (0.01/point, floor 1); weapon and armor skill-XP
+    are unaffected.
 
 ## 5. Techniques (Techs) — [archived structure] (`Techniques.md`, `Techs.md`)
 

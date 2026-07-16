@@ -917,14 +917,14 @@ assert(Game.Character.goldTotalAsGold(c5) === 100 - Game.Inventory.getItem('poti
 // over capacity
 var c5b = makeCharacter({ name: 'HeavyShopTest' });
 Game.Character.addGold(c5b, 10000);
-c5b.strength = 1; // tiny capacity, starter kit already near the cap
+// v1.6 P1 (CB-6, SPEC-V1.6-REBALANCE.md §6): carryCapacity now carries a flat base term
+// (BALANCE.CARRY_CAPACITY_BASE=50), so strength=1 (old capacity 10) no longer forces a tiny
+// capacity — force it deeply negative instead so the starter kit alone still overflows it.
+// (buy() doesn't check levelReq/statReqs at all, only stock/gold/weight — so a stray purchase
+// attempt at a non-negative capacity here would actually succeed and spend gold, contaminating
+// the goldBeforeCap comparison below; go straight to the guaranteed-overflow capacity.)
+c5b.strength = -1000;
 var goldBeforeCap = Game.Character.goldTotalAsGold(c5b);
-var res5c = Game.World.buy('heavy_body_plate_cuirass'); // heavy + levelReq 4, but capacity is what matters
-// force capacity failure regardless of levelReq by using a guaranteed-too-heavy purchase:
-var capFail = false;
-while (Game.Inventory.carryCapacity(c5b) - Game.Inventory.currentWeight(c5b) >= 0 && c5b.strength > 0) { break; }
-// Simplify: directly assert addItem-over-capacity path via buy() on heaviest cheap item after zeroing capacity.
-c5b.strength = 0;
 var res5d = Game.World.buy('tent_ragged_bedroll');
 assert(res5d.ok === false && /weight/i.test(res5d.message), 'buy fails over capacity: ' + res5d.message);
 assert(Game.Character.goldTotalAsGold(c5b) === goldBeforeCap, 'gold not charged when buy fails over capacity');
@@ -981,7 +981,9 @@ var c5h = makeCharacter({ name: 'ExchangeCapacityTest' });
 c5h.level = 8;
 Game.World.travelTo('laik');
 c5h.ap = 10000;
-c5h.strength = 0; // zero carry capacity (same pattern as Test 5's shop over-capacity case)
+// v1.6 P1 (CB-6): carryCapacity now has a flat base term, so strength=0 no longer zeroes
+// capacity — force it deeply negative (same pattern as Test 5's shop over-capacity case).
+c5h.strength = -1000;
 var apBefore5h = c5h.ap;
 var invBefore5h = c5h.inventory.length;
 var resCap5h = Game.World.buyAp('ap_boots_gold_plated'); // 140 AP, weight 5 -> too heavy at capacity 0
@@ -1026,7 +1028,9 @@ assert(c6b.inventory.indexOf('tent_travelers_tent') !== -1, 'item back in invent
 var c6c = makeCharacter({ name: 'VaultCapTest' });
 Game.Inventory.addItem(c6c, 'tent_travelers_tent');
 Game.World.depositItem('tent_travelers_tent');
-c6c.strength = 0; // capacity collapses to ~0
+// v1.6 P1 (CB-6): carryCapacity now has a flat base term, so strength=0 no longer collapses
+// capacity to ~0 — force it deeply negative instead.
+c6c.strength = -1000;
 var res6f = Game.World.withdrawItem('tent_travelers_tent');
 assert(res6f.ok === false && /weight/i.test(res6f.message), 'withdraw blocked over capacity: ' + res6f.message);
 assert(c6c.vault.items.indexOf('tent_travelers_tent') !== -1, 'item remains in vault after blocked withdraw');

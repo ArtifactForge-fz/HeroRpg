@@ -115,12 +115,17 @@ Game.Data.items = [
   },
 
   // ---------- Weapons: Rods (Int, invented-parallel to Damage.md ratio) ----------
+  // v1.6 P1 (CB-4, SPEC-V1.6-REBALANCE.md §6): every Rod's `damage` field below is HALVED from
+  // its original 3+2*levelReq-derived value — Rods are now spell foci, not melee clubs; casting
+  // (boosted by ROD_SPELL_MULT/ROD_TECH_ENERGY_DISCOUNT, js/balance.js) is meant to out-damage a
+  // rod's own basic-attack swing, so the swing itself had to come down. Only `damage` changed —
+  // levelReq/value/statReqs/magicArmor/tags are untouched.
   {
     id: 'rod_apprentice_wand',
     name: "Apprentice's Wand",
     slot: 'weapon',
     skill: 'Rods',
-    damage: 5,
+    damage: 3, // v1.6 P1: halved from 5 (SPEC-V1.6 §6 CB-4)
     weight: 3,
     levelReq: 1,
     value: 15,
@@ -132,7 +137,7 @@ Game.Data.items = [
     name: 'Saratus Conduit Rod',
     slot: 'weapon',
     skill: 'Rods',
-    damage: 21,
+    damage: 11, // v1.6 P1: halved from 21 (SPEC-V1.6 §6 CB-4)
     weight: 4,
     levelReq: 9,
     statReqs: { intelligence: 18 },
@@ -428,7 +433,7 @@ Game.Data.items = [
     name: 'Anima-Touched Branch',
     slot: 'weapon',
     skill: 'Rods',
-    damage: 29,
+    damage: 15, // v1.6 P1: halved from 29 (SPEC-V1.6 §6 CB-4)
     weight: 3,
     levelReq: 11,
     statReqs: { intelligence: 20 },
@@ -725,7 +730,7 @@ Game.Data.items = [
     name: 'Arkan Runic Conduit',
     slot: 'weapon',
     skill: 'Rods',
-    damage: 33,
+    damage: 17, // v1.6 P1: halved from 33 (SPEC-V1.6 §6 CB-4)
     weight: 4,
     levelReq: 15,
     statReqs: { intelligence: 26 },
@@ -795,7 +800,7 @@ Game.Data.items = [
     name: 'Kuraan Runewood Rod',
     slot: 'weapon',
     skill: 'Rods',
-    damage: 53,
+    damage: 27, // v1.6 P1: halved from 53 (SPEC-V1.6 §6 CB-4)
     weight: 5,
     levelReq: 25,
     statReqs: { intelligence: 34 },
@@ -862,7 +867,7 @@ Game.Data.items = [
     name: "Eidas' Remnant Wand",
     slot: 'weapon',
     skill: 'Rods',
-    damage: 73,
+    damage: 37, // v1.6 P1: halved from 73 (SPEC-V1.6 §6 CB-4)
     weight: 4,
     levelReq: 35,
     statReqs: { intelligence: 44 },
@@ -1206,7 +1211,7 @@ Game.Data.items = [
     name: 'Tideglass Conduit Rod',
     slot: 'weapon',
     skill: 'Rods',
-    damage: 31, // +15% over formula (3+2*12=27)
+    damage: 16, // v1.6 P1: halved from 31 (+15% over formula (3+2*12=27)) — SPEC-V1.6 §6 CB-4
     magicArmor: 5, // hybrid: a weapon carrying +Magic Armor, a stat shop rods never have
     weight: 3,
     levelReq: 12,
@@ -1281,7 +1286,7 @@ Game.Data.items = [
     name: "Warden's Anima Core",
     slot: 'weapon',
     skill: 'Rods',
-    damage: 27, // +17% over rod_saratus_conduit (lvl9, dmg 21)
+    damage: 14, // v1.6 P1: halved from 27 (+17% over rod_saratus_conduit (lvl9, dmg 21)) — SPEC-V1.6 §6 CB-4
     magicArmor: 6, // hybrid: a weapon carrying +Magic Armor
     weight: 4,
     levelReq: 10,
@@ -1649,7 +1654,7 @@ Game.Data.items = [
     name: 'Majiku Wardbreaker Rod',
     slot: 'weapon',
     skill: 'Rods',
-    damage: 87, // TAPERED, see header comment above
+    damage: 44, // TAPERED, see header comment above; v1.6 P1: further halved from 87 (SPEC-V1.6 §6 CB-4)
     weight: 4,
     levelReq: 45,
     statReqs: { intelligence: 54 },
@@ -1906,7 +1911,7 @@ Game.Data.items = [
     name: 'Ashenbrand Conduit',
     slot: 'weapon',
     skill: 'Rods',
-    damage: 109, // +20% over the tapered levelReq-48 damage (~91)
+    damage: 55, // v1.6 P1: halved from 109 (+20% over the tapered levelReq-48 damage (~91)) — SPEC-V1.6 §6 CB-4
     armor: 3, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 6 / 2 = 3.
     weight: 4,
     levelReq: 48,
@@ -1992,7 +1997,7 @@ Game.Data.items = [
     name: "Hostcaller's Ruin",
     slot: 'weapon',
     skill: 'Rods',
-    damage: 101, // TAPERED, see header comment above
+    damage: 51, // TAPERED, see header comment above; v1.6 P1: further halved from 101 (SPEC-V1.6 §6 CB-4)
     weight: 4,
     levelReq: 55,
     statReqs: { intelligence: 64 },
@@ -2249,7 +2254,7 @@ Game.Data.items = [
     name: "Stormwraith's Core",
     slot: 'weapon',
     skill: 'Rods',
-    damage: 126, // +20% over the tapered levelReq-58 damage (~105)
+    damage: 63, // v1.6 P1: halved from 126 (+20% over the tapered levelReq-58 damage (~105)) — SPEC-V1.6 §6 CB-4
     armor: 4, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 7 / 2 = 4.
     weight: 4,
     levelReq: 58,
@@ -2335,7 +2340,7 @@ Game.Data.items = [
     name: 'Ukai Wardstone Rod',
     slot: 'weapon',
     skill: 'Rods',
-    damage: 115, // TAPERED, see header comment above
+    damage: 58, // TAPERED, see header comment above; v1.6 P1: further halved from 115 (SPEC-V1.6 §6 CB-4)
     weight: 4,
     levelReq: 65,
     statReqs: { intelligence: 74 },
@@ -2592,7 +2597,7 @@ Game.Data.items = [
     name: "Deepling's Core",
     slot: 'weapon',
     skill: 'Rods',
-    damage: 143, // +20% over the tapered levelReq-68 damage (~119)
+    damage: 72, // v1.6 P1: halved from 143 (+20% over the tapered levelReq-68 damage (~119)) — SPEC-V1.6 §6 CB-4
     armor: 4, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 8 / 2 = 4.
     weight: 4,
     levelReq: 68,
@@ -2677,7 +2682,7 @@ Game.Data.items = [
     name: 'Wellspring Conduit Rod',
     slot: 'weapon',
     skill: 'Rods',
-    damage: 129, // TAPERED, see header comment above
+    damage: 65, // TAPERED, see header comment above; v1.6 P1: further halved from 129 (SPEC-V1.6 §6 CB-4)
     weight: 4,
     levelReq: 75,
     statReqs: { intelligence: 84 },
@@ -2934,7 +2939,7 @@ Game.Data.items = [
     name: "Wellspring Heartcore",
     slot: 'weapon',
     skill: 'Rods',
-    damage: 160, // +20% over the tapered levelReq-78 weapon-equivalent damage (~133)
+    damage: 80, // v1.6 P1: halved from 160 (+20% over the tapered levelReq-78 weapon-equivalent damage (~133)) — SPEC-V1.6 §6 CB-4
     armor: 5, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 9 / 2 = 5.
     weight: 4,
     levelReq: 78,
@@ -3019,7 +3024,7 @@ Game.Data.items = [
     name: 'Anima-Channeling Rod',
     slot: 'weapon',
     skill: 'Rods',
-    damage: 143, // TAPERED, see header comment above
+    damage: 72, // TAPERED, see header comment above; v1.6 P1: further halved from 143 (SPEC-V1.6 §6 CB-4)
     weight: 4,
     levelReq: 85,
     statReqs: { intelligence: 94 },
@@ -3277,7 +3282,7 @@ Game.Data.items = [
     name: "Anima-Horror's Core",
     slot: 'weapon',
     skill: 'Rods',
-    damage: 176, // +20% over the tapered levelReq-88 weapon-equivalent damage (~147)
+    damage: 88, // v1.6 P1: halved from 176 (+20% over the tapered levelReq-88 weapon-equivalent damage (~147)) — SPEC-V1.6 §6 CB-4
     armor: 6, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 11 / 2 = 6.
     weight: 4,
     levelReq: 88,
@@ -3363,7 +3368,7 @@ Game.Data.items = [
     name: 'Lunar Conduit',
     slot: 'weapon',
     skill: 'Rods',
-    damage: 157, // TAPERED, see header comment above
+    damage: 79, // TAPERED, see header comment above; v1.6 P1: further halved from 157 (SPEC-V1.6 §6 CB-4)
     weight: 4,
     levelReq: 95,
     statReqs: { intelligence: 104 },
@@ -3621,7 +3626,7 @@ Game.Data.items = [
     name: "The Devourer's Core",
     slot: 'weapon',
     skill: 'Rods',
-    damage: 193, // +20% over the tapered levelReq-98 weapon-equivalent damage (~161)
+    damage: 97, // v1.6 P1: halved from 193 (+20% over the tapered levelReq-98 weapon-equivalent damage (~161)) — SPEC-V1.6 §6 CB-4
     armor: 6, // ARMOR-STACK CORRECTION (re-sim finding: a full 5-slot arc set of literally-tapered per-piece armor stacks additively against a monster's single damage term, negating Fear at 5-levels-down -- see js/balance.js F1 CONVENTION NOTES / ARMOR_STACK_DIVISOR). 12 / 2 = 6.
     weight: 4,
     levelReq: 98,
