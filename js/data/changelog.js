@@ -12,6 +12,29 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.7.0',
+    date: '2026-07-17',
+    title: 'The Traveler\'s Arc & the Reference Wiki',
+    saveVersion: 10,
+    highlights: [
+      'Quests now unfold as a journey across the realm. Instead of the capital handing out nearly ' +
+        'every early calling, each town\'s tavern offers the tasks suited to its own lands — and a ' +
+        'new frontier hall, Skyspire Landing, opens in the far north for the final leg (the ' +
+        'Kastengard outpost has gained a tavern of its own, too).',
+      'The Explore map is clearer: destinations are now cards, each showing a recommended level ' +
+        'range at a glance, so you know what you\'re walking into before you set out.',
+      'Arkan heroes come into their own. Your homeland\'s plains now hold dangers of their own — ' +
+        'including the runic Saratus Wardframe, a warded training construct — and you can answer ' +
+        'your first calling and choose a class in Saratus itself, no longer forced to travel to the ' +
+        'human capital. New Arkan trials carry your early path, and you can always journey home to ' +
+        'Saratus even before the usual level gate.',
+      'A new Reference Wiki, linked in the footer, is a full field guide to Van Arius — every item ' +
+        '(and where it\'s sold or dropped), every monster with its stats and drop rates, every ' +
+        'area and its level range, plus all techniques and synthesis recipes.'
+    ]
+  },
+
+  {
     version: 'v1.6.0',
     date: '2026-07-17',
     title: 'Sharper Battles & the Skyspire Landing',
