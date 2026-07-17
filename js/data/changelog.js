@@ -12,6 +12,37 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.6.0',
+    date: '2026-07-17',
+    title: 'Sharper Battles & the Skyspire Landing',
+    saveVersion: 10,
+    highlights: [
+      'Armour no longer makes you all but untouchable. Every blow now lands at least a share of ' +
+        'its force no matter how well-armoured you are, so ordinary monsters are a real threat ' +
+        'again — while prepared heroes still win their boss fights, at a price.',
+      'Magic comes into its own. Your magic-school skills now sharpen your spells as they grow, ' +
+        'Intelligence trains those schools faster, and a Rod is finally a caster\'s weapon — with ' +
+        'one equipped your techniques cost less Energy and strike harder, so casting keeps pace ' +
+        'with the blade instead of falling behind it.',
+      'Levelling is slower and steadier, and your class no longer masters every ability in a ' +
+        'handful of fights. In return, your weapon, armour and magic skills finally climb as you ' +
+        'take on tougher foes — a veteran hero is no longer stuck with a novice\'s skills.',
+      'The purse is tighter and more interesting: shops pay less for your cast-offs and the very ' +
+        'best gear costs more, Anima Shards begin trickling in from your earliest fights instead ' +
+        'of only late in the journey, and camping gear now improves gradually across the whole ' +
+        'road north rather than maxing out within a few levels.',
+      'Quest trinkets stop cluttering your pack once no quest or recipe still needs them, and ' +
+        'boss-only materials can no longer be foraged out of the wilds — the boss must be faced.',
+      'A new far-northern haven, Skyspire Landing, opens at level 85, so the endgame\'s shops and ' +
+        'quests are no longer all crammed into a single town.',
+      'Fixed a long-standing trap: The Oruk could become impossible to complete if you out-levelled ' +
+        'it after accepting — once accepted, a quest can now always be turned in.',
+      'A top-to-bottom balance and progression pass — every combat number was locked by simulation ' +
+        'before shipping, and your existing save carries over unchanged.'
+    ]
+  },
+
+  {
     version: 'v1.5.0',
     date: '2026-07-13',
     title: 'Living Monsters & The Twelve Callings',

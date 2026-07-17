@@ -1,6 +1,8 @@
 # SPEC-V1.6-REBALANCE — rebalance & progression overhaul
 
-Status: **P0 LOCKED (see §6); P1 in progress.** Scoped 2026-07-16 from the playtest triage in
+Status: **SHIPPED v1.6.0 (2026-07-17)** — all five phases committed on `v1.6-rebalance` (P1
+`3768a8c`, P2 `6c1beb2`, P3 `498488b`, P4 `3203ef4`, P5 release), all ten suites green, save
+version 10 (no migration). Scoped 2026-07-16 from the playtest triage in
 `docs/REVIEW-2026-07-16.md` (18 findings, each cited + tagged). Shipped base: v1.5.0, save
 version 10.
 
