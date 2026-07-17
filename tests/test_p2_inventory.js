@@ -187,24 +187,32 @@ assert(c3.equipment.head === 'ring_of_the_hollow_king', 'cursed ring remains equ
 // ================= Test 4: weight/encumbrance =================
 console.log('\n=== Test 4: weight readout + over-capacity add fails ===');
 var c4 = Game.Character.create({ race: 'Human', name: 'PackMule', gender: 'Female', skillPoints: skillPoints });
-c4.strength = 1; // force a tiny capacity (10) to make the cap easy to hit
+c4.strength = 1; // force a small capacity to make the cap reachable
 var capBefore = Game.Inventory.carryCapacity(c4);
 console.log('Capacity forced to: ' + capBefore);
 var weightBefore = Game.Inventory.currentWeight(c4);
 console.log('Weight before extra adds: ' + weightBefore);
 
-// Try to add heavy plate items until it should fail.
-var addResult1 = Game.Inventory.addItem(c4, 'heavy_legs_warplate_legguards'); // weight 9
-var weightAfter1 = Game.Inventory.currentWeight(c4);
-console.log('After first heavy add attempt (ok=' + addResult1 + '): weight=' + weightAfter1);
-
-var addResult2 = Game.Inventory.addItem(c4, 'heavy_feet_ironclad_sabatons'); // weight 9 more, should overflow
-assert(addResult2 === false, 'addItem returns false when addition would exceed capacity');
-var weightAfter2 = Game.Inventory.currentWeight(c4);
-assert(weightAfter2 === weightAfter1, 'weight unchanged after rejected add');
+// v1.6 P1 (CB-6, SPEC-V1.6-REBALANCE.md §6): capacity now carries a flat base term
+// (BALANCE.CARRY_CAPACITY_BASE), so a single or even a couple of heavy adds no longer overflows a
+// forced-tiny-STR capacity the way a bare strength*10 used to. Add heavy plate pieces (weight 9
+// each — addItem doesn't slot-check at add time, so duplicates are allowed) until one is refused,
+// then confirm that refusal left the weight untouched — behavior-driven, not tied to the exact
+// capacity number.
+var addedCount = 0;
+var lastAddResult = true;
+while (lastAddResult) {
+  lastAddResult = Game.Inventory.addItem(c4, 'heavy_legs_warplate_legguards'); // weight 9
+  if (lastAddResult) addedCount++;
+}
+var weightAfterFailure = Game.Inventory.currentWeight(c4);
+console.log('Heavy pieces added before overflow: ' + addedCount + ', weight after failed add attempt: ' + weightAfterFailure);
+assert(lastAddResult === false, 'addItem returns false when addition would exceed capacity');
+assert(weightAfterFailure === weightBefore + addedCount * 9, 'weight unchanged after rejected add (matches the successful adds only)');
+assert(weightAfterFailure + 9 > capBefore, 'sanity: the rejected add really would have exceeded capacity');
 
 // Confirm the live status-bar weight formula matches Game.Inventory directly.
-assert(Game.Inventory.currentWeight(c4) === weightAfter2, 'currentWeight is stable/idempotent');
+assert(Game.Inventory.currentWeight(c4) === weightAfterFailure, 'currentWeight is stable/idempotent');
 
 // ================= Test 5: discard with confirm + equip swap =================
 console.log('\n=== Test 5: discard removes after confirm; equip swap returns previous item ===');
@@ -275,6 +283,22 @@ console.log = function (m) { listOutput.push(m); origLog(m); };
 Game._debug.listItems();
 console.log = origLog;
 assert(listOutput.some(function (l) { return String(l).indexOf('Total items:') === 0; }), 'listItems prints a total count line');
+
+// ================= Test 8: v1.6 P1 (CB-6) — carry capacity = BASE + STR*PER_STR =================
+console.log('\n=== Test 8: v1.6 P1 carry capacity formula (CB-6, SPEC-V1.6-REBALANCE.md §6) ===');
+var strengthBackup8 = c1.strength;
+c1.strength = 10;
+var expectedCap10 = BALANCE.CARRY_CAPACITY_BASE + 10 * BALANCE.CARRY_CAPACITY_PER_STR;
+assert(Game.Inventory.carryCapacity(c1) === expectedCap10,
+  'carryCapacity(STR=10) = CARRY_CAPACITY_BASE + 10*CARRY_CAPACITY_PER_STR = ' + expectedCap10 + ', got ' + Game.Inventory.carryCapacity(c1));
+c1.strength = 0;
+assert(Game.Inventory.carryCapacity(c1) === BALANCE.CARRY_CAPACITY_BASE,
+  'zero Strength still gets the flat base capacity (no longer zero, CB-6), got ' + Game.Inventory.carryCapacity(c1));
+c1.strength = 25;
+var expectedCap25 = BALANCE.CARRY_CAPACITY_BASE + 25 * BALANCE.CARRY_CAPACITY_PER_STR;
+assert(Game.Inventory.carryCapacity(c1) === expectedCap25,
+  'carryCapacity(STR=25) = CARRY_CAPACITY_BASE + 25*CARRY_CAPACITY_PER_STR = ' + expectedCap25 + ', got ' + Game.Inventory.carryCapacity(c1));
+c1.strength = strengthBackup8;
 
 // ================= Summary =================
 console.log('\n===================================');

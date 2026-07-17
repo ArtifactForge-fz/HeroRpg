@@ -81,12 +81,25 @@ Game.Data.recipes = [
     output: 'heavy_body_vault_bulwark',
     desc: 'Layer a Juneros Scaleplate with a shed Leviathan Scale and key the wards with an Archivist\'s Key to temper a Vault Bulwark Plate.'
   },
+  // v1.6 P3 EI-2 (SPEC-V1.6-REBALANCE.md §3/§6.1, REVIEW-2026-07-16.md EI-2) [revised]: this recipe's
+  // OWN natural floor was already ~level 26 (quest_society_ledger_page only drops/forages in
+  // kastengard_ruins, minLevel 26 -- js/data/areas.js), not level 15 as the base input's own
+  // levelReq (light_body_arkan_silkweave, 15) suggested; the real problem the review flagged is
+  // that every OTHER levelReq 30-35 synthesis recipe in this tier (synth_kastengard_relic_blade,
+  // synth_vault_reaver, synth_vault_bulwark_plate) requires a GATE-BOSS drop, while this one didn't
+  // -- the only levelReq-30+ recipe skippable without ever beating a lair boss, letting it (now
+  // correctly re-valued by the EI-2 armor fix above, tied with the levelReq-45 tier) be assembled
+  // straight off forage/regular-monster drops. Added quest_custodian_core_shard (Kastengard's own
+  // gate-boss material, kastengard_custodian, minLevel 32 -- already boss-drop-only per EI-4) to
+  // bring it in line with its levelReq 30-35 sibling recipes, and raised gold 400->900 (still below
+  // the sibling recipes' cost-to-output-value ratio, but no longer the cheapest levelReq-30+ recipe
+  // in the game). No item id changed (saves store ids).
   {
     id: 'synth_kastengard_wardweave',
-    inputs: ['light_body_arkan_silkweave', 'quest_society_ledger_page', 'quest_settler_locket'],
-    gold: 400,
+    inputs: ['light_body_arkan_silkweave', 'quest_society_ledger_page', 'quest_settler_locket', 'quest_custodian_core_shard'],
+    gold: 900,
     output: 'light_body_kastengard_wardweave',
-    desc: 'Reweave an Arkan Silkweave Robe with warding thread pulled from a Society ledger page and a drowned settler\'s keepsake.'
+    desc: 'Reweave an Arkan Silkweave Robe with warding thread pulled from a Society ledger page, a drowned settler\'s keepsake, and a shard of the Kastengard Custodian\'s own broken core.'
   },
 
   // =====================================================================

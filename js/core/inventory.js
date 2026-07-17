@@ -22,8 +22,11 @@ Game.Inventory = (function () {
   }
 
   // Strength-based carrying capacity — invented, matches Phase 1 status-bar readout (index.html).
+  // [invented] v1.6 P1 (CB-6, SPEC-V1.6-REBALANCE.md §6): added a flat base term so a low-STR
+  // build (casters/Dex builds) isn't crushingly encumbered — a bare strength*10 with no base gave
+  // STR 5 a 50-weight cap (REVIEW-2026-07-16.md CB-6). LOCKED by the P0 progression calc.
   function carryCapacity(c) {
-    return c.strength * 10; // invented
+    return BALANCE.CARRY_CAPACITY_BASE + c.strength * BALANCE.CARRY_CAPACITY_PER_STR;
   }
 
   function currentWeight(c) {

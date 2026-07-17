@@ -57,12 +57,20 @@ loadScript('data/techs.js');
 loadScript('data/areas.js');
 loadScript('data/shrine.js');
 loadScript('data/recipes.js');
+// v1.6 P3 EI-3a (SPEC-V1.6-REBALANCE.md §3): loaded so Game.Quests.materialStillUseful is
+// available for battle.js's drop-loop gate to consult (Test 86 exercises the real integration,
+// not a stub) — purely additive: every OTHER test in this file makes fresh characters whose
+// c.quests is empty/undefined, so the newly-enabled `if (Game.Quests) …` hooks in battle.js/
+// world.js (recordKill/recordVisit) become real calls but still no-op immediately on an empty
+// quest map, same as when Game.Quests was absent.
+loadScript('data/quests.js');
 loadScript('data/classes.js');
 loadScript('data/statinfo.js');
 loadScript('core/character.js');
 loadScript('core/inventory.js');
 loadScript('core/battle.js');
 loadScript('core/world.js');
+loadScript('core/quests.js');
 loadScript('core/save.js');
 loadScript('core/classes.js');
 loadScript('ui/icons.js');
@@ -360,7 +368,11 @@ assert(r5.ap === BALANCE.AP_PER_WIN(b5.monster.level), 'regular win grants BALAN
 assert(c5.ap === r5.ap, 'character.ap credited with the AP reward');
 // skill xp: Swords was at cap 3 -> addSkillXp must not raise it
 assert(c5.skills['Swords'].level === 3, 'weapon skill did not exceed cap 2L+1=3');
-assert(r5.skillXp['Swords'] === BALANCE.SKILL_XP_PER_USE, 'weapon skill XP granted at full rate (monster not below player)');
+// v1.6 P2 (PG-3, SPEC-V1.6-REBALANCE.md §6.2): skill-XP-per-use now scales with the monster's
+// level (SKILL_XP_PER_MON_LEVEL) instead of a flat rate — plains_field_rat is level 1, so
+// round(1*0.6)=1, still at the SKILL_XP_MIN_PER_USE floor (no decline, no Fury bonus here).
+var expectedSwordsXp5 = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(b5.monster.level * BALANCE.SKILL_XP_PER_MON_LEVEL));
+assert(r5.skillXp['Swords'] === expectedSwordsXp5, 'weapon skill XP scales with monster level (monster not below player), expected ' + expectedSwordsXp5 + ', got ' + r5.skillXp['Swords']);
 
 // loot claim success
 var potions = c5.inventory.filter(function (i) { return i === 'potion_minor_healing'; }).length;
@@ -380,7 +392,11 @@ b5b.monster.hp = 1;
 setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.0, 0.0, 0.0], 0.99));
 Game.Battle.attack();
 assert(b5b.pendingLoot === 'potion_minor_healing', 'loot pending for over-capacity test');
-c5b.strength = 1; // capacity 10, starter kit alone outweighs it
+// v1.6 P1 (CB-6, SPEC-V1.6-REBALANCE.md §6): carryCapacity now carries a flat base term
+// (BALANCE.CARRY_CAPACITY_BASE=50), so a bare strength=1 no longer forces a tiny capacity the
+// way the old strength*10 formula did — force a deeply negative capacity instead so the starter
+// kit alone still outweighs it (the test's intent, "starter kit alone outweighs it", unchanged).
+c5b.strength = -1000;
 var res5b = Game.Battle.claimLoot();
 assert(res5b.ok === false && /weight/i.test(res5b.message), 'over-capacity claim fails with a message: "' + res5b.message + '"');
 assert(b5b.pendingLoot === 'potion_minor_healing', 'pendingLoot remains after failed claim');
@@ -491,21 +507,28 @@ assert(c7i.level === 2, 'sanity: the kill leveled the player up to 2 (was exactl
 assert(c7i.fury === 1, 'v1.3.1 fix 5: Fury ticks for an at-or-above-level kill judged by the PRE-kill level, even though this very kill leveled the player up (got fury=' + c7i.fury + ')');
 Game.Battle.endBattle();
 
-// =================== Test 8: skill xp decline between 1 and 4 levels above ===================
-console.log('\n=== Test 8: skill XP declines when outleveling the monster ===');
+// =================== Test 8: skill xp scales with monster level, then declines 1-4 levels above ===================
+console.log('\n=== Test 8: skill XP scales with monster level, then declines when outleveling the monster ===');
 var c8 = makeCharacter({ name: 'DeclineTest' });
-c8.level = 4; // 3 levels above the rat -> decline factor 1 - 3/5 = 0.4 -> round(8*0.4)=3
-c8.xp = BALANCE.XP_TO_LEVEL(4);
+// v1.6 P2 (PG-3, SPEC-V1.6-REBALANCE.md §6.2): skill-XP-per-use now scales with the monster's
+// level (base = round(monsterLevel*0.6)) instead of a flat rate — a level-1 monster's base is
+// already at the SKILL_XP_MIN_PER_USE floor and can't demonstrate the decline any more, so this
+// test now uses a level-20 regular (juneros_riptide_hunter: no behavior/poison/curse, a clean
+// fixture) instead of plains_field_rat, to keep the archived decline (Recent_Updates.md
+// 2007-04-21) a real, visible effect on top of the level-scaled base.
+c8.level = 23; // 3 levels above the level-20 monster below -> decline factor 1 - 3/5 = 0.4
+c8.xp = BALANCE.XP_TO_LEVEL(23);
 c8.strength = 60;
+c8.dexterity = 999; // act first regardless of the monster's effective dex (= its level, 20)
 Game.Character.recalcDerived(c8);
 c8.hitPoints = c8.hitPointsMax;
 setRng(fixedRng(0.99));
-var b8 = Game.Battle.start('plains_field_rat');
+var b8 = Game.Battle.start('juneros_riptide_hunter');
 b8.monster.hp = 1;
 setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.99, 0.99, 0.99], 0.99));
 Game.Battle.attack();
-var expectedPerUse = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(BALANCE.SKILL_XP_PER_USE * (1 - 3 / BALANCE.XP_LOOT_CUTOFF_LEVELS)));
-assert(b8.rewards.skillXp['Swords'] === expectedPerUse, 'declined skill XP: got ' + b8.rewards.skillXp['Swords'] + ', expected ' + expectedPerUse);
+var expectedPerUse = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(b8.monster.level * BALANCE.SKILL_XP_PER_MON_LEVEL * (1 - 3 / BALANCE.XP_LOOT_CUTOFF_LEVELS)));
+assert(b8.rewards.skillXp['Swords'] === expectedPerUse, 'declined skill XP (level-scaled base then declined): got ' + b8.rewards.skillXp['Swords'] + ', expected ' + expectedPerUse);
 Game.Battle.endBattle();
 
 // =================== Test 9: tech gating + resistance ===================
@@ -1458,17 +1481,37 @@ assert(hybridLines28.some(function (l) { return /recover 260 Energy/.test(l); })
 Game.Battle.endBattle();
 
 // =================== Test 29: shard-cost enhancement techs (v1.2 Phase 3 Content-B item 4) ===================
+// v1.6 P3 (EI-7, SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md EI-7): tech_warcry_1's shardCost
+// dropped 5->0 (Alteration's earliest, most-used buff is now free), so the "insufficient shards"
+// refusal demo below moved to tech_focus_1 (shardCost 8->5, still nonzero) — tech_warcry_1 instead
+// demonstrates the NEW free-cast behavior (always succeeds regardless of shards carried, even 0).
+// tech_warcry_2's shardCost is 15->10 (fixture amounts updated to match, same behavior covered).
 console.log('\n=== Test 29: shard-cost techs spend Anima Shards on cast, refuse cleanly when short ===');
+
+// v1.6 P3 EI-7 sanity: tech_warcry_1 is now FREE (shardCost 0) and casts successfully with ZERO
+// Anima Shards carried — the exact behavior EI-7 intended (early Alteration buff untaxed).
+var c29free = makeCharacter({ name: 'ShardTechFreeTest' });
+c29free.techs.push('tech_warcry_1');
+c29free.techSets[0][1] = 'tech_warcry_1';
+c29free.animaShards = 0;
+setRng(fixedRng(0.99));
+var b29free = Game.Battle.start('plains_field_rat');
+var tech29free = Game.Battle.getTech('tech_warcry_1');
+assert(tech29free.shardCost === 0, 'sanity: tech_warcry_1 (EI-7) carries shardCost 0');
+Game.Battle.useTech('tech_warcry_1');
+assert(c29free.animaShards === 0, 'v1.6 P3 EI-7: tech_warcry_1 casts with 0 Anima Shards carried (free), shards stay 0');
+assert(b29free.playerStatuses.some(function (s) { return s.type === 'buff' && s.power === tech29free.power; }), 'v1.6 P3 EI-7: tech_warcry_1 (free) still applies its buff');
+Game.Battle.endBattle();
 
 // Refusal: insufficient shards -> no Energy spent, no buff applied, shards untouched, distinct message.
 var c29 = makeCharacter({ name: 'ShardTechPoorTest' });
-c29.techs.push('tech_warcry_1');
-c29.techSets[0][1] = 'tech_warcry_1'; // slot 0 already holds the Swords starter tech (Cleave I)
-c29.animaShards = 4; // tech_warcry_1's shardCost is 5
+c29.techs.push('tech_focus_1');
+c29.techSets[0][1] = 'tech_focus_1'; // slot 0 already holds the Swords starter tech (Cleave I)
+c29.animaShards = 4; // v1.6 P3 EI-7: tech_focus_1's shardCost is now 5
 setRng(fixedRng(0.99));
 var b29 = Game.Battle.start('plains_field_rat');
 var energyBefore29 = b29.player.energy;
-Game.Battle.useTech('tech_warcry_1');
+Game.Battle.useTech('tech_focus_1');
 assert(b29.player.energy === energyBefore29, 'insufficient shards: no Energy spent');
 assert(c29.animaShards === 4, 'insufficient shards: shards unchanged');
 assert(!b29.playerStatuses.some(function (s) { return s.type === 'buff'; }), 'insufficient shards: no buff applied');
@@ -1477,14 +1520,14 @@ Game.Battle.endBattle();
 
 // Success: sufficient shards -> shards deducted by shardCost, Energy spent normally, buff applied.
 var c29b = makeCharacter({ name: 'ShardTechRichTest' });
-c29b.techs.push('tech_warcry_1');
-c29b.techSets[0][1] = 'tech_warcry_1';
+c29b.techs.push('tech_focus_1');
+c29b.techSets[0][1] = 'tech_focus_1';
 Game.Character.addShards(c29b, 20);
 setRng(fixedRng(0.99));
 var b29b = Game.Battle.start('plains_field_rat');
-var tech29b = Game.Battle.getTech('tech_warcry_1');
+var tech29b = Game.Battle.getTech('tech_focus_1');
 var energyBefore29b = b29b.player.energy;
-Game.Battle.useTech('tech_warcry_1');
+Game.Battle.useTech('tech_focus_1');
 assert(c29b.animaShards === 20 - tech29b.shardCost, 'sufficient shards: shardCost (' + tech29b.shardCost + ') deducted');
 assert(b29b.player.energy === energyBefore29b - tech29b.energyCost, 'sufficient shards: Energy still spent normally');
 assert(b29b.playerStatuses.some(function (s) { return s.type === 'buff' && s.power === tech29b.power; }), 'sufficient shards: buff applied');
@@ -1492,25 +1535,25 @@ Game.Battle.endBattle();
 
 // A second shard-cost tech (rank-2, gated behind rank 1 like the Cleave/Impale chains) also
 // refuses/spends correctly — confirms the wiring is generic (keyed off tech.shardCost), not a
-// tech_warcry_1 special case.
+// tech_focus_1 special case.
 var c29c = makeCharacter({ name: 'ShardTechRank2Test' });
 c29c.techs.push('tech_warcry_1', 'tech_warcry_2');
 c29c.techSets[0][1] = 'tech_warcry_2';
-c29c.animaShards = 10; // tech_warcry_2's shardCost is 15
+c29c.animaShards = 8; // v1.6 P3 EI-7: tech_warcry_2's shardCost is now 10
 setRng(fixedRng(0.99));
 var b29c = Game.Battle.start('plains_field_rat');
 Game.Battle.useTech('tech_warcry_2');
-assert(c29c.animaShards === 10, 'rank-2 shard tech also refuses cleanly when short (10 < 15)');
+assert(c29c.animaShards === 8, 'rank-2 shard tech also refuses cleanly when short (8 < 10)');
 assert(!b29c.playerStatuses.some(function (s) { return s.type === 'buff'; }), 'rank-2 shard tech refusal applies no buff');
-Game.Character.addShards(c29c, 10); // now has 20 >= 15
+Game.Character.addShards(c29c, 10); // now has 18 >= 10
 var tech29c = Game.Battle.getTech('tech_warcry_2');
 Game.Battle.useTech('tech_warcry_2');
-assert(c29c.animaShards === 20 - tech29c.shardCost, 'rank-2 shard tech spends its shardCost once affordable');
+assert(c29c.animaShards === 18 - tech29c.shardCost, 'rank-2 shard tech spends its shardCost once affordable');
 assert(b29c.playerStatuses.some(function (s) { return s.type === 'buff' && s.power === tech29c.power; }), 'rank-2 shard tech applies its buff once affordable');
 Game.Battle.endBattle();
 
 // Third shard-cost tech (Focus I) is also wired — sanity on the data side.
-assert(Game.Battle.getTech('tech_focus_1').shardCost === 8, 'sanity: Focus I (the third shard-cost tech) carries shardCost 8');
+assert(Game.Battle.getTech('tech_focus_1').shardCost === 5, 'sanity: Focus I (the third shard-cost tech) carries shardCost 5 (v1.6 P3 EI-7: was 8)');
 
 // =================== Test 30: Level-Arc Band A (Forests of Kuraan) monster formulas + boss premiums ===================
 console.log('\n=== Test 30: Band A regulars match the header formulas; majiku_warlord carries the F1 boss premiums ===');
@@ -1559,7 +1602,7 @@ function correctedArmor(levelReq) {
 }
 var band45WeaponIds = [
   'sword_kuraan_reclaimers_blade', 'polearm_arkan_vanguard_lance', 'knife_fringewood_fang',
-  'rod_majiku_wardbreaker', 'hth_reclaimers_gauntlets'
+  'hth_reclaimers_gauntlets'
 ];
 var literalDamage45 = 3 + 2 * 45; // 93 -- what a NON-tapered literal read would give
 var taperedDamage45 = 3 + 2 * taperedEffectiveLevelReq(45); // 87
@@ -1570,15 +1613,38 @@ band45WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage45, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage45);
   assert(it.damage !== literalDamage45, id + ' damage is NOT the literal-formula value ' + literalDamage45 + ' (the F1 taper must be applied)');
 });
+// v1.6 P1 (CB-4, SPEC-V1.6-REBALANCE.md §6): Rods carry the SAME tapered weapon damage as every
+// other weapon class above, further HALVED — Rods are now spell foci, not melee clubs; a Rod's
+// own basic-attack swing was cut so that casting with it, not meleeing with it, is the caster's
+// best play (js/data/items.js).
+var rodDamage45 = Math.max(1, Math.round(taperedDamage45 * 0.5));
+var rod45 = Game.Inventory.getItem('rod_majiku_wardbreaker');
+assert(!!rod45, 'Band A tier-45 weapon exists: rod_majiku_wardbreaker');
+if (rod45) {
+  assert(rod45.damage === rodDamage45, 'rod_majiku_wardbreaker damage (' + rod45.damage + ') equals the v1.6 P1 HALVED-tapered value ' + rodDamage45);
+  assert(rod45.damage !== literalDamage45, 'rod_majiku_wardbreaker damage is NOT the literal-formula value ' + literalDamage45);
+}
 // Armor tapers the same way (1 + effectiveLevelReq), THEN the ARMOR-STACK CORRECTION divides that
 // by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor45 = 1 + 45; // 46 -- literal read
-var taperedArmor45 = correctedArmor(45); // 43 / 2 = 22
-['light_body_kuraan_windweave', 'medium_body_reclaimers_hauberk', 'heavy_body_kuraan_bulwark_plate', 'shield_kuraan_wardbulwark'].forEach(function (id) {
+var taperedArmor45 = correctedArmor(45); // 43 / 2 = 22 -- the PRE-EI-2 corrected value
+// v1.6 P3 (EI-2, SPEC-V1.6-REBALANCE.md §6.1, REVIEW-2026-07-16.md EI-2): light_body_kuraan_windweave/
+// medium_body_reclaimers_hauberk/heavy_body_kuraan_bulwark_plate were raised ABOVE the corrected
+// value above to restore a non-decreasing armor ladder against the unchanged levelReq<=35 tier
+// (see js/data/items.js EI-2 comments for the exact floor each was raised to); shield_kuraan_
+// wardbulwark's ARMOR was already monotonic and stays at the corrected value (only its magicArmor
+// was raised, tested separately elsewhere).
+var eiArmorExpected45 = {
+  light_body_kuraan_windweave: 31,
+  medium_body_reclaimers_hauberk: 31,
+  heavy_body_kuraan_bulwark_plate: 37,
+  shield_kuraan_wardbulwark: taperedArmor45
+};
+Object.keys(eiArmorExpected45).forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band A tier-45 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor45, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor45);
+  assert(it.armor === eiArmorExpected45[id], id + ' armor (' + it.armor + ') equals the v1.6 P3 EI-2 expected value ' + eiArmorExpected45[id]);
   assert(it.armor !== literalArmor45, id + ' armor is NOT the literal-formula value ' + literalArmor45);
 });
 
@@ -1721,7 +1787,7 @@ assert(chieftain.xp === BALANCE.MONSTER_XP(60) * 3, 'majiku_ridge_chieftain xp c
 console.log('\n=== Test 34: Band B levelReq-55/58 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
 var band55WeaponIds = [
   'sword_majiku_hostbreaker', 'polearm_ridgewar_pike', 'knife_steppewind_edge',
-  'rod_hostcallers_ruin', 'hth_ridgeguard_knuckles'
+  'hth_ridgeguard_knuckles'
 ];
 var literalDamage55 = 3 + 2 * 55; // 113 -- what a NON-tapered literal read would give
 var taperedDamage55 = 3 + 2 * taperedEffectiveLevelReq(55); // 101
@@ -1732,15 +1798,33 @@ band55WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage55, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage55);
   assert(it.damage !== literalDamage55, id + ' damage is NOT the literal-formula value ' + literalDamage55 + ' (the F1 taper must be applied)');
 });
+// v1.6 P1 (CB-4): Rods carry the tapered weapon damage further HALVED (js/data/items.js).
+var rodDamage55 = Math.max(1, Math.round(taperedDamage55 * 0.5));
+var rod55 = Game.Inventory.getItem('rod_hostcallers_ruin');
+assert(!!rod55, 'Band B tier-55 weapon exists: rod_hostcallers_ruin');
+if (rod55) {
+  assert(rod55.damage === rodDamage55, 'rod_hostcallers_ruin damage (' + rod55.damage + ') equals the v1.6 P1 HALVED-tapered value ' + rodDamage55);
+  assert(rod55.damage !== literalDamage55, 'rod_hostcallers_ruin damage is NOT the literal-formula value ' + literalDamage55);
+}
 // Armor tapers the same way (1 + effectiveLevelReq), THEN the ARMOR-STACK CORRECTION divides that
 // by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor55 = 1 + 55; // 56 -- literal read
-var taperedArmor55 = correctedArmor(55); // 50 / 2 = 25
-['light_body_steppewind_mantle', 'medium_body_hostguard_brigandine', 'heavy_body_ridgeplate_cuirass', 'shield_highland_bulwark'].forEach(function (id) {
+var taperedArmor55 = correctedArmor(55); // 50 / 2 = 25 -- the PRE-EI-2 corrected value
+// v1.6 P3 (EI-2): light_body_steppewind_mantle/medium_body_hostguard_brigandine/
+// heavy_body_ridgeplate_cuirass were raised ABOVE the corrected value to restore a non-decreasing
+// armor ladder (js/data/items.js EI-2 comments); shield_highland_bulwark's ARMOR is unchanged
+// (only its magicArmor was raised, tested separately elsewhere).
+var eiArmorExpected55 = {
+  light_body_steppewind_mantle: 31,
+  medium_body_hostguard_brigandine: 31,
+  heavy_body_ridgeplate_cuirass: 37,
+  shield_highland_bulwark: taperedArmor55
+};
+Object.keys(eiArmorExpected55).forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band B tier-55 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor55, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor55);
+  assert(it.armor === eiArmorExpected55[id], id + ' armor (' + it.armor + ') equals the v1.6 P3 EI-2 expected value ' + eiArmorExpected55[id]);
   assert(it.armor !== literalArmor55, id + ' armor is NOT the literal-formula value ' + literalArmor55);
 });
 // Sub-tier (levelReq 58) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
@@ -1897,7 +1981,7 @@ assert(deepDweller.xp === BALANCE.MONSTER_XP(70) * 3, 'ukai_deep_dweller xp carr
 console.log('\n=== Test 37: Band C levelReq-65/68 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
 var band65WeaponIds = [
   'sword_frosthold_vanguard_blade', 'polearm_glacial_warpike', 'knife_icebound_fang',
-  'rod_ukai_wardstone', 'hth_frostbound_knuckles'
+  'hth_frostbound_knuckles'
 ];
 var literalDamage65 = 3 + 2 * 65; // 133 -- what a NON-tapered literal read would give
 var taperedDamage65 = 3 + 2 * taperedEffectiveLevelReq(65); // 115
@@ -1909,15 +1993,33 @@ band65WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage65, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage65);
   assert(it.damage !== literalDamage65, id + ' damage is NOT the literal-formula value ' + literalDamage65 + ' (the F1 taper must be applied)');
 });
+// v1.6 P1 (CB-4): Rods carry the tapered weapon damage further HALVED (js/data/items.js).
+var rodDamage65 = Math.max(1, Math.round(taperedDamage65 * 0.5));
+var rod65 = Game.Inventory.getItem('rod_ukai_wardstone');
+assert(!!rod65, 'Band C tier-65 weapon exists: rod_ukai_wardstone');
+if (rod65) {
+  assert(rod65.damage === rodDamage65, 'rod_ukai_wardstone damage (' + rod65.damage + ') equals the v1.6 P1 HALVED-tapered value ' + rodDamage65);
+  assert(rod65.damage !== literalDamage65, 'rod_ukai_wardstone damage is NOT the literal-formula value ' + literalDamage65);
+}
 // Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
 // divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor65 = 1 + 65; // 66 -- literal read
-var taperedArmor65 = correctedArmor(65); // 57 / 2 = 29
-['light_body_frosthold_veilcloak', 'medium_body_waystation_hauberk', 'heavy_body_glacial_bulwark_plate', 'shield_frosthold_bulwark'].forEach(function (id) {
+var taperedArmor65 = correctedArmor(65); // 57 / 2 = 29 -- the PRE-EI-2 corrected value
+// v1.6 P3 (EI-2): light_body_frosthold_veilcloak/medium_body_waystation_hauberk/
+// heavy_body_glacial_bulwark_plate were raised ABOVE the corrected value to restore a
+// non-decreasing armor ladder (js/data/items.js EI-2 comments); shield_frosthold_bulwark was
+// already monotonic (armor AND magicArmor) and is fully unchanged.
+var eiArmorExpected65 = {
+  light_body_frosthold_veilcloak: 31,
+  medium_body_waystation_hauberk: 31,
+  heavy_body_glacial_bulwark_plate: 37,
+  shield_frosthold_bulwark: taperedArmor65
+};
+Object.keys(eiArmorExpected65).forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band C tier-65 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor65, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor65);
+  assert(it.armor === eiArmorExpected65[id], id + ' armor (' + it.armor + ') equals the v1.6 P3 EI-2 expected value ' + eiArmorExpected65[id]);
   assert(it.armor !== literalArmor65, id + ' armor is NOT the literal-formula value ' + literalArmor65);
 });
 // Sub-tier (levelReq 68) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
@@ -2073,7 +2175,7 @@ assert(wardenPrime.xp === BALANCE.MONSTER_XP(80) * 3, 'estari_warden_prime xp ca
 console.log('\n=== Test 40: Band D levelReq-75/78 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
 var band75WeaponIds = [
   'sword_estari_wardblade', 'polearm_estari_warpike', 'knife_estari_shard_fang',
-  'rod_wellspring_conduit', 'hth_warden_gauntlets'
+  'hth_warden_gauntlets'
 ];
 var literalDamage75 = 3 + 2 * 75; // 153 -- what a NON-tapered literal read would give
 var taperedDamage75 = 3 + 2 * taperedEffectiveLevelReq(75); // 129
@@ -2085,15 +2187,37 @@ band75WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage75, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage75);
   assert(it.damage !== literalDamage75, id + ' damage is NOT the literal-formula value ' + literalDamage75 + ' (the F1 taper must be applied)');
 });
+// v1.6 P1 (CB-4): Rods carry the tapered weapon damage further HALVED (js/data/items.js).
+var rodDamage75 = Math.max(1, Math.round(taperedDamage75 * 0.5));
+var rod75 = Game.Inventory.getItem('rod_wellspring_conduit');
+assert(!!rod75, 'Band D tier-75 weapon exists: rod_wellspring_conduit');
+if (rod75) {
+  assert(rod75.damage === rodDamage75, 'rod_wellspring_conduit damage (' + rod75.damage + ') equals the v1.6 P1 HALVED-tapered value ' + rodDamage75);
+  assert(rod75.damage !== literalDamage75, 'rod_wellspring_conduit damage is NOT the literal-formula value ' + literalDamage75);
+}
 // Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
 // divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor75 = 1 + 75; // 76 -- literal read
-var taperedArmor75 = correctedArmor(75); // 64 / 2 = 32
-['light_body_wellspring_veil', 'medium_body_estari_brigandine', 'heavy_body_warden_plate', 'shield_estari_bulwark'].forEach(function (id) {
+var taperedArmor75 = correctedArmor(75); // 64 / 2 = 32 -- the PRE-EI-2 corrected value
+// v1.6 P3 (EI-2): heavy_body_warden_plate was raised ABOVE the corrected value (floored to the
+// unchanged levelReq-35 heavy_body_vault_bulwark's 37, js/data/items.js EI-2 comments);
+// light_body_wellspring_veil/medium_body_estari_brigandine/shield_estari_bulwark were ALREADY
+// monotonic against the regular (non-unique) ladder and stay at the corrected value -- the
+// levelReq-65 UNIQUE light_body_frostwalkers_shroud sits above light_body_wellspring_veil at this
+// tier, but uniques are a separate premium tier excluded from this ladder (see the AA-Exchange
+// guardrail precedent, tests/test_p4_world.js Test 0a2, and light_body_wellspring_veil's own
+// items.js comment).
+var eiArmorExpected75 = {
+  light_body_wellspring_veil: taperedArmor75,
+  medium_body_estari_brigandine: taperedArmor75,
+  heavy_body_warden_plate: 37,
+  shield_estari_bulwark: taperedArmor75
+};
+Object.keys(eiArmorExpected75).forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band D tier-75 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor75, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor75);
+  assert(it.armor === eiArmorExpected75[id], id + ' armor (' + it.armor + ') equals the v1.6 P3 EI-2 expected value ' + eiArmorExpected75[id]);
   assert(it.armor !== literalArmor75, id + ' armor is NOT the literal-formula value ' + literalArmor75);
 });
 // Sub-tier (levelReq 78) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
@@ -2249,7 +2373,7 @@ assert(animaHorror.xp === BALANCE.MONSTER_XP(90) * 3, 'society_anima_horror xp c
 console.log('\n=== Test 43: Band E levelReq-85/88 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
 var band85WeaponIds = [
   'sword_spireward_blade', 'polearm_skyspire_halberd', 'knife_society_renegade_dirk',
-  'rod_anima_channeling_rod', 'hth_spireguard_gauntlets'
+  'hth_spireguard_gauntlets'
 ];
 var literalDamage85 = 3 + 2 * 85; // 173 -- what a NON-tapered literal read would give
 var taperedDamage85 = 3 + 2 * taperedEffectiveLevelReq(85); // 143
@@ -2261,15 +2385,35 @@ band85WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage85, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage85);
   assert(it.damage !== literalDamage85, id + ' damage is NOT the literal-formula value ' + literalDamage85 + ' (the F1 taper must be applied)');
 });
+// v1.6 P1 (CB-4): Rods carry the tapered weapon damage further HALVED (js/data/items.js).
+var rodDamage85 = Math.max(1, Math.round(taperedDamage85 * 0.5));
+var rod85 = Game.Inventory.getItem('rod_anima_channeling_rod');
+assert(!!rod85, 'Band E tier-85 weapon exists: rod_anima_channeling_rod');
+if (rod85) {
+  assert(rod85.damage === rodDamage85, 'rod_anima_channeling_rod damage (' + rod85.damage + ') equals the v1.6 P1 HALVED-tapered value ' + rodDamage85);
+  assert(rod85.damage !== literalDamage85, 'rod_anima_channeling_rod damage is NOT the literal-formula value ' + literalDamage85);
+}
 // Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
 // divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor85 = 1 + 85; // 86 -- literal read
-var taperedArmor85 = correctedArmor(85); // 71 / 2 = 36
-['light_body_skysilk_shroud', 'medium_body_spireguard_brigandine', 'heavy_body_spireward_plate', 'shield_spireward_aegis'].forEach(function (id) {
+var taperedArmor85 = correctedArmor(85); // 71 / 2 = 36 -- the PRE-EI-2 corrected value
+// v1.6 P3 (EI-2): heavy_body_spireward_plate was raised ABOVE the corrected value (floored to the
+// unchanged levelReq-35 heavy_body_vault_bulwark's 37); light_body_skysilk_shroud/
+// medium_body_spireguard_brigandine/shield_spireward_aegis were already monotonic against the
+// regular (non-unique) ladder and stay at the corrected value -- the levelReq-75 UNIQUE
+// light_body_estari_anima_shroud sits above light_body_skysilk_shroud at this tier, but uniques
+// are excluded from this ladder (AA-Exchange guardrail precedent, Test 0a2).
+var eiArmorExpected85 = {
+  light_body_skysilk_shroud: taperedArmor85,
+  medium_body_spireguard_brigandine: taperedArmor85,
+  heavy_body_spireward_plate: 37,
+  shield_spireward_aegis: taperedArmor85
+};
+Object.keys(eiArmorExpected85).forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band E tier-85 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor85, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor85);
+  assert(it.armor === eiArmorExpected85[id], id + ' armor (' + it.armor + ') equals the v1.6 P3 EI-2 expected value ' + eiArmorExpected85[id]);
   assert(it.armor !== literalArmor85, id + ' armor is NOT the literal-formula value ' + literalArmor85);
 });
 // Sub-tier (levelReq 88) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
@@ -2440,7 +2584,7 @@ Game.Data.monsters.forEach(function (m) {
 console.log('\n=== Test 46: Band F levelReq-95/98 weapons carry TAPERED damage per the F1 finding (js/balance.js) ===');
 var band95WeaponIds = [
   'sword_redmoon_blade', 'polearm_moonbridge_halberd', 'knife_sanctum_fang',
-  'rod_lunar_conduit', 'hth_sanctum_gauntlets'
+  'hth_sanctum_gauntlets'
 ];
 var literalDamage95 = 3 + 2 * 95; // 193 -- what a NON-tapered literal read would give
 var taperedDamage95 = 3 + 2 * taperedEffectiveLevelReq(95); // 157
@@ -2452,15 +2596,35 @@ band95WeaponIds.forEach(function (id) {
   assert(it.damage === taperedDamage95, id + ' damage (' + it.damage + ') equals the TAPERED value ' + taperedDamage95);
   assert(it.damage !== literalDamage95, id + ' damage is NOT the literal-formula value ' + literalDamage95 + ' (the F1 taper must be applied)');
 });
+// v1.6 P1 (CB-4): Rods carry the tapered weapon damage further HALVED (js/data/items.js).
+var rodDamage95 = Math.max(1, Math.round(taperedDamage95 * 0.5));
+var rod95 = Game.Inventory.getItem('rod_lunar_conduit');
+assert(!!rod95, 'Band F tier-95 weapon exists: rod_lunar_conduit');
+if (rod95) {
+  assert(rod95.damage === rodDamage95, 'rod_lunar_conduit damage (' + rod95.damage + ') equals the v1.6 P1 HALVED-tapered value ' + rodDamage95);
+  assert(rod95.damage !== literalDamage95, 'rod_lunar_conduit damage is NOT the literal-formula value ' + literalDamage95);
+}
 // Armor tapers the same way (round(1 + effectiveLevelReq)), THEN the ARMOR-STACK CORRECTION
 // divides that by ARMOR_STACK_DIVISOR (js/balance.js F1 CONVENTION NOTES note 3).
 var literalArmor95 = 1 + 95; // 96 -- literal read
-var taperedArmor95 = correctedArmor(95); // 78 / 2 = 39
-['light_body_moonveil_shroud', 'medium_body_sanctum_brigandine', 'heavy_body_redmoon_plate', 'shield_redmoon_aegis'].forEach(function (id) {
+var taperedArmor95 = correctedArmor(95); // 78 / 2 = 39 -- the PRE-EI-2 corrected value
+// v1.6 P3 (EI-2): all four of these were already monotonic against the regular (non-unique)
+// ladder and stay at the corrected value here (no changes were needed at this band) -- the
+// levelReq-85 UNIQUE light_body_anima_scoured_wraps sits above light_body_moonveil_shroud at this
+// tier, but uniques are excluded from this ladder (AA-Exchange guardrail precedent, Test 0a2). The
+// AA-Exchange ap_body_tourney_regalia (levelReq 100, tested elsewhere) IS floored to exactly
+// light_body_moonveil_shroud's 39/12 -- its own inversion was real (below this tier), unlike these.
+var eiArmorExpected95 = {
+  light_body_moonveil_shroud: taperedArmor95,
+  medium_body_sanctum_brigandine: taperedArmor95,
+  heavy_body_redmoon_plate: taperedArmor95,
+  shield_redmoon_aegis: taperedArmor95
+};
+Object.keys(eiArmorExpected95).forEach(function (id) {
   var it = Game.Inventory.getItem(id);
   assert(!!it, 'Band F tier-95 armor/shield exists: ' + id);
   if (!it) return;
-  assert(it.armor === taperedArmor95, id + ' armor (' + it.armor + ') equals the ARMOR-STACK-CORRECTED value ' + taperedArmor95);
+  assert(it.armor === eiArmorExpected95[id], id + ' armor (' + it.armor + ') equals the v1.6 P3 EI-2 expected value ' + eiArmorExpected95[id]);
   assert(it.armor !== literalArmor95, id + ' armor is NOT the literal-formula value ' + literalArmor95);
 });
 // Sub-tier (levelReq 98) tapers to a DIFFERENT pre-correction value than the main tier (levelReq
@@ -3650,6 +3814,317 @@ assert(b79b.charge === null, 'a non-reactive telegraph monster releases on sched
 assert(b79b.log.some(function (l) { return l.indexOf('unleashes its charged blow') !== -1; }), 'the release happened this turn, not held');
 assert(!b79b.log.some(function (l) { return l.indexOf('holds its charge') !== -1; }), 'sanity: no hold logged for a non-reactive monster');
 Game.Battle.endBattle();
+
+// =================== Test 80: v1.6 P1 (CB-1) — penetration floor is DEFENSIVE-ONLY ===================
+console.log('\n=== Test 80: v1.6 P1 penetration floor (CB-1, SPEC-V1.6-REBALANCE.md §6) — defensive-only ===');
+var c80 = makeCharacter({ name: 'FloorTest' });
+c80.level = 20; // matches the monster's level so Fear does not zero out the inflated Armor below
+c80.endurance = 100000; // absurdly high Armor so raw-mitigation would go deeply negative
+Game.Character.recalcDerived(c80);
+c80.hitPoints = c80.hitPointsMax;
+setRng(seqRng([0.99, 0.99, 0.5], 0.5)); // dodge fail, glancing fail, variance neutral (x1.0)
+var hpBefore80 = c80.hitPoints;
+var b80 = Game.Battle.start('juneros_riptide_hunter'); // level 20, damage 43, no techs/behavior/curse -> clean rng sequence
+assert(b80.playerFirst === false, 'sanity: the level-20 monster (effective dex 20) outpaces the default-dex player, so it strikes first inside start()');
+var raw80 = b80.monster.damage; // neutral variance above, no frenzied/tech modifiers on a simple monster
+var expectedFloorDmg80 = Math.max(1, Math.round(raw80 * BALANCE.DAMAGE_PENETRATION_FLOOR));
+var actualDmg80 = hpBefore80 - c80.hitPoints;
+assert(actualDmg80 === expectedFloorDmg80,
+  'monster->player hit floors to round(raw*DAMAGE_PENETRATION_FLOOR)=' + expectedFloorDmg80 + ' despite huge Armor, got ' + actualDmg80);
+assert(actualDmg80 > 1, 'sanity: the floor is meaningfully above the old bare max(1,...) floor for this raw damage, got ' + actualDmg80);
+Game.Battle.endBattle();
+
+// The SAME huge-armor trick on the MONSTER side must NOT floor a player->monster hit — that
+// direction keeps the old max(1, raw-mitigation) with no percentage floor (LOCKED P0: a symmetric
+// floor let under-levelled players guarantee-chunk high-armor monsters and reopened 5-levels-down).
+var c80b = makeCharacter({ name: 'FloorTestOffense' });
+setRng(seqRng([0.99, 0.99, 0.99, 0.5], 0.5)); // double-attack fail, monster-dodge fail, glancing fail, variance neutral
+var b80b = Game.Battle.start('plains_field_rat');
+b80b.monster.armor = 100000; // absurdly high monster Armor
+var raw80b = Game.Character.getDamage(c80b); // fear=1, no curse/buff at level 1 vs level 1
+var mHpBefore80b = b80b.monster.hp;
+Game.Battle.attack();
+var actualDmg80b = mHpBefore80b - b80b.monster.hp;
+var wouldBeFloorDmg80b = Math.max(1, Math.round(raw80b * BALANCE.DAMAGE_PENETRATION_FLOOR));
+assert(actualDmg80b === 1, 'player->monster hit still floors to a bare 1 against absurd monster Armor (no percentage floor this direction), got ' + actualDmg80b);
+if (wouldBeFloorDmg80b > 1) {
+  assert(actualDmg80b !== wouldBeFloorDmg80b, 'sanity: confirms the 30% floor was NOT applied here (that would have been ' + wouldBeFloorDmg80b + ')');
+}
+Game.Battle.endBattle();
+
+// =================== Test 81: v1.6 P1 (CB-2) — magic-school skill level scales offensive tech power ===================
+console.log('\n=== Test 81: v1.6 P1 magic-school skill scaling of offensive tech power (CB-2, SPEC-V1.6-REBALANCE.md §6) ===');
+var techFirebolt81 = Game.Battle.getTech('tech_firebolt_1'); // Evocation, effect 'damage'
+var c81 = makeCharacter({ skills: { 'Evocation': 0 }, name: 'MagicSkillTest' });
+c81.intelligence = 20;
+var basePower81 = Game.Battle.techEffectivePower(c81, techFirebolt81); // skill level 0 -> magicSkillMult = 1
+var expectedBase81 = Math.round(techFirebolt81.power * (1 + c81.intelligence * 0.02));
+assert(basePower81 === expectedBase81, 'sanity: skill level 0 gives the unmodified Int-scaled power, got ' + basePower81 + ' expected ' + expectedBase81);
+c81.skills['Evocation'].level = 10;
+var raisedPower81 = Game.Battle.techEffectivePower(c81, techFirebolt81);
+var expectedMagicMult81 = 1 + Math.min(BALANCE.MAGIC_SKILL_DAMAGE_PER_LEVEL * 10, BALANCE.MAGIC_SKILL_DAMAGE_CAP);
+var expectedRaised81 = Math.round(techFirebolt81.power * (1 + c81.intelligence * 0.02) * expectedMagicMult81);
+assert(raisedPower81 === expectedRaised81, 'Evocation skill level 10 raises Firebolt I effective power to ' + expectedRaised81 + ', got ' + raisedPower81);
+assert(raisedPower81 > basePower81, 'magic-school skill investment raises offensive-tech damage');
+// the cap holds: an absurd skill level cannot exceed MAGIC_SKILL_DAMAGE_CAP's multiplier
+c81.skills['Evocation'].level = 999;
+var cappedPower81 = Game.Battle.techEffectivePower(c81, techFirebolt81);
+var expectedCapped81 = Math.round(techFirebolt81.power * (1 + c81.intelligence * 0.02) * (1 + BALANCE.MAGIC_SKILL_DAMAGE_CAP));
+assert(cappedPower81 === expectedCapped81, 'magic-school damage mult caps at MAGIC_SKILL_DAMAGE_CAP, got ' + cappedPower81 + ' expected ' + expectedCapped81);
+// heal techs are UNAFFECTED by the magic-school-skill mult (only the damage/drain branch reads it)
+var healTech81 = Game.Battle.getTech('tech_mend_wounds_1');
+c81.skills['Abjuration'].level = 15;
+var healPower81 = Game.Battle.techEffectivePower(c81, healTech81);
+var expectedHeal81 = Math.round(healTech81.power * (1 + c81.intelligence * 0.01));
+assert(healPower81 === expectedHeal81, 'heal techs are NOT scaled by the magic-school-skill mult, got ' + healPower81 + ' expected ' + expectedHeal81);
+
+// =================== Test 82: v1.6 P1 (CB-4) — Rod equipped boosts tech damage, cuts tech energy cost ===================
+console.log('\n=== Test 82: v1.6 P1 Rod caster identity — ROD_SPELL_MULT + ROD_TECH_ENERGY_DISCOUNT (CB-4) ===');
+var techFirebolt82 = Game.Battle.getTech('tech_firebolt_1');
+var c82 = makeCharacter({ skills: {}, name: 'RodTest' }); // no creation-skill investment -> starter kit equips a Sword, not a Rod
+c82.intelligence = 20;
+assert(Game.Inventory.getItem(c82.equipment.weapon).skill !== 'Rods', 'sanity: no Rod equipped yet');
+var powerNoRod82 = Game.Battle.techEffectivePower(c82, techFirebolt82);
+var costNoRod82 = Game.Battle.effectiveTechEnergyCost(c82, techFirebolt82);
+assert(costNoRod82 === techFirebolt82.energyCost, 'sanity: full Energy cost with no Rod equipped');
+Game.Inventory.addItem(c82, 'rod_apprentice_wand');
+var eqRod82 = Game.Inventory.equip(c82, 'rod_apprentice_wand');
+assert(eqRod82.ok, 'rod equips: ' + eqRod82.failures.join(';'));
+var powerWithRod82 = Game.Battle.techEffectivePower(c82, techFirebolt82);
+var expectedPowerWithRod82 = Math.round(techFirebolt82.power * (1 + c82.intelligence * 0.02) * (1 + BALANCE.ROD_SPELL_MULT));
+assert(powerWithRod82 === expectedPowerWithRod82,
+  'Rod equipped raises Firebolt I power by ROD_SPELL_MULT, expected ' + expectedPowerWithRod82 + ', got ' + powerWithRod82);
+assert(powerWithRod82 > powerNoRod82, 'Rod equipped strictly raises offensive-tech damage');
+var costWithRod82 = Game.Battle.effectiveTechEnergyCost(c82, techFirebolt82);
+var expectedCostWithRod82 = Math.round(techFirebolt82.energyCost * (1 - BALANCE.ROD_TECH_ENERGY_DISCOUNT));
+assert(costWithRod82 === expectedCostWithRod82,
+  'Rod equipped cuts Firebolt I Energy cost by ROD_TECH_ENERGY_DISCOUNT, expected ' + expectedCostWithRod82 + ', got ' + costWithRod82);
+assert(costWithRod82 < costNoRod82, 'Rod equipped strictly lowers offensive-tech Energy cost');
+// heal techs are unaffected by either Rod bonus (spell power OR energy discount)
+var healTech82 = Game.Battle.getTech('tech_mend_wounds_1');
+var healCostWithRod82 = Game.Battle.effectiveTechEnergyCost(c82, healTech82);
+assert(healCostWithRod82 === healTech82.energyCost, 'heal techs keep full Energy cost even with a Rod equipped');
+var healPowerWithRod82 = Game.Battle.techEffectivePower(c82, healTech82);
+var expectedHealPowerWithRod82 = Math.round(healTech82.power * (1 + c82.intelligence * 0.01));
+assert(healPowerWithRod82 === expectedHealPowerWithRod82, 'heal techs keep their unmodified power even with a Rod equipped');
+
+// =================== Test 83: v1.6 P1 (CB-2) — INT speeds magic-school/Rod skill-XP, not weapon skill-XP ===================
+console.log('\n=== Test 83: v1.6 P1 INT-scaled skill-XP for magic schools + Rods, weapon skills unaffected (CB-2) ===');
+var c83 = makeCharacter({ skills: {}, name: 'IntSkillXpTest' });
+c83.intelligence = 50;
+c83.techs.push('tech_firebolt_1');
+c83.techSets[0][0] = 'tech_firebolt_1';
+setRng(fixedRng(0.99)); // fails dodge/glancing/double-attack throughout; techsUsedThisBattle is set regardless of hit/miss
+var b83 = Game.Battle.start('plains_field_rat');
+b83.monster.hp = b83.monster.hpMax = 100000; // survive two non-lethal actions
+Game.Battle.attack(); // sets attackedThisBattle + equippedWeaponSkill='Swords' (starter weapon)
+Game.Battle.useTech('tech_firebolt_1'); // Evocation -> techsUsedThisBattle['Evocation']=true regardless of hit/miss
+b83.monster.hp = 1; // let the next hit land the killing blow
+Game.Battle.attack();
+assert(b83.phase === 'won', 'sanity: the rat died on the finishing blow');
+// v1.6 P2 (PG-3, SPEC-V1.6-REBALANCE.md §6.2): base skill-XP-per-use now scales with the
+// monster's level (plains_field_rat is level 1 -> round(1*0.6)=1, at the floor) instead of the
+// removed flat SKILL_XP_PER_USE; fury=0, at/above the monster's level -> no decline, no fury bonus.
+var expectedPerUse83 = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(b83.monster.level * BALANCE.SKILL_XP_PER_MON_LEVEL));
+var expectedMagicXp83 = Math.max(1, Math.round(expectedPerUse83 * (1 + c83.intelligence * BALANCE.INT_SKILL_XP_PER_POINT)));
+assert(b83.rewards.skillXp['Swords'] === expectedPerUse83,
+  'weapon skill-XP (Swords) is UNAFFECTED by Intelligence, expected ' + expectedPerUse83 + ', got ' + b83.rewards.skillXp['Swords']);
+assert(b83.rewards.skillXp['Evocation'] === expectedMagicXp83,
+  'magic-school skill-XP (Evocation) IS Int-scaled, expected ' + expectedMagicXp83 + ', got ' + b83.rewards.skillXp['Evocation']);
+assert(b83.rewards.skillXp['Evocation'] > b83.rewards.skillXp['Swords'],
+  'the Int-scaled magic-school skill-XP exceeds the flat weapon skill-XP for the same kill');
+Game.Battle.endBattle();
+
+// Rods grant skill-XP via the WEAPON-skill route (c.equippedWeaponSkill = 'Rods' when meleed
+// with) — that route must ALSO get the Int multiplier (Intelligence.md names Rods explicitly,
+// alongside the five magic schools).
+var c83b = makeCharacter({ skills: {}, name: 'IntSkillXpRodTest' });
+c83b.intelligence = 50;
+Game.Inventory.addItem(c83b, 'rod_apprentice_wand');
+Game.Inventory.equip(c83b, 'rod_apprentice_wand');
+setRng(fixedRng(0.99));
+var b83b = Game.Battle.start('plains_field_rat');
+b83b.monster.hp = 1;
+Game.Battle.attack();
+assert(b83b.phase === 'won', 'sanity: the rat died to the rod-wielder\'s attack');
+assert(b83b.rewards.skillXp['Rods'] === expectedMagicXp83,
+  'Rods skill-XP is ALSO Int-scaled via the weapon-skill route (same rate as a magic school), expected ' + expectedMagicXp83 + ', got ' + b83b.rewards.skillXp['Rods']);
+Game.Battle.endBattle();
+
+// =================== Test 84 (v1.6 P2): XP_TO_LEVEL exponent 2.0, Fury XP cap, skill-XP monster-level scaling ===================
+console.log('\n=== Test 84 (v1.6 P2): XP_TO_LEVEL exponent 2.0 (PG-1), Fury XP bonus capped at +25% (PG-1), skill-XP-per-use scales with monster level (PG-3) ===');
+
+// --- XP_TO_LEVEL exponent 1.8 -> 2.0: spot-check a few cumulative values, and confirm the total
+// kills/XP-to-100 roughly doubled vs the old curve (SPEC-V1.6-REBALANCE.md §6.2: 396->912 kills,
+// ~2.3x). Math.pow(k, 2) is exact for these small integers, so these are precise, not float-fuzzy.
+assert(BALANCE.XP_TO_LEVEL(1) === 0, 'XP_TO_LEVEL(1) === 0 (level-1 baseline), got ' + BALANCE.XP_TO_LEVEL(1));
+assert(BALANCE.XP_TO_LEVEL(2) === 50, 'XP_TO_LEVEL(2) === 50 under the v1.6 exponent-2.0 curve (50*(1)^2), got ' + BALANCE.XP_TO_LEVEL(2));
+assert(BALANCE.XP_TO_LEVEL(30) === 42050, 'XP_TO_LEVEL(30) === 42050 under the v1.6 exponent-2.0 curve (50*29^2), got ' + BALANCE.XP_TO_LEVEL(30));
+assert(BALANCE.XP_TO_LEVEL(100) === 490050, 'XP_TO_LEVEL(100) === 490050 under the v1.6 exponent-2.0 curve (50*99^2), got ' + BALANCE.XP_TO_LEVEL(100));
+var oldXpToLevel100 = Math.round(50 * Math.pow(99, 1.8)); // pre-v1.6 curve, computed inline ONLY as this test's own comparison yardstick (not a live game formula)
+var xpRatio100 = BALANCE.XP_TO_LEVEL(100) / oldXpToLevel100;
+assert(xpRatio100 > 2 && xpRatio100 < 3, 'v1.6 P2 (PG-1): total XP-to-100 roughly doubled vs the old 1.8-exponent curve (old=' + oldXpToLevel100 + ', new=' + BALANCE.XP_TO_LEVEL(100) + ', ratio=' + xpRatio100.toFixed(2) + ')');
+
+// --- Fury XP bonus caps at BALANCE.FURY_XP_CAP (+25%), was uncapped ---
+var cFuryCap = makeCharacter({ name: 'FuryCapTest' });
+cFuryCap.fury = 100; // 100*FURY_XP_PER_TICK(0.01) = +100% uncapped -- far past the +25% cap
+cFuryCap.strength = 60;
+Game.Character.recalcDerived(cFuryCap);
+cFuryCap.hitPoints = cFuryCap.hitPointsMax;
+setRng(fixedRng(0.99));
+var bFuryCap = Game.Battle.start('plains_field_rat');
+bFuryCap.monster.hp = 1;
+setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.99, 0.99, 0.99], 0.99));
+Game.Battle.attack();
+assert(bFuryCap.phase === 'won', 'sanity: the rat died to the finishing blow');
+var expectedCappedFuryXp = Math.round(bFuryCap.monster.xp * (1 + BALANCE.FURY_XP_CAP));
+var uncappedFuryXp = Math.round(bFuryCap.monster.xp * (1 + 100 * BALANCE.FURY_XP_PER_TICK));
+assert(expectedCappedFuryXp < uncappedFuryXp, 'sanity: the capped expectation is strictly less than the old uncapped formula would have given');
+assert(bFuryCap.rewards.xp === expectedCappedFuryXp, 'combat XP uses the Fury bonus CAPPED at +' + (BALANCE.FURY_XP_CAP * 100) + '% (FURY_XP_CAP), not the uncapped 1+fury*FURY_XP_PER_TICK (' + uncappedFuryXp + '), expected ' + expectedCappedFuryXp + ', got ' + bFuryCap.rewards.xp);
+Game.Battle.endBattle();
+
+// --- skill-XP-per-use scales with the DEFEATED MONSTER's level: a level-49 kill grants more
+// skill XP than a level-10 kill, both fought exactly at-level (levelDiff=0 -> no decline, isolating
+// the level-scaling term from the archived decline term, which Tests 7/7b/8 already cover). ---
+function killAtLevelAndGetSwordsXp(monsterId, playerLevel) {
+  var c = makeCharacter({ name: 'MonLevelSkillXpTest_' + monsterId });
+  c.level = playerLevel;
+  c.xp = BALANCE.XP_TO_LEVEL(playerLevel);
+  c.strength = 60;
+  c.dexterity = 999; // act first regardless of the monster's effective dex (= its level)
+  Game.Character.recalcDerived(c);
+  c.hitPoints = c.hitPointsMax;
+  setRng(fixedRng(0.99));
+  var b = Game.Battle.start(monsterId);
+  b.monster.hp = 1;
+  setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.99, 0.99, 0.99], 0.99));
+  Game.Battle.attack();
+  var swordsXp = b.rewards.skillXp['Swords'];
+  var monsterLevel = b.monster.level;
+  Game.Battle.endBattle();
+  return { swordsXp: swordsXp, monsterLevel: monsterLevel };
+}
+
+var lowLevelKill84 = killAtLevelAndGetSwordsXp('gares_majiku_raider', 10); // level 10, no behavior/poison/curse
+var highLevelKill84 = killAtLevelAndGetSwordsXp('majiku_ironclad_vanguard', 49); // level 49, telegraph behavior (harmless at rng 0.99)
+assert(highLevelKill84.swordsXp > lowLevelKill84.swordsXp,
+  'v1.6 P2 (PG-3): a level-' + highLevelKill84.monsterLevel + ' kill grants more skill XP than a level-' + lowLevelKill84.monsterLevel + ' kill (' + highLevelKill84.swordsXp + ' > ' + lowLevelKill84.swordsXp + ')');
+var expectedLow84 = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(lowLevelKill84.monsterLevel * BALANCE.SKILL_XP_PER_MON_LEVEL));
+var expectedHigh84 = Math.max(BALANCE.SKILL_XP_MIN_PER_USE, Math.round(highLevelKill84.monsterLevel * BALANCE.SKILL_XP_PER_MON_LEVEL));
+assert(lowLevelKill84.swordsXp === expectedLow84, 'level-10 kill skill XP matches round(monsterLevel*SKILL_XP_PER_MON_LEVEL), expected ' + expectedLow84 + ', got ' + lowLevelKill84.swordsXp);
+assert(highLevelKill84.swordsXp === expectedHigh84, 'level-49 kill skill XP matches round(monsterLevel*SKILL_XP_PER_MON_LEVEL), expected ' + expectedHigh84 + ', got ' + highLevelKill84.swordsXp);
+
+// =================== Test 85: v1.6 P3 EI-5 — Anima Shard chance floor ===================
+console.log('\n=== Test 85: EI-5 shard-chance floor (BALANCE.SHARD_CHANCE_FLOOR) raises a low-shardChance monster\'s EFFECTIVE roll ===');
+assert(BALANCE.SHARD_CHANCE_FLOOR === 0.10, 'sanity: SHARD_CHANCE_FLOOR is 0.10');
+var ratDef85 = Game.Battle.getMonsterDef('plains_field_rat');
+assert(ratDef85.shardChance < BALANCE.SHARD_CHANCE_FLOOR, 'sanity: plains_field_rat.shardChance (' + ratDef85.shardChance + ') is BELOW the floor');
+
+function killRatForShard85(shardRoll) {
+  var c = makeCharacter({ name: 'ShardFloorTest' });
+  c.strength = 40;
+  Game.Character.recalcDerived(c);
+  setRng(fixedRng(0.99));
+  var b = Game.Battle.start('plains_field_rat');
+  b.monster.hp = 1;
+  setRng(seqRng([0.99, 0.99, 0.99, 0.5, /* gold */ 0.99, /* shard */ shardRoll, /* drop */ 0.99], 0.99));
+  Game.Battle.attack();
+  var shards = b.rewards.shards;
+  Game.Battle.endBattle();
+  return shards;
+}
+
+assert(killRatForShard85(0.05) === 1, 'v1.6 P3 EI-5: roll 0.05 (>= monster.shardChance 0.02, but < SHARD_CHANCE_FLOOR 0.10) STILL yields a shard');
+assert(killRatForShard85(0.01) === 1, 'sanity: roll 0.01 (< monster.shardChance 0.02, would have hit even pre-EI-5) yields a shard');
+assert(killRatForShard85(0.15) === 0, 'sanity: roll 0.15 (>= SHARD_CHANCE_FLOOR 0.10) does NOT yield a shard -- the floor is a real probability boundary, not an unconditional grant');
+// Champions are unaffected (still an unconditional guarantee, bypassing the roll entirely).
+(function () {
+  var c = makeCharacter({ name: 'ShardFloorChampionTest' });
+  setRng(fixedRng(0.99));
+  var b = Game.Battle.start('plains_field_rat', { champion: true });
+  b.monster.hp = 1;
+  setRng(seqRng([0.99, 0.99, 0.99, 0.5, 0.99, 0.99, 0.99], 0.99));
+  Game.Battle.attack();
+  assert(b.rewards.shards === 1, 'sanity: a champion kill still guarantees 1 shard, unaffected by the floor');
+  Game.Battle.endBattle();
+})();
+
+// =================== Test 86: v1.6 P3 EI-3a — drop-loop integration (quest_ materials gated on materialStillUseful) ===================
+console.log('\n=== Test 86: EI-3a drop-loop integration — IDENTICAL rng sequence, different outcome based on quest completion ===');
+function killScoutForLoot86(quests) {
+  var c = makeCharacter({ name: 'DropGateTest' });
+  c.quests = quests;
+  setRng(fixedRng(0.99));
+  var b = Game.Battle.start('majiku_forest_scout');
+  b.monster.hp = 1;
+  // majiku_forest_scout's drops: knife_thieves_edge(0.05), potion_healing(0.08), quest_majiku_venom_gland(0.5, appended last)
+  setRng(seqRng([0.99, 0.99, 0.99, 0.5, /* gold */ 0.99, /* shard */ 0.99, /* drop entry1 miss */ 0.99, /* drop entry2 miss */ 0.99, /* drop entry3 (quest mat) */ 0.3], 0.99));
+  Game.Battle.attack();
+  var loot = b.pendingLoot;
+  Game.Battle.endBattle();
+  return loot;
+}
+
+var lootWhileUnaccepted86 = killScoutForLoot86({});
+assert(lootWhileUnaccepted86 === 'quest_majiku_venom_gland',
+  'sanity: with eldor_dr_ferrier not yet accepted, quest_majiku_venom_gland still rolls and hits (entries 1/2 miss, entry3 -- the quest material -- hits at roll 0.3 < chance 0.5)');
+
+var lootAfterCompleted86 = killScoutForLoot86({ eldor_dr_ferrier: { status: 'completed', progress: { kills: {}, touched: {}, visited: {} } } });
+assert(lootAfterCompleted86 === null,
+  'v1.6 P3 EI-3a: the IDENTICAL rng sequence now yields NO drop -- quest_majiku_venom_gland is skipped (materialStillUseful=false) once eldor_dr_ferrier is completed, and nothing else hits');
+
+var lootStillActive86 = killScoutForLoot86({ eldor_dr_ferrier: { status: 'active', progress: { kills: {}, touched: {}, visited: {} } } });
+assert(lootStillActive86 === 'quest_majiku_venom_gland',
+  'v1.6 P3 EI-3a: quest_majiku_venom_gland KEEPS dropping while eldor_dr_ferrier is still ACTIVE (not yet completed)');
+
+// =================== Test 87: v1.6 P3 EI-2 — programmatic armor/magicArmor monotonicity check ===================
+console.log('\n=== Test 87: EI-2 armor ladder is non-decreasing by levelReq, per class+slot (uniques excluded -- separate premium tier) ===');
+// Mirrors the per-band spot-checks above with a single generic algorithm: for EACH class+slot
+// group (Light/Medium/Heavy Armor body/head/legs/feet, Shields offhand), walk items in ascending
+// levelReq order and assert armor (and, where present, magicArmor) never decreases ACROSS
+// distinct levelReq tiers (items sharing the SAME levelReq are never compared against each
+// other — only strictly-lower tiers set the floor a tier must meet). Unique-tagged items are
+// EXCLUDED (a separate premium tier per the AA-Exchange guardrail precedent, Test 0a2 in
+// tests/test_p4_world.js) -- this mirrors exactly how the EI-2 fix itself was derived. 'cursed'
+// items are ALSO excluded: ring_of_the_hollow_king (levelReq 1, armor 18) is a deliberate
+// risk/reward trap predating this pass entirely (levelReq<=35, out of EI-2's own scope), not a
+// normal progression-ladder rung.
+(function () {
+  var armorSkills = ['Light Armor', 'Medium Armor', 'Heavy Armor', 'Shields'];
+  var groups = {};
+  Game.Data.items.forEach(function (it) {
+    if (armorSkills.indexOf(it.skill) === -1) return;
+    if (it.tags && (it.tags.indexOf('unique') !== -1 || it.tags.indexOf('cursed') !== -1)) return;
+    var key = it.skill + '|' + it.slot;
+    (groups[key] = groups[key] || []).push(it);
+  });
+  var groupCount = 0;
+  Object.keys(groups).forEach(function (key) {
+    groupCount++;
+    var byLvl = {};
+    groups[key].forEach(function (it) { (byLvl[it.levelReq] = byLvl[it.levelReq] || []).push(it); });
+    var lvls = Object.keys(byLvl).map(Number).sort(function (a, b) { return a - b; });
+    var floorArmor = -1, floorMagic = -1;
+    var violations = [];
+    lvls.forEach(function (lvl) {
+      var tierMaxArmor = -1, tierMaxMagic = -1;
+      byLvl[lvl].forEach(function (it) {
+        var armor = it.armor || 0;
+        var magic = it.magicArmor; // undefined if the item never carries magicArmor
+        if (armor < floorArmor) violations.push(it.id + ' (lvl' + lvl + ') armor ' + armor + ' < the floor set by a LOWER levelReq tier (' + floorArmor + ')');
+        tierMaxArmor = Math.max(tierMaxArmor, armor);
+        if (magic !== undefined) {
+          if (magic < floorMagic) violations.push(it.id + ' (lvl' + lvl + ') magicArmor ' + magic + ' < the floor set by a LOWER levelReq tier (' + floorMagic + ')');
+          tierMaxMagic = Math.max(tierMaxMagic, magic);
+        }
+      });
+      floorArmor = Math.max(floorArmor, tierMaxArmor);
+      floorMagic = Math.max(floorMagic, tierMaxMagic);
+    });
+    assert(violations.length === 0, 'v1.6 P3 EI-2: ' + key + ' is non-decreasing by levelReq (armor and magicArmor)' + (violations.length ? ': ' + violations.join('; ') : ''));
+  });
+  assert(groupCount >= 8, 'sanity: checked at least 8 class/slot groups (got ' + groupCount + ')');
+})();
 
 // =================== Summary ===================
 console.log('\n===================================');

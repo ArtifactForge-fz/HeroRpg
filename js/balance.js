@@ -17,7 +17,7 @@ var BALANCE = {
   GOLD_PER_PLATINUM: 100, // archived: Gold.md ("100 Gold pieces equals 1 Platinum piece")
   ANIMA_SHARDS_CAP: 999, // archived: Anima_Shards.md ("maximum of 999 Anima Shards at any time")
 
-  XP_TO_LEVEL: function (n) { return Math.round(50 * Math.pow(n - 1, 1.8)); }, // invented: DESIGN.md §10 open decision 1; cumulative XP to reach level n, so level 1 = 0 (characters start at 0 XP)
+  XP_TO_LEVEL: function (n) { return Math.round(50 * Math.pow(n - 1, 2.0)); }, // [revised] v1.6 P2 (SPEC-V1.6-REBALANCE.md §6.2, PG-1): exponent 1.8 -> 2.0, LOCKED by the lead's P0 progression calc; cumulative XP to reach level n, so level 1 = 0 (characters start at 0 XP)
   // F1 balance-to-100 (docs/SPEC-FULL-LEVEL-ARC.md §2/§9-F1, D1): the game's archived design target
   // was a level cap, not an open-ended climb -- homepage_2007.md (2007-05-25): "The game was
   // originally designed based on a level-100 cap, though we have decided to extend that to a
@@ -28,6 +28,15 @@ var BALANCE = {
   // single point that reads this to stop leveling; xpNeededForNext/xpIntoCurrentLevel special-case
   // level >= LEVEL_CAP so the "XP to next level" UI never divides by a zero/undefined delta.
   LEVEL_CAP: 100,
+  // v1.6 P2 re-pace (SPEC-V1.6-REBALANCE.md §6.2, PG-1, REVIEW-2026-07-16.md): the shipped curve
+  // above (exponent 1.8) leveled far too fast per playtest feedback -- flat ~3.5-5 kills/level
+  // across the WHOLE 1-100 range, only ~2 kills at the very start. The lead's P0 progression calc
+  // (deterministic, sim_v16_prog.js) raised the exponent to 2.0: total kills-to-100 roughly DOUBLE
+  // (396 -> 912, a ~2.3x slowdown), and the curve stays exactly as flat/wall-free as before (F1's
+  // finding that MONSTER_XP's linear reward outpaces the marginal XP curve at every exponent tried
+  // still holds at 2.0 -- no late-game grind cliff). [revised] deliberate ratchet exception
+  // (CLAUDE.md cardinal rule 4 / LEAD-PLAYBOOK §0.3): the user is directing a re-tune of a shipped
+  // constant because the shipped pace was judged wrong, not adding a new mechanic around it.
   // F1 balance-to-100 sim finding (docs/SPEC-FULL-LEVEL-ARC.md D2): the F1 exit-gate sim
   // (scratchpad sim_f1_progression.js, real engine via node vm, sampled actions-per-kill at 15
   // levels 1-100 against at-level regulars) extended XP_TO_LEVEL UNCHANGED through level 100 and
@@ -101,7 +110,8 @@ var BALANCE = {
   // invented: skill XP granted per use, declining once the player outlevels the monster.
   // archived direction only: Recent_Updates.md 2007-04-21 ("Skill experience now sharply
   // declines when your level is greater than your opponent's").
-  SKILL_XP_PER_USE: 8,
+  // [SKILL_XP_PER_USE removed v1.6 P2: superseded by SKILL_XP_PER_MON_LEVEL below (PG-3) --
+  // grepped clean, nothing else in js/ or tests/ reads it after this phase's changes.]
   SKILL_XP_MIN_PER_USE: 1,
 
   // invented: simple flat DoT status length/damage for the Phase 3 Poison effect (DESIGN.md §4
@@ -129,7 +139,12 @@ var BALANCE = {
   // inflate-into-irrelevance regression; it continues an already-accepted trend, still a real
   // (double-digit-percent) cost at the cap. Left UNCHANGED -- no slope retune needed.
 
-  SHOP_SELL_RATE: 0.5, // invented: sale price = floor(item.value * 0.5); no archived sell-back rate survived
+  // v1.6 P3 EI-1 (SPEC-V1.6-REBALANCE.md §3/§6, REVIEW-2026-07-16.md EI-1) [revised]: 0.5 -> 0.35 --
+  // a 50% sell-back rate was one of three drivers behind "gold buys everything trivially" (paired
+  // with the L41+ monster gold trim and the top-tier equipment value raise, see balance.js's v1.6
+  // P3 header note below). Deliberate ratchet exception (user-directed re-tune of a shipped
+  // constant, CLAUDE.md cardinal rule 4 / LEAD-PLAYBOOK §0.3).
+  SHOP_SELL_RATE: 0.35, // invented: sale price = floor(item.value * 0.35); no archived sell-back rate survived
 
   VAULT_DEPOSIT_FEE: 0, // archived: Recent_Updates.md 2007-08-01 "Vault revamped, can now store items and gold (safely)" — no fee mentioned, so none charged
 
@@ -213,7 +228,12 @@ var BALANCE = {
   // down is still lethal" contract. 0.10 brings the same maxed-investment matchups back down to
   // ~1-4% (in line with the skill=0 noise floor) while still meaningfully improving at-level and
   // boss fights (see the Phase-1 balance-sim report).
-  WEAPON_SKILL_DAMAGE_CAP: 0.10,
+  // [revised] v1.6 P1 (SPEC-V1.6-REBALANCE.md §6, PG-3/CB-3): re-tuned UP 0.10 -> 0.25, the lead's
+  // P0 sim-gate LOCKED value — 90% of the archived skill range (2*lvl+1) bought zero benefit past
+  // skill ~8 at the old cap (REVIEW-2026-07-16.md PG-3); P0 re-verified 5-levels-down is not
+  // worsened by the raise. Deliberate exception to the ratchet principle (user-directed re-tune of
+  // a shipped constant, CLAUDE.md cardinal rule 4 / LEAD-PLAYBOOK §0.3).
+  WEAPON_SKILL_DAMAGE_CAP: 0.25,
 
   // 2. Armor skill -> per-piece armor/magicArmor (js/core/inventory.js equippedArmorTotal/
   // equippedMagicArmorTotal). Scoped to items whose governing skill IS an armor skill (Light/
@@ -223,7 +243,11 @@ var BALANCE = {
   // retuned DOWN from the lead's starting cap 0.40 — see WEAPON_SKILL_DAMAGE_CAP's comment above;
   // the same balance-sim gate found 0.15 restores 5-levels-down lethality when combined with the
   // retuned weapon cap.
-  ARMOR_SKILL_ARMOR_CAP: 0.15,
+  // [revised] v1.6 P1 (SPEC-V1.6-REBALANCE.md §6, PG-3/CB-3): re-tuned UP 0.15 -> 0.30 in lockstep
+  // with WEAPON_SKILL_DAMAGE_CAP above — same PG-3 finding (armor-skill investment above ~skill 8
+  // bought nothing), same P0 sim-gate re-verification that 5-levels-down is not worsened.
+  // Deliberate exception to the ratchet principle (CLAUDE.md cardinal rule 4 / LEAD-PLAYBOOK §0.3).
+  ARMOR_SKILL_ARMOR_CAP: 0.30,
 
   // 3. Dodge & Double Attack gain skill XP at the proc site (js/core/battle.js monsterAct's dodge
   // branch / attack()'s double-attack branch) — addSkillXp already enforces the 2*level+1 cap.
@@ -490,5 +514,115 @@ var BALANCE = {
   // hit telegraph/caster/enrage already use), so per the P3 sim-gate it needs no numeric gate; its
   // only free parameter is how many times a single charge may be held off, bounded here so a player
   // cannot Defend-stall a charge forever ("the player can't stall forever" -- spec §3 table).
-  REACTIVE_MAX_CHARGE_DELAYS: 1 // invented (v1.5 P3): a reactive monster may hold a pending charge past a player Defend at most this many times before releasing regardless
+  REACTIVE_MAX_CHARGE_DELAYS: 1, // invented (v1.5 P3): a reactive monster may hold a pending charge past a player Defend at most this many times before releasing regardless
+
+  // ==================== v1.6 P1: Combat & Stats (docs/SPEC-V1.6-REBALANCE.md §3/§6, CB-1..CB-6) ====================
+  // Playtest triage: docs/REVIEW-2026-07-16.md. All numbers LOCKED by the lead's P0 sim gate
+  // (SPEC-V1.6-REBALANCE.md §6.1) — implemented verbatim here, not re-tuned.
+
+  // CB-1: penetration floor. DEFENSIVE-ONLY (monster->player, js/core/battle.js monsterAct) — a
+  // monster hit always deals >= round(raw*FLOOR) regardless of the player's Armor/Magic Armor,
+  // applied BEFORE Defend halving. Deliberately one-directional: a symmetric player->monster floor
+  // let under-levelled players guarantee-chunk high-armor monsters and blew open 5-levels-down in
+  // the P0 sim (SPEC-V1.6-REBALANCE.md §6.1) — the playtest complaint (light armor floors monster
+  // hits to 1) is entirely about the PLAYER taking too little, so only that direction is floored.
+  // [invented], LOCKED P0.
+  DAMAGE_PENETRATION_FLOOR: 0.30,
+
+  // CB-1: Endurance/Intelligence no longer feed Armor/Magic Armor 1:1 — [revised] (overrides the
+  // shipped 1:1 ratio, character.js getArmor/getMagicArmor). RECONCILED from the P0-provisional 0.5
+  // to 0.9 by the P1 review re-sim (scratchpad sim_v16_reconcile.js): the shipped lair-boss damage
+  // was tuned against the OLD 1:1 armor, so 0.5 crashed the modest 2-armor-slot boss fixture from
+  // ~85% win to 46%/31% (L50/L100), breaking the >=60% "winnable" contract (test_p3_battle.js Tests
+  // 32-47) — a ratchet violation (LEAD-PLAYBOOK §0.3: don't re-tune shipped bosses to fit a new
+  // constant). 0.9 keeps those bosses at ~78%/73% (safe 30-trial margin) while still trimming
+  // over-defense; the penetration floor above is the real fix for "regulars floor to 1" (it barely
+  // touches bosses, where the hit exceeds armor). A larger endurance nerf would require a separate
+  // boss-damage retune pass. LOCKED by the P1 review re-sim.
+  ENDURANCE_ARMOR_RATIO: 0.9,
+  INT_MAGIC_ARMOR_RATIO: 0.9,
+
+  // CB-2: magic-school skill level -> +% offensive (damage/drain) tech power, parallel to
+  // WEAPON_SKILL_DAMAGE_PER_LEVEL/_CAP above (js/core/battle.js techEffectivePower). [invented],
+  // LOCKED P0 — kept modest (0.15 cap, not the provisional 0.25 in SPEC §3) because a larger cap
+  // pushed the top-level 5-down caster cell too far (SPEC-V1.6-REBALANCE.md §6.1/§6.3).
+  MAGIC_SKILL_DAMAGE_PER_LEVEL: 0.015,
+  MAGIC_SKILL_DAMAGE_CAP: 0.15,
+
+  // CB-4: Rod caster identity (js/core/battle.js techEffectivePower/useTech). While a Rod is the
+  // equipped weapon: offensive-tech base power x(1+ROD_SPELL_MULT), and offensive-tech Energy cost
+  // x(1-ROD_TECH_ENERGY_DISCOUNT) — the discount is the lever that makes casting energy-competitive
+  // with a basic attack (SPEC-V1.6-REBALANCE.md §6.1: "0.5 reopened mid 5-down, 0.3 keeps it
+  // lethal"). Paired with the Rod `damage` halving (js/data/items.js) so a Rod's own melee swing no
+  // longer out-damages casting with it (CB-3/CB-4). [invented], LOCKED P0.
+  ROD_SPELL_MULT: 0.15,
+  ROD_TECH_ENERGY_DISCOUNT: 0.3,
+
+  // CB-2: Intelligence speeds skill-XP gain for magic-school skills AND Rods (js/core/battle.js
+  // onWin's skill-XP award block) — granted amount x(1+INT*rate). [archived]
+  // reference/manual/Intelligence.md: "Increases the Experience gained in ... Rods, Evocation,
+  // Conjuration, Alteration, Absorption, Abjuration" — previously unimplemented. Rate [invented]
+  // (no formula survived), LOCKED P0. Weapon (Swords/Polearms/Knives/Hand to Hand) and armor
+  // skill-XP are unaffected.
+  INT_SKILL_XP_PER_POINT: 0.01,
+
+  // CB-6: carry capacity (js/core/inventory.js carryCapacity) — was a bare strength*10 with no
+  // base term, punishing any non-STR build (a Dex/Int caster at STR 5 capped at 50 weight).
+  // [invented], LOCKED calc (SPEC-V1.6-REBALANCE.md §6.1). capacity = BASE + STR*PER_STR.
+  CARRY_CAPACITY_BASE: 50,
+  CARRY_CAPACITY_PER_STR: 6,
+
+  // ==================== v1.6 P2: Progression (docs/SPEC-V1.6-REBALANCE.md §3/§6.2, PG-1..PG-4) ====================
+  // Playtest triage: docs/REVIEW-2026-07-16.md. All numbers LOCKED by the lead's P0 progression
+  // calc (SPEC-V1.6-REBALANCE.md §6.2) — implemented verbatim here, not re-tuned.
+
+  // PG-1: caps the previously-uncapped Fury XP bonus (js/core/battle.js onWin: furyBonus = 1 +
+  // min(fury*FURY_XP_PER_TICK, FURY_XP_CAP)). A long Fury streak could inflate combat+skill XP
+  // without bound; precedent for capping an escalating Fury-adjacent bonus: AFFIX_FRENZIED_CAP
+  // (+40%) above. [revised], LOCKED calc.
+  FURY_XP_CAP: 0.25,
+
+  // PG-3: skill-XP granted per qualifying use now scales with the DEFEATED MONSTER's level instead
+  // of a flat rate (js/core/battle.js onWin's skill-XP award block) — the old flat 8/win left a
+  // mained skill needing ~3,200 wins to reach skill 50, and 90% of the archived skill range
+  // (2*level+1) paid zero combat benefit past the old weapon/armor caps (REVIEW-2026-07-16.md
+  // PG-3; those caps were already raised in P1 above). base = round(monsterLevel *
+  // SKILL_XP_PER_MON_LEVEL), still floored at SKILL_XP_MIN_PER_USE and still subject to the
+  // archived >5-level decline (Recent_Updates.md 2007-04-21) and the Fury bonus above. [revised],
+  // LOCKED calc.
+  SKILL_XP_PER_MON_LEVEL: 0.6,
+
+  // PG-2: class-XP award fractions (js/core/classes.js addClassXp) — primary and secondary no
+  // longer receive the FULL / HALF combat-XP amount outright; both are scaled down further so a
+  // class spans a meaningful slice of its tier band instead of unlocking in a handful of kills
+  // (the shipped curve let a tier-3 class fully unlock in ~2-3 kills — REVIEW-2026-07-16.md PG-2).
+  // Paired with the steepened classXpForLevel curve (js/core/classes.js). [revised], LOCKED calc.
+  CLASS_XP_FRACTION_PRIMARY: 0.5,
+  CLASS_XP_FRACTION_SECONDARY: 0.25,
+
+  // ==================== v1.6 P3: Economy & Items (docs/SPEC-V1.6-REBALANCE.md §3/§6, EI-1..EI-7) ====================
+  // Playtest triage: docs/REVIEW-2026-07-16.md.
+
+  // EI-5: floors the EFFECTIVE Anima Shard chance in js/core/battle.js onWin's shard roll
+  // (`Math.max(BALANCE.SHARD_CHANCE_FLOOR, monster.shardChance)`) rather than editing shardChance
+  // on ~100 monster entries -- early monsters were as low as 0.02-0.12 (REVIEW-2026-07-16.md EI-5),
+  // leaving shards a mostly-endgame drop. Champions still auto-grant 1 shard, unchanged; monsters
+  // already at/above the floor are completely unaffected. [invented].
+  SHARD_CHANCE_FLOOR: 0.10,
+
+  // EI-1: curb the too-fast gold economy (REVIEW-2026-07-16.md EI-1: "get money fast enough to buy
+  // all the best equipment you find"). [revised] shipped-constant re-tune (CLAUDE.md cardinal rule
+  // 4 / LEAD-PLAYBOOK §0.3 deliberate exception, per SPEC-V1.6-REBALANCE.md §0). SHOP_SELL_RATE
+  // itself is re-tuned IN PLACE above (Phase 1 baseline comment there now records 0.5->0.35); paired
+  // with the L41+ monster gold slope trim (js/data/monsters.js, x0.75) and the top-tier
+  // (levelReq>=45) shop equipment value x1.5 (js/data/items.js `value` fields) -- see SPEC §3 EI-1 row.
+
+  // EI-6: camp/tent ladder (js/data/items.js tent_* items) -- levelReq/tentQuality/value LOCKED by
+  // the lead's P0 sim gate (SPEC-V1.6-REBALANCE.md §6.2): 1/0.20/10, 10/0.35/120, 25/0.45/500,
+  // 45/0.55/1500, 65/0.65/4000, 85/0.75/9000. Re-stats the 3 shipped tents to the first three rungs
+  // (same ids) and adds 3 new tents for the 45/65/85 rungs (js/data/items.js; sold in appropriately
+  // levelled town shops, js/data/areas.js). Camp-heal code (js/core/world.js) is UNCHANGED -- it
+  // already reads best `tentQuality` generically. [invented]/[revised] (REVIEW-2026-07-16.md EI-6):
+  // makes the top (0.75) heal a late-game gold sink instead of an L10 buy. No shared formula here --
+  // each rung is a distinct item in js/data/items.js, same convention as every other equipment tier.
 };

@@ -55,6 +55,19 @@ Game.Screens = (function () {
     return wrap;
   }
 
+  // v1.6 P3 (EI-3b, SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md EI-3) [invented]: a quest_
+  // material nothing can still need (Game.Quests.materialStillUseful, EI-3a) is pure inventory
+  // clutter — sell/discard confirms below skip the extra click ONLY for this case, never for a
+  // quest_ item some quest is still actively collecting (that keeps the normal confirm — an
+  // accidental discard mid-collection would cost real progress) and never for a non-quest_ item.
+  // Defensive default: if the helper is ever unavailable, treat the item as STILL useful (keep
+  // the confirm) rather than silently dropping the safety net.
+  function isSpentQuestMaterial(c, itemId) {
+    if (!itemId || itemId.indexOf('quest_') !== 0) return false;
+    if (!(Game.Quests && Game.Quests.materialStillUseful)) return false;
+    return !Game.Quests.materialStillUseful(c, itemId);
+  }
+
   // v1.4 Mobile M3 (SPEC-MOBILE-UI.md §4 M3, audit A8/high-frequency-alert item): replaces
   // alert() for the high-frequency Hunt/Camp/Forage/touch-token results with the shared
   // Game.UI.toast helper (defined near the end of this file). Guarded the same defensive way as
@@ -776,7 +789,10 @@ Game.Screens = (function () {
     Game.DragDrop.makeDropTarget(discardBox, function (droppedId) {
       if (c.inventory.indexOf(droppedId) === -1) return; // only unequipped items
       var item = Game.Inventory.getItem(droppedId);
-      if (!window.confirm('Discard ' + (item ? item.name : droppedId) + ' forever?')) return;
+      // v1.6 P3 EI-3b: one-click discard for a quest_ material nothing can still need — see
+      // isSpentQuestMaterial above. Everything else keeps the confirm, unchanged.
+      if (!isSpentQuestMaterial(c, droppedId) &&
+          !window.confirm('Discard ' + (item ? item.name : droppedId) + ' forever?')) return;
       Game.Inventory.discard(c, droppedId);
       Game.persist();
       refreshInventoryScreen();
@@ -822,7 +838,9 @@ Game.Screens = (function () {
         row.appendChild(el('button', {
           class: 'button',
           onclick: function () {
-            if (!window.confirm('Discard ' + item.name + ' forever?')) return;
+            // v1.6 P3 EI-3b: one-click discard for a quest_ material nothing can still need.
+            if (!isSpentQuestMaterial(c, itemId) &&
+                !window.confirm('Discard ' + item.name + ' forever?')) return;
             Game.Inventory.discard(c, itemId);
             Game.persist();
             refreshInventoryScreen();
@@ -889,7 +907,10 @@ Game.Screens = (function () {
         }, [
           techIcon(tech),
           el('span', { class: 'stat-name' }, [tech.name]),
-          el('span', { class: 'tinyfont' }, ['(' + (tech.skill || '?') + (tech.grade ? ', ' + tech.grade : '') + ', ' + tech.energyCost + ' energy)']),
+          // v1.6 P1 (CB-4, SPEC-V1.6-REBALANCE.md §6): show the ACTUAL Energy cost (Rod-discounted
+          // for an offensive tech while a Rod is equipped), via the same helper useTech charges
+          // from, so this readout never disagrees with battle.
+          el('span', { class: 'tinyfont' }, ['(' + (tech.skill || '?') + (tech.grade ? ', ' + tech.grade : '') + ', ' + Game.Battle.effectiveTechEnergyCost(c, tech) + ' energy)']),
           el('button', {
             class: 'button',
             onclick: function (ev) { if (ev && ev.stopPropagation) ev.stopPropagation(); Game.Infobox.openTech(tech, c); }
@@ -1326,7 +1347,13 @@ Game.Screens = (function () {
               // never restockable) or 'quest_'-prefixed items with no warning. Confirm those two
               // cases only; ordinary items keep the existing 1-click sell. Wording mirrors the
               // Discard confirm above ("Discard X forever?").
-              var isIrreplaceable = (item.tags && item.tags.indexOf('unique') !== -1) || itemId.indexOf('quest_') === 0;
+              // v1.6 P3 EI-3b: a quest_ material nothing can still need (isSpentQuestMaterial,
+              // EI-3a) is exempted from the confirm too — it's pure zero-utility junk at that
+              // point, the exact per-item nag the feedback called out. A quest_ item some quest
+              // is STILL actively collecting keeps the confirm (selling it away mid-collection
+              // would cost real progress).
+              var isIrreplaceable = (item.tags && item.tags.indexOf('unique') !== -1) ||
+                (itemId.indexOf('quest_') === 0 && !isSpentQuestMaterial(c, itemId));
               if (isIrreplaceable && !window.confirm('Sell ' + item.name + ' forever? This item cannot be bought back.')) return;
               var res = Game.World.sell(itemId);
               if (!res.ok) alert(res.message);
@@ -2273,11 +2300,16 @@ Game.Screens = (function () {
       (function (slotIdx) {
         var slottedId = set[slotIdx];
         var tech = slottedId ? getTechById(slottedId) : null;
-        var castable = tech && !over && canAct && c.energy >= tech.energyCost;
+        // v1.6 P1 (CB-4, SPEC-V1.6-REBALANCE.md §6): a Rod-discounted offensive tech may be
+        // affordable below its listed energyCost — check/display the SAME effective cost
+        // useTech will actually charge, so "castable" and the shown cost never disagree with
+        // what happens on click.
+        var techCost = tech ? Game.Battle.effectiveTechEnergyCost(c, tech) : 0;
+        var castable = tech && !over && canAct && c.energy >= techCost;
         // Fix #6: techs are also gated by canAct — explain why a tech is unusable when the
         // player is simply out of Energy, same wording as the Attack/Item buttons above.
         var slotTitle = tech
-          ? ((!over && !canAct) ? (tech.name + ' — ' + outOfEnergyMsg) : (tech.name + ' (' + tech.energyCost + ' energy)'))
+          ? ((!over && !canAct) ? (tech.name + ' — ' + outOfEnergyMsg) : (tech.name + ' (' + techCost + ' energy)'))
           : 'Empty slot';
         var slotChildren = [tech ? techIcon(tech) : el('span', { class: 'tinyfont' }, ['—'])];
         if (tech) {

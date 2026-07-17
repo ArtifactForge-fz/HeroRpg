@@ -50,6 +50,23 @@ delivery model as the original ("text-based, web 2.0", AJAX-era) and as the Avat
   placed at minLevel 9 rather than its archived level-20 band (see `js/data/areas.js`). The archived
   level bands are the reference; their remake placements are a `[revised]` pacing decision. (The
   future 100-level arc, `docs/SPEC-FULL-LEVEL-ARC.md`, restores the fuller spread.)
+- **v1.6 P4 — Skyspire Landing, a second L61-100 hub [invented]** (`docs/SPEC-V1.6-REBALANCE.md`
+  §3, CF-1; playtest triage `docs/REVIEW-2026-07-16.md` CF-1): Frosthold Waystation (minLevel 65,
+  added in the level-100 arc, `SPEC-ARC-BANDS.md`) had become the ONLY town for the entire
+  L61-100 range — its shop stocked ~84 item ids across Bands C/D/E/F, and there was no town at
+  all for the final 35 levels. **Skyspire Landing** (`js/data/areas.js`, minLevel 85) splits the
+  late hub: it opens partway through the Skyspire Lower Spans band (81-84), before Skyspire Upper
+  Spans (86) — the same gating shape Frosthold itself uses (opens partway through Glacial
+  Approach, before Ukai Undercaverns' 66). It carries the same six core facilities as every other
+  full town (Shop/Inn/Vault/Academy/Shrine/Tavern, no AA Exchange added) and Band E/F's shop
+  stock, **moved** (not duplicated) from Frosthold — Frosthold keeps Bands C/D. Band E/F's quest
+  givers (Waystation Commander Thessaly, Anima-Warden Yulei, Cipher-Adept Rennick) **stay at
+  Frosthold**: the arc's own finale text ("Everything Frosthold has sent north for the last forty
+  levels", `js/data/quests.js` `the_ascendants_fall`) establishes Frosthold as this campaign's
+  enduring command post, not a per-band way station, so only the shop — the actual overload CF-1
+  flags — moved. No new area/town/quest ids were removed or renamed; travel reachability needs no
+  extra wiring (`js/ui/screens.js` `renderExplore` already lists every `Game.Data.areas` entry as
+  a destination, gated only by `Game.World.travelTo`'s level check — no adjacency graph).
 
 ## 3. Character system
 
@@ -68,6 +85,21 @@ delivery model as the original ("text-based, web 2.0", AJAX-era) and as the Avat
 - Derived: **Damage** (weapon + Str/Dex/Int depending on weapon class: Swords/Blunt/Polearms←Str,
   Knives←Dex, Rods←Int), **Armor** (equipment + Endurance), **Magic Armor** (Int).
 - Counters: Monster Kills, Player Kills (unimplemented in original — omit), Deaths.
+- **v1.6 P1 — Endurance/Intelligence armor ratios trimmed to 0.9 [revised]** (`docs/SPEC-V1.6-REBALANCE.md`
+  §6, CB-1/CB-5; playtest triage `docs/REVIEW-2026-07-16.md`): Armor and Magic Armor no longer take
+  Endurance/Intelligence 1:1 — both are now `round(stat * 0.9)` (`ENDURANCE_ARMOR_RATIO` /
+  `INT_MAGIC_ARMOR_RATIO`, `js/balance.js`). The real fix for "a mid-level character's Endurance
+  alone exceeds a same-level monster's whole hit, flooring damage to 1" (CB-1) is the penetration
+  floor below; this ratio is only a mild extra trim. It was RECONCILED from a provisional 0.5 during
+  the P1 review re-sim: 0.5 crashed the shipped modest-fixture lair bosses (~85%→46%/31% win at
+  L50/L100), breaking their `>=60%` contract, because shipped boss damage was tuned against the old
+  1:1 armor — re-tuning shipped bosses to fit a new constant would violate the ratchet principle, so
+  the constant was fit to the bosses instead. A larger defense nerf would need a separate boss-damage
+  retune pass. Still a deliberate, user-directed re-tune of shipped constants (ratchet exception).
+- **v1.6 P1 — carrying capacity gained a base term [invented]** (CB-6): `carryCapacity` is now
+  `CARRY_CAPACITY_BASE + strength * CARRY_CAPACITY_PER_STR` (50 + STR·6), not a bare `STR·10` — the
+  old formula gave a STR-5 caster only a 50-weight cap, punishing any non-Strength build for no
+  archived reason.
 
 ### Creation — [archived] (`New_Player_Guide.md`)
 Race (Human/Arkan) → distribute **5 skill points, max 3 per skill** → name + gender.
@@ -78,6 +110,17 @@ Race (Human/Arkan) → distribute **5 skill points, max 3 per skill** → name +
 - Areas and items gate on level (`Level.md`).
 - **XP curve: [invented]** — nothing archived. Design target: level 30 (first class) reachable in a
   few hours of play.
+- **v1.6 P2 re-pace [revised]** (`docs/SPEC-V1.6-REBALANCE.md` §6.2, PG-1/PG-3; playtest triage
+  `docs/REVIEW-2026-07-16.md`): the shipped curve leveled far too fast (flat ~3.5-5 kills/level
+  across the whole 1-100 range) and skill leveling was far too slow (flat 8 skill-XP/win, ~3,200
+  wins to reach skill 50) — opposite problems from the same review. `XP_TO_LEVEL`'s exponent went
+  1.8 → 2.0 (~2.3x more kills to L100, still no grind wall); skill-XP-per-use now scales with the
+  **defeated monster's level** (`SKILL_XP_PER_MON_LEVEL`) instead of a flat rate, so a mained skill
+  reaches useful levels by mid-game rather than never; the Fury XP bonus (previously uncapped) is
+  capped at +25% (`FURY_XP_CAP`), mirroring the Frenzied champion affix's own +40% cap. All numbers
+  LOCKED by the lead's P0 progression calc, a deliberate ratchet exception (CLAUDE.md cardinal rule
+  4 / LEAD-PLAYBOOK §0.3) — the user directed a re-tune of shipped constants because the shipped
+  pace was judged wrong in both directions.
 
 ### Skills — [archived list, use-based]
 18 skills, leveled by use in combat (`Skills.md`): Swords, Polearms, Knives, Light/Medium/Heavy
@@ -130,6 +173,18 @@ Archived balance rules (`Recent_Updates.md`):
     monster an action). Its niche is energy-efficient attrition vs the Magus's burst.
   - Legacy note: saves holding an old-convergence combo (e.g. a Crusader with Shadowknight) keep
     it fully functional; only future offers follow the new branching.
+  - **v1.6 P2 — class pacing steepened [revised]** (`docs/SPEC-V1.6-REBALANCE.md` §6.2, PG-2;
+    `docs/REVIEW-2026-07-16.md`): the shipped class-XP curve capped out at ~class level 8-13, so a
+    tier-3 class fully unlocked its abilities in ~2-3 kills and a tier-1 class in ~13 — "all
+    abilities in a few combats" per the playtest. `classXpForLevel` steepened round(30·(n-1)^1.6)
+    → round(120·(n-1)^1.9), AND the Primary/Secondary award itself is now further scaled down
+    (`CLASS_XP_FRACTION_PRIMARY` 0.5 / `CLASS_XP_FRACTION_SECONDARY` 0.25, `js/core/classes.js
+    addClassXp`) instead of the shipped full/half combat-XP rate. Net (P0 calc): tier-3 full-unlock
+    ~2-3 → ~37 kills, tier-2 → ~86, tier-1 → ~192 — a class now grows across a meaningful slice of
+    play. Legacy-safe: `classLevelsEarned`/`classLevelsSpent` are banked per-character and only
+    ever increment forward from new class-XP grants, never recomputed retroactively from
+    `classXp` against the curve — an existing save keeps every already-earned class level and
+    ability untouched; only future leveling slows down. LOCKED by the P0 progression calc.
 - **Three hidden Legendary classes (tier 4):** Runeblade of Kuraan (boss kill), Vaultbreaker
   (boss-combination quest), Heir of the Echo (relic route) — each obtained independently, one per
   save. **[invented]** beyond the archived "Legendary, one per server" concept.
@@ -260,6 +315,34 @@ purchases, deactivation wipe):
   2007-04-21; heals/buffs always land, weapon techs roll monster dodge), and **non-elemental
   (grade:null) damage ignores defense** (2005 note — a grade:null tech's mitigation is 0; elemental
   techs still subtract Magic Armor). This resolves the prior code-vs-DESIGN contradiction.
+- **v1.6 P1 — combat & stats rebalance** (`docs/SPEC-V1.6-REBALANCE.md` §6, CB-1..CB-6; playtest
+  triage `docs/REVIEW-2026-07-16.md`), all numbers LOCKED by the lead's P0 sim gate:
+  - **Penetration floor [invented], DEFENSIVE-ONLY (CB-1):** a monster's hit on the player always
+    deals at least `round(raw * DAMAGE_PENETRATION_FLOOR)` (0.30) regardless of Armor/Magic Armor,
+    applied before Defend halving — answers "light armor floors nearly every hit to 1." Deliberately
+    one-directional: the player→monster damage sites (`attack`/`useTech`/`limitBreak`) are
+    UNCHANGED — a symmetric floor let under-levelled players guarantee-chunk high-armor monsters
+    and reopened the 5-levels-down contract in the P0 sim.
+  - **Weapon/armor skill caps raised [revised]:** `WEAPON_SKILL_DAMAGE_CAP` 0.10→0.25 and
+    `ARMOR_SKILL_ARMOR_CAP` 0.15→0.30 (§3 Skills) — the shipped caps left 90% of the archived skill
+    range (`2·lvl+1`) buying zero benefit past skill ~8 (PG-3); the P0 gate re-verified the
+    5-levels-down contract is not worsened by the raise. A user-directed exception to the ratchet
+    principle (shipped constants re-tuned).
+  - **Magic-school skill scales spell power [invented] (CB-2):** an offensive (damage/drain)
+    tech's power now also multiplies by `1 + min(MAGIC_SKILL_DAMAGE_PER_LEVEL · skillLevel,
+    MAGIC_SKILL_DAMAGE_CAP)` (0.015/level, capped +15%), keyed on the tech's own governing skill —
+    parallel to the weapon-skill damage term, so magic-school investment finally does something
+    past gating which tech ranks you can learn.
+  - **Rods are a caster's weapon, not a plain club [invented] (CB-4):** while a Rod is the equipped
+    weapon, offensive-tech power ×1.15 (`ROD_SPELL_MULT`) and offensive-tech Energy cost ×0.7
+    (`ROD_TECH_ENERGY_DISCOUNT`) — heal/buff/summon techs are unaffected. Paired with halving every
+    Rod's own `damage` field (`js/data/items.js`) so casting, not meleeing with the Rod, is the
+    caster's best play (CB-3).
+  - **Intelligence speeds magic-skill XP [archived]** (`reference/manual/Intelligence.md`:
+    "Increases the Experience gained in … Rods, Evocation, Conjuration, Alteration, Absorption,
+    Abjuration") — previously unimplemented. Skill-XP granted to a magic school or Rods is now
+    ×`(1 + intelligence · INT_SKILL_XP_PER_POINT)` (0.01/point, floor 1); weapon and armor skill-XP
+    are unaffected.
 
 ## 5. Techniques (Techs) — [archived structure] (`Techniques.md`, `Techs.md`)
 
@@ -290,6 +373,52 @@ purchases, deactivation wipe):
   archived "over 20", `Version_2.1_Changes.md`; removes **Cursed** items for a value-based fee and
   cleanses **Haunting** — `Cursed.md`).
 - Camping in hunting areas: partial HP restore, scaled by tent quality; tents sold in shops.
+  - **v1.6 — Economy re-tune (P3, `SPEC-V1.6-REBALANCE.md` §3/§6, playtest triage
+    `REVIEW-2026-07-16.md` EI-1..EI-7).** Gold flowed too fast and bought too much too soon; the
+    tent ladder maxed out at level 10; a synthesized mid-arc robe outclassed two full gear tiers;
+    boss materials leaked into forage tables; Anima Shards were a rare early-game trickle; quest
+    junk never stopped cluttering the backpack. All **[revised]/[invented]** (deliberate re-tune
+    of shipped constants, CLAUDE.md cardinal rule 4 / ratchet exception, user-directed):
+    - **Camp/tent ladder [invented]/[revised]**: extended from 3 tents (capping at 0.75 quality by
+      level 10) to a full 6-rung ladder spanning the whole level range — levelReq/tentQuality/value
+      1/0.20/10, 10/0.35/120, 25/0.45/500, 45/0.55/1500, 65/0.65/4000, 85/0.75/9000 (LOCKED by the
+      lead's P0 sim gate). Camp-heal code is unchanged; it already reads the best owned tent
+      generically.
+    - **Gold curbing [revised]**: `SHOP_SELL_RATE` 0.5→0.35; the L41+ regular-monster gold formula
+      (`goldMin = 50+2·(level−41)`, `goldMax = 2·goldMin`) trimmed ×0.75 (boss premiums untouched,
+      a separate hand-tuned formula); top-tier shop equipment (levelReq ≥45, non-unique) value
+      ×1.5 — three independent levers so best-in-slot gear and the top tent are real, late-game
+      gold sinks rather than a quick buy.
+    - **Item-ladder monotonicity [revised]**: `ARMOR_STACK_DIVISOR` (`js/balance.js` F1 CONVENTION
+      NOTES, `SPEC-FULL-LEVEL-ARC.md`) had halved only
+      levelReq>35 arc armor, leaving several arc tiers reading numerically worse than the
+      unchanged levelReq≤35 piece directly below them (a synthesized levelReq-30 robe beating
+      levelReq-45/55 shop armor). Re-derived so armor/magicArmor is non-decreasing by levelReq
+      within each armor class+slot (levelReq≤35 pieces themselves untouched); uniques and
+      AA-Exchange items stay excluded from this ladder (a separate premium/convenience tier, per
+      the existing AP no-arbitrage guardrail above). The offending synthesis recipe
+      (`synth_kastengard_wardweave`) also gained a gate-boss material requirement, bringing it in
+      line with its levelReq 30–35 sibling recipes (which all already required one).
+    - **Boss-forage leak fix [revised]**: the three lair-boss-only materials
+      (Matriarch's Horn/Leviathan Scale/Custodian Core Shard) are removed from their hunting
+      areas' `forage:` tables — **standing rule**: materials that gate boss-tier gear/content are
+      boss-drop-only, never also placed in a location forage table.
+    - **Anima Shard supply floor [invented]**: the effective shard chance on a kill is floored at
+      `SHARD_CHANCE_FLOOR` (0.10) rather than editing ~100 monster entries, so early monsters (as
+      low as 0.02) still give a meaningful trickle from level 1; champions are unaffected (already
+      an unconditional guarantee). Paired with an Alteration shard-tax rebalance
+      (`tech_warcry_1` 5→0 shards, `tech_focus_1` 8→5, `tech_warcry_2` 15→10 — Alteration was the
+      only school taxed at all).
+    - **Quest-material drop gating [invented]**: a `quest_`-prefixed material stops being rolled
+      on a kill once nothing can still need it (`Game.Quests.materialStillUseful` — active/
+      unaccepted quests, and any synthesis recipe still consuming it, both count as "still
+      needed"). **Standing safety rule** (documented past-bug class — an earlier drop-table edit
+      once made a Legendary-class material unobtainable): a quest material must never stop
+      dropping while anything could still need it; when in doubt, keep it dropping. The existing
+      5-level loot-cutoff exemption for quest materials is preserved, now also subject to this
+      gate. Paired with a UI fix: the sell/discard confirmation prompt is skipped for a quest
+      material that has become genuinely spent this way (still shown for one a quest is actively
+      collecting, and for `unique` items).
   - **v1.4 — Foraging**, a second camp-style action **[archived concept, `forum/t-449.md`:
     "Luck determines what kind of items you can Forage for"; [revised] keying]**: the remake has
     no Luck stat, so availability instead follows each hunting area's own `forage:` item table
@@ -372,6 +501,19 @@ lore (Estari ruins, Anima excavation taboo, Majiku raids, Skyspire mythology).
     `requiresQuest` typos that would otherwise strand content invisibly.
   - **No save impact** — both mechanisms read existing `c.quests` state; no new character field,
     no version bump.
+- **v1.6 P4 — `levelMax` gates accept only, not turn-in [revised]** (`docs/SPEC-V1.6-REBALANCE.md`
+  §3, CF-3; playtest triage `docs/REVIEW-2026-07-16.md` CF-3): `levelMax` is set on exactly one
+  quest (`the_oruk`, levelMin 5/levelMax 10, archived band, `Recent_Updates.md` 2007-04-06), but
+  `js/core/quests.js` `turnIn()` re-ran the SAME level-band check used at accept — so a hero who
+  accepted inside the band (level 6-9) and then leveled past 10 before returning to Militia
+  Captain Dorwen could never turn it in again, a permanent soft-lock that could clog the 3-slot
+  Journal forever (only `cancel()` escaped it, discarding the quest's own progress). Fixed by
+  giving `levelCheck(c, quest, ignoreMax)` an `ignoreMax` flag: `accept()` and `availableAt()`
+  (the Tavern's offer-list gate) still call it with the default `false` — a hero still cannot
+  ACCEPT the_oruk outside level 5-10 — but `turnIn()`'s own re-check now passes `true`, so
+  out-leveling `levelMax` after acceptance never blocks completion. `levelMin` is unaffected (still
+  checked at both accept and turn-in — moot in practice, since level never decreases, but no
+  reason to relax it). No save impact — reads existing `c.level`/`c.quests` state only.
 
 ## 8. Presentation — [archived]
 
@@ -399,6 +541,9 @@ Eidolons/v3.0 systems, arcade. Pets (`heropet.php` existed) — deferred, no des
 ## 10. Open design decisions (resolved)
 
 1. **XP curve**: quadratic-ish (`xpToLevel(n) = 50·n^1.8` ballpark), tune so level 30 ≈ 3–4 h.
+   - **v1.6 P2 [revised]** (`docs/SPEC-V1.6-REBALANCE.md` §6.2): exponent 1.8 → 2.0 (playtest:
+     leveling was judged far too fast); see the §3 Progression subsection above for the full note
+     (also covers the paired skill-XP and class-XP re-pace, PG-1..PG-3).
 2. **Save**: localStorage, versioned JSON, export/import string for backup.
 3. **Content volume v1**: levels 1–40 playable; 2 towns (Eldor, Ju`Mak) + 5 hunting areas; ~60
    items; ~35 monsters + 4 bosses; ~30 techs; ~12 quests; 3 classes.

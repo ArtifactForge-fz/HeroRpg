@@ -310,7 +310,10 @@ Game.Character = (function () {
     var shrineBonus = (Game.World && Game.World.shrineBonus) ? Game.World.shrineBonus(c, 'armor') : 0;
     // Phase 6a: active-class "armor_flat" passives (js/core/classes.js classBonus).
     var classFlat = (Game.Classes && Game.Classes.classBonus) ? Game.Classes.classBonus(c, 'armor_flat') : 0;
-    return c.endurance + equipped + shrineBonus + classFlat; // invented ratio (1:1) for the Endurance contribution
+    // [revised] v1.6 P1 (CB-1, SPEC-V1.6-REBALANCE.md §6): Endurance's contribution is no longer
+    // 1:1 — a mid-level character's Endurance alone used to exceed a same-level monster's whole
+    // damage term, floor-ing most hits to 1 (REVIEW-2026-07-16.md CB-1). LOCKED by the P0 sim gate.
+    return Math.round(c.endurance * BALANCE.ENDURANCE_ARMOR_RATIO) + equipped + shrineBonus + classFlat;
   }
 
   function getMagicArmor(c) {
@@ -320,7 +323,9 @@ Game.Character = (function () {
     var shrineBonus = (Game.World && Game.World.shrineBonus) ? Game.World.shrineBonus(c, 'magicArmor') : 0;
     // Phase 6a: active-class "magic_armor_flat" passives (js/core/classes.js classBonus).
     var classFlat = (Game.Classes && Game.Classes.classBonus) ? Game.Classes.classBonus(c, 'magic_armor_flat') : 0;
-    return c.intelligence + equipped + shrineBonus + classFlat; // invented ratio (1:1) for the Intelligence contribution
+    // [revised] v1.6 P1 (CB-1/CB-5, SPEC-V1.6-REBALANCE.md §6): symmetric with getArmor above —
+    // also trims the CB-5 "Intelligence does everything" overload a notch. LOCKED by the P0 sim gate.
+    return Math.round(c.intelligence * BALANCE.INT_MAGIC_ARMOR_RATIO) + equipped + shrineBonus + classFlat;
   }
 
   function goldTotalAsGold(c) {

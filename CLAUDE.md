@@ -2,9 +2,10 @@
 
 Single-player browser remake of **herorpg.net** (2004–2008, dead), reconstructed from Wayback
 Machine scrapes. Static HTML/CSS/JS, no build step, no dependencies — open `index.html` via
-`file://`. **Shipped: v1.5.0 (save version 10)** — v1.4 gameplay + mobile, v1.4.1/.2 UX info
-passes, and v1.5 (reactive monster behavior + Tier-3 branching/24-class roster + the Conjurer
-summoner) are all released; see "Recently completed" below. Two accepted known limitations:
+`file://`. **Shipped: v1.6.0 (save version 10)** — v1.4 gameplay + mobile, v1.4.1/.2 UX info
+passes, v1.5 (reactive monster behavior + Tier-3 branching/24-class roster + the Conjurer
+summoner), and v1.6 (a full balance & progression rebalance from playtest feedback — see
+"Recently completed" below) are all released. Two accepted known limitations:
 the 5-levels-down=death contract isn't fully enforced at high levels (Fear-spared healing
 sustain — DESIGN §4), and boss-telegraph integration is deferred (a boss charged hit can spike
 past heal+death in one blow; 3 low bosses carry behaviors, the other 8 keep their v1.4 scripts —
@@ -148,6 +149,42 @@ localStorage fallback — and syntax-checks its 3 script blocks as it writes. A 
 rebuilds it after every commit so a deployable single-file build always matches HEAD. The hooks
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
 re-enable it. Never build/ship from a tree with red suites.
+
+## Recently completed (2026-07-17) — v1.6.0 (branch `v1.6-rebalance`)
+
+Full **balance & progression rebalance** from a user playtest of v1.5.0. Triage of all 18
+findings (code-cited, tagged) in `docs/REVIEW-2026-07-16.md`; spec + locked constants +
+sim results in `docs/SPEC-V1.6-REBALANCE.md`. Save version unchanged (10, no migration).
+Three user-gated decisions (2026-07-16): full scope · defense = penetration floor + constant
+tuning · keep the 5-down limitation accepted (don't chase it). Five phases, each committed
+green; P0 was the mandatory sim gate. **Branch not yet merged to `main`; not deployed — both
+user-gated.**
+- **P0 sim gate** (`3768a8c`..): locked every combat + progression constant vs the difficulty
+  contract before any game code (battle grid + progression calc, real engine via node vm).
+- **P1 combat & stats** (`3768a8c`): defensive-only **penetration floor** (0.30 — a monster hit
+  always lands ≥30% of its rolled damage regardless of armor; fixes "light armor floors hits to
+  1") · magic-school level now scales spell power · INT speeds magic-school/Rods skill-XP
+  (`[archived]` Intelligence.md, previously unimplemented) · **Rod caster identity** (+spell
+  power, −cast energy, halved melee → casting ≈ parity) · Endurance/INT→armor trimmed 1:1→0.9
+  (**reconciled from a provisional 0.5 that broke the shipped bosses** — the floor is the real
+  fix; ratchet: fit the constant to shipped bosses) · carry-capacity base term · raised
+  weapon/armor skill caps.
+- **P2 progression** (`6c1beb2`): XP curve ~2.3× slower (exp 1.8→2.0, still no wall) · Fury XP
+  capped +25% · class unlock re-paced (~2 kills → ~37) · skill-XP now scales with monster level.
+  Legacy-safe (class levels are banked, only future grants slow).
+- **P3 economy & items** (`498488b`): gold curbed (sell 0.5→0.35, top-gear ×1.5, L41+ gold ×0.75)
+  · armor ladder made monotonic (re-simmed: bosses stay winnable-but-costly) · **quest-drop
+  gating** (a `quest_` material stops dropping only once no recipe AND no incomplete quest needs
+  it — can never strand a material) · boss-gating materials removed from forage tables · shard
+  supply floored at 0.10 · full-range camp/tent ladder (6 rungs) · Alteration shard tax eased.
+- **P4 content & flow** (`3203ef4`): second high-level town **Skyspire Landing** (L85) splits the
+  overloaded Frosthold hub (Bands E/F moved; verified reachable, zero stranded items) · quest
+  **levelMax now gates accept only, not turn-in** (fixes the Oruk soft-lock trap).
+- Process note: the P4 subagent was interrupted mid-run (session boundary); the lead verified its
+  landed work (connectivity re-checked independently) and finished the one remaining stale-test
+  update rather than re-running the whole phase. The v1.6 defense pass does NOT close the 5-down
+  limitation (kept accepted per decision 3); a harder defense nerf would need a boss-damage retune
+  (offered to the user, not taken).
 
 ## Recently completed (2026-07-13) — v1.5.0 (branch `v1.5`, merged to `main`)
 

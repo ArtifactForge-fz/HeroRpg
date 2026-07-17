@@ -214,22 +214,36 @@ Game.Classes = (function () {
 
   // ---------------- Class XP / Class Levels ----------------
 
-  // Same curve as character levels, scaled down (invented, per phase brief): classXpForLevel(n)
-  // = round(30 * (n-1)^1.6). Cumulative XP needed to REACH class level n (class level 1 = 0 XP,
-  // mirroring Game.Character.xpNeededForNext's cumulative-curve convention).
+  // Cumulative XP needed to REACH class level n (class level 1 = 0 XP, mirroring
+  // Game.Character.xpNeededForNext's cumulative-curve convention).
+  // [revised] v1.6 P2 (SPEC-V1.6-REBALANCE.md §6.2, PG-2): steepened from round(30*(n-1)^1.6) to
+  // round(120*(n-1)^1.9) — the old curve capped out at ~class level 8-13, so a tier-3 class fully
+  // unlocked in ~2-3 kills and a tier-1 class in ~13 (REVIEW-2026-07-16.md PG-2). LOCKED by the
+  // lead's P0 progression calc: tier-3 full-unlock ~2-3 -> ~37 kills, tier-2 -> ~86, tier-1 ->
+  // ~192 (paired with the award-fraction cut in addClassXp below). Tiers land unevenly in absolute
+  // kills (higher-tier monsters give more XP per kill) — an accepted imperfection, not fixed here.
+  // LEGACY-SAFE: classLevelsEarned/classLevelsSpent are STORED per-character (js/core/character.js
+  // create(), c.classes[id].classLevelsEarned) and only ever INCREMENT going forward inside
+  // grantClassXp's while-loop below — nothing anywhere recomputes classLevelsEarned retroactively
+  // from classXp against this curve, so an existing save's already-banked class levels/abilities
+  // are untouched by steepening the curve; only FUTURE class-Xp grants level up more slowly.
   function classXpForLevel(n) {
-    return Math.round(30 * Math.pow(n - 1, 1.6));
+    return Math.round(120 * Math.pow(n - 1, 1.9));
   }
 
   // Called from js/core/battle.js onWin AFTER the XP/loot cutoff check (cutoff kills grant no
-  // class XP either, matching main XP — phase brief). Primary gains the full battle-XP amount
+  // class XP either, matching main XP — phase brief). Primary gained the full battle-XP amount
   // (archived: "progresses at a rate equal to that of your main experience bar"); Secondary
-  // gains half (archived: "the Secondary class will only progress at half the rate"). A class
-  // with no slot assigned gains nothing, even if obtained.
+  // gained half (archived: "the Secondary class will only progress at half the rate") — [revised]
+  // v1.6 P2 (SPEC-V1.6-REBALANCE.md §6.2, PG-2): both are now further scaled down by
+  // BALANCE.CLASS_XP_FRACTION_PRIMARY (0.5) / _SECONDARY (0.25) so a class spans a meaningful
+  // slice of its tier band instead of unlocking in a handful of kills. LOCKED by the P0
+  // progression calc, paired with the steepened curve above. A class with no slot assigned gains
+  // nothing, even if obtained.
   function addClassXp(c, amount) {
     if (!c || !amount) return;
-    if (c.primaryClass) grantClassXp(c, c.primaryClass, amount);
-    if (c.secondaryClass) grantClassXp(c, c.secondaryClass, Math.floor(amount / 2));
+    if (c.primaryClass) grantClassXp(c, c.primaryClass, Math.floor(amount * BALANCE.CLASS_XP_FRACTION_PRIMARY));
+    if (c.secondaryClass) grantClassXp(c, c.secondaryClass, Math.floor(amount * BALANCE.CLASS_XP_FRACTION_SECONDARY));
   }
 
   function grantClassXp(c, classId, amount) {

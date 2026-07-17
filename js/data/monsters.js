@@ -1363,6 +1363,13 @@ Game.Data.monsters = [
   // armor ~= level (varied per archetype, capped well under a same-level warrior's expected hit,
   // per the estari_loose_rubble milestone-gate retune). Two thematic undead/anima monsters carry
   // curseChance (v1.2 Curse mechanic, BALANCE.CURSE_APPLY_CHANCE) per the phase brief.
+  // v1.6 P3 EI-1 (SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md EI-1) [revised]: every REGULAR
+  // (non-boss) L41+ monster's goldMin/goldMax below (this band and every later one, through Band
+  // F) is the original goldMin=50+2*(level-41)/goldMax=2*goldMin trend x0.75 (rounded) -- one of
+  // three EI-1 gold-curbing levers (with SHOP_SELL_RATE 0.5->0.35 and top-tier equipment value
+  // x1.5, js/balance.js/js/data/items.js). Boss goldMin/goldMax are a SEPARATE hand-tuned premium,
+  // not this formula, and are UNCHANGED. The formula comments below still state the PRE-trim
+  // trend for provenance; read each actual goldMin/goldMax value as trend x0.75.
   // =====================================================================
 
   // ---------- Kuraan Fringe Woods (level 41-44) ----------
@@ -1386,8 +1393,8 @@ Game.Data.monsters = [
     resistances: {},
     techs: ['mon_hunters_mark'],
     xp: BALANCE.MONSTER_XP(41),
-    goldMin: 50,
-    goldMax: 100,
+    goldMin: 38,
+    goldMax: 75,
     shardChance: 0.32,
     drops: [
       { itemId: 'sword_kuraan_reclaimers_blade', chance: 0.03 },
@@ -1415,8 +1422,8 @@ Game.Data.monsters = [
     resistances: { Earth: 0.5, Fire: -0.25 },
     techs: ['mon_gnawing_bite'],
     xp: BALANCE.MONSTER_XP(42),
-    goldMin: 52,
-    goldMax: 104,
+    goldMin: 39,
+    goldMax: 78,
     shardChance: 0.34,
     drops: [
       { itemId: 'knife_fringewood_fang', chance: 0.03 },
@@ -1446,8 +1453,8 @@ Game.Data.monsters = [
     curseChance: BALANCE.CURSE_APPLY_CHANCE,
     techs: ['mon_dark_hex', 'mon_anima_lance'],
     xp: BALANCE.MONSTER_XP(44),
-    goldMin: 56,
-    goldMax: 112,
+    goldMin: 42,
+    goldMax: 84,
     shardChance: 0.38,
     drops: [
       { itemId: 'sphere_cclass_1', chance: 0.08 },
@@ -1474,8 +1481,8 @@ Game.Data.monsters = [
     resistances: { Dark: 0.5, Light: -0.25 },
     techs: ['mon_dark_hex', 'mon_static_arc'],
     xp: BALANCE.MONSTER_XP(46),
-    goldMin: 60,
-    goldMax: 120,
+    goldMin: 45,
+    goldMax: 90,
     shardChance: 0.42,
     drops: [
       { itemId: 'rod_majiku_wardbreaker', chance: 0.03 },
@@ -1504,8 +1511,8 @@ Game.Data.monsters = [
     curseChance: BALANCE.CURSE_APPLY_CHANCE,
     techs: ['mon_anima_lance', 'mon_dark_hex'],
     xp: BALANCE.MONSTER_XP(48),
-    goldMin: 64,
-    goldMax: 128,
+    goldMin: 48,
+    goldMax: 96,
     shardChance: 0.46,
     drops: [
       { itemId: 'sphere_cclass_2', chance: 0.08 },
@@ -1532,8 +1539,8 @@ Game.Data.monsters = [
     resistances: {},
     techs: ['mon_hunters_mark', 'mon_earthen_crush'],
     xp: BALANCE.MONSTER_XP(49),
-    goldMin: 66,
-    goldMax: 132,
+    goldMin: 50,
+    goldMax: 99,
     shardChance: 0.48,
     drops: [
       { itemId: 'stone_energy_kuraan', chance: 0.08 },
@@ -1614,8 +1621,8 @@ Game.Data.monsters = [
     resistances: {},
     techs: ['mon_hunters_mark'],
     xp: BALANCE.MONSTER_XP(51),
-    goldMin: 70,
-    goldMax: 140,
+    goldMin: 53,
+    goldMax: 105,
     shardChance: 0.52,
     drops: [
       { itemId: 'sword_majiku_hostbreaker', chance: 0.03 },
@@ -1639,8 +1646,8 @@ Game.Data.monsters = [
     resistances: { Wind: 0.5, Earth: -0.25 },
     techs: ['mon_wind_buffet'],
     xp: BALANCE.MONSTER_XP(52),
-    goldMin: 72,
-    goldMax: 144,
+    goldMin: 54,
+    goldMax: 108,
     shardChance: 0.54,
     drops: [
       { itemId: 'knife_steppewind_edge', chance: 0.03 },
@@ -1670,8 +1677,8 @@ Game.Data.monsters = [
     curseChance: BALANCE.CURSE_APPLY_CHANCE,
     techs: ['mon_dark_hex', 'mon_anima_lance'],
     xp: BALANCE.MONSTER_XP(54),
-    goldMin: 76,
-    goldMax: 152,
+    goldMin: 57,
+    goldMax: 114,
     shardChance: 0.58,
     drops: [
       { itemId: 'sphere_dclass_1', chance: 0.08 },
@@ -1698,8 +1705,8 @@ Game.Data.monsters = [
     resistances: { Dark: 0.5, Light: -0.25 },
     techs: ['mon_dark_hex', 'mon_static_arc'],
     xp: BALANCE.MONSTER_XP(56),
-    goldMin: 80,
-    goldMax: 160,
+    goldMin: 60,
+    goldMax: 120,
     shardChance: 0.62,
     drops: [
       { itemId: 'rod_hostcallers_ruin', chance: 0.03 },
@@ -1728,8 +1735,8 @@ Game.Data.monsters = [
     curseChance: BALANCE.CURSE_APPLY_CHANCE,
     techs: ['mon_anima_lance', 'mon_dark_hex'],
     xp: BALANCE.MONSTER_XP(58),
-    goldMin: 84,
-    goldMax: 168,
+    goldMin: 63,
+    goldMax: 126,
     shardChance: 0.66,
     drops: [
       { itemId: 'sphere_dclass_2', chance: 0.08 },
@@ -1753,8 +1760,8 @@ Game.Data.monsters = [
     resistances: {},
     techs: ['mon_hunters_mark', 'mon_earthen_crush'],
     xp: BALANCE.MONSTER_XP(59),
-    goldMin: 86,
-    goldMax: 172,
+    goldMin: 65,
+    goldMax: 129,
     shardChance: 0.68,
     drops: [
       { itemId: 'stone_energy_majiku', chance: 0.08 },
@@ -1833,8 +1840,8 @@ Game.Data.monsters = [
     resistances: {},
     techs: ['mon_hunters_mark'],
     xp: BALANCE.MONSTER_XP(61),
-    goldMin: 90,
-    goldMax: 180,
+    goldMin: 68,
+    goldMax: 135,
     shardChance: 0.72,
     drops: [
       { itemId: 'sword_frosthold_vanguard_blade', chance: 0.03 },
@@ -1858,8 +1865,8 @@ Game.Data.monsters = [
     resistances: { Water: 0.5, Fire: -0.3 },
     techs: ['mon_water_torrent'],
     xp: BALANCE.MONSTER_XP(62),
-    goldMin: 92,
-    goldMax: 184,
+    goldMin: 69,
+    goldMax: 138,
     shardChance: 0.74,
     drops: [
       { itemId: 'knife_icebound_fang', chance: 0.03 },
@@ -1889,8 +1896,8 @@ Game.Data.monsters = [
     curseChance: BALANCE.CURSE_APPLY_CHANCE,
     techs: ['mon_dark_hex', 'mon_anima_lance'],
     xp: BALANCE.MONSTER_XP(64),
-    goldMin: 96,
-    goldMax: 192,
+    goldMin: 72,
+    goldMax: 144,
     shardChance: 0.78,
     drops: [
       { itemId: 'sphere_eclass_1', chance: 0.08 },
@@ -1917,8 +1924,8 @@ Game.Data.monsters = [
     resistances: { Dark: 0.5, Light: -0.25 },
     techs: ['mon_dark_hex', 'mon_static_arc'],
     xp: BALANCE.MONSTER_XP(66),
-    goldMin: 100,
-    goldMax: 200,
+    goldMin: 75,
+    goldMax: 150,
     shardChance: 0.82,
     drops: [
       { itemId: 'rod_ukai_wardstone', chance: 0.03 },
@@ -1943,8 +1950,8 @@ Game.Data.monsters = [
     curseChance: BALANCE.CURSE_APPLY_CHANCE,
     techs: ['mon_anima_lance', 'mon_dark_hex'],
     xp: BALANCE.MONSTER_XP(68),
-    goldMin: 104,
-    goldMax: 208,
+    goldMin: 78,
+    goldMax: 156,
     shardChance: 0.86,
     drops: [
       { itemId: 'sphere_eclass_2', chance: 0.08 },
@@ -1971,8 +1978,8 @@ Game.Data.monsters = [
     resistances: {},
     techs: ['mon_hunters_mark', 'mon_earthen_crush'],
     xp: BALANCE.MONSTER_XP(69),
-    goldMin: 106,
-    goldMax: 212,
+    goldMin: 80,
+    goldMax: 159,
     shardChance: 0.88,
     drops: [
       { itemId: 'stone_energy_frosthold', chance: 0.08 },
@@ -2056,8 +2063,8 @@ Game.Data.monsters = [
     resistances: {},
     techs: ['mon_stone_slam'],
     xp: BALANCE.MONSTER_XP(71),
-    goldMin: 110,
-    goldMax: 220,
+    goldMin: 83,
+    goldMax: 165,
     shardChance: 0.92,
     drops: [
       { itemId: 'sword_estari_wardblade', chance: 0.03 },
@@ -2085,8 +2092,8 @@ Game.Data.monsters = [
     resistances: { Star: 0.5, Earth: -0.3 },
     techs: ['mon_static_arc'],
     xp: BALANCE.MONSTER_XP(72),
-    goldMin: 112,
-    goldMax: 224,
+    goldMin: 84,
+    goldMax: 168,
     shardChance: 0.94,
     drops: [
       { itemId: 'knife_estari_shard_fang', chance: 0.03 },
@@ -2113,8 +2120,8 @@ Game.Data.monsters = [
     curseChance: BALANCE.CURSE_APPLY_CHANCE,
     techs: ['mon_dark_hex', 'mon_anima_lance'],
     xp: BALANCE.MONSTER_XP(74),
-    goldMin: 116,
-    goldMax: 232,
+    goldMin: 87,
+    goldMax: 174,
     shardChance: 0.95,
     drops: [
       { itemId: 'sphere_fclass_1', chance: 0.08 },
@@ -2141,8 +2148,8 @@ Game.Data.monsters = [
     resistances: { Dark: 0.5, Light: -0.25 },
     techs: ['mon_dark_hex', 'mon_static_arc'],
     xp: BALANCE.MONSTER_XP(76),
-    goldMin: 120,
-    goldMax: 240,
+    goldMin: 90,
+    goldMax: 180,
     shardChance: 0.95,
     drops: [
       { itemId: 'rod_wellspring_conduit', chance: 0.03 },
@@ -2173,8 +2180,8 @@ Game.Data.monsters = [
     curseChance: BALANCE.CURSE_APPLY_CHANCE,
     techs: ['mon_anima_lance', 'mon_dark_hex'],
     xp: BALANCE.MONSTER_XP(78),
-    goldMin: 124,
-    goldMax: 248,
+    goldMin: 93,
+    goldMax: 186,
     shardChance: 0.95,
     drops: [
       { itemId: 'sphere_fclass_2', chance: 0.08 },
@@ -2198,8 +2205,8 @@ Game.Data.monsters = [
     resistances: {},
     techs: ['mon_hunters_mark', 'mon_earthen_crush'],
     xp: BALANCE.MONSTER_XP(79),
-    goldMin: 126,
-    goldMax: 252,
+    goldMin: 95,
+    goldMax: 189,
     shardChance: 0.95,
     drops: [
       { itemId: 'stone_energy_wellspring', chance: 0.08 },
@@ -2286,8 +2293,8 @@ Game.Data.monsters = [
     resistances: {},
     techs: ['mon_stone_slam'],
     xp: BALANCE.MONSTER_XP(81),
-    goldMin: 130,
-    goldMax: 260,
+    goldMin: 98,
+    goldMax: 195,
     shardChance: 0.95,
     drops: [
       { itemId: 'sword_spireward_blade', chance: 0.03 },
@@ -2314,8 +2321,8 @@ Game.Data.monsters = [
     resistances: { Dark: 0.5, Light: -0.3 },
     techs: ['mon_dark_hex'],
     xp: BALANCE.MONSTER_XP(82),
-    goldMin: 132,
-    goldMax: 264,
+    goldMin: 99,
+    goldMax: 198,
     shardChance: 0.95,
     drops: [
       { itemId: 'knife_society_renegade_dirk', chance: 0.03 },
@@ -2346,8 +2353,8 @@ Game.Data.monsters = [
     curseChance: BALANCE.CURSE_APPLY_CHANCE,
     techs: ['mon_dark_hex', 'mon_anima_lance'],
     xp: BALANCE.MONSTER_XP(84),
-    goldMin: 136,
-    goldMax: 272,
+    goldMin: 102,
+    goldMax: 204,
     shardChance: 0.95,
     drops: [
       { itemId: 'crystal_gclass_1', chance: 0.08 },
@@ -2371,8 +2378,8 @@ Game.Data.monsters = [
     resistances: {},
     techs: ['mon_hunters_mark', 'mon_earthen_crush'],
     xp: BALANCE.MONSTER_XP(86),
-    goldMin: 140,
-    goldMax: 280,
+    goldMin: 105,
+    goldMax: 210,
     shardChance: 0.95,
     drops: [
       { itemId: 'stone_energy_skyspire', chance: 0.08 },
@@ -2398,8 +2405,8 @@ Game.Data.monsters = [
     resistances: { Star: 0.5, Earth: -0.3 },
     techs: ['mon_static_arc'],
     xp: BALANCE.MONSTER_XP(87),
-    goldMin: 142,
-    goldMax: 284,
+    goldMin: 107,
+    goldMax: 213,
     shardChance: 0.95,
     drops: [
       { itemId: 'rod_anima_channeling_rod', chance: 0.03 },
@@ -2430,8 +2437,8 @@ Game.Data.monsters = [
     curseChance: BALANCE.CURSE_APPLY_CHANCE,
     techs: ['mon_anima_lance', 'mon_dark_hex'],
     xp: BALANCE.MONSTER_XP(89),
-    goldMin: 146,
-    goldMax: 292,
+    goldMin: 110,
+    goldMax: 219,
     shardChance: 0.95,
     drops: [
       { itemId: 'sphere_gclass_2', chance: 0.08 },
@@ -2533,8 +2540,8 @@ Game.Data.monsters = [
     resistances: {},
     techs: ['mon_stone_slam'],
     xp: BALANCE.MONSTER_XP(91),
-    goldMin: 150,
-    goldMax: 300,
+    goldMin: 113,
+    goldMax: 225,
     shardChance: 0.95,
     drops: [
       { itemId: 'sword_redmoon_blade', chance: 0.03 },
@@ -2561,8 +2568,8 @@ Game.Data.monsters = [
     resistances: { Light: 0.5, Dark: -0.3 },
     techs: ['mon_radiant_smite'],
     xp: BALANCE.MONSTER_XP(92),
-    goldMin: 152,
-    goldMax: 304,
+    goldMin: 114,
+    goldMax: 228,
     shardChance: 0.95,
     drops: [
       { itemId: 'knife_sanctum_fang', chance: 0.03 },
@@ -2588,8 +2595,8 @@ Game.Data.monsters = [
     curseChance: BALANCE.CURSE_APPLY_CHANCE,
     techs: ['mon_dark_hex', 'mon_anima_lance'],
     xp: BALANCE.MONSTER_XP(94),
-    goldMin: 156,
-    goldMax: 312,
+    goldMin: 117,
+    goldMax: 234,
     shardChance: 0.95,
     drops: [
       { itemId: 'crystal_hclass_1', chance: 0.08 },
@@ -2617,8 +2624,8 @@ Game.Data.monsters = [
     resistances: {},
     techs: ['mon_hunters_mark', 'mon_earthen_crush'],
     xp: BALANCE.MONSTER_XP(96),
-    goldMin: 160,
-    goldMax: 320,
+    goldMin: 120,
+    goldMax: 240,
     shardChance: 0.95,
     drops: [
       { itemId: 'stone_energy_moonbridge', chance: 0.08 },
@@ -2645,8 +2652,8 @@ Game.Data.monsters = [
     resistances: { Light: 0.5, Dark: -0.3 },
     techs: ['mon_radiant_smite'],
     xp: BALANCE.MONSTER_XP(97),
-    goldMin: 162,
-    goldMax: 324,
+    goldMin: 122,
+    goldMax: 243,
     shardChance: 0.95,
     drops: [
       { itemId: 'rod_lunar_conduit', chance: 0.03 },
@@ -2677,8 +2684,8 @@ Game.Data.monsters = [
     curseChance: BALANCE.CURSE_APPLY_CHANCE,
     techs: ['mon_anima_lance', 'mon_dark_hex'],
     xp: BALANCE.MONSTER_XP(99),
-    goldMin: 166,
-    goldMax: 332,
+    goldMin: 125,
+    goldMax: 249,
     shardChance: 0.95,
     drops: [
       { itemId: 'sphere_hclass_2', chance: 0.08 },
