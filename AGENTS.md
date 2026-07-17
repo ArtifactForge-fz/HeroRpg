@@ -2,10 +2,11 @@
 
 Single-player browser remake of **herorpg.net** (2004–2008, dead), reconstructed from Wayback
 Machine scrapes. Static HTML/CSS/JS, no build step, no dependencies — open `index.html` via
-`file://`. **Shipped: v1.6.0 (save version 10)** — v1.4 gameplay + mobile, v1.4.1/.2 UX info
-passes, v1.5 (reactive monster behavior + Tier-3 branching/24-class roster + the Conjurer
-summoner), and v1.6 (a full balance & progression rebalance from playtest feedback — see
-"Recently completed" below) are all released. Two accepted known limitations:
+`file://`. **Shipped: v1.7.0 (save version 10)** — v1.4 gameplay + mobile, v1.4.1/.2 UX info
+passes, v1.5 (reactive monsters + Tier-3 branching/24-class roster + the Conjurer summoner),
+v1.6 (a full balance & progression rebalance from playtest feedback), and v1.7 (quest-arc
+redistribution, Arkan racial parity, destinations-UI cards, and a reference wiki — see "Recently
+completed" below) are all released. Two accepted known limitations:
 the 5-levels-down=death contract isn't fully enforced at high levels (Fear-spared healing
 sustain — DESIGN §4), and boss-telegraph integration is deferred (a boss charged hit can spike
 past heal+death in one blow; 3 low bosses carry behaviors, the other 8 keep their v1.4 scripts —
@@ -149,6 +150,34 @@ localStorage fallback — and syntax-checks its 3 script blocks as it writes. A 
 rebuilds it after every commit so a deployable single-file build always matches HEAD. The hooks
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
 re-enable it. Never build/ship from a tree with red suites.
+
+## Recently completed (2026-07-17) — v1.7.0 (branch `v1.7-content`)
+
+Content & UX cycle from user requests (post-v1.6): quest front-loading, the backlogged Arkan
+feedback, a clearer destinations UI, and a reference wiki. Spec `docs/SPEC-V1.7-CONTENT-UX.md`;
+Arkan design authority `docs/SPEC-ARKAN-DIFFERENTIATION.md` (now committed). Save version
+unchanged (10). **Branch NOT yet merged to `main` and NOT deployed — both user-gated.** Four
+phases + release, each green on all 11 suites:
+- **P-U/P-Q** (`16fd6b0`): the Explore "Destinations" list is now a **card grid with recommended
+  level ranges** + the home-town travel-UI fix (closes the backlogged Arkan/Saratus bug — an Arkan
+  sees Saratus reachable below L14, mirroring `travelTo`). **Quest-arc redistribution:** 14 givers
+  moved so each town tavern owns its band (Eldor 12→6; Kastengard Vanguard Camp gains a tavern,
+  0→4; tier-3 calling → Kuraan; Band E/F → Skyspire, 0→5), every giver verified reachable, no
+  stranded quest. L1-5 intro + `first_calling` stay at Eldor (only town reachable below L6).
+- **P-R** (`a809a92`): Arkan parity. `saratus_plains` was a strict subset of the human plains →
+  added the 2 missing regionals + a new **sim-locked** construct `saratus_wardframe` (armor 4 /
+  magicArmor 6 at L3 — resists magic, weak to melee; icon lead-sourced, byte-distinct). Class at
+  home: new `arkan_calling` (Saratus, `requiresRace:Arkan`, kills the Wardframe) grants the base
+  class; `first_calling` is now `requiresRace:Human` (legacy-safe — the race gate is accept-only,
+  never turn-in); + 2 Arkan bridge quests (L10/L12).
+- **P-W** (`97d39b6`): a **reference wiki** (`wiki.html` + `js/ui/wiki.js`, footer-linked, in the
+  deploy list) generated at load from `Game.Data` — items (+ where sold/dropped), monsters (+
+  **drop-rate %**), areas (+ level range), techniques, recipes; new `tests/test_wiki.js`.
+- **Release** (`91c8ec1`): changelog + README bumped to v1.7.0.
+- Process: U∥Q and R∥W ran as parallel Sonnet pairs on the shared checkout (disjoint files; the one
+  shared test file `test_p4_world.js` was lead-reconciled). Single-file-artifact note: `wiki.html`
+  is a separate page, so the footer "Reference Wiki" link is a dead link in the single-file build
+  only — the deployed multi-file site serves it fine.
 
 ## Recently completed (2026-07-17) — v1.6.0 (branch `v1.6-rebalance`)
 
