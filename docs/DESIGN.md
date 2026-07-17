@@ -83,6 +83,34 @@ delivery model as the original ("text-based, web 2.0", AJAX-era) and as the Avat
   areas.js`, previously shop/inn/academy only) so the L26-33 band has its own quest hub. Reachability
   is absolute (giver town `minLevel` ≤ quest `levelMin`) and chain-walked end to end; test-covered
   in `tests/test_p5_quests.js` Test 30 (per-quest reachability + a whole-table connectivity sweep).
+- **v1.7 Phase R — Arkan parity (doorstep + class/quest)** (`docs/SPEC-V1.7-CONTENT-UX.md` §3,
+  `docs/SPEC-ARKAN-DIFFERENTIATION.md`): choosing Arkan had changed almost nothing — `saratus_plains`
+  was a strict SUBSET of `plains_of_averast` (3 of its 5 monsters, no Standing Stone), and the
+  single most important early system, a class, had no Saratus path at all (`first_calling` was
+  Eldor-only, ungated). **R-A (doorstep):** `[revised]` A1 parity floor appended the two missing
+  regional monsters (`plains_vermin_swarm`, `plains_cutpurse_vole`) to `saratus_plains`; `[invented]`
+  A2 added one new Arkan-cultural foe, **`saratus_wardframe`** (a runic training construct,
+  Arkan.md-anchored, echoing the Kastengard wardframes at doorstep scale) plus a forage token
+  (`quest_wardframe_rune_shard`) — stats LOCKED by a `/balance-sim` gate (300-400 trials, L3
+  warrior/caster fixtures): level 3, hp 56, damage 9, armor 4 (kept low — armor 8 stalled melee to
+  a 77%-win/20-round slog, the documented over-armoring pitfall), magicArmor 6 (elevated — the
+  construct's identity: resists magic, weak to melee); verified 100% win both fixtures, 68%/82% HP
+  left, no stall. A wholesale distinct biome (A3) was rejected — Averast.md places Saratus in the
+  SAME region as Eldor, so shared fauna is the correct anchor; differentiation is
+  cultural/technological, layered on top. **R-B (class/quest parity):** `[invented]` mechanism
+  `[archived]` B2 added **`arkan_calling`** ("The Runic Calling"), an Arkan-flavored mirror of
+  `first_calling` given by Battlemage Instructor Renjiro in Saratus, `requiresRace: 'Arkan'`,
+  granting the identical `rewards.classChoice: ['warrior','magician','thief']` via the same
+  turn-in mechanism (no new class code); its kill step targets `saratus_wardframe`. `first_calling`
+  itself gained `requiresRace: 'Human'` so each race now has exactly ONE base-class path — verified
+  legacy-safe (the gate is accept()-time only; an Arkan with `first_calling` already active or
+  completed is untouched, only a NEW accept by a classless legacy Arkan is redirected to
+  `arkan_calling`). Two B-fill bridge quests (`arkan_shaman_hunt` L10, `arkan_beastmaster_watch`
+  L12) carry the Saratus tavern across the L1-13 gap into the existing L14 `saratus_foothills_intro`
+  line, reusing existing Kuraan Border Woods monsters (no new monster beyond `saratus_wardframe`).
+  Advanced/tier-3 class quests stay Eldor-then-Kastengard/Kuraan-hosted (Phase Q above) — shared
+  mid/late arc for both races, not Arkan-mirrored. No save-version bump (data + one `requiresRace`
+  flag on quest data, not a character field).
 
 ## 3. Character system
 

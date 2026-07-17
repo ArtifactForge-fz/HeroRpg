@@ -131,7 +131,7 @@ function makeCharacter(opts) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: data sanity (monsters reference real items/techs) ===');
-assert(Game.Data.monsters.length === 87, '87 monsters defined (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss + 6 Level-Arc Band D regulars + 1 Band D boss + 6 Level-Arc Band E regulars + 1 Band E boss + 6 Level-Arc Band F regulars + 1 Band F boss), got ' + Game.Data.monsters.length);
+assert(Game.Data.monsters.length === 88, '88 monsters defined (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss + 6 Level-Arc Band D regulars + 1 Band D boss + 6 Level-Arc Band E regulars + 1 Band E boss + 6 Level-Arc Band F regulars + 1 Band F boss + 1 v1.7 Phase R saratus_wardframe), got ' + Game.Data.monsters.length);
 var bosses = Game.Data.monsters.filter(function (m) { return m.boss; });
 assert(bosses.length === 11, 'exactly 11 bosses defined (Phase 6b adds 4 to the original estari_ruin_warden, Level-Arc Band A adds majiku_warlord, Band B adds majiku_ridge_chieftain, Band C adds ukai_deep_dweller, Band D adds estari_warden_prime, Band E adds society_anima_horror, Band F adds eidas_ascendant -- the arc\'s FINAL boss), got ' + bosses.length);
 var badRefs = [];

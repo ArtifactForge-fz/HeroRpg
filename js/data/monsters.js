@@ -140,6 +140,43 @@ Game.Data.monsters = [
     desc: 'A writhing knot of rats and stinging insects that moves as one hungry creature.'
   },
 
+  // =====================================================================
+  // v1.7 Phase R (docs/SPEC-V1.7-CONTENT-UX.md §3 R-A/A2, SPEC-ARKAN-DIFFERENTIATION.md §3 A2):
+  // one new Arkan-cultural doorstep foe for saratus_plains — a runic training construct, echoing
+  // the Kastengard wardframes (kastengard_wardframe, above in this file) but at doorstep scale.
+  // [invented], Arkan.md-anchored ("a grand circular city focused on the study of magic and
+  // technology... Battlemages reinforce the front with white and black magic derived from the
+  // study of runes"). Stats LOCKED by the lead's /balance-sim gate (scratchpad
+  // sim_v17_wardframe.js, 300-400 trials, L3 warrior + L3 caster fixtures) — DO NOT re-tune:
+  // warrior 100% win / 68% HP left / 9.4 rounds, caster 100% win / 82% HP left / 5.8 rounds, both
+  // in the ≥85-100% at-level contract with no melee stall. Identity is elevated magicArmor (6)
+  // over modest armor (4) — a warded construct that resists magic but is weak to melee (armor 8
+  // over-armored to a 77%-win/20-round melee stall in the sim; armor 6 was still grindy at 13
+  // rounds; armor 4 is the locked value).
+  // =====================================================================
+  {
+    id: 'saratus_wardframe',
+    name: 'Saratus Wardframe',
+    level: 3,
+    hp: 56,
+    energy: 70,
+    damage: 9,
+    armor: 4,
+    magicArmor: 6,
+    element: null,
+    resistances: {},
+    techs: [],
+    xp: BALANCE.MONSTER_XP(3),
+    goldMin: 2,
+    goldMax: 6,
+    shardChance: 0.05,
+    drops: [
+      // Appended (top-down, first-hit-wins convention); no chance-1 entry precedes it.
+      { itemId: 'quest_wardframe_rune_shard', chance: 0.3 }
+    ],
+    desc: 'A runic training construct of the Saratus battlemage academy, its ward-plated frame humming faintly with stored spellcraft. Every young Arkan learns to break one before they are trusted with a blade of their own.'
+  },
+
   // ---------- Level 4 ----------
   {
     id: 'estari_loose_rubble',

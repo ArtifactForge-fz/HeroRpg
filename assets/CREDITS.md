@@ -297,3 +297,14 @@ every band tech rank, including `tech_firebolt_5`/`tech_impale_5`/`tech_impale_7
 Icon presence verified by `tests/test_icons.js` Test 3 (all player-usable techs, incl. classOnly);
 byte-distinctness is NOT required or checked for tech icons (only monsters), so the intentional
 reuse above passes cleanly.
+
+## v1.7 icons — new monster
+- `saratus_wardframe` ← `crawl-ref/source/rltiles/mon/nonliving/war_gargoyle.png` (DCSS repo
+  github.com/crawl/crawl, CC0/public-domain — same source as the v1.2/v1.3 pulls). A warded stone
+  guardian tile for the Arkan runic training construct (SPEC-V1.7-CONTENT-UX.md R-A/A2). Verified
+  32×32 and byte-hash-distinct from every existing icon (test_icons.js Test 2).
+
+## v1.7 icons — new item (reuse; only monsters require byte-distinctness)
+- `quest_wardframe_rune_shard` ← copied from the existing `quest_ukai_deep_rune.png` tile (an
+  already-installed rune-flavored icon). The new forage material (js/data/items.js, R-A/A2) is an
+  item, not a monster, so tile reuse is permitted per the standing convention.

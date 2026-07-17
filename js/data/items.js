@@ -3970,6 +3970,27 @@ Game.Data.items = [
     energyRestore: 50,
     heal: 40,
     desc: 'A forager\'s lucky handful — a few edible roots, a strip of dried meat, and a fistful of wound-moss, bundled together in whatever cloth was on hand.'
+  },
+
+  // =====================================================================
+  // v1.7 Phase R (docs/SPEC-V1.7-CONTENT-UX.md §3 R-A, SPEC-ARKAN-DIFFERENTIATION.md §3 A2):
+  // one Arkan-flavored forage material, dropped from the saratus_wardframe training construct AND
+  // foraged directly at saratus_plains — same "monster drop + local forage" pattern already used
+  // by quest_frostram_hide/quest_riverweed_bundle above. [invented], Arkan.md-anchored (runic
+  // battlemage study). Not referenced by any quest or recipe (yet) — Game.Quests.materialStillUseful
+  // treats an unreferenced quest_ id as vacuously still-useful, so it simply keeps dropping/foraging
+  // forever, same as quest_matriarch_horn's own pure-trophy precedent.
+  // =====================================================================
+  {
+    id: 'quest_wardframe_rune_shard',
+    name: 'Wardframe Rune Shard',
+    slot: 'none',
+    skill: null,
+    weight: 1,
+    levelReq: 1,
+    value: 6,
+    tags: ['no-trade'],
+    desc: 'A shard of ward-stone still faintly warm, etched with the same battlemage runes that power a Saratus training construct. The Academy pays well for intact study samples.'
   }
 ];
 

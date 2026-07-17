@@ -304,6 +304,16 @@ Game.Data.areas = [
   // Saratus's own doorstep, so a level-1 Arkan (who now starts in Saratus instead of Eldor —
   // js/core/character.js create(), Arkan.md) has somewhere to hunt from the very first battle,
   // exactly as a level-1 Human has the Plains of Averast right outside Eldor.
+  //
+  // v1.7 Phase R (docs/SPEC-V1.7-CONTENT-UX.md §3 R-A, SPEC-ARKAN-DIFFERENTIATION.md §3): this
+  // doorstep had shipped as a strict SUBSET of plains_of_averast (3 of its 5 monsters, no
+  // Standing Stone) — a downgrade, not a parallel. [revised] A1 (parity floor): appended the two
+  // missing regional monsters (plains_vermin_swarm, plains_cutpurse_vole) so it's no longer a
+  // downgrade, and so the new Arkan class quest (R-B2, js/data/quests.js) has a kill target here.
+  // [invented] A2 (flavor): appended saratus_wardframe, a new Arkan-cultural training-construct
+  // foe (js/data/monsters.js), plus its own forage token below — cultural/technological
+  // differentiation layered onto the shared-region wildlife, per Averast.md's "same region"
+  // constraint (a wholesale distinct biome was rejected, SPEC-ARKAN-DIFFERENTIATION.md §3 A3).
   // =====================================================================
   {
     id: 'saratus_plains',
@@ -314,13 +324,18 @@ Game.Data.areas = [
     // reside. There they established the city of Saratus") — Saratus sits within the same Plains
     // of Averast region as Eldor (Averast.md), so this doorstep hunting ground reuses the SAME
     // early fauna already defined for the plains around Eldor (js/data/monsters.js plains_* ids)
-    // rather than inventing new low-level monsters (Content-B already owns monsters.js).
-    monsters: ['plains_field_rat', 'plains_windrunner_kestrel', 'plains_wild_boar'],
+    // rather than inventing new low-level monsters (Content-B already owns monsters.js). v1.7
+    // Phase R appends the two previously-missing regional monsters (A1) plus one new Arkan-only
+    // construct (A2, saratus_wardframe) — plains_field_rat stays first so the existing guaranteed-
+    // encounter test (test_p4_world.js Test 19) still resolves to the same low-level pick.
+    monsters: ['plains_field_rat', 'plains_windrunner_kestrel', 'plains_wild_boar', 'plains_vermin_swarm', 'plains_cutpurse_vole', 'saratus_wardframe'],
     facilities: [],
     // v1.4 P4 (G4): Forage table — same early plains fauna as plains_of_averast, so the same
     // provisions-leaning table (no existing synthesis material of its own).
-    forage: ['provision_trail_rations', 'provision_foragers_bundle'],
-    desc: 'The same windswept plains that shelter Eldor stretch east all the way to Saratus\'s gates (Averast.md) — rats, kestrels, and boar are as common a nuisance on the Arkan side of the region as on the Human one.'
+    // v1.7 Phase R (A2): appended quest_wardframe_rune_shard, the new Arkan-flavored forage token
+    // (js/data/items.js) — still within the 2-4 forage-table-size contract (test_p4_world.js).
+    forage: ['provision_trail_rations', 'provision_foragers_bundle', 'quest_wardframe_rune_shard'],
+    desc: 'The same windswept plains that shelter Eldor stretch east all the way to Saratus\'s gates (Averast.md) — rats, kestrels, and boar are as common a nuisance on the Arkan side of the region as on the Human one. Closer to the city walls, the battlemage academy runs its trainees against ward-plated constructs of its own make.'
   },
 
   // ---------- Northern Barrier Foothills: level 13-18 hunting + gate-boss ----------

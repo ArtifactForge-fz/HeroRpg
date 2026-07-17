@@ -355,12 +355,23 @@ Game.Data.quests = [
   // level 5 via the Eldor tavern instead. Archived TRIO (Warrior/Magician/Thief) per
   // homepage_2006.md; quest text/giver invented, anchored in the Royal Academy (Eldor's capital
   // Academy facility, DESIGN.md §6) recognizing a hero's potential early rather than at 30.
+  //
+  // v1.7 Phase R-B2 (docs/SPEC-V1.7-CONTENT-UX.md §3, SPEC-ARKAN-DIFFERENTIATION.md §3):
+  // requiresRace: 'Human' ADDED here so each race has exactly ONE base-class path: Humans use
+  // this quest (Eldor), Arkans use the new arkan_calling (Saratus, below in this file) — mirrors
+  // the gate style already used by the Arkan questline's own requiresRace: 'Arkan'. Legacy-save
+  // safety verified: this is an ACCEPT-time-only gate (js/core/quests.js accept()); turnIn() never
+  // re-checks requiresRace, so an Arkan who already has this quest ACTIVE (accepted before this
+  // patch) can still complete it normally, and an Arkan who already COMPLETED it keeps their class
+  // untouched (completed quest entries are never re-evaluated). Only a NEW accept by a classless
+  // legacy Arkan is now refused — and that hero is correctly routed to arkan_calling instead.
   // =====================================================================
   {
     id: 'first_calling',
     name: 'The First Calling',
     giver: { areaId: 'eldor', npc: 'Tavern Keeper Rosalind' },
     levelMin: 5, // revised: user-directed v1.1, overrides archived level-30 first-class rule
+    requiresRace: 'Human', // NEW (v1.7 Phase R-B2): Humans use this quest; Arkans use arkan_calling
     intro: 'Rosalind sets down her rag and looks at you properly for the first time. "Word\'s ' +
       'reached the tavern that a Royal Academy proctor is in town, taking the measure of anyone ' +
       'who has survived their first few fights — you\'ve clearly got the makings of something. ' +
@@ -697,6 +708,16 @@ Game.Data.quests = [
   // archived "red moon" lore already told in js/data/story.js chapter_1 (Eidas leading the
   // Society to a nameless red moon). Content/text invented; monsters/items/areas all reused from
   // existing data (no new items.js/monsters.js entries, per the phase brief).
+  //
+  // v1.7 Phase R (docs/SPEC-V1.7-CONTENT-UX.md §3 R-B, SPEC-ARKAN-DIFFERENTIATION.md §3 Phase B):
+  // extends this line with FOUR more entries (below, each individually commented) — B2's
+  // arkan_calling (the Arkan base-class quest, closing the "no class in my own city" gap) slotted
+  // right after arkan_first_rite, and two B-fill bridge quests slotted after
+  // arkan_red_moon_whispers to carry Saratus across the L1-13 gap into Anje's existing L14 line.
+  // This phase DOES add one new monster (saratus_wardframe) and one new item
+  // (quest_wardframe_rune_shard) elsewhere (js/data/monsters.js / js/data/items.js) — the "no new
+  // monsters/items" constraint above was specific to the ORIGINAL v1.2 Content-A budget, not a
+  // standing rule.
   // =====================================================================
 
   // ---------- Arkan 1) The First Rite of Saratus — levelMin 1, the doorstep hunting ground ----------
@@ -715,6 +736,41 @@ Game.Data.quests = [
     ],
     rewards: { gold: 25, xp: 20, items: ['potion_minor_healing'] },
     completionText: 'Elder Meilin nods, satisfied. "A dull blade first, a runic one later. You\'ve made your first cut, hero — Saratus will remember it."'
+  },
+
+  // ---------- Arkan B2) The Runic Calling — levelMin 5, the Arkan base-class quest (v1.7 Phase R-B2) ----------
+  // NEW (v1.7 Phase R-B2, docs/SPEC-V1.7-CONTENT-UX.md §3, SPEC-ARKAN-DIFFERENTIATION.md §3 B2):
+  // an Arkan-flavored mirror of first_calling, so an Arkan obtains a base class IN Saratus instead
+  // of having to travel to the Human capital for the single most important early system. Reuses
+  // the EXACT SAME mechanism (rewards.classChoice: the fixed base trio, resolved by
+  // js/core/quests.js turnIn() exactly as first_calling's is) — no new class code, mechanism
+  // [archived] (the trio itself, homepage_2006.md), quest text/placement [invented]. Kill target
+  // is saratus_wardframe, the new Arkan-cultural training construct (js/data/monsters.js,
+  // js/data/areas.js saratus_plains) added earlier in this same phase (R-A) — "prove yourself
+  // against the training construct" fits the battlemage-instructor giver better than first_calling's
+  // vermin-thinning framing. levelMin 5 matches first_calling exactly (same tier, same level a
+  // Human gets their calling); requiresQuest: arkan_first_rite (levelMin 1, requiresRace: 'Arkan')
+  // is an equal-or-looser gate, so the chain-compatibility rule holds.
+  {
+    id: 'arkan_calling',
+    name: 'The Runic Calling',
+    giver: { areaId: 'saratus', npc: 'Battlemage Instructor Renjiro' },
+    levelMin: 5,
+    requiresRace: 'Arkan',
+    requiresQuest: 'arkan_first_rite',
+    intro: 'Battlemage Instructor Renjiro sets down the rune-etched practice blade he\'s been ' +
+      'sharpening. "Elder Meilin tells me you\'ve already drawn blood, hero. Good — but a dulled ' +
+      'blade proves nothing about what you\'ll be. Every trainee who ever amounted to something ' +
+      'in this city has stood against one of the academy\'s own wardframes and walked away the ' +
+      'better for it. Break one, and I\'ll see the Academy recognizes exactly what you\'re suited ' +
+      'to become — Warrior, Magician, or Thief. Your calling, hero, same as it would be in any ' +
+      'human city, just answered on Arkan ground."',
+    steps: [
+      { kind: 'kill', monsterId: 'saratus_wardframe', count: 3 }
+    ],
+    // No plain rewards — mirrors first_calling exactly: the sole reward is the class choice.
+    rewards: { classChoice: ['warrior', 'magician', 'thief'] },
+    completionText: 'Renjiro studies the scorch-marks on your gear with real satisfaction. "Three wardframes down, and the Academy\'s own instructors are already arguing over what you\'ll make of yourself. Choose your path, hero — Warrior, Magician, or Thief — and Saratus will see it trained properly, same as Eldor ever would."'
   },
 
   // ---------- Arkan 2) Trial of the Battlemage — levelMin 6, Kuraan Border Woods (ancestral Arkan homeland) ----------
@@ -761,6 +817,58 @@ Game.Data.quests = [
     ],
     rewards: { gold: 130, xp: 160, items: ['crystal_energy_shard'] },
     completionText: 'Kaida turns the last wisp\'s residue over in her hands, frowning at whatever pattern it traces. "Still no name for the moon. But the pattern\'s the same every time now — the Skyspire went somewhere, hero, and it isn\'t finished with Van Arius yet. Thank you for the runes. I\'ll need every one I can get."'
+  },
+
+  // ---------- Arkan B-fill 1) Silencing the War-Shamans — levelMin 10, Kuraan Border Woods ----------
+  // NEW (v1.7 Phase R B-fill, docs/SPEC-V1.7-CONTENT-UX.md §3, SPEC-ARKAN-DIFFERENTIATION.md §3
+  // B-fill): first of two bridge quests carrying Saratus's own tavern across the L1-13 gap into
+  // Anje's existing L14 foothills line (Recent_Updates-style scouting-thread flavor, [invented],
+  // Arkan.md-anchored — Kuraan is the ancestral homeland the Majiku's war-shamans still hold).
+  // Chains behind arkan_red_moon_whispers (levelMin 8, requiresRace: 'Arkan' — an equal gate, so
+  // chain-compatibility holds). Reuses majiku_war_shaman (kuraan_border_woods, minLevel 6,
+  // already Arkan-reachable via arkan_battlemage_trial above) — no new monster needed.
+  {
+    id: 'arkan_shaman_hunt',
+    name: 'Silencing the War-Shamans',
+    giver: { areaId: 'saratus', npc: 'Rune-Archivist Kaida' },
+    levelMin: 10,
+    requiresRace: 'Arkan',
+    requiresQuest: 'arkan_red_moon_whispers',
+    intro: 'Kaida spreads a hand-drawn chart of the border woods across her desk. "The wisps told ' +
+      'me what they could, but the Majiku war-shamans in Kuraan\'s border reaches are the ones ' +
+      'actually raising the wards that keep our own scouts blind past the tree-line. Quiet four ' +
+      'of them, hero, and the Academy\'s own runic surveys might finally see past the fringe for ' +
+      'the first time in a generation."',
+    steps: [
+      { kind: 'kill', monsterId: 'majiku_war_shaman', count: 4 }
+    ],
+    rewards: { gold: 150, xp: 190, trainingPoints: 1 },
+    completionText: 'Kaida rolls the chart back up, satisfied. "Four wards down, and the surveys are already clearer. Kuraan\'s still not ours, hero — but it\'s a little less theirs than it was yesterday."'
+  },
+
+  // ---------- Arkan B-fill 2) Watching the Beastmasters — levelMin 12, Kuraan Border Woods ----------
+  // NEW (v1.7 Phase R B-fill): second and last bridge quest, closing the gap right up to Anje's
+  // L14 line (saratus_foothills_intro, giver Tavern Keeper Anje, levelMin 14 — js/data/quests.js,
+  // above). Returns to Elder Meilin, the line's first giver, for a sense of closure before Anje
+  // takes over the L14+ thread. Chains behind arkan_shaman_hunt (levelMin 10, same requiresRace
+  // gate). Reuses majiku_beastmaster (kuraan_border_woods) — no new monster needed.
+  {
+    id: 'arkan_beastmaster_watch',
+    name: 'Watching the Beastmasters',
+    giver: { areaId: 'saratus', npc: 'Elder Meilin' },
+    levelMin: 12,
+    requiresRace: 'Arkan',
+    requiresQuest: 'arkan_shaman_hunt',
+    intro: 'Elder Meilin\'s voice carries none of the warmth it did when you first left the ' +
+      'wardplate gates. "Kaida\'s war-shamans were only clearing the way, hero. Word\'s reached the ' +
+      'council that Majiku beastmasters are massing warbeasts along the border woods, readying ' +
+      'something bigger than a raiding party. Put down three of them before whatever they\'re ' +
+      'building has a chance to march."',
+    steps: [
+      { kind: 'kill', monsterId: 'majiku_beastmaster', count: 3 }
+    ],
+    rewards: { gold: 190, xp: 230, items: ['crystal_energy_shard'] },
+    completionText: 'Elder Meilin exhales, some of the warmth returning. "Three beastmasters, and whatever they were building along with them. You\'ve bought Saratus more time than you know, hero — the foothills folk to the north will want a hero like you too, before long."'
   },
 
   // =====================================================================

@@ -150,7 +150,7 @@ function satisfyChain(questId) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: quest/story data sanity ===');
-assert(Game.Data.quests.length === 43, '43 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end + Band B\'s break_the_majiku_host/storms_over_the_ridge/the_chieftains_reckoning + Band C\'s win_passage_from_the_ukai/what_slips_through_the_ice/the_deep_dwellers_reckoning + Band D\'s the_taboo_wellspring/what_the_wellspring_woke/the_warden_primes_reckoning + Band E\'s the_skyspire_ascent/what_the_society_grew/the_societys_last_stand + Band F\'s the_red_moon_crossing/what_rennick_deciphered/the_ascendants_fall -- THE ARC FINALE), got ' + Game.Data.quests.length);
+assert(Game.Data.quests.length === 46, '46 quests defined (22 pre-v1.2-Phase-3 + v1.2 Phase 3 Content-A\'s arkan_first_rite/arkan_battlemage_trial/arkan_red_moon_whispers + Level-Arc Band A\'s reclaim_the_fringe/wraiths_of_the_deepwood/the_warlords_end + Band B\'s break_the_majiku_host/storms_over_the_ridge/the_chieftains_reckoning + Band C\'s win_passage_from_the_ukai/what_slips_through_the_ice/the_deep_dwellers_reckoning + Band D\'s the_taboo_wellspring/what_the_wellspring_woke/the_warden_primes_reckoning + Band E\'s the_skyspire_ascent/what_the_society_grew/the_societys_last_stand + Band F\'s the_red_moon_crossing/what_rennick_deciphered/the_ascendants_fall -- THE ARC FINALE + v1.7 Phase R\'s arkan_calling/arkan_shaman_hunt/arkan_beastmaster_watch), got ' + Game.Data.quests.length);
 assert(Game.Data.story.length === 6, '6 story chapters (level-arc F5 adds chapter_3/chapter_4/epilogue), got ' + Game.Data.story.length);
 ['prelude', 'chapter_1', 'chapter_2', 'chapter_3', 'chapter_4', 'epilogue'].forEach(function (id) {
   var found = Game.Data.story.some(function (ch) { return ch.id === id; });
@@ -1310,7 +1310,7 @@ try {
 } finally {
   Game.Data.quests.pop(); // never leave the fixture quest polluting Game.Data.quests for later runs
 }
-assert(Game.Data.quests.length === 43, 'sanity: fixture quest fully removed, back to 43 real quests');
+assert(Game.Data.quests.length === 46, 'sanity: fixture quest fully removed, back to 46 real quests');
 
 // Vacuously useful: an item referenced by NEITHER a quest NOR a recipe is never gated off (e.g.
 // quest_matriarch_horn, a pure boss-trophy per EI-4 -- "when in doubt, keep dropping").
@@ -1457,6 +1457,135 @@ assert(Game.Classes.isObtained(c30cls3, 'shadowknight') === true, 'shadowknight 
   assert(Game.World.getArea('frosthold_waystation').minLevel <= ascent.levelMin, 'the_skyspire_ascent reachable at Frosthold before the split-off quests can even chain from it');
   assert(Game.World.getArea('skyspire_landing').minLevel <= crossing.levelMin, 'the_red_moon_crossing reachable at Skyspire Landing once chained');
 })();
+
+// =================== Test 31: v1.7 Phase R — Arkan base-class parity (arkan_calling) + legacy safety ===================
+console.log('\n=== Test 31: Phase R — arkan_calling (B2), requiresRace gating on both sides, bridge quests, legacy-save safety ===');
+
+// 31a) data sanity
+var arkanCalling31 = Game.Data.quests.filter(function (q) { return q.id === 'arkan_calling'; })[0];
+assert(!!arkanCalling31, 'arkan_calling quest exists');
+assert(arkanCalling31.levelMin === 5, 'arkan_calling gates at level 5 (same tier as first_calling), got ' + (arkanCalling31 && arkanCalling31.levelMin));
+assert(arkanCalling31.requiresRace === 'Arkan', 'arkan_calling requires race Arkan');
+assert(arkanCalling31.requiresQuest === 'arkan_first_rite', 'arkan_calling chains behind arkan_first_rite');
+assert(JSON.stringify(arkanCalling31.rewards.classChoice) === JSON.stringify(['warrior', 'magician', 'thief']),
+  'arkan_calling offers exactly the same base trio as first_calling, got ' + JSON.stringify(arkanCalling31.rewards.classChoice));
+var wardframeDef31 = Game.Battle.getMonsterDef('saratus_wardframe');
+assert(!!wardframeDef31, 'saratus_wardframe monster exists');
+assert(arkanCalling31.steps[0].kind === 'kill' && arkanCalling31.steps[0].monsterId === 'saratus_wardframe',
+  'arkan_calling\'s kill step targets saratus_wardframe');
+var saratusPlains31 = Game.World.getArea('saratus_plains');
+assert(saratusPlains31.monsters.indexOf('saratus_wardframe') !== -1, 'saratus_wardframe is present in saratus_plains (R-A), so arkan_calling\'s kill target is reachable at home');
+assert(saratusPlains31.monsters.indexOf('plains_vermin_swarm') !== -1 && saratusPlains31.monsters.indexOf('plains_cutpurse_vole') !== -1,
+  'A1 parity floor: saratus_plains also carries the two previously-missing regional monsters');
+
+// 31b) requiresRace gates BOTH directions: a Human cannot take arkan_calling; an Arkan cannot take first_calling
+// (isolate the race check by bypassing the giver-location check via Game._debug.goto, same
+// approach as Test 16's requiresRace check above)
+var c31human = makeCharacter({ name: 'PhaseRHuman' });
+c31human.level = 5;
+Game._debug.goto('saratus');
+var resHumanArkanCalling31 = Game.Quests.accept('arkan_calling');
+assert(resHumanArkanCalling31.ok === false && /Arkan/.test(resHumanArkanCalling31.message), 'Human refused arkan_calling on the race gate: ' + resHumanArkanCalling31.message);
+Game._debug.goto('eldor');
+var resHumanFirstCalling31 = Game.Quests.accept('first_calling');
+assert(resHumanFirstCalling31.ok === true, 'sanity: Human still allowed first_calling: ' + resHumanFirstCalling31.message);
+
+var c31arkanNoClass = makeCharacter({ name: 'PhaseRArkanNoClass', race: 'Arkan' });
+c31arkanNoClass.level = 5;
+Game._debug.goto('eldor');
+var resArkanFirstCalling31 = Game.Quests.accept('first_calling');
+assert(resArkanFirstCalling31.ok === false && /Human/.test(resArkanFirstCalling31.message), 'Arkan refused first_calling (now Human-gated): ' + resArkanFirstCalling31.message);
+assert(!c31arkanNoClass.quests['first_calling'], 'no quest entry created for the refused Arkan');
+
+// 31c) full flow: a fresh Arkan completes arkan_first_rite, then arkan_calling, at home in Saratus
+var c31 = makeCharacter({ name: 'ArkanCallingFlow', race: 'Arkan' });
+c31.level = 5;
+assert(c31.currentLocation === 'saratus', 'sanity: fresh Arkan starts in Saratus');
+var acceptRite31 = Game.Quests.accept('arkan_first_rite');
+assert(acceptRite31.ok === true, 'arkan_first_rite accepted: ' + acceptRite31.message);
+for (var kr31 = 0; kr31 < 3; kr31++) winBattle('plains_field_rat');
+var turnInRite31 = Game.Quests.turnIn('arkan_first_rite');
+assert(turnInRite31.ok === true, 'arkan_first_rite turned in: ' + turnInRite31.message);
+
+var acceptCalling31 = Game.Quests.accept('arkan_calling');
+assert(acceptCalling31.ok === true, 'arkan_calling accepted (prereq satisfied, still Level 5+, still in Saratus): ' + acceptCalling31.message);
+assert(Game.Quests.canTurnIn('arkan_calling') === false, 'canTurnIn false with 0/3 wardframes broken');
+for (var kw31 = 0; kw31 < 3; kw31++) winBattle('saratus_wardframe');
+assert(c31.quests['arkan_calling'].progress.kills['saratus_wardframe'] === 3, 'kill progress reached 3/3 wardframes');
+assert(Game.Quests.canTurnIn('arkan_calling') === true, 'canTurnIn true at count');
+var turnInCalling31 = Game.Quests.turnIn('arkan_calling', 'magician');
+assert(turnInCalling31.ok === true, 'arkan_calling turned in: ' + turnInCalling31.message);
+assert(Game.Classes.isObtained(c31, 'magician') === true, 'magician obtained via arkan_calling — an Arkan now has a class-obtain path entirely within Saratus');
+
+// 31d) legacy-save safety: requiresRace is an ACCEPT-time-only gate (js/core/quests.js accept()).
+// turnIn() never re-checks it, so quest entries already on a character (from before this patch)
+// keep working regardless of race. Simulated here by writing c.quests entries directly, exactly
+// like the suite's own satisfyChain()/fixture patterns above (Test 29) do for the same reason.
+console.log('--- 31d: legacy-save safety (requiresRace is accept()-time only) ---');
+
+// (i) an Arkan who already COMPLETED first_calling pre-patch: untouched, re-accept still refused
+// (but for the ordinary "already accepted/completed" reason, not a race refusal) and the class
+// obtained via it stays intact.
+var c31legacyDone = makeCharacter({ name: 'LegacyArkanDoneCalling', race: 'Arkan' });
+c31legacyDone.quests['first_calling'] = { status: 'completed', progress: { kills: {}, touched: {}, visited: {} } };
+Game.Classes.obtainClass(c31legacyDone, 'thief');
+assert(Game.Classes.isObtained(c31legacyDone, 'thief') === true, 'legacy Arkan\'s pre-patch class from first_calling is intact after the requiresRace patch');
+var reAccept31 = Game.Quests.accept('first_calling');
+assert(reAccept31.ok === false && /already accepted or completed/.test(reAccept31.message),
+  'legacy Arkan cannot re-accept the completed first_calling, refused for the ordinary reason (not the new race gate): ' + reAccept31.message);
+
+// (ii) an Arkan who had first_calling ACTIVE pre-patch (accepted before this patch, not yet
+// turned in): must still be able to finish it normally — turnIn() has no requiresRace check.
+var c31legacyActive = makeCharacter({ name: 'LegacyArkanActiveCalling', race: 'Arkan' });
+c31legacyActive.level = 5; // first_calling's own levelMin, re-checked at turn-in regardless of the ignoreMax flag
+c31legacyActive.quests['first_calling'] = { status: 'active', progress: { kills: {}, touched: {}, visited: {} } };
+for (var ka31 = 0; ka31 < 4; ka31++) winBattle('plains_vermin_swarm');
+assert(c31legacyActive.quests['first_calling'].progress.kills['plains_vermin_swarm'] === 4, 'legacy active first_calling: kill progress still tracked normally');
+Game._debug.goto('eldor'); // turnIn requires standing with the giver; kill progress is location-independent
+assert(Game.Quests.canTurnIn('first_calling') === true, 'legacy active first_calling: canTurnIn true at count (turnIn has no requiresRace gate)');
+var legacyTurnIn31 = Game.Quests.turnIn('first_calling', 'warrior');
+assert(legacyTurnIn31.ok === true, 'legacy Arkan with a PRE-PATCH active first_calling can still complete it: ' + legacyTurnIn31.message);
+assert(Game.Classes.isObtained(c31legacyActive, 'warrior') === true, 'class granted normally to the legacy Arkan despite the new Human-only accept gate');
+
+// (iii) a classless legacy Arkan (never touched first_calling at all) is correctly routed to the
+// NEW arkan_calling instead — no stranding. Already proven end-to-end in 31c/31b above; this is
+// just the explicit "never had the quest" case, distinct from (i)/(ii)'s "already had it" cases.
+var c31legacyNone = makeCharacter({ name: 'LegacyArkanNeverCalled', race: 'Arkan' });
+c31legacyNone.level = 5; // clear first_calling's own levelMin so the race gate is the only thing left to trip
+assert(!c31legacyNone.quests['first_calling'], 'sanity: classless legacy Arkan has no first_calling entry at all');
+Game._debug.goto('eldor');
+var refusedLegacyNone31 = Game.Quests.accept('first_calling');
+assert(refusedLegacyNone31.ok === false && /Human/.test(refusedLegacyNone31.message),
+  'classless legacy Arkan refused first_calling on the race gate, not stranded — arkan_calling (proven in 31c) is their path: ' + refusedLegacyNone31.message);
+
+// 31e) B-fill bridge quests: race-gated, chain correctly, reachable in Saratus
+console.log('--- 31e: B-fill bridge quests (arkan_shaman_hunt / arkan_beastmaster_watch) ---');
+var shamanHunt31 = Game.Quests.getQuest('arkan_shaman_hunt');
+var beastmasterWatch31 = Game.Quests.getQuest('arkan_beastmaster_watch');
+assert(!!shamanHunt31 && shamanHunt31.requiresRace === 'Arkan' && shamanHunt31.requiresQuest === 'arkan_red_moon_whispers' && shamanHunt31.levelMin === 10,
+  'arkan_shaman_hunt: Arkan-gated, chains behind arkan_red_moon_whispers, levelMin 10');
+assert(!!beastmasterWatch31 && beastmasterWatch31.requiresRace === 'Arkan' && beastmasterWatch31.requiresQuest === 'arkan_shaman_hunt' && beastmasterWatch31.levelMin === 12,
+  'arkan_beastmaster_watch: Arkan-gated, chains behind arkan_shaman_hunt, levelMin 12');
+
+var c31human2 = makeCharacter({ name: 'PhaseRHumanBridge' });
+c31human2.level = 10;
+Game._debug.goto('saratus');
+var resHumanShaman31 = Game.Quests.accept('arkan_shaman_hunt');
+assert(resHumanShaman31.ok === false && /Arkan/.test(resHumanShaman31.message), 'Human refused arkan_shaman_hunt on the race gate: ' + resHumanShaman31.message);
+
+var c31bridge = makeCharacter({ name: 'ArkanBridgeFlow', race: 'Arkan' });
+c31bridge.level = 12;
+satisfyChain('arkan_red_moon_whispers');
+var acceptShaman31 = Game.Quests.accept('arkan_shaman_hunt');
+assert(acceptShaman31.ok === true, 'arkan_shaman_hunt acceptable once arkan_red_moon_whispers is completed: ' + acceptShaman31.message);
+for (var ks31 = 0; ks31 < 4; ks31++) winBattle('majiku_war_shaman');
+var turnInShaman31 = Game.Quests.turnIn('arkan_shaman_hunt');
+assert(turnInShaman31.ok === true, 'arkan_shaman_hunt turned in: ' + turnInShaman31.message);
+var acceptBeastmaster31 = Game.Quests.accept('arkan_beastmaster_watch');
+assert(acceptBeastmaster31.ok === true, 'arkan_beastmaster_watch acceptable once arkan_shaman_hunt is completed: ' + acceptBeastmaster31.message);
+for (var kb31 = 0; kb31 < 3; kb31++) winBattle('majiku_beastmaster');
+var turnInBeastmaster31 = Game.Quests.turnIn('arkan_beastmaster_watch');
+assert(turnInBeastmaster31.ok === true, 'arkan_beastmaster_watch turned in, bridging the Arkan line up to the existing L14 saratus_foothills_intro gate: ' + turnInBeastmaster31.message);
 
 // =================== Summary ===================
 console.log('\n===================================');
