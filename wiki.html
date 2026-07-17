@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HeroRPG — Reference Wiki</title>
+<link rel="stylesheet" href="css/theme.css">
+<style>
+  /* Phase W (docs/SPEC-V1.7-CONTENT-UX.md §6): wiki-only styling, kept inline here (rather than
+     appended to css/theme.css) so this page stays fully self-contained per CLAUDE.md's
+     file://-safe constraint. Reuses existing theme tokens only — no new colors invented. */
+  .wiki-nav a { margin-right: 4px; }
+  .wiki-filter {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 3px 5px;
+  }
+  .wiki-hidden { display: none; }
+  .wiki-section td, .wiki-section th { vertical-align: top; }
+  .hrpg-table img.icon32 { display: block; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="titlebar">HeroRPG — Reference Wiki</div>
+
+  <div class="panelsurround" style="padding:6px; margin-bottom:6px;">
+    <a href="index.html">&larr; Back to the game</a>
+    &mdash; <a href="changelog.html">Version Log</a>
+  </div>
+
+  <div class="smallfont panelsurround" style="padding:6px; margin-bottom:6px;">
+    Generated from the game's own data files — items, monsters, areas, techniques, and recipes.
+    Nothing here is hand-authored twice: if it's wrong, the game itself has the same value.
+  </div>
+
+  <div id="wikiroot"></div>
+
+  <div id="footer" class="smallfont" title="So long, and thanks for all the fish.">
+    Powered by RadiantWeb and RadiantRPG &mdash; in memory of HeroRPG (herorpg.net, 2004&ndash;2008)
+  </div>
+</div>
+
+<script src="js/balance.js"></script>
+<script src="js/data/items.js"></script>
+<script src="js/data/monsters.js"></script>
+<script src="js/data/techs.js"></script>
+<script src="js/data/areas.js"></script>
+<script src="js/data/recipes.js"></script>
+<script src="js/ui/wiki.js"></script>
+<script>
+(function () {
+  var Game = window.Game;
+  Game.Wiki.render(document.getElementById('wikiroot'));
+})();
+</script>
+</body>
+</html>
