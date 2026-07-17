@@ -92,12 +92,24 @@ Game.Quests = (function () {
 
   // Level-window check shared by accept() and turnIn() (archived: the Oruk quest enforces a
   // level band — Recent_Updates.md 2007-04-06 "can only be completed by heroes greater than
-  // level 5 but less than 10" — checked at BOTH accept and turn-in per the phase brief).
-  function levelCheck(c, quest) {
+  // level 5 but less than 10").
+  //
+  // v1.6 P4 CF-3 (docs/SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md CF-3) [revised]:
+  // `levelMax` is now enforced at ACCEPT ONLY, not at turn-in. Previously turnIn() re-ran this
+  // same check with no way to skip the max side, so a quest accepted inside its level band (e.g.
+  // the_oruk, levelMin 5/levelMax 10, accepted at level 6-9) became permanently un-turn-in-able
+  // the moment the hero leveled past levelMax — a soft-lock that could clog the 3-slot Journal
+  // forever (BALANCE.MAX_ACTIVE_QUESTS), since cancel() is the only escape. `levelMin` is still
+  // re-checked at both accept and turn-in (level never decreases in this game, so this is a no-op
+  // in practice, but there is no reason to relax it). `ignoreMax` is passed `true` ONLY by
+  // turnIn()'s re-check below; accept() and availableAt() (which gates the Tavern's accept-time
+  // offer list) both call this with the default (false), so the accept-time levelMax gate is
+  // fully intact — the_oruk still cannot be ACCEPTED outside level 5-10.
+  function levelCheck(c, quest, ignoreMax) {
     if (typeof quest.levelMin === 'number' && c.level < quest.levelMin) {
       return { ok: false, reason: 'Requires Level ' + quest.levelMin + ' (you are Level ' + c.level + ').' };
     }
-    if (typeof quest.levelMax === 'number' && c.level > quest.levelMax) {
+    if (!ignoreMax && typeof quest.levelMax === 'number' && c.level > quest.levelMax) {
       return { ok: false, reason: 'Only for heroes of Level ' + quest.levelMax + ' or below (you are Level ' + c.level + ').' };
     }
     return { ok: true, reason: null };
@@ -433,9 +445,10 @@ Game.Quests = (function () {
       return { ok: false, message: 'Return to ' + quest.giver.npc + ' in ' + (giverArea ? giverArea.name : quest.giver.areaId) + ' to turn in this quest.' };
     }
     // Level band re-checked at turn-in (archived: Oruk band enforced at completion —
-    // Recent_Updates.md 2007-04-06 "can only be COMPLETED by heroes greater than level 5 but
-    // less than 10").
-    var lvl = levelCheck(c, quest);
+    // Recent_Updates.md 2007-04-06 "can only be COMPLETED by heroes greater than level 5"). The
+    // levelMax HALF of that check is deliberately skipped here (v1.6 P4 CF-3, see levelCheck's
+    // own comment) — once accepted, out-leveling levelMax must never block turn-in.
+    var lvl = levelCheck(c, quest, true);
     if (!lvl.ok) return { ok: false, message: lvl.reason };
 
     if (!canTurnIn(questId)) {

@@ -412,11 +412,12 @@ assert(finale.rewards.items.indexOf('tent_expedition_pavilion') !== -1, 'echo_of
 // is NO LONGER the top-tier tent -- it was re-stated to rung 3/6 of the new full-range camp-heal
 // ladder (tentQuality 0.75 -> 0.45); the new top rung is tent_skysilk_sanctuary (levelReq 85,
 // tentQuality 0.75). echo_of_eidas (js/data/quests.js, a level-36 finale reward) still grants
-// tent_expedition_pavilion unchanged -- js/data/quests.js is OUT OF SCOPE for this P3 economy pass
-// (not in the file list), so its "reward the top-tier tent" intent is now stale flavor and should
-// be revisited in a future content pass (flagged for the lead); the reward ITSELF (same item id,
-// same effect) is unaffected. This assertion now checks the item's own LOCKED rung value instead
-// of a "genuinely the max" claim that is no longer true by design.
+// tent_expedition_pavilion unchanged -- the reward ITSELF (same item id, same effect) is
+// unaffected; only its "reward the top-tier tent" description was stale, FIXED in v1.6 P4
+// (docs/SPEC-V1.6-REBALANCE.md §3, the "stale content flag from P3" item) by correcting the
+// reward comment in js/data/quests.js to describe the tent accurately. This assertion checks the
+// item's own LOCKED rung value instead of a "genuinely the max" claim that is no longer true by
+// design.
 var topTent = Game.Inventory.getItem('tent_expedition_pavilion');
 assert(topTent.tentQuality === 0.45, 'tent_expedition_pavilion carries its v1.6 P3 EI-6 rung-3/6 value (0.45), got ' + topTent.tentQuality);
 

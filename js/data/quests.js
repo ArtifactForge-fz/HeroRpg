@@ -616,7 +616,14 @@ Game.Data.quests = [
     ],
     rewards: {
       gold: 1200, xp: 2000,
-      items: ['tent_expedition_pavilion'], // invented: top-tier tent per the phase brief (highest tentQuality currently defined)
+      // invented: a sturdy Expedition Pavilion (levelReq 25, tentQuality 0.45) — a solid
+      // mid-game camp upgrade for a levelMin-36 quest. NOTE (v1.6 P4, fixing a stale flag from
+      // P3): this was originally granted as "the top-tier tent... highest tentQuality currently
+      // defined"; v1.6 P3 EI-6 re-stated the whole tent ladder to 6 rungs across the full level
+      // range (SPEC-V1.6-REBALANCE.md §6.2) and tent_expedition_pavilion is now rung 3/6
+      // (tentQuality 0.75 -> 0.45), no longer the top rung (that's tent_skysilk_sanctuary,
+      // levelReq 85). The item/effect is unchanged; only this description was stale.
+      items: ['tent_expedition_pavilion'],
       trainingPoints: 5
     },
     // Completion text closes the arc: the twinkling light chapter_2 describes, the "stirring

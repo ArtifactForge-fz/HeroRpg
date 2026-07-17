@@ -664,19 +664,20 @@ Game.Data.areas = [
           'heavy_body_glacial_bulwark_plate', 'heavy_head_glacial_warhelm',
           'light_legs_frosthold_ward_leggings', 'medium_feet_waystation_boots', 'heavy_legs_glacial_greatplate_legguards',
           'tent_expedition_pavilion',
-          // v1.6 P3 EI-6 (SPEC-V1.6-REBALANCE.md §3/§6.2): rungs 5/6 and 6/6 (levelReq 65/85,
-          // tentQuality 0.65/0.75). Frosthold Waystation (minLevel 65) is rung 5's home, and — since
-          // it's currently the only town serving the whole 61-100 range (REVIEW-2026-07-16.md CF-1,
-          // deferred to a future content pass) — rung 6 (levelReq 85) is sold here too rather than
-          // being unobtainable; splitting the late hub will let CF-1 move it to a higher-level town.
-          'tent_frosthold_expedition_yurt', 'tent_skysilk_sanctuary',
+          // v1.6 P3 EI-6 (SPEC-V1.6-REBALANCE.md §3/§6.2): rung 5/6 (levelReq 65, tentQuality
+          // 0.65) is Frosthold's own rung, matching its minLevel. Rung 6/6 (levelReq 85,
+          // tent_skysilk_sanctuary) was sold here too until v1.6 P4 CF-1 split the late hub —
+          // it now lives at Skyspire Landing (js/data/areas.js), the town whose minLevel it
+          // actually matches.
+          'tent_frosthold_expedition_yurt',
           'potion_vault_reserve',
           'crystal_eclass_1', 'crystal_eclass_2', 'sphere_eclass_1', 'sphere_eclass_2',
           'stone_energy_frosthold',
           'sword_majiku_hostbreaker', 'shield_highland_bulwark',
           // Level-Arc Band D (docs/SPEC-ARC-BANDS.md): the Estari Ruins Deep tier-75/78 gear and
-          // F-Class consumables (js/data/items.js) — Frosthold Waystation still serves the whole
-          // 61-90 range, so Band D adds no new settlement and simply extends this stock.
+          // F-Class consumables (js/data/items.js) — Frosthold Waystation keeps Bands C/D per the
+          // v1.6 P4 CF-1 town split (docs/SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md CF-1);
+          // Bands E/F's shop stock (below, formerly here) moved to the new Skyspire Landing.
           'sword_estari_wardblade', 'polearm_estari_warpike', 'knife_estari_shard_fang',
           'rod_wellspring_conduit', 'hth_warden_gauntlets', 'shield_estari_bulwark',
           'light_body_wellspring_veil', 'light_head_wellspring_hood',
@@ -684,30 +685,7 @@ Game.Data.areas = [
           'heavy_body_warden_plate', 'heavy_head_warden_helm',
           'light_legs_wellspring_leggings', 'medium_feet_estari_boots', 'heavy_legs_warden_legguards',
           'crystal_fclass_1', 'crystal_fclass_2', 'sphere_fclass_1', 'sphere_fclass_2',
-          'stone_energy_wellspring',
-          // Level-Arc Band E (docs/SPEC-ARC-BANDS.md): the Ascent to the Skyspire tier-85/88
-          // gear and G-Class consumables (js/data/items.js) — Frosthold Waystation still serves
-          // the whole 61-90 range, so Band E adds no new settlement and simply extends this stock.
-          'sword_spireward_blade', 'polearm_skyspire_halberd', 'knife_society_renegade_dirk',
-          'rod_anima_channeling_rod', 'hth_spireguard_gauntlets', 'shield_spireward_aegis',
-          'light_body_skysilk_shroud', 'light_head_skysilk_hood',
-          'medium_body_spireguard_brigandine', 'medium_legs_spireguard_greaves',
-          'heavy_body_spireward_plate', 'heavy_head_spireward_helm',
-          'light_legs_stormline_leggings', 'medium_feet_stormline_boots', 'heavy_legs_stormline_legguards',
-          'crystal_gclass_1', 'crystal_gclass_2', 'sphere_gclass_1', 'sphere_gclass_2',
-          'stone_energy_skyspire',
-          // Level-Arc Band F (docs/SPEC-ARC-BANDS.md): the Red Moon / Eidas's Sanctum tier-95/98
-          // gear and H-Class consumables (js/data/items.js) — THE ARC FINALE. Frosthold Waystation
-          // is still the last hub before the final push, so Band F adds no new settlement and
-          // simply extends this stock one last time.
-          'sword_redmoon_blade', 'polearm_moonbridge_halberd', 'knife_sanctum_fang',
-          'rod_lunar_conduit', 'hth_sanctum_gauntlets', 'shield_redmoon_aegis',
-          'light_body_moonveil_shroud', 'light_head_moonveil_hood',
-          'medium_body_sanctum_brigandine', 'medium_legs_sanctum_greaves',
-          'heavy_body_redmoon_plate', 'heavy_head_redmoon_helm',
-          'light_legs_moonveil_leggings', 'medium_feet_sanctum_boots', 'heavy_legs_redmoon_legguards',
-          'crystal_hclass_1', 'crystal_hclass_2', 'sphere_hclass_1', 'sphere_hclass_2',
-          'stone_energy_moonbridge'
+          'stone_energy_wellspring'
         ]
       },
       // v1.4 P2 (G1): the AA Exchange — [archived] the "AA list" (reference/site/homepage_2006.md
@@ -804,10 +782,15 @@ Game.Data.areas = [
   // left, and neither did whatever anima-horrors it built or awakened while its master's back was
   // turned. Two overlapping hunting bands (Skyspire Lower Spans 81-84, Skyspire Upper Spans
   // 86-89; gap of 2 levels, under the archived ±5 XP/loot cutoff, BALANCE.XP_LOOT_CUTOFF_LEVELS)
-  // plus the band's lair boss. NO new settlement — Frosthold Waystation (Band C) already serves
-  // the whole 61-90 range. Same travel-reachability note as Bands A/B/C/D: js/ui/screens.js
-  // renderExplore lists ALL of Game.Data.areas as destinations, gated only by
-  // Game.World.travelTo's level check — no separate adjacency graph.
+  // plus the band's lair boss, AND a new settlement, Skyspire Landing (v1.6 P4 CF-1,
+  // docs/SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md CF-1) — Frosthold Waystation (Band C,
+  // minLevel 65) had become the ONLY town for the entire L61-100 range, stocking Bands C/D/E/F's
+  // shop gear with no town at all for the final 35 levels. Skyspire Landing (minLevel 85, opening
+  // partway through Skyspire Lower Spans, before Skyspire Upper Spans — same gating shape as
+  // Frosthold itself) now carries Band E/F's shop stock; Frosthold keeps Bands C/D. Same
+  // travel-reachability note as Bands A/B/C/D: js/ui/screens.js renderExplore lists ALL of
+  // Game.Data.areas as destinations, gated only by Game.World.travelTo's level check — no
+  // separate adjacency graph.
   // =====================================================================
 
   // ---------- Skyspire Lower Spans: level 81-84 hunting ----------
@@ -845,6 +828,77 @@ Game.Data.areas = [
     desc: "The spans thin out this high, open on every side to the wind and to whatever the Society of Modern Magic was still working on when Eidas sailed for the red moon without them. Something down in the tower's own sanctum has outgrown every leash the Society ever put on it — Anima given shape and hunger, exactly the outcome the Council of Three's old ban was written to prevent."
   },
 
+  // ---------- Skyspire Landing: level 85 settlement ----------
+  // v1.6 P4 CF-1 (docs/SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md CF-1) [invented]: Frosthold
+  // Waystation (minLevel 65) had become the ONLY town for the entire L61-100 range — ~84 shop item
+  // ids across Bands C/D/E/F, plus the AA Exchange, and no town at all for the final 35 levels.
+  // Skyspire Landing splits the late hub: minLevel 85, opening partway through the Skyspire Lower
+  // Spans band (81-84), before Skyspire Upper Spans (86) — the identical gating shape Frosthold
+  // itself uses (opens partway through Glacial Approach, before Ukai Undercaverns) and Kastengard
+  // Vanguard Camp uses (opens alongside its own band's gate). Name/lore [invented]: a landing
+  // platform built into the Skyspire's own shaft by the last of the Society of Modern Magic's
+  // non-combatant staff — the same remnant already credited (Skyspire Lower/Upper Spans' own desc
+  // text) with still holding the tower three centuries after Eidas departed for the red moon;
+  // "Spans" names the open climbing sections, "Landing" the one solid platform between them,
+  // mirroring the established [place]+[settlement noun] convention (Frosthold Waystation,
+  // Kastengard Vanguard Camp, Kuraan Reclamation Camp). Carries Band E/F's shop stock MOVED here
+  // from Frosthold Waystation (which keeps Bands C/D) — redistributed, not duplicated. Quest
+  // givers for Bands E/F stay at Frosthold Waystation: the arc's own text (js/data/quests.js
+  // the_ascendants_fall's intro, "Everything Frosthold has sent north for the last forty levels")
+  // establishes Frosthold as this whole campaign's enduring command post, not a per-band way
+  // station, so only the SHOP (the actual overload CF-1 flags) moves — flagged for lead review in
+  // case the quest-hub role was meant to move too.
+  {
+    id: 'skyspire_landing',
+    name: 'Skyspire Landing',
+    type: 'town',
+    minLevel: 85, // invented: opens partway through the Skyspire Lower Spans band, before Skyspire Upper Spans (86) — same gating shape as Frosthold Waystation (65, before Ukai Undercaverns' 66)
+    monsters: [],
+    facilities: [
+      {
+        type: 'shop',
+        // Band E/F's tapered levelReq-85/95 gear (js/data/items.js) plus their own G/H-Class
+        // Crystal/Sphere/Energy Stone consumables — MOVED here from Frosthold Waystation's stock
+        // (v1.6 P4 CF-1; Frosthold keeps Bands C/D, see its own shop comment). Established
+        // pattern: every town shop mixes in at least one older item for a smooth handoff — here,
+        // a couple of Frosthold's own top Band D items.
+        stock: [
+          'sword_estari_wardblade', 'shield_estari_bulwark',
+          // Level-Arc Band E (docs/SPEC-ARC-BANDS.md): the Ascent to the Skyspire tier-85/88 gear
+          // and G-Class consumables.
+          'sword_spireward_blade', 'polearm_skyspire_halberd', 'knife_society_renegade_dirk',
+          'rod_anima_channeling_rod', 'hth_spireguard_gauntlets', 'shield_spireward_aegis',
+          'light_body_skysilk_shroud', 'light_head_skysilk_hood',
+          'medium_body_spireguard_brigandine', 'medium_legs_spireguard_greaves',
+          'heavy_body_spireward_plate', 'heavy_head_spireward_helm',
+          'light_legs_stormline_leggings', 'medium_feet_stormline_boots', 'heavy_legs_stormline_legguards',
+          // v1.6 P3 EI-6 rung 6/6 (levelReq 85, tentQuality 0.75, top of the tent ladder) — MOVED
+          // here from Frosthold Waystation, matching minLevel.
+          'tent_skysilk_sanctuary',
+          'crystal_gclass_1', 'crystal_gclass_2', 'sphere_gclass_1', 'sphere_gclass_2',
+          'stone_energy_skyspire',
+          // Level-Arc Band F (docs/SPEC-ARC-BANDS.md): the Red Moon / Eidas's Sanctum tier-95/98
+          // gear and H-Class consumables — THE ARC FINALE's own gear tier. Skyspire Landing is the
+          // last hub before the final push (players stock up here one last time).
+          'sword_redmoon_blade', 'polearm_moonbridge_halberd', 'knife_sanctum_fang',
+          'rod_lunar_conduit', 'hth_sanctum_gauntlets', 'shield_redmoon_aegis',
+          'light_body_moonveil_shroud', 'light_head_moonveil_hood',
+          'medium_body_sanctum_brigandine', 'medium_legs_sanctum_greaves',
+          'heavy_body_redmoon_plate', 'heavy_head_redmoon_helm',
+          'light_legs_moonveil_leggings', 'medium_feet_sanctum_boots', 'heavy_legs_redmoon_legguards',
+          'crystal_hclass_1', 'crystal_hclass_2', 'sphere_hclass_1', 'sphere_hclass_2',
+          'stone_energy_moonbridge'
+        ]
+      },
+      { type: 'inn' },
+      { type: 'vault' },
+      { type: 'academy' },
+      { type: 'shrine' },
+      { type: 'tavern' }
+    ],
+    desc: "A landing platform anchored partway up the Skyspire's own shaft, the last solid ground before the tower's upper spans give way to open sky. What's left of the Society of Modern Magic's own logistics corps — non-combatants who never earned a seat on Eidas's vessel three centuries ago — still keep it running: Inn, Vault, Academy, Spirit Shrine, and a Shop stocked for the final climb."
+  },
+
   // =====================================================================
   // Level-Arc Band F (docs/SPEC-ARC-BANDS.md, F2/F3): The Red Moon / Eidas's Sanctum, levels
   // 91-100 — THE ARC FINALE. From the Skyspire's own uppermost spans, the story finally crosses:
@@ -852,10 +906,11 @@ Game.Data.areas = [
   // (DESIGN.md §2 lore: renegade runologist Eidas departed for the red moon to found a "divine
   // race" — archived, Prelude.md/Chapter I). Two overlapping hunting bands (The Moon-Bridge
   // 91-94, Eidas's Sanctum 96-99; gap of 2 levels, under the archived ±5 XP/loot cutoff,
-  // BALANCE.XP_LOOT_CUTOFF_LEVELS) plus the arc's FINAL lair boss. NO new settlement — Frosthold
-  // Waystation (Band C) already serves the whole 61-90 range and is the last hub before the final
-  // push (players stock up there one last time). Same travel-reachability note as Bands A-E:
-  // js/ui/screens.js renderExplore lists ALL of Game.Data.areas as destinations, gated only by
+  // BALANCE.XP_LOOT_CUTOFF_LEVELS) plus the arc's FINAL lair boss. NO new settlement of its own —
+  // Skyspire Landing (Band E, v1.6 P4 CF-1) is the last hub before the final push (players stock
+  // up there one last time; Frosthold Waystation remains the questline's command post — see
+  // Skyspire Landing's own comment). Same travel-reachability note as Bands A-E: js/ui/screens.js
+  // renderExplore lists ALL of Game.Data.areas as destinations, gated only by
   // Game.World.travelTo's level check — no separate adjacency graph.
   // =====================================================================
 

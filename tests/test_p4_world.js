@@ -119,9 +119,9 @@ function makeCharacter(opts) {
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: areas/monsters/items data sanity ===');
-assert(Game.Data.areas.length === 28, '28 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A + Level-Arc Band A\'s kuraan_fringe_woods/deep_kuraan/kuraan_reclamation_camp + Band B\'s majiku_border_steppe/highland_war_camps, NO new Band B settlement + Band C\'s glacial_approach/ukai_undercaverns/frosthold_waystation + Band D\'s estari_sublevels/anima_wellspring, NO new Band D settlement + Band E\'s skyspire_lower_spans/skyspire_upper_spans, NO new Band E settlement + Band F\'s moon_bridge/eidas_sanctum, NO new Band F settlement, per SPEC-ARC-BANDS.md), got ' + Game.Data.areas.length);
+assert(Game.Data.areas.length === 29, '29 areas defined (11 pre-v1.2 + Laik + saratus_plains + kastengard_vanguard_camp, v1.2 Phase 3 Content-A + Level-Arc Band A\'s kuraan_fringe_woods/deep_kuraan/kuraan_reclamation_camp + Band B\'s majiku_border_steppe/highland_war_camps, NO new Band B settlement + Band C\'s glacial_approach/ukai_undercaverns/frosthold_waystation + Band D\'s estari_sublevels/anima_wellspring, NO new Band D settlement + Band E\'s skyspire_lower_spans/skyspire_upper_spans + skyspire_landing (v1.6 P4 CF-1, the town split) + Band F\'s moon_bridge/eidas_sanctum, NO new Band F settlement, per SPEC-ARC-BANDS.md + SPEC-V1.6-REBALANCE.md), got ' + Game.Data.areas.length);
 var townCount = Game.Data.areas.filter(function (a) { return a.type === 'town'; }).length;
-assert(townCount === 7, '7 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp + Kuraan Reclamation Camp + Frosthold Waystation — Bands B, D, E and F add no new town, Band C adds Frosthold Waystation), got ' + townCount);
+assert(townCount === 8, '8 towns defined (Eldor/Ju`Mak/Saratus + Laik, the archived 4th town, + Kastengard Vanguard Camp + Kuraan Reclamation Camp + Frosthold Waystation + Skyspire Landing — Bands B, D and F add no new town, Band C adds Frosthold Waystation, Band E adds Skyspire Landing (v1.6 P4 CF-1)), got ' + townCount);
 assert(Game.Data.monsters.length === 87, '87 monsters (14 pre-Phase-6b + 12 Phase 6b regular + 4 Phase 6b bosses + 15 enemy-variety-pass regulars + 6 Level-Arc Band A regulars + 1 Band A boss + 6 Level-Arc Band B regulars + 1 Band B boss + 6 Level-Arc Band C regulars + 1 Band C boss + 6 Level-Arc Band D regulars + 1 Band D boss + 6 Level-Arc Band E regulars + 1 Band E boss + 6 Level-Arc Band F regulars + 1 Band F boss), got ' + Game.Data.monsters.length);
 var gares = Game.World.getArea('gares_riverbanks');
 assert(gares && gares.monsters.length === 7, 'Gares Riverbanks lists 7 monsters (4 original + 3 enemy-variety-pass)');
@@ -497,8 +497,16 @@ assert(skyspireLowerSpans.minLevel === 81, 'Skyspire Lower Spans gates travel at
 assert(!!skyspireUpperSpans && skyspireUpperSpans.type === 'hunting', 'Skyspire Upper Spans exists as a hunting area');
 assert(skyspireUpperSpans.minLevel === 86, 'Skyspire Upper Spans gates travel at minLevel 86');
 assert(!!skyspireUpperSpans.lair && skyspireUpperSpans.lair.monsterId === 'society_anima_horror' && skyspireUpperSpans.lair.minLevel === 90, 'Skyspire Upper Spans carries the society_anima_horror lair gated at minLevel 90');
-// No new settlement for Band E — Frosthold Waystation (Band C) still serves the 61-90 range.
+// v1.6 P4 CF-1 (docs/SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md CF-1): Band E adds a NEW
+// settlement, Skyspire Landing (minLevel 85) — splitting the late hub off Frosthold Waystation,
+// which was the ONLY town for the entire L61-100 range. Frosthold keeps its (reduced) facility
+// lineup; it no longer stocks Band E/F gear (see Test 0h/0i's shop assertions below), but the
+// facility TYPES it carries are unchanged.
+var skyspireLanding = Game.World.getArea('skyspire_landing');
+assert(!!skyspireLanding && skyspireLanding.type === 'town', 'Skyspire Landing exists as a town');
+assert(skyspireLanding.minLevel === 85, 'Skyspire Landing gates travel at minLevel 85');
 ['shop', 'inn', 'vault', 'academy', 'shrine', 'tavern'].forEach(function (t) {
+  assert(!!Game.World.getFacility(skyspireLanding, t), 'Skyspire Landing has facility: ' + t);
   assert(!!Game.World.getFacility(frostholdWaystation, t), 'Frosthold Waystation still has facility: ' + t);
 });
 // No gap wider than the archived ±5 XP/loot cutoff between the two hunting bands' monster levels.
@@ -513,11 +521,15 @@ var wellspringLevelsForGap = Game.World.getArea('anima_wellspring').monsters.map
 var maxWellspringLevel = Math.max.apply(null, wellspringLevelsForGap);
 var minLowerSpansLevel = Math.min.apply(null, lowerSpansLevels);
 assert(minLowerSpansLevel - maxWellspringLevel < BALANCE.XP_LOOT_CUTOFF_LEVELS, 'no gap wider than the ±5 XP/loot cutoff between The Anima Wellspring (max lvl ' + maxWellspringLevel + ') and Skyspire Lower Spans (min lvl ' + minLowerSpansLevel + ')');
-// Frosthold Waystation's shop stocks Band E's tapered gear/consumables.
-var frostholdShopE = Game.World.getFacility(frostholdWaystation, 'shop');
+// v1.6 P4 CF-1: Skyspire Landing's shop stocks Band E's tapered gear/consumables (MOVED from
+// Frosthold Waystation, which no longer carries them — see Test 0f's Band C assertion above for
+// what Frosthold still stocks).
+var skyspireLandingShop = Game.World.getFacility(skyspireLanding, 'shop');
+var frostholdShopNoBandE = Game.World.getFacility(frostholdWaystation, 'shop');
 ['sword_spireward_blade', 'shield_spireward_aegis', 'crystal_gclass_1', 'sphere_gclass_1', 'stone_energy_skyspire'].forEach(function (iid) {
-  assert(frostholdShopE.stock.indexOf(iid) !== -1, 'Frosthold Waystation shop stocks Band E gear/consumable: ' + iid);
+  assert(skyspireLandingShop.stock.indexOf(iid) !== -1, 'Skyspire Landing shop stocks Band E gear/consumable: ' + iid);
   assert(!!Game.Inventory.getItem(iid), 'Band E shop stock item resolves: ' + iid);
+  assert(frostholdShopNoBandE.stock.indexOf(iid) === -1, 'Frosthold Waystation no longer stocks Band E gear/consumable (moved, not duplicated): ' + iid);
 });
 // Travel connectivity: same mechanism as Bands A/B/C/D (js/ui/screens.js renderExplore lists ALL
 // areas, gated only by Game.World.travelTo's level check) — a level-81 character standing
@@ -535,6 +547,16 @@ assert(connToUpperSpansBlocked.ok === false, 'level 81 cannot yet reach Skyspire
 connCheckE.level = 86;
 var connToUpperSpans = Game.World.travelTo('skyspire_upper_spans');
 assert(connToUpperSpans.ok === true, 'level 86 reaches Skyspire Upper Spans directly from Skyspire Lower Spans');
+// v1.6 P4 CF-1: Skyspire Landing itself is travel-gated at its own minLevel (85), same mechanism —
+// blocked one level below, reachable directly at 85 (mirrors Frosthold Waystation's own gating
+// test, Test 0f above).
+connCheckE.level = 84;
+var connToLandingBlocked2 = Game.World.travelTo('skyspire_landing');
+assert(connToLandingBlocked2.ok === false, 'level 84 cannot yet reach Skyspire Landing (minLevel 85)');
+connCheckE.level = 85;
+var connToLandingAllowed = Game.World.travelTo('skyspire_landing');
+assert(connToLandingAllowed.ok === true, 'level 85 reaches Skyspire Landing directly from anywhere (no adjacency graph): ' + connToLandingAllowed.message);
+assert(connCheckE.currentLocation === 'skyspire_landing', 'currentLocation updated to Skyspire Landing');
 
 // =================== Test 0i: Level-Arc Band F — The Red Moon / Eidas's Sanctum (THE ARC FINALE) ===================
 console.log('\n=== Test 0i: The Moon-Bridge / Eidas\'s Sanctum exist, level-gated, huntable, travel-reachable ===');
@@ -545,10 +567,10 @@ assert(moonBridge.minLevel === 91, 'The Moon-Bridge gates travel at minLevel 91'
 assert(!!eidasSanctum && eidasSanctum.type === 'hunting', "Eidas's Sanctum exists as a hunting area");
 assert(eidasSanctum.minLevel === 96, "Eidas's Sanctum gates travel at minLevel 96");
 assert(!!eidasSanctum.lair && eidasSanctum.lair.monsterId === 'eidas_ascendant' && eidasSanctum.lair.minLevel === 100, "Eidas's Sanctum carries the eidas_ascendant lair (THE FINAL BOSS) gated at minLevel 100");
-// No new settlement for Band F — Frosthold Waystation (Band C) is still the last hub before the
-// final push.
+// No new settlement for Band F — Skyspire Landing (Band E, v1.6 P4 CF-1) is still the last hub
+// before the final push.
 ['shop', 'inn', 'vault', 'academy', 'shrine', 'tavern'].forEach(function (t) {
-  assert(!!Game.World.getFacility(frostholdWaystation, t), 'Frosthold Waystation still has facility: ' + t);
+  assert(!!Game.World.getFacility(skyspireLanding, t), 'Skyspire Landing still has facility: ' + t);
 });
 // No gap wider than the archived ±5 XP/loot cutoff between the two hunting bands' monster levels.
 var moonBridgeLevels = moonBridge.monsters.map(function (mid) { return Game.Battle.getMonsterDef(mid).level; });
@@ -564,12 +586,12 @@ var maxUpperSpansLevel = Math.max.apply(null, upperSpansLevelsForGap);
 var minMoonBridgeLevel = Math.min.apply(null, moonBridgeLevels);
 assert(minMoonBridgeLevel - maxUpperSpansLevel < BALANCE.XP_LOOT_CUTOFF_LEVELS, 'no gap wider than the ±5 XP/loot cutoff between Skyspire Upper Spans (max lvl ' + maxUpperSpansLevel + ') and The Moon-Bridge (min lvl ' + minMoonBridgeLevel + ')');
 assert(moonBridge.minLevel - skyspireUpperSpans.minLevel <= BALANCE.XP_LOOT_CUTOFF_LEVELS, 'Band F\'s Moon-Bridge minLevel (91) stays within the ±5 cutoff of Band E\'s top area minLevel (Skyspire Upper Spans, 86)');
-// Frosthold Waystation's shop stocks Band F's tapered gear/consumables (the last stock refresh
-// before the final push).
-var frostholdShopF = Game.World.getFacility(frostholdWaystation, 'shop');
+// v1.6 P4 CF-1: Skyspire Landing's shop stocks Band F's tapered gear/consumables too (the last
+// stock refresh before the final push) — MOVED from Frosthold Waystation.
 ['sword_redmoon_blade', 'shield_redmoon_aegis', 'crystal_hclass_1', 'sphere_hclass_1', 'stone_energy_moonbridge'].forEach(function (iid) {
-  assert(frostholdShopF.stock.indexOf(iid) !== -1, 'Frosthold Waystation shop stocks Band F gear/consumable: ' + iid);
+  assert(skyspireLandingShop.stock.indexOf(iid) !== -1, 'Skyspire Landing shop stocks Band F gear/consumable: ' + iid);
   assert(!!Game.Inventory.getItem(iid), 'Band F shop stock item resolves: ' + iid);
+  assert(frostholdShopNoBandE.stock.indexOf(iid) === -1, 'Frosthold Waystation no longer stocks Band F gear/consumable (moved, not duplicated): ' + iid);
 });
 // Travel connectivity: same mechanism as Bands A-E (js/ui/screens.js renderExplore lists ALL
 // areas, gated only by Game.World.travelTo's level check) — a level-91 character standing
@@ -587,6 +609,20 @@ assert(connToSanctumBlocked.ok === false, "level 91 cannot yet reach Eidas's San
 connCheckF.level = 96;
 var connToSanctum = Game.World.travelTo('eidas_sanctum');
 assert(connToSanctum.ok === true, "level 96 reaches Eidas's Sanctum directly from The Moon-Bridge");
+
+// =================== Test 0i-2 (v1.6 P4 CF-1): connectivity sweep — every Band E/F shop item id
+// is reachable (sold at Skyspire Landing, a travel-reachable town), and none is stranded. ===================
+console.log('\n=== Test 0i-2: CF-1 connectivity sweep — every Skyspire Landing shop item resolves and the town is reachable ===');
+assert(skyspireLandingShop.stock.length > 0, 'Skyspire Landing shop has stock');
+skyspireLandingShop.stock.forEach(function (iid) {
+  assert(!!Game.Inventory.getItem(iid), 'Skyspire Landing shop item id resolves to a real item: ' + iid);
+});
+// Reachability re-confirmed: a fresh level-85 character (the town's own minLevel) can travel
+// straight there and therefore buy everything in its stock — no shop item is stranded.
+var connSweepChar = makeCharacter({ name: 'CF1SweepTest' });
+connSweepChar.level = 85;
+var sweepTravel = Game.World.travelTo('skyspire_landing');
+assert(sweepTravel.ok === true, 'a fresh level-85 character reaches Skyspire Landing directly: ' + sweepTravel.message);
 
 // =================== Test 0j: v1.4 P4 (G4b) — Provisions pricing guardrail + shop/forage placement ===================
 console.log('\n=== Test 0j: sold provisions stay STRICTLY below crystal_energy_shard/stone_energy_*\'s energy-per-gold; shop + forage-only placement ===');

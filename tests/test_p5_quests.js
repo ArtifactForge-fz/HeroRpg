@@ -203,7 +203,7 @@ var res1c = Game.Quests.accept('tutorial_first_blood');
 assert(res1c.ok === false, 'double-accept rejected');
 
 // =================== Test 2: Oruk level band ===================
-console.log('\n=== Test 2: Oruk band — rejected at 4 and 11, accepted at 7; turn-in re-checks ===');
+console.log('\n=== Test 2: Oruk band — rejected at 4 and 11, accepted at 7; levelMax gates ACCEPT only (CF-3) ===');
 var c2 = makeCharacter({ name: 'OrukTest' });
 c2.level = 6; // pass Ju`Mak's own level gate for travel
 Game.World.travelTo('jumak_village');
@@ -216,15 +216,15 @@ assert(res2b.ok === false && /Level 10/.test(res2b.message), 'Oruk rejected at l
 c2.level = 7;
 var res2c = Game.Quests.accept('the_oruk');
 assert(res2c.ok === true, 'Oruk accepted at level 7');
-// Force-satisfy, outlevel the band, then try to turn in.
+// v1.6 P4 CF-3 (docs/SPEC-V1.6-REBALANCE.md §3, REVIEW-2026-07-16.md CF-3): levelMax gates
+// ACCEPT only, not turn-in. Accepted in-band at level 7 above; force-satisfy, out-level the band
+// far past levelMax 10, and turn-in must STILL SUCCEED — previously this was a permanent soft-lock
+// (accept in-band, out-level, and the quest could never be completed, clogging the Journal).
 Game._debug.completeQuestStep('the_oruk');
 assert(Game.Quests.canTurnIn('the_oruk') === true, 'Oruk steps force-satisfied');
-c2.level = 11;
+c2.level = 20; // out-level the band far past levelMax 10
 var res2d = Game.Quests.turnIn('the_oruk');
-assert(res2d.ok === false && /Level 10/.test(res2d.message), 'Oruk turn-in rejected at level 11 (band re-checked): ' + res2d.message);
-c2.level = 9;
-var res2e = Game.Quests.turnIn('the_oruk');
-assert(res2e.ok === true, 'Oruk turn-in succeeds back inside the band at level 9');
+assert(res2d.ok === true, 'Oruk turn-in SUCCEEDS at level 20 after out-leveling the band (CF-3: levelMax gates accept only, no soft-lock): ' + res2d.message);
 
 // =================== Test 3: kill progress only while active; multi-reward turn-in ===================
 console.log('\n=== Test 3: kill progress gating + full multi-reward grant (gold+xp+items+TP) ===');

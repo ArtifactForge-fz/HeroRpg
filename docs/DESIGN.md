@@ -50,6 +50,23 @@ delivery model as the original ("text-based, web 2.0", AJAX-era) and as the Avat
   placed at minLevel 9 rather than its archived level-20 band (see `js/data/areas.js`). The archived
   level bands are the reference; their remake placements are a `[revised]` pacing decision. (The
   future 100-level arc, `docs/SPEC-FULL-LEVEL-ARC.md`, restores the fuller spread.)
+- **v1.6 P4 — Skyspire Landing, a second L61-100 hub [invented]** (`docs/SPEC-V1.6-REBALANCE.md`
+  §3, CF-1; playtest triage `docs/REVIEW-2026-07-16.md` CF-1): Frosthold Waystation (minLevel 65,
+  added in the level-100 arc, `SPEC-ARC-BANDS.md`) had become the ONLY town for the entire
+  L61-100 range — its shop stocked ~84 item ids across Bands C/D/E/F, and there was no town at
+  all for the final 35 levels. **Skyspire Landing** (`js/data/areas.js`, minLevel 85) splits the
+  late hub: it opens partway through the Skyspire Lower Spans band (81-84), before Skyspire Upper
+  Spans (86) — the same gating shape Frosthold itself uses (opens partway through Glacial
+  Approach, before Ukai Undercaverns' 66). It carries the same six core facilities as every other
+  full town (Shop/Inn/Vault/Academy/Shrine/Tavern, no AA Exchange added) and Band E/F's shop
+  stock, **moved** (not duplicated) from Frosthold — Frosthold keeps Bands C/D. Band E/F's quest
+  givers (Waystation Commander Thessaly, Anima-Warden Yulei, Cipher-Adept Rennick) **stay at
+  Frosthold**: the arc's own finale text ("Everything Frosthold has sent north for the last forty
+  levels", `js/data/quests.js` `the_ascendants_fall`) establishes Frosthold as this campaign's
+  enduring command post, not a per-band way station, so only the shop — the actual overload CF-1
+  flags — moved. No new area/town/quest ids were removed or renamed; travel reachability needs no
+  extra wiring (`js/ui/screens.js` `renderExplore` already lists every `Game.Data.areas` entry as
+  a destination, gated only by `Game.World.travelTo`'s level check — no adjacency graph).
 
 ## 3. Character system
 
@@ -484,6 +501,19 @@ lore (Estari ruins, Anima excavation taboo, Majiku raids, Skyspire mythology).
     `requiresQuest` typos that would otherwise strand content invisibly.
   - **No save impact** — both mechanisms read existing `c.quests` state; no new character field,
     no version bump.
+- **v1.6 P4 — `levelMax` gates accept only, not turn-in [revised]** (`docs/SPEC-V1.6-REBALANCE.md`
+  §3, CF-3; playtest triage `docs/REVIEW-2026-07-16.md` CF-3): `levelMax` is set on exactly one
+  quest (`the_oruk`, levelMin 5/levelMax 10, archived band, `Recent_Updates.md` 2007-04-06), but
+  `js/core/quests.js` `turnIn()` re-ran the SAME level-band check used at accept — so a hero who
+  accepted inside the band (level 6-9) and then leveled past 10 before returning to Militia
+  Captain Dorwen could never turn it in again, a permanent soft-lock that could clog the 3-slot
+  Journal forever (only `cancel()` escaped it, discarding the quest's own progress). Fixed by
+  giving `levelCheck(c, quest, ignoreMax)` an `ignoreMax` flag: `accept()` and `availableAt()`
+  (the Tavern's offer-list gate) still call it with the default `false` — a hero still cannot
+  ACCEPT the_oruk outside level 5-10 — but `turnIn()`'s own re-check now passes `true`, so
+  out-leveling `levelMax` after acceptance never blocks completion. `levelMin` is unaffected (still
+  checked at both accept and turn-in — moot in practice, since level never decreases, but no
+  reason to relax it). No save impact — reads existing `c.level`/`c.quests` state only.
 
 ## 8. Presentation — [archived]
 
