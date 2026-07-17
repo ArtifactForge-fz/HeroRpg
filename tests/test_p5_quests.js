@@ -341,8 +341,11 @@ assert(res6i.ok === true, 'Standing Stones turned in: ' + res6i.message);
 console.log('\n=== Test 7: over-capacity reward — nothing lost, quest stays turn-in-able ===');
 var c7 = makeCharacter({ name: 'HeavyReward' });
 c7.level = 8;
+// v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2): ruin_warden_boss re-homed Eldor -> Laik
+// (minLevel 8, exactly this quest's own levelMin) — travel there before accepting.
+Game.World.travelTo('laik');
 var res7a = Game.Quests.accept('ruin_warden_boss');
-assert(res7a.ok === true, 'boss quest accepted in Eldor');
+assert(res7a.ok === true, 'boss quest accepted in Laik: ' + res7a.message);
 Game._debug.completeQuestStep('ruin_warden_boss');
 assert(Game.Quests.canTurnIn('ruin_warden_boss') === true, 'boss quest force-satisfied');
 var strengthBackup7 = c7.strength;
@@ -369,6 +372,8 @@ var c8 = makeCharacter({ name: 'BossTest' });
 c8.level = 8;
 Game.Character.recalcDerived(c8);
 c8.hitPoints = c8.hitPointsMax;
+// v1.7 Phase Q: ruin_warden_boss re-homed Eldor -> Laik — travel there before accepting.
+Game.World.travelTo('laik');
 var res8a = Game.Quests.accept('ruin_warden_boss');
 assert(res8a.ok === true, 'boss quest accepted');
 Game.World.travelTo('estari_ruins');
@@ -540,8 +545,12 @@ try {
   // tutorial_first_blood — for a fresh character it's hidden ENTIRELY (not even greyed), the whole
   // point of the chain mechanic (a giver no longer dumps its whole quest list at once).
   assert(!/The Standing Stones/.test(townText), 'Standing Stones hidden before tutorial_first_blood is completed (G5 chain)');
-  assert(/The Warden of the Ruins/.test(townText), 'Tavern lists the boss quest (greyed at level 1)');
-  assert(/Requires Level 8/.test(townText), 'ineligible quest shows the level reason');
+  // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2): ruin_warden_boss re-homed Eldor -> Laik, so it
+  // no longer appears in Eldor's own Tavern list at all — first_calling (levelMin 5, no
+  // requiresQuest gate, so it's listed-but-greyed rather than hidden) now exercises the same
+  // "ineligible quest still shown with a level reason" behavior.
+  assert(/The First Calling/.test(townText), 'Tavern lists the level-5 class quest (greyed at level 1)');
+  assert(/Requires Level 5/.test(townText), 'ineligible quest shows the level reason');
   // Accept via the Tavern UI
   var acceptBtns = document.getElementById('maincontent').queryAllByTag('button').filter(function (b) { return b.textContent === 'Accept'; });
   assert(acceptBtns.length >= 1, 'Accept buttons render for eligible quests');
@@ -970,7 +979,10 @@ assert(c30.quests['the_skyspire_ascent'].status === 'completed', 'the_skyspire_a
 // Spans regulars, same pattern as Test 21b's hunt-quest loop.
 var c31 = makeCharacter({ name: 'BandESideTest' });
 grantVitalityForLevel(c31, 86);
-Game.World.travelTo('frosthold_waystation');
+// v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2): what_the_society_grew re-homed Frosthold
+// Waystation -> Skyspire Landing (minLevel 85) — the_skyspire_ascent itself (its requiresQuest
+// prereq) stays at Frosthold, satisfied via the debug backdoor below regardless of location.
+Game.World.travelTo('skyspire_landing');
 satisfyChain('the_skyspire_ascent'); // G5 chain: what_the_society_grew requiresQuest the_skyspire_ascent
 var res31a = Game.Quests.accept('what_the_society_grew');
 assert(res31a.ok === true, 'what_the_society_grew accepted: ' + res31a.message);
@@ -978,7 +990,7 @@ Game.World.travelTo('skyspire_upper_spans');
 for (var w22 = 0; w22 < 4; w22++) winBattle('anima_horror_ravager');
 assert(c31.quests['what_the_society_grew'].progress.kills['anima_horror_ravager'] === 4, 'real kill progress reached 4/4 via winBattle against anima_horror_ravager');
 assert(Game.Quests.canTurnIn('what_the_society_grew') === true, 'what_the_society_grew turn-in-able after 4 real kills');
-Game.World.travelTo('frosthold_waystation');
+Game.World.travelTo('skyspire_landing');
 var res31b = Game.Quests.turnIn('what_the_society_grew');
 assert(res31b.ok === true, 'what_the_society_grew turn-in succeeds: ' + res31b.message);
 assert(Game.Quests.inventoryCount(c31, 'sphere_gclass_2') >= 1, 'what_the_society_grew grants a G-Class Sphere II');
@@ -986,14 +998,15 @@ assert(Game.Quests.inventoryCount(c31, 'sphere_gclass_2') >= 1, 'what_the_societ
 // 22c) boss-kill side quest: REAL kill via winBattle against the Band E lair boss itself.
 var c32 = makeCharacter({ name: 'BandEBossTest' });
 grantVitalityForLevel(c32, 90);
-Game.World.travelTo('frosthold_waystation');
+// v1.7 Phase Q: the_societys_last_stand re-homed Frosthold Waystation -> Skyspire Landing.
+Game.World.travelTo('skyspire_landing');
 satisfyChain('the_skyspire_ascent'); // G5 chain: the_societys_last_stand requiresQuest the_skyspire_ascent
 var res32a = Game.Quests.accept('the_societys_last_stand');
 assert(res32a.ok === true, 'the_societys_last_stand accepted: ' + res32a.message);
 Game.World.travelTo('skyspire_upper_spans');
 winBattle('society_anima_horror');
 assert(c32.quests['the_societys_last_stand'].progress.kills['society_anima_horror'] === 1, 'society_anima_horror kill recorded via winBattle (lair fight, same Game.Battle.start call as the Explore screen\'s lair button)');
-Game.World.travelTo('frosthold_waystation');
+Game.World.travelTo('skyspire_landing');
 var res32b = Game.Quests.turnIn('the_societys_last_stand');
 assert(res32b.ok === true, 'the_societys_last_stand turn-in succeeds: ' + res32b.message);
 assert(c32.quests['the_societys_last_stand'].status === 'completed', 'the_societys_last_stand marked completed');
@@ -1006,10 +1019,11 @@ console.log('\n=== Test 23: Band F quests — the_red_moon_crossing / what_renni
 // steps, turn in for the full multi-reward (mirrors Test 22a's pattern).
 var c33 = makeCharacter({ name: 'BandFMainTest' });
 grantVitalityForLevel(c33, 91);
-Game.World.travelTo('frosthold_waystation');
+// v1.7 Phase Q: the_red_moon_crossing re-homed Frosthold Waystation -> Skyspire Landing.
+Game.World.travelTo('skyspire_landing');
 satisfyChain('the_skyspire_ascent'); // G5 chain: the_red_moon_crossing requiresQuest the_skyspire_ascent (spine-behind-spine, never behind Band E's own side/boss quests)
 var res33a = Game.Quests.accept('the_red_moon_crossing');
-assert(res33a.ok === true, 'the_red_moon_crossing accepted at Frosthold Waystation: ' + res33a.message);
+assert(res33a.ok === true, 'the_red_moon_crossing accepted at Skyspire Landing: ' + res33a.message);
 assert(Game.Quests.canTurnIn('the_red_moon_crossing') === false, 'the_red_moon_crossing not yet turn-in-able (steps unsatisfied)');
 Game._debug.completeQuestStep('the_red_moon_crossing');
 assert(Game.Quests.canTurnIn('the_red_moon_crossing') === true, 'the_red_moon_crossing steps force-satisfied (5x kill + 3x collect + visit eidas_sanctum)');
@@ -1028,7 +1042,8 @@ assert(c33.quests['the_red_moon_crossing'].status === 'completed', 'the_red_moon
 // Sanctum regulars, same pattern as Test 22b's hunt-quest loop.
 var c34 = makeCharacter({ name: 'BandFSideTest' });
 grantVitalityForLevel(c34, 96);
-Game.World.travelTo('frosthold_waystation');
+// v1.7 Phase Q: what_rennick_deciphered re-homed Frosthold Waystation -> Skyspire Landing.
+Game.World.travelTo('skyspire_landing');
 satisfyChain('the_red_moon_crossing'); // G5 chain: what_rennick_deciphered requiresQuest the_red_moon_crossing
 var res34a = Game.Quests.accept('what_rennick_deciphered');
 assert(res34a.ok === true, 'what_rennick_deciphered accepted: ' + res34a.message);
@@ -1036,7 +1051,7 @@ Game.World.travelTo('eidas_sanctum');
 for (var w23 = 0; w23 < 4; w23++) winBattle('moon_anima_devourer');
 assert(c34.quests['what_rennick_deciphered'].progress.kills['moon_anima_devourer'] === 4, 'real kill progress reached 4/4 via winBattle against moon_anima_devourer');
 assert(Game.Quests.canTurnIn('what_rennick_deciphered') === true, 'what_rennick_deciphered turn-in-able after 4 real kills');
-Game.World.travelTo('frosthold_waystation');
+Game.World.travelTo('skyspire_landing');
 var res34b = Game.Quests.turnIn('what_rennick_deciphered');
 assert(res34b.ok === true, 'what_rennick_deciphered turn-in succeeds: ' + res34b.message);
 assert(Game.Quests.inventoryCount(c34, 'sphere_hclass_2') >= 1, 'what_rennick_deciphered grants an H-Class Sphere II');
@@ -1045,14 +1060,15 @@ assert(Game.Quests.inventoryCount(c34, 'sphere_hclass_2') >= 1, 'what_rennick_de
 // boss — the quest that culminates the entire 41->100 level arc.
 var c35 = makeCharacter({ name: 'BandFFinaleTest' });
 grantVitalityForLevel(c35, 100);
-Game.World.travelTo('frosthold_waystation');
+// v1.7 Phase Q: the_ascendants_fall (THE FINALE) re-homed Frosthold Waystation -> Skyspire Landing.
+Game.World.travelTo('skyspire_landing');
 satisfyChain('the_red_moon_crossing'); // G5 chain: the_ascendants_fall (THE FINALE) requiresQuest the_red_moon_crossing — spine-behind-spine only, never behind what_rennick_deciphered (side content)
 var res35a = Game.Quests.accept('the_ascendants_fall');
 assert(res35a.ok === true, 'the_ascendants_fall accepted: ' + res35a.message);
 Game.World.travelTo('eidas_sanctum');
 winBattle('eidas_ascendant');
 assert(c35.quests['the_ascendants_fall'].progress.kills['eidas_ascendant'] === 1, 'eidas_ascendant kill recorded via winBattle (lair fight, same Game.Battle.start call as the Explore screen\'s lair button) -- THE FINALE quest gate');
-Game.World.travelTo('frosthold_waystation');
+Game.World.travelTo('skyspire_landing');
 var gold35a = Game.Character.goldTotalAsGold(c35);
 var xp35a = c35.xp;
 var tp35a = c35.trainingPoints;
@@ -1075,6 +1091,9 @@ var c24cap = makeCharacter({ name: 'CapTest' });
 c24cap.level = 10; // clears every Eldor head quest's own levelMin (max is ruin_warden_boss/synthesis_supplies at 8/9)
 var cap24a = Game.Quests.accept('tutorial_first_blood');
 var cap24b = Game.Quests.accept('eldor_dr_ferrier');
+// v1.7 Phase Q: ruin_warden_boss re-homed Eldor -> Laik — travel there before accepting (tutorial_
+// first_blood/eldor_dr_ferrier stay at Eldor, accepted above before this travel).
+Game.World.travelTo('laik');
 var cap24c = Game.Quests.accept('ruin_warden_boss');
 assert(cap24a.ok && cap24b.ok && cap24c.ok, 'three quests accepted, filling BALANCE.MAX_ACTIVE_QUESTS (3)');
 assert(Game.Quests.activeQuestCount(c24cap) === 3, 'activeQuestCount reports 3');
@@ -1085,6 +1104,8 @@ assert(!c24cap.quests['synthesis_supplies'], 'no quest entry created for the cap
 var cancel24 = Game.Quests.cancel('eldor_dr_ferrier');
 assert(cancel24.ok === true, 'cancel frees a slot: ' + cancel24.message);
 assert(Game.Quests.activeQuestCount(c24cap) === 2, 'activeQuestCount back down to 2 after cancel');
+// synthesis_supplies re-homed Eldor -> Ju`Mak Village (v1.7 Phase Q) — travel there before accepting.
+Game.World.travelTo('jumak_village');
 var cap24e = Game.Quests.accept('synthesis_supplies');
 assert(cap24e.ok === true, 'accept succeeds once back under the cap: ' + cap24e.message);
 
@@ -1096,14 +1117,20 @@ Game.Quests.accept('tutorial_first_blood');
 Game.Quests.accept('eldor_dr_ferrier');
 Game.Quests.accept('first_calling');
 assert(Game.Quests.activeQuestCount(c25cap) === 3, 'three actives, at the cap');
-var avail25 = Game.Quests.availableAt('eldor');
-var ruinRec25 = avail25.filter(function (r) { return r.quest.id === 'ruin_warden_boss'; })[0];
+// v1.7 Phase Q: ruin_warden_boss/synthesis_supplies/trials_of_eldor no longer live at Eldor —
+// availableAt() doesn't consult the character's current location at all (only the queried
+// areaId), so querying each quest's own new giver town directly is valid regardless of where
+// c25cap actually stands.
+var avail25laik = Game.Quests.availableAt('laik');
+var ruinRec25 = avail25laik.filter(function (r) { return r.quest.id === 'ruin_warden_boss'; })[0];
 assert(!!ruinRec25 && ruinRec25.eligible === false && ruinRec25.reason === 'Your journal is full (3/3 active).',
   'ruin_warden_boss (level satisfied, 8<=9) shows the cap reason built from BALANCE.MAX_ACTIVE_QUESTS: ' + (ruinRec25 && ruinRec25.reason));
-var synthRec25 = avail25.filter(function (r) { return r.quest.id === 'synthesis_supplies'; })[0];
+var avail25jumak = Game.Quests.availableAt('jumak_village');
+var synthRec25 = avail25jumak.filter(function (r) { return r.quest.id === 'synthesis_supplies'; })[0];
 assert(!!synthRec25 && synthRec25.eligible === false && /journal is full/.test(synthRec25.reason),
   'synthesis_supplies (level satisfied, 9<=9) also shows the cap reason');
-var trialsRec25 = avail25.filter(function (r) { return r.quest.id === 'trials_of_eldor'; })[0];
+var avail25kastengard = Game.Quests.availableAt('kastengard_vanguard_camp');
+var trialsRec25 = avail25kastengard.filter(function (r) { return r.quest.id === 'trials_of_eldor'; })[0];
 assert(!!trialsRec25 && trialsRec25.eligible === false && /Requires Level 30/.test(trialsRec25.reason),
   'trials_of_eldor (level 30 unmet AND at cap) shows the LEVEL reason, not the cap reason — level-window priority wins: ' + (trialsRec25 && trialsRec25.reason));
 
@@ -1299,6 +1326,137 @@ var c29r = makeCharacter({ name: 'MaterialGateRecipeTest' });
 c29r.quests['vaultbreakers_reckoning'] = { status: 'completed', progress: { kills: {}, touched: {}, visited: {} } };
 assert(Game.Quests.materialStillUseful(c29r, 'quest_custodian_core_shard') === true,
   'quest_custodian_core_shard stays useful after its only QUEST completes, because synthesis recipes still need it (recipes never complete)');
+
+// =================== Test 30: v1.7 Phase Q — quest arc redistribution ===================
+// docs/SPEC-V1.7-CONTENT-UX.md §2: quests were front-loaded in Eldor (12 givers) with Skyspire
+// Landing at zero; givers were reassigned so each town tavern owns its own level band. Only
+// giver.areaId/npc (+ retheme text for the 3 re-homed class quests) changed — ids, objectives,
+// chains, and rewards did not.
+console.log('\n=== Test 30: Phase Q redistribution — new givers reachable exactly at levelMin, rejected below the giver town\'s gate, class quests still grant their class choice, no orphan/stranded quest ===');
+
+// 30a) Every moved quest's new giver town matches the redistribution map, and the town's own
+// minLevel never exceeds the quest's own levelMin (the hard reachability constraint).
+(function () {
+  var moved = [
+    { id: 'ruin_warden_boss', town: 'laik' },
+    { id: 'synthesis_supplies', town: 'jumak_village' },
+    { id: 'gares_riverbanks_1', town: 'laik' },
+    { id: 'gares_riverbanks_2', town: 'laik' },
+    { id: 'kastengard_investigation', town: 'kastengard_vanguard_camp' },
+    { id: 'trials_of_eldor', town: 'kastengard_vanguard_camp' },
+    { id: 'vaultbreakers_reckoning', town: 'kastengard_vanguard_camp' },
+    { id: 'echo_of_eidas', town: 'kastengard_vanguard_camp' },
+    { id: 'masters_calling', town: 'kuraan_reclamation_camp' },
+    { id: 'what_the_society_grew', town: 'skyspire_landing' },
+    { id: 'the_societys_last_stand', town: 'skyspire_landing' },
+    { id: 'the_red_moon_crossing', town: 'skyspire_landing' },
+    { id: 'what_rennick_deciphered', town: 'skyspire_landing' },
+    { id: 'the_ascendants_fall', town: 'skyspire_landing' }
+  ];
+  moved.forEach(function (spec) {
+    var q = Game.Quests.getQuest(spec.id);
+    assert(!!q, 'moved quest exists: ' + spec.id);
+    assert(q.giver.areaId === spec.town, spec.id + ' giver areaId is ' + spec.town + ', got ' + (q && q.giver.areaId));
+    var area = Game.World.getArea(spec.town);
+    assert(!!area, spec.id + '\'s giver town ' + spec.town + ' exists');
+    assert(area.minLevel <= q.levelMin, spec.id + ' (levelMin ' + q.levelMin + ') is reachable at its giver town ' + spec.town + ' (minLevel ' + area.minLevel + ')');
+  });
+})();
+
+// 30b) ruin_warden_boss: travel (and so acceptance) rejected one level below Laik's own gate,
+// acceptable exactly at levelMin 8 once Laik itself is reached.
+var c30q1below = makeCharacter({ name: 'RehomeBelowGate' });
+c30q1below.level = 7;
+var travelBelow30 = Game.World.travelTo('laik');
+assert(travelBelow30.ok === false, 'Laik (minLevel 8) rejects travel at Level 7, so ruin_warden_boss is unreachable one level below its new giver town\'s gate');
+var c30q1at = makeCharacter({ name: 'RehomeAtGate' });
+c30q1at.level = 8;
+Game.World.travelTo('laik');
+var acceptAt30 = Game.Quests.accept('ruin_warden_boss');
+assert(acceptAt30.ok === true, 'ruin_warden_boss acceptable at Laik exactly at levelMin 8: ' + acceptAt30.message);
+
+// 30c) synthesis_supplies: Ju`Mak Village's own gate (6) is looser than this quest's levelMin (9),
+// so the BINDING constraint is the quest's own level window, not the town's — still refused below
+// levelMin 9 even once the town itself is reachable, accepted exactly at 9.
+var c30q2 = makeCharacter({ name: 'RehomeSynthesis' });
+c30q2.level = 8;
+Game.World.travelTo('jumak_village'); // town already reachable at Lv 8 (its own gate is 6)
+var synthTooLow30 = Game.Quests.accept('synthesis_supplies');
+assert(synthTooLow30.ok === false && /Requires Level 9/.test(synthTooLow30.message), 'synthesis_supplies still refused below ITS OWN levelMin 9 even though Ju`Mak\'s town gate (6) is already met: ' + synthTooLow30.message);
+c30q2.level = 9;
+var synthAt30 = Game.Quests.accept('synthesis_supplies');
+assert(synthAt30.ok === true, 'synthesis_supplies acceptable at Ju`Mak Village exactly at levelMin 9: ' + synthAt30.message);
+
+// 30d) The three re-homed CLASS quests still grant their class choice from their new giver towns.
+var c30cls1 = makeCharacter({ name: 'RehomeTrialsClass' });
+c30cls1.level = 30;
+Game.Classes.obtainClass(c30cls1, 'warrior');
+Game.World.travelTo('kastengard_vanguard_camp');
+var acceptTrials30 = Game.Quests.accept('trials_of_eldor');
+assert(acceptTrials30.ok === true, 'trials_of_eldor (re-homed to Kastengard Vanguard Camp) still acceptable: ' + acceptTrials30.message);
+Game._debug.completeQuestStep('trials_of_eldor');
+var turnInTrials30 = Game.Quests.turnIn('trials_of_eldor', 'gladiator');
+assert(turnInTrials30.ok === true, 'trials_of_eldor turn-in from its new giver town still grants the classChoice: ' + turnInTrials30.message);
+assert(Game.Classes.isObtained(c30cls1, 'gladiator') === true, 'gladiator obtained via the re-homed trials_of_eldor');
+
+var c30cls2 = makeCharacter({ name: 'RehomeVaultbreakerClass' });
+c30cls2.level = 33;
+Game.World.travelTo('kastengard_vanguard_camp');
+var acceptVb30 = Game.Quests.accept('vaultbreakers_reckoning');
+assert(acceptVb30.ok === true, 'vaultbreakers_reckoning (re-homed to Kastengard Vanguard Camp) still acceptable: ' + acceptVb30.message);
+Game._debug.completeQuestStep('vaultbreakers_reckoning');
+var turnInVb30 = Game.Quests.turnIn('vaultbreakers_reckoning', 'vaultbreaker');
+assert(turnInVb30.ok === true, 'vaultbreakers_reckoning turn-in from its new giver town still grants the classChoice: ' + turnInVb30.message);
+assert(Game.Classes.isObtained(c30cls2, 'vaultbreaker') === true, 'vaultbreaker obtained via the re-homed vaultbreakers_reckoning');
+
+var c30cls3 = makeCharacter({ name: 'RehomeMastersClass' });
+c30cls3.level = 60;
+Game.Classes.obtainClass(c30cls3, 'warrior');
+Game.Classes.obtainClass(c30cls3, 'gladiator');
+Game.World.travelTo('kuraan_reclamation_camp');
+var acceptMc30 = Game.Quests.accept('masters_calling');
+assert(acceptMc30.ok === true, 'masters_calling (re-homed to Kuraan Reclamation Camp) still acceptable: ' + acceptMc30.message);
+Game._debug.completeQuestStep('masters_calling');
+var turnInMc30 = Game.Quests.turnIn('masters_calling', 'shadowknight');
+assert(turnInMc30.ok === true, 'masters_calling turn-in from its new giver town still grants the classChoice: ' + turnInMc30.message);
+assert(Game.Classes.isObtained(c30cls3, 'shadowknight') === true, 'shadowknight obtained via the re-homed masters_calling');
+
+// 30e) Connectivity, generalized to the WHOLE table (not just the moved rows): no orphan givers
+// anywhere — every quest's giver.areaId resolves to a real Game.Data.areas entry, so nothing can
+// ever be offered from a town that doesn't exist. (A stricter "town minLevel <= quest levelMin"
+// check does NOT generalize to the whole table: several PRE-EXISTING, un-moved quests are
+// reachable only because of the home-town travel exemption — arkan_first_rite/
+// arkan_battlemage_trial/arkan_red_moon_whispers, requiresRace: 'Arkan', given at Saratus, an
+// Arkan's own home town regardless of its minLevel 14 gate — or because the town's own gate is
+// simply the practical floor above the quest's nominal levelMin (the_oruk, reclaim_the_fringe,
+// win_passage_from_the_ukai). That per-quest reachability claim is instead scoped to exactly the
+// 14 rows THIS phase moved, in 30a above, where it must hold by the phase brief's hard constraint.)
+(function () {
+  var orphan = [];
+  Game.Data.quests.forEach(function (q) {
+    var area = Game.World.getArea(q.giver.areaId);
+    if (!area) orphan.push(q.id + ' -> ' + q.giver.areaId);
+  });
+  assert(orphan.length === 0, 'no quest has an orphan giver (unknown areaId)' + (orphan.length ? ': ' + orphan.join(', ') : ''));
+})();
+
+// 30f) The Frosthold <-> Skyspire Landing split leaves BOTH towns' questlines completable:
+// Frosthold keeps a nonzero questline (Bands C/D + the_skyspire_ascent, its own levelMin 81, which
+// stays behind since Skyspire Landing's gate of 85 is above it); Skyspire Landing carries exactly
+// the 5 re-homed Band E/F quests; and the cross-town chain edge (the_red_moon_crossing at Skyspire
+// Landing requiresQuest the_skyspire_ascent at Frosthold) still resolves.
+(function () {
+  var frostholdQuests = Game.Data.quests.filter(function (q) { return q.giver.areaId === 'frosthold_waystation'; });
+  var skyspireQuests = Game.Data.quests.filter(function (q) { return q.giver.areaId === 'skyspire_landing'; });
+  assert(frostholdQuests.length > 0, 'Frosthold Waystation still gives quests after the split (Bands C/D + the_skyspire_ascent), got ' + frostholdQuests.length);
+  assert(skyspireQuests.length === 5, 'Skyspire Landing gives exactly the 5 re-homed Band E/F quests, got ' + skyspireQuests.length);
+  var ascent = Game.Quests.getQuest('the_skyspire_ascent');
+  var crossing = Game.Quests.getQuest('the_red_moon_crossing');
+  assert(ascent.giver.areaId === 'frosthold_waystation', 'the_skyspire_ascent (the cross-town chain link\'s prerequisite) stays at Frosthold — its own levelMin 81 is below Skyspire Landing\'s gate of 85');
+  assert(crossing.requiresQuest === 'the_skyspire_ascent', 'the_red_moon_crossing (Skyspire Landing) still chains behind the_skyspire_ascent (Frosthold) across the town split');
+  assert(Game.World.getArea('frosthold_waystation').minLevel <= ascent.levelMin, 'the_skyspire_ascent reachable at Frosthold before the split-off quests can even chain from it');
+  assert(Game.World.getArea('skyspire_landing').minLevel <= crossing.levelMin, 'the_red_moon_crossing reachable at Skyspire Landing once chained');
+})();
 
 // =================== Summary ===================
 console.log('\n===================================');

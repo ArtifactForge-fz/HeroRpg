@@ -1171,15 +1171,31 @@ Game.Screens = (function () {
     }
 
     // ---- Destinations ----
+    // Phase U (v1.7 SPEC-V1.7-CONTENT-UX.md §1): card grid instead of a plain stat-row table, each
+    // card showing a Town/Wilds badge and a recommended level range derived from the area's own
+    // monster roster (see destLevelRange below).
     root.appendChild(el('div', { class: 'tcat mt8' }, ['Destinations']));
-    var destPanel = el('div', { class: 'panel' });
+    var destGrid = el('div', { class: 'dest-grid' });
     (Game.Data.areas || []).forEach(function (dest, idx) {
       if (area && dest.id === area.id) return; // don't list the current location as a destination
-      var locked = c.level < dest.minLevel;
-      var row = el('div', { class: 'stat-row alt' + (idx % 2) }, [
-        el('span', { class: 'stat-name', style: 'width:170px; flex:0 0 170px;' }, [
-          dest.name + (dest.type === 'town' ? ' (Town)' : '')
-        ]),
+      // v1.3.1 fix 4 [invented] home-town exemption (js/core/world.js travelTo mirrors this same
+      // check): a character's own racial home town is always reachable regardless of minLevel, so
+      // the UI lock must agree with what travelTo will actually allow — fixes the backlogged bug
+      // where an Arkan below L14 saw Saratus as locked despite travelTo letting them in.
+      var isHome = Game.Character && Game.Character.homeTownId && Game.Character.homeTownId(c) === dest.id;
+      var locked = !isHome && c.level < dest.minLevel;
+
+      var card = el('div', { class: 'dest-card' });
+      card.appendChild(el('div', { class: 'dest-card-head' }, [
+        el('span', { class: 'dest-card-name' }, [dest.name]),
+        el('span', { class: 'dest-badge' }, [dest.type === 'town' ? 'Town' : 'Wilds'])
+      ]));
+      var rangeText = destLevelRange(dest);
+      if (rangeText) {
+        card.appendChild(el('div', { class: 'tinyfont dest-levels' }, [rangeText]));
+      }
+      card.appendChild(el('div', { class: 'smallfont dest-card-desc' }, [dest.desc]));
+      card.appendChild(el('div', { class: 'dest-card-action' }, [
         locked
           ? el('span', { class: 'tinyfont req-bad' }, ['Requires Level ' + dest.minLevel])
           : el('button', {
@@ -1189,12 +1205,35 @@ Game.Screens = (function () {
                 if (!res.ok) { alert(res.message); return; }
                 refreshExploreScreen();
               }
-            }, ['Explore']),
-        el('span', { class: 'tinyfont' }, [dest.desc])
-      ]);
-      destPanel.appendChild(row);
+            }, ['Explore'])
+      ]));
+      destGrid.appendChild(card);
     });
-    root.appendChild(destPanel);
+    root.appendChild(destGrid);
+  }
+
+  // Recommended level range for a Destinations card, derived from the area's own monster roster
+  // (dest.monsters, plus dest.lair.monsterId when present) rather than a separate authored field —
+  // js/data/areas.js has no such field, and monster .level is already the source of truth for
+  // per-area difficulty elsewhere (e.g. the XP/loot-cutoff gap checks in tests/test_p4_world.js).
+  // Towns carry no monsters: shows the town's own minLevel gate instead (omitted for Eldor's Lv 0,
+  // since "enter at Lv 0" is not meaningful information).
+  function destLevelRange(dest) {
+    var ids = (dest.monsters || []).slice();
+    if (dest.lair && dest.lair.monsterId) ids.push(dest.lair.monsterId);
+    var levels = ids
+      .map(function (id) { return Game.Battle.getMonsterDef(id); })
+      .filter(function (m) { return !!m; })
+      .map(function (m) { return m.level; });
+    if (levels.length === 0) {
+      if (dest.type === 'town') {
+        return dest.minLevel > 0 ? ('Town · enter at Lv ' + dest.minLevel) : null;
+      }
+      return null;
+    }
+    var min = Math.min.apply(null, levels);
+    var max = Math.max.apply(null, levels);
+    return min === max ? ('Lv ' + min) : ('Lv ' + min + '–' + max);
   }
 
   // ---------- Town screen (Phase 4; DESIGN.md §6, New_Player_Guide.md §5.1 facility order) ----------

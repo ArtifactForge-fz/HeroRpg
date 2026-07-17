@@ -425,9 +425,15 @@ Game.Data.areas = [
       // archived: Arkan.md battlemage/rune-study tradition already trains at Saratus's own
       // Academy; this forward camp offers the same Training-Points-for-techs service (New
       // Vault or Spirit Shrine this far out — those stay Eldor/Saratus-exclusive per DESIGN.md §6).
-      { type: 'academy' }
+      { type: 'academy' },
+      // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [invented]: an ENABLER, not archived —
+      // quests were front-loaded in Eldor with no L26-40 hub of their own; a Tavern here lets the
+      // camp host the L26-33 band's quest-givers (kastengard_investigation, trials_of_eldor,
+      // vaultbreakers_reckoning, echo_of_eidas — js/data/quests.js), the archived quest-giver
+      // location (New_Player_Guide.md §5.1.5), same as every other quest-giving settlement.
+      { type: 'tavern' }
     ],
-    desc: 'A fortified camp of Crown surveyors and Academy proctors, thrown up outside Kastengard\'s outer halls once heroes began delving them in earnest. No Vault or Spirit Shrine this far from a real city — just an Inn, a well-stocked Shop selling the frontier\'s toughest gear and energy stores, and Academy proctors willing to train anyone hardy enough to have survived the walk here.'
+    desc: 'A fortified camp of Crown surveyors and Academy proctors, thrown up outside Kastengard\'s outer halls once heroes began delving them in earnest. No Vault or Spirit Shrine this far from a real city — just an Inn, a well-stocked Shop selling the frontier\'s toughest gear and energy stores, Academy proctors willing to train anyone hardy enough to have survived the walk here, and a Tavern where the camp\'s own instructors and archivists post work for anyone passing through.'
   },
 
   // ---------- Kastengard: The Deep Vaults: level 33-40 hunting + final boss ----------

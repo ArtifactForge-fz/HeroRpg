@@ -273,14 +273,17 @@ laikExchange.stock.forEach(function (entry) {
 });
 
 // =================== Test 0c: Kastengard Vanguard Camp, the level-30+ outpost (v1.2 Phase 3 Content-A) ===================
-console.log('\n=== Test 0c: Kastengard Vanguard Camp exists with inn/shop/academy and sells Content-B\'s 30+ stock ===');
+console.log('\n=== Test 0c: Kastengard Vanguard Camp exists with inn/shop/academy/tavern and sells Content-B\'s 30+ stock ===');
 var outpost = Game.World.getArea('kastengard_vanguard_camp');
 assert(!!outpost && outpost.type === 'town', 'Kastengard Vanguard Camp exists as a town');
 assert(outpost.minLevel === 26, 'outpost gates travel at minLevel 26 (Kastengard band)');
-['inn', 'shop', 'academy'].forEach(function (t) {
+// v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [invented]: a Tavern was ADDED to the camp so it
+// can host the L26-33 band's re-homed quest-givers (kastengard_investigation, trials_of_eldor,
+// vaultbreakers_reckoning, echo_of_eidas — js/data/quests.js); it previously lacked one entirely.
+['inn', 'shop', 'academy', 'tavern'].forEach(function (t) {
   assert(!!Game.World.getFacility(outpost, t), 'outpost has facility: ' + t);
 });
-['vault', 'shrine', 'synthesis', 'tavern'].forEach(function (t) {
+['vault', 'shrine', 'synthesis'].forEach(function (t) {
   assert(!Game.World.getFacility(outpost, t), 'outpost lacks facility: ' + t);
 });
 var outpostShop = Game.World.getFacility(outpost, 'shop');
@@ -690,6 +693,36 @@ var cHumanBlocked = makeCharacter({ name: 'HumanBlockedTest' });
 assert(Game.Character.homeTownId(cHumanBlocked) === 'eldor', 'Game.Character.homeTownId reports eldor for a Human');
 var resHumanBlocked = Game.World.travelTo('saratus');
 assert(resHumanBlocked.ok === false && /Requires Level 14/.test(resHumanBlocked.message), 'L1 Human (Saratus is not their home town) still blocked: ' + resHumanBlocked.message);
+
+// =================== Test 1c (v1.7 Phase U): Destinations UI mirrors the home-town exemption ===
+// js/ui/screens.js renderExplore computes its own isHome/locked check (mirroring travelTo's, not
+// calling it) — this exercises THAT code path, distinct from the core-logic checks above.
+console.log('\n=== Test 1c: Explore\'s Destinations card grid shows Saratus unlocked for an Arkan below L14, locked for a Human ===');
+Game.state.character = c1arkan; // currently in saratus (home town) after Test 1b above
+var arkanMoveAway = Game.World.travelTo('eldor'); // leave so Saratus appears as a destination card
+assert(arkanMoveAway.ok === true, 'sanity: Arkan leaves Saratus for Eldor ahead of the Destinations render check');
+Game.state.battle = null;
+Game.Screens.navigate('explore');
+var arkanDestCards = document.getElementById('maincontent').queryAllByClass('dest-card');
+var arkanSaratusCard = arkanDestCards.filter(function (card) { return card.textContent.indexOf('Saratus') !== -1; })[0];
+assert(!!arkanSaratusCard, 'Saratus destination card renders for the Arkan (L1, below its own minLevel 14)');
+if (arkanSaratusCard) {
+  assert(arkanSaratusCard.textContent.indexOf('Requires Level') === -1, 'Arkan sees NO "Requires Level" lock text on the Saratus card (home-town exemption)');
+  var arkanExploreBtns = arkanSaratusCard.queryAllByTag('button').filter(function (b) { return b.textContent === 'Explore'; });
+  assert(arkanExploreBtns.length === 1, 'Arkan sees an Explore button on the Saratus card despite being under minLevel 14');
+}
+
+Game.state.character = cHumanBlocked; // starts in eldor, Saratus is NOT this character's home town
+Game.state.battle = null;
+Game.Screens.navigate('explore');
+var humanDestCards = document.getElementById('maincontent').queryAllByClass('dest-card');
+var humanSaratusCard = humanDestCards.filter(function (card) { return card.textContent.indexOf('Saratus') !== -1; })[0];
+assert(!!humanSaratusCard, 'Saratus destination card renders for the Human too');
+if (humanSaratusCard) {
+  assert(humanSaratusCard.textContent.indexOf('Requires Level 14') !== -1, 'Human (not home town) sees the "Requires Level 14" lock text on the Saratus card');
+  var humanExploreBtns = humanSaratusCard.queryAllByTag('button').filter(function (b) { return b.textContent === 'Explore'; });
+  assert(humanExploreBtns.length === 0, 'Human sees NO Explore button on the locked Saratus card');
+}
 
 // makeCharacter's Game.Character.create() call sets Game.state.character as a side effect —
 // restore it to c1 so Test 2 below (which drives Game.World.travelTo off Game.state.character)

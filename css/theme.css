@@ -1107,3 +1107,70 @@ button, a { touch-action: manipulation; } /* kill the 300ms tap delay / double-t
     flex-direction: column;
   }
 }
+
+/* ===== Phase U (v1.7 SPEC-V1.7-CONTENT-UX.md §1): Explore's Destinations card grid, replacing
+   the old plain stat-row table. Reuses existing tokens only — .panel's light bg/dark text
+   (#bec7cc / #1b2129), the .tcat/.button gold-on-slate accent (#c4bb4b on #34404b) for the
+   Town/Wilds badge, and #3c4a56 (already used for .button/.thead) for the level-range line so it
+   reads as a distinct sub-label without inventing a new color. Wraps via flexbox so a narrow
+   viewport stacks cards to full width instead of causing horizontal page scroll. ===== */
+.dest-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dest-card {
+  background: #bec7cc;
+  color: #1b2129;
+  border: 1px solid #313131;
+  padding: 6px;
+  flex: 1 1 220px;
+  min-width: 180px;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-sizing: border-box;
+}
+
+.dest-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.dest-card-name {
+  font-weight: bold;
+}
+
+.dest-badge {
+  background: #34404b;
+  color: #c4bb4b;
+  font-weight: bold;
+  font: 9px verdana, geneva, lucida, 'lucida grande', arial, helvetica, sans-serif;
+  padding: 1px 5px;
+  border: 1px solid #313131;
+  white-space: nowrap;
+}
+
+.dest-levels {
+  color: #3c4a56;
+  font-weight: bold;
+}
+
+.dest-card-desc {
+  flex: 1 1 auto;
+}
+
+.dest-card-action {
+  margin-top: 2px;
+}
+
+@media (max-width: 640px) {
+  .dest-card {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+}

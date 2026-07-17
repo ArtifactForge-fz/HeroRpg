@@ -405,7 +405,10 @@ newQuestIds.forEach(function (id) {
 });
 var finale = Game.Data.quests.filter(function (q) { return q.id === 'echo_of_eidas'; })[0];
 assert(finale.levelMin === 36, 'echo_of_eidas levelMin 36');
-assert(finale.giver.areaId === 'eldor', 'echo_of_eidas given in eldor');
+// v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [revised]: re-homed Eldor -> Kastengard Vanguard
+// Camp (minLevel 26, below this quest's own levelMin 36) so the mid-arc band owns its own finale
+// hub instead of routing back to Eldor; rewards/steps unchanged.
+assert(finale.giver.areaId === 'kastengard_vanguard_camp', 'echo_of_eidas given at kastengard_vanguard_camp');
 assert(finale.rewards.trainingPoints === 5, 'echo_of_eidas grants 5 Training Points');
 assert(finale.rewards.items.indexOf('tent_expedition_pavilion') !== -1, 'echo_of_eidas grants tent_expedition_pavilion');
 // v1.6 P3 EI-6 (SPEC-V1.6-REBALANCE.md §3/§6.2, REVIEW-2026-07-16.md EI-6): tent_expedition_pavilion

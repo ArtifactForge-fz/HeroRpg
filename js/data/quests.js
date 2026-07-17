@@ -229,11 +229,13 @@ Game.Data.quests = [
   {
     id: 'ruin_warden_boss',
     name: 'The Warden of the Ruins',
-    // Giver placed in Eldor (quests are offered at town taverns — New_Player_Guide.md §5.1.5);
-    // the foreman recruits in the capital between digs.
-    giver: { areaId: 'eldor', npc: 'Survey Foreman Idrissa' },
+    // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [revised]: re-homed from Eldor to Laik so
+    // Eldor stops front-loading every early quest — Laik (minLevel 8) matches this quest's own
+    // levelMin exactly, and its riverside supply road is the crew's actual route out to the dig.
+    giver: { areaId: 'laik', npc: 'Survey Foreman Idrissa' },
     levelMin: 8,
-    intro: 'Foreman Idrissa spreads dig-site sketches across the tavern table. "The Crown pays my ' +
+    intro: 'Foreman Idrissa spreads dig-site sketches across a table in Laik\'s tavern, closer to ' +
+      'the excavation than trekking all the way back to Eldor between shifts. "The Crown pays my ' +
       'crew to open the Estari ruins, but we can\'t dig deeper while that thing still guards the ' +
       'lower halls. Bring down the Ruin Warden and the surveyors can finally do their work. Fair ' +
       'warning — it hits harder than anything else out there."',
@@ -245,48 +247,54 @@ Game.Data.quests = [
   },
 
   // =====================================================================
-  // 9) Gares Riverbanks chain, part 1 — invented, Ju`Mak giver (nearest town to Gares).
+  // 9) Gares Riverbanks chain, part 1 — invented. v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2)
+  // [revised]: re-homed Ju`Mak -> Laik (minLevel 8, still <= this quest's own levelMin 9) — Laik's
+  // own riverside setting (the Gares delta trade route, js/data/areas.js) is a more natural giver
+  // for a Gares Riverbanks quest than Ju`Mak ever was, and the move helps spread Ju`Mak's quest
+  // load out. veteran_of_averast (the prerequisite below) stays at Ju`Mak with Dorwen — chain
+  // gating only checks `status === 'completed'`, not matching giver areas, so a cross-town link is
+  // fine (same pattern already used by Level-Arc Band C's win_passage_from_the_ukai).
   // =====================================================================
   {
     id: 'gares_riverbanks_1',
     name: 'Trouble on the Delta, Part I',
-    giver: { areaId: 'jumak_village', npc: 'Militia Captain Dorwen' },
+    giver: { areaId: 'laik', npc: 'Riverwarden Ilyth' },
     levelMin: 9,
-    // G5 chain (v1.4 P1): next in Dorwen's line after veteran_of_averast — see the_oruk's own
-    // comment for why the whole line exists.
+    // G5 chain (v1.4 P1): still requires Dorwen's own veteran_of_averast (Ju`Mak) to be completed
+    // first — Ilyth picks up the delta trouble Dorwen's militia line first flagged.
     requiresQuest: 'veteran_of_averast',
-    intro: 'Dorwen unrolls a damp map of the river delta. "Trade barges keep getting dragged under at ' +
-      'the Gares Riverbanks — River Stalkers, mostly, but the river\'s stirred up something worse ' +
-      'lately too. Start by clearing out the Stalkers so my barge crews can breathe."',
+    intro: 'Riverwarden Ilyth unrolls a damp map of the river delta on the tavern\'s own table. "Word ' +
+      'reached us from Ju`Mak\'s militia that trade barges keep getting dragged under at the Gares ' +
+      'Riverbanks — River Stalkers, mostly, but the river\'s stirred up something worse lately too. ' +
+      'Start by clearing out the Stalkers so my barge crews can breathe."',
     steps: [
       { kind: 'kill', monsterId: 'gares_river_stalker', count: 4 }
     ],
     rewards: { gold: 100, xp: 130 },
-    completionText: 'Dorwen nods slowly. "That\'ll help. But I\'ve a feeling the Stalkers weren\'t the real problem — come back when you\'re ready to hear the rest."'
+    completionText: 'Ilyth nods slowly. "That\'ll help. But I\'ve a feeling the Stalkers weren\'t the real problem — come back when you\'re ready to hear the rest."'
   },
 
   // =====================================================================
   // 10) Gares Riverbanks chain, part 2 — invented, unlocks narratively after part 1 (no hard
   // prerequisite enforced in code per DESIGN.md §7 shape — both quests are independently
-  // available; the intro text implies the chain).
+  // available; the intro text implies the chain). v1.7 Phase Q: re-homed alongside part 1, above.
   // =====================================================================
   {
     id: 'gares_riverbanks_2',
     name: 'Trouble on the Delta, Part II',
-    giver: { areaId: 'jumak_village', npc: 'Militia Captain Dorwen' },
+    giver: { areaId: 'laik', npc: 'Riverwarden Ilyth' },
     levelMin: 11,
-    // G5 chain (v1.4 P1): last in Dorwen's line, after gares_riverbanks_1 — already implied by
-    // this quest's own intro text ("come back when you're ready to hear the rest"); see the_oruk's
-    // comment for why the whole line exists.
+    // G5 chain (v1.4 P1): last in this Laik line, after gares_riverbanks_1 — already implied by
+    // this quest's own intro text ("come back when you're ready to hear the rest").
     requiresQuest: 'gares_riverbanks_1',
-    intro: 'Dorwen\'s voice drops. "Current Wraiths. Drowned souls, the old-timers call them — Majiku ' +
+    intro: 'Ilyth\'s voice drops. "Current Wraiths. Drowned souls, the old-timers call them — Majiku ' +
       'raiders who drank deep of raw Anima runoff and never came back right. Put down three of them ' +
       'and maybe the river will let my barges through in peace."',
     steps: [
       { kind: 'kill', monsterId: 'gares_current_wraith', count: 3 }
     ],
     rewards: { gold: 160, xp: 200, items: ['potion_greater_healing'] },
-    completionText: 'Dorwen exhales like a man setting down a heavy pack. "Three Wraiths less in this world. I owe you more than this, hero, but it\'s what the militia purse allows."'
+    completionText: 'Ilyth exhales like someone setting down a heavy pack. "Three Wraiths less in this world. I owe you more than this, hero, but it\'s what the riverwarden\'s purse allows."'
   },
 
   // =====================================================================
@@ -296,16 +304,21 @@ Game.Data.quests = [
   {
     id: 'synthesis_supplies',
     name: 'Riverweed for the Synthesis Shop',
-    giver: { areaId: 'eldor', npc: 'Synthesis Shop Alchemist' },
+    // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [revised]: re-homed from Eldor to Ju`Mak
+    // Village so Eldor stops front-loading every early quest. The Synthesis Shop itself stays
+    // Eldor-exclusive (DESIGN.md §6), but its trading agent works the Ju`Mak route to buy up
+    // riverweed before it ever reaches the capital.
+    giver: { areaId: 'jumak_village', npc: 'Trading Agent Sorrel' },
     levelMin: 9,
-    intro: 'The alchemist barely glances up from her bubbling retorts. "Gares riverweed holds its ' +
-      'Anima charge better than anything I can grow in a pot. Bring me five bundles fresh from the ' +
-      'delta and I\'ll cut you in on the results."',
+    intro: 'Trading Agent Sorrel counts coin at a corner table. "I buy for the Synthesis Shop back ' +
+      'in Eldor — Gares riverweed holds its Anima charge better than anything they can grow in a ' +
+      'pot there. Bring me five bundles fresh from the delta and I\'ll cut you in on what the ' +
+      'alchemists pay for it."',
     steps: [
       { kind: 'collect', itemId: 'quest_riverweed_bundle', count: 5 }
     ],
     rewards: { gold: 85, xp: 110, items: ['crystal_energy_shard'] },
-    completionText: 'She holds a bundle up to the light, satisfied. "Potent. Very potent. This will do nicely — here, take this for your trouble."'
+    completionText: 'Sorrel holds a bundle up to the light, satisfied. "Potent. Very potent. This will do nicely on the Eldor wagon — here, take this for your trouble."'
   },
 
   // =====================================================================
@@ -365,13 +378,15 @@ Game.Data.quests = [
   },
 
   // =====================================================================
-  // 13b) The Trials of Ascension (formerly "The Trials of Eldor") — the archived ADVANCED class
-  // choice quest (Classes.md: "Your first class choices are offered at level 30..."; the level-30
-  // gate is now the ADVANCED tier's gate under the v1.1 revision, so this archived fact still
-  // applies here, just one tier later). Invented name/text/giver; anchored by killing the existing
-  // estari_ruin_warden boss + collecting Anima-flavored materials from it (DESIGN.md §2/§3). Quest
-  // id kept as `trials_of_eldor` so old completed saves stay coherent — only the display NAME
-  // changed. Reward kind `classChoice: 'advanced'` is a NEW sentinel (js/core/quests.js turnIn)
+  // 13b) The Trials of the Vanguard (formerly "The Trials of Eldor", then "The Trials of
+  // Ascension"; v1.7 Phase Q renamed + re-homed it a second time, giver comment below) — the
+  // archived ADVANCED class choice quest (Classes.md: "Your first class choices are offered at
+  // level 30..."; the level-30 gate is now the ADVANCED tier's gate under the v1.1 revision, so
+  // this archived fact still applies here, just one tier later). Invented name/text/giver; anchored
+  // by killing the existing estari_ruin_warden boss + collecting Anima-flavored materials from it
+  // (DESIGN.md §2/§3). Quest id kept as `trials_of_eldor` so old completed saves stay coherent —
+  // only the display NAME and giver have changed, twice now. Reward kind `classChoice: 'advanced'`
+  // is a NEW sentinel (js/core/quests.js turnIn)
   // meaning "resolve via Game.Classes.advancedOptionsFor(c) at turn-in time" rather than a fixed
   // array — the two options depend on which base class the hero obtained via First Calling.
   // requiresBaseClass: true is a NEW quest field enforced at accept() (js/core/quests.js): a hero
@@ -380,16 +395,23 @@ Game.Data.quests = [
   // =====================================================================
   {
     id: 'trials_of_eldor',
-    name: 'The Trials of Ascension',
-    giver: { areaId: 'eldor', npc: 'Eldor' },
+    // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [revised]: re-homed from Eldor to the
+    // Kastengard Vanguard Camp (minLevel 26, well below this quest's own levelMin 30) so the
+    // L26-40 band has its own class-advancement hub instead of routing every mid-arc hero back to
+    // Eldor. Id kept for old-save coherence (see the header comment block above); giver NPC/title/
+    // intro/completionText retheme to the Vanguard/Society outpost — the class-choice MECHANIC
+    // (requiresBaseClass, classChoice: 'advanced', the steps below) is entirely unchanged.
+    name: 'The Trials of the Vanguard',
+    giver: { areaId: 'kastengard_vanguard_camp', npc: 'Academy Proctor Varnell' },
     levelMin: 30, // archived: Classes.md "you must be at least level 30 in order to obtain a class"
     requiresBaseClass: true, // NEW (v1.1 revision): must have obtained a base class via First Calling
-    intro: 'The old tactician who lends his name to the city looks you over with the appraisal of ' +
-      'someone who has seen a great many heroes come and go. "Level 30, and already answered your ' +
-      'first calling — good. Then it\'s time you proved yourself beyond simple soldiering. Bring ' +
-      'down the Ruin Warden that still guards the Estari excavation, and bring me back a Condensed ' +
-      'Anima Core and an Estari Ward Fragment from its remains — proof you faced it and won. Do ' +
-      'that, and I\'ll see your calling advanced into something greater. Choose carefully. The ' +
+    intro: 'Academy Proctor Varnell looks you over with the appraisal of someone who has trained a ' +
+      'great many heroes at this forward camp already. "Level 30, and already answered your first ' +
+      'calling — good. The Academy\'s Trials don\'t care where you take them, hero: it\'s always been ' +
+      'the same proving ground, the Ruin Warden that still guards the old Estari excavation outside ' +
+      'Eldor. Bring it down, and bring me back a Condensed Anima Core and an Estari Ward Fragment ' +
+      'from its remains — proof you faced it and won. Do that, and I\'ll see your calling advanced ' +
+      'into something greater, same as any proctor back in the capital would. Choose carefully. The ' +
       'choice, once made, is yours to keep."',
     steps: [
       { kind: 'kill', monsterId: 'estari_ruin_warden', count: 1 },
@@ -399,7 +421,7 @@ Game.Data.quests = [
     // classChoice: 'advanced' — resolved at turn-in via Game.Classes.advancedOptionsFor(c)
     // (js/core/quests.js turnIn), NOT a fixed array; see header comment above.
     rewards: { classChoice: 'advanced' },
-    completionText: 'Eldor claps a firm hand on your shoulder. "Welcome to your advancement, hero. Make it count."'
+    completionText: 'Varnell claps a firm hand on your shoulder. "Welcome to your advancement, hero. The Vanguard Camp will remember this. Make it count."'
   },
 
   // =====================================================================
@@ -421,23 +443,32 @@ Game.Data.quests = [
   // =====================================================================
   {
     id: 'masters_calling',
-    name: "The Master's Calling",
-    giver: { areaId: 'eldor', npc: 'Eldor' },
+    // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [revised]: re-homed from Eldor to the Kuraan
+    // Reclamation Camp (minLevel 44, well below this quest's own levelMin 60) so the mid-arc bands
+    // carry their own capstone hub instead of routing every level-60 hero back to Eldor. Id kept
+    // for old-save coherence; giver NPC/title/intro/completionText retheme to a Kuraan reclamation
+    // master — the class-choice MECHANIC (requiresAdvancedClass, classChoice: 'tier3', the eidas_echo
+    // kill step) is entirely unchanged.
+    name: "The Reclamation Master's Calling",
+    giver: { areaId: 'kuraan_reclamation_camp', npc: 'Reclamation Master Ondrei' },
     levelMin: 60,
     requiresAdvancedClass: true, // NEW (v1.2 Phase 2): must have obtained a tier-2 (advanced) class
-    intro: 'Eldor sets down the same maps he pored over when you first stood before him at level ' +
-      '30. "There\'s one calling higher than advancement, hero — the Academy only ever grants it to ' +
-      'those who\'ve already proven an advanced calling AND faced down whatever it is that still ' +
-      'answers to Eidas\' name in Kastengard\'s deepest vault. Finish that fight, and come back. I\'ll ' +
-      'know by the look of you whether the Academy has anything left to teach."',
+    intro: 'Reclamation Master Ondrei unrolls the same kind of maps Camp Marshal Serath keeps, but ' +
+      'his are older, worn soft at the folds from a career\'s worth of use. "There\'s one calling ' +
+      'higher than advancement, hero — the Academy only ever grants it to those who\'ve already ' +
+      'proven an advanced calling AND faced down whatever it is that still answers to Eidas\' name ' +
+      'in Kastengard\'s deepest vault. I\'ve trained heroes at this camp long enough to know one when ' +
+      'the fight\'s already behind them. Finish that fight, and come back. I\'ll know by the look of ' +
+      'you whether the Academy has anything left to teach."',
     steps: [
       { kind: 'kill', monsterId: 'eidas_echo', count: 1 }
     ],
     // classChoice: 'tier3' — resolved at turn-in via Game.Classes.thirdTierOptionsFor(c)
     // (js/core/quests.js turnIn), NOT a fixed array; mirrors the 'advanced' sentinel above.
     rewards: { classChoice: 'tier3' },
-    completionText: 'Eldor studies you for a long moment before he finally nods. "The Academy has ' +
-      'exactly one calling left to give you, hero. Wear it well — you\'ve more than earned it."'
+    completionText: 'Ondrei studies you for a long moment before he finally nods. "The Academy has ' +
+      'exactly one calling left to give you, hero. Wear it well — you\'ve more than earned it, and ' +
+      'the reclamation camp will remember training the hero who earned it here."'
   },
 
   // =====================================================================
@@ -455,14 +486,19 @@ Game.Data.quests = [
   {
     id: 'vaultbreakers_reckoning',
     name: "Vaultbreaker's Reckoning",
-    giver: { areaId: 'eldor', npc: 'Eldor' },
+    // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [revised]: re-homed from Eldor to the
+    // Kastengard Vanguard Camp (minLevel 26, below this quest's own levelMin 33) — fittingly, the
+    // camp sits right outside the Custodian's own vault, one of the two required boss kills. Id +
+    // rewards unchanged; only giver NPC and flavor text retheme.
+    giver: { areaId: 'kastengard_vanguard_camp', npc: 'Instructor Brennoch' },
     levelMin: 33,
-    intro: 'Eldor lowers his voice, the way he only does for the stories he doesn\'t quite believe ' +
-      'himself. "There\'s an old rumor among the Academy\'s oldest instructors — that a hero who ' +
-      'breaks BOTH the Juneros Leviathan and the Kastengard Custodian, the deep shoal\'s guardian ' +
-      'and the vault\'s, awakens something in themselves that no ordinary calling can teach. I\'ve ' +
-      'never seen it happen. Prove the rumor true, and bring me proof of both kills, and we\'ll find ' +
-      'out together what the Academy has never had to name."',
+    intro: 'Instructor Brennoch lowers his voice, the way he only does for the stories he doesn\'t ' +
+      'quite believe himself. "There\'s an old rumor among the Academy\'s oldest instructors — that a ' +
+      'hero who breaks BOTH the Juneros Leviathan and the Kastengard Custodian, the deep shoal\'s ' +
+      'guardian and the vault\'s own, awakens something in themselves that no ordinary calling can ' +
+      'teach. I\'ve trained proctors at this camp for years, close enough to the Custodian\'s vault ' +
+      'to hear the rumor firsthand, and I\'ve never once seen it happen. Prove it true, and bring me ' +
+      'proof of both kills, and we\'ll find out together what the Academy has never had to name."',
     steps: [
       { kind: 'kill', monsterId: 'juneros_leviathan', count: 1 },
       { kind: 'kill', monsterId: 'kastengard_custodian', count: 1 },
@@ -470,9 +506,10 @@ Game.Data.quests = [
       { kind: 'collect', itemId: 'quest_custodian_core_shard', count: 1 }
     ],
     rewards: { classChoice: ['vaultbreaker'] },
-    completionText: 'Eldor turns the scale and the core shard over in his hands, and for once he has ' +
-      'nothing dry to say. "Two guardians, one hero. Whatever this makes you, hero, the Academy has ' +
-      'no lesson plan for it — you\'ll have to write your own from here."'
+    completionText: 'Brennoch turns the scale and the core shard over in his hands, and for once he ' +
+      'has nothing dry to say. "Two guardians, one hero — and one of them fell close enough that we ' +
+      'heard it from the camp. Whatever this makes you, hero, the Academy has no lesson plan for it — ' +
+      'you\'ll have to write your own from here."'
   },
 
   // =====================================================================
@@ -572,17 +609,23 @@ Game.Data.quests = [
   {
     id: 'kastengard_investigation',
     name: 'What Wakes at Kastengard',
-    giver: { areaId: 'saratus', npc: 'Academy Archivist Toven' },
+    // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [revised]: re-homed from Saratus to the
+    // Kastengard Vanguard Camp itself (minLevel 26, matching this quest's own levelMin exactly) —
+    // Toven relocated from Saratus's Academy to the forward camp once the ruins started stirring,
+    // so the investigation is now dispatched from right outside the ruins instead of a week's
+    // travel away.
+    giver: { areaId: 'kastengard_vanguard_camp', npc: 'Academy Archivist Toven' },
     levelMin: 26,
     // ties to story.js chapter_2's waking-ruins premise, relocated from the Estari ruins near
     // Eldor to Kastengard itself — the Society of Modern Magic's own abandoned base far to the
     // northeast (Chapter_I.md).
-    intro: 'Archivist Toven speaks carefully, as though the words themselves might wake something. ' +
-      '"Eldor\'s surveyors found the Estari ruins stirring again — stone that should be inert for ' +
-      'centuries, moving when no one watches. If that restlessness has reached all the way to ' +
-      'Kastengard, where the Society itself once dug even deeper into Anima than the Estari ever dared, ' +
-      'the Academy needs to know. Travel there, see what its wardframes and remnants are carrying, and ' +
-      'bring back proof of what you find."',
+    intro: 'Archivist Toven speaks carefully, as though the words themselves might wake something, a ' +
+      'stone\'s throw from the ruins she\'s come to study. "Eldor\'s surveyors found the Estari ruins ' +
+      'stirring again — stone that should be inert for centuries, moving when no one watches. If ' +
+      'that restlessness has reached all the way here to Kastengard, where the Society itself once ' +
+      'dug even deeper into Anima than the Estari ever dared, the Academy needs to know. Go in past ' +
+      'the outer halls, see what its wardframes and remnants are carrying, and bring back proof of ' +
+      'what you find."',
     steps: [
       { kind: 'visit', areaId: 'kastengard_ruins' },
       { kind: 'kill', monsterId: 'kastengard_wardframe', count: 3 },
@@ -599,13 +642,17 @@ Game.Data.quests = [
   {
     id: 'echo_of_eidas',
     name: 'The Echo of Eidas',
-    // archived: the Royal Academy is Eldor's (DESIGN.md §6/§2); the finale is sent from the
-    // capital's tavern per the phase brief, closing the arc that began with the Estari ruins
-    // outside Eldor and the estari_ruin_warden (js/data/quests.js ruin_warden_boss/trials_of_eldor).
-    giver: { areaId: 'eldor', npc: 'Royal Academy Envoy Castellan' },
+    // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [revised]: re-homed from Eldor to the
+    // Kastengard Vanguard Camp (minLevel 26, below this quest's own levelMin 36) — the Royal
+    // Academy's envoy is posted forward at the camp itself to watch the vault directly, rather
+    // than dispatching the finale from the distant capital. Still closes the arc that began with
+    // the Estari ruins outside Eldor and the estari_ruin_warden (js/data/quests.js
+    // ruin_warden_boss/trials_of_eldor).
+    giver: { areaId: 'kastengard_vanguard_camp', npc: 'Royal Academy Envoy Castellan' },
     levelMin: 36,
     intro: 'The envoy speaks with the flat calm of someone repeating an order she does not fully ' +
-      'believe herself. "The Royal Academy has had Kastengard\'s deepest vault under watch since word ' +
+      'believe herself, stationed at the Vanguard Camp precisely so she can watch the vault with ' +
+      'her own eyes. "The Royal Academy has had Kastengard\'s deepest vault under watch since word ' +
       'came back from Saratus. What\'s down there isn\'t a construct, and it isn\'t a remnant. It ' +
       'answers to Eidas\' name, or something that still thinks it is him, three centuries after the ' +
       'Skyspire left the ground. The Academy cannot send an army into a vault that size. It can send ' +
@@ -631,7 +678,8 @@ Game.Data.quests = [
     // decree to bury Anima rather than heal the wound.
     completionText: 'The envoy reads your account of the Echo\'s last words twice before she can speak. ' +
       '"Watched, and envied — that\'s what it said the light in the sky had been, all this time." She ' +
-      'looks north, though Kastengard is nowhere near sight of Eldor\'s walls. "Three hundred years ago ' +
+      'looks up, past the camp\'s own palisade, straight at the Skyspire rising over Kastengard\'s ' +
+      'rooftops. "Three hundred years ago ' +
       'the Council buried the wound instead of healing it, and called that an ending. You\'ve done what ' +
       'they couldn\'t: you\'ve actually closed it. Van Arius didn\'t need a hero for three centuries, or ' +
       'so the old stories say. It certainly needed one today. Rest, hero. You have more than earned it — ' +
@@ -990,13 +1038,21 @@ Game.Data.quests = [
   {
     id: 'what_the_society_grew',
     name: 'What the Society Grew',
-    giver: { areaId: 'frosthold_waystation', npc: 'Cipher-Adept Rennick' },
+    // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [revised]: re-homed from Frosthold Waystation
+    // to Skyspire Landing (minLevel 85, below this quest's own levelMin 86) — the v1.6 P4 CF-1
+    // decision kept Band E/F's quest givers at Frosthold even after their SHOP moved to Skyspire
+    // Landing (see js/data/areas.js Skyspire Landing's own comment); Phase Q overrides that call so
+    // Skyspire Landing (L85-100) finally owns its own quest-giver band instead of Frosthold hosting
+    // every band from L61 through L100. Rennick followed the party's own advance up the tower —
+    // her cipher work is about the Society itself, whose ruins are right here.
+    giver: { areaId: 'skyspire_landing', npc: 'Cipher-Adept Rennick' },
     levelMin: 86,
     // G5 chain (v1.4 P1): side quest chains behind Band E's own main-spine entry
-    // (the_skyspire_ascent) — same pattern as every prior band's hunt-quest, even though this one
-    // has a different giver NPC (Rennick, not Thessaly) from the spine quest.
+    // (the_skyspire_ascent, still given at Frosthold — its own levelMin 81 is below Skyspire
+    // Landing's minLevel 85, so it cannot be re-homed there) — cross-area chain links are an
+    // established pattern (see Level-Arc Band C's win_passage_from_the_ukai).
     requiresQuest: 'the_skyspire_ascent',
-    intro: 'Cipher-Adept Rennick has every cipher page spread across a borrowed table, and none of it sits right with her. "The Society never stopped, hero — not when Eidas left, not when the Council of Three\'s old ban should have scared anyone else off Anima for good. These pages talk about \'ravagers,\' shaped and grown right there in the sanctum. Put down four Anima-Horror Ravagers before one grows large enough to come down off the spans on its own."',
+    intro: 'Cipher-Adept Rennick has every cipher page spread across a table at the Skyspire Landing, close enough to the tower\'s own sanctum that the ink still smells of Anima. "The Society never stopped, hero — not when Eidas left, not when the Council of Three\'s old ban should have scared anyone else off Anima for good. These pages talk about \'ravagers,\' shaped and grown right there in the sanctum. Put down four Anima-Horror Ravagers before one grows large enough to come down off the spans on its own."',
     steps: [
       { kind: 'kill', monsterId: 'anima_horror_ravager', count: 4 }
     ],
@@ -1008,17 +1064,24 @@ Game.Data.quests = [
   {
     id: 'the_societys_last_stand',
     name: "The Society's Last Stand",
-    giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
+    // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [revised]: re-homed from Frosthold Waystation
+    // to Skyspire Landing (minLevel 85, below this quest's own levelMin 90) — see
+    // what_the_society_grew's own comment above for why this overrides the v1.6 P4 CF-1 call.
+    // Landing Overseer Sabine (NEW, invented) is Skyspire Landing's own giver, drawn from the
+    // Society's surviving logistics corps described in the settlement's own areas.js text —
+    // Waystation Commander Thessaly stays at Frosthold with Bands C/D, unmoved.
+    giver: { areaId: 'skyspire_landing', npc: 'Landing Overseer Sabine' },
     levelMin: 90,
     // G5 chain (v1.4 P1): Band E boss-kill side quest chains behind Band E's own main-spine entry
-    // (the_skyspire_ascent) — NOT behind the_red_moon_crossing (Band F's spine).
+    // (the_skyspire_ascent, still at Frosthold — cross-area chain link, same pattern as
+    // what_the_society_grew above) — NOT behind the_red_moon_crossing (Band F's spine).
     requiresQuest: 'the_skyspire_ascent',
-    intro: 'Thessaly has a seventh map now, the Skyspire\'s own sanctum inked in past the upper spans. "You\'ve seen the pages, hero, and you\'ve seen what they grew. The Anima-Horror is the last thing the Society of Modern Magic ever built, or the last thing it lost control of — either way, it\'s standing between us and whatever\'s left of Eidas\'s own tower. End it, and the Skyspire finally answers to someone who isn\'t chasing a dead man to the red moon."',
+    intro: 'Landing Overseer Sabine keeps the Society\'s old logistics ledgers even now, and none of them prepared her for what\'s waiting past this landing. "You\'ve seen the pages, hero, and you\'ve seen what they grew. The Anima-Horror is the last thing the Society of Modern Magic ever built, or the last thing it lost control of — either way, it\'s standing between us and whatever\'s left of Eidas\'s own tower, right above this platform. End it, and the Skyspire finally answers to someone who isn\'t chasing a dead man to the red moon."',
     steps: [
       { kind: 'kill', monsterId: 'society_anima_horror', count: 1 }
     ],
     rewards: { gold: 3200, xp: 4200, items: ['heavy_head_spireward_helm'], trainingPoints: 4 },
-    completionText: 'Thessaly turns the Anima-Horror\'s own edge over in her hands, and for a long moment neither of them says a word. "The Warlord held Kuraan. The Chieftain held the highlands. The Deep-Dweller held the undercaverns. The Warden-Prime held the Wellspring. And this thing held the Society\'s own tower — the last of Eidas\'s work still standing watch since he sailed for the red moon. Whatever\'s waiting for you up there now, hero, it isn\'t a remnant anymore. It\'s him."'
+    completionText: 'Sabine turns the Anima-Horror\'s own edge over in her hands, and for a long moment says nothing at all. "The Warlord held Kuraan. The Chieftain held the highlands. The Deep-Dweller held the undercaverns. The Warden-Prime held the Wellspring. And this thing held the Society\'s own tower — the last of Eidas\'s work still standing watch since he sailed for the red moon, right over this very landing. Whatever\'s waiting for you up there now, hero, it isn\'t a remnant anymore. It\'s him."'
   },
 
   // =====================================================================
@@ -1034,30 +1097,42 @@ Game.Data.quests = [
   {
     id: 'the_red_moon_crossing',
     name: 'The Red Moon Crossing',
-    giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
+    // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [revised]: re-homed from Frosthold Waystation
+    // to Skyspire Landing (minLevel 85, below this quest's own levelMin 91) — see
+    // what_the_society_grew's own comment above for why this overrides the v1.6 P4 CF-1 call.
+    // Landing Overseer Sabine (introduced at the_societys_last_stand above) leads the crossing
+    // herself, since it launches directly off the Landing's own platform.
+    giver: { areaId: 'skyspire_landing', npc: 'Landing Overseer Sabine' },
     levelMin: 91,
     // G5 chain (v1.4 P1 + §7 guardrail): Band F's main-spine quest chains behind Band E's own
-    // main-spine quest (the_skyspire_ascent), never behind Band E's side/boss quests.
+    // main-spine quest (the_skyspire_ascent, still at Frosthold — cross-area chain link, same
+    // pattern as what_the_society_grew above), never behind Band E's side/boss quests.
     requiresQuest: 'the_skyspire_ascent',
-    intro: 'Waystation Commander Thessaly leads you past the Skyspire\'s own highest platform to a span of rune-stone that has no business existing — arcing up and out, past the sky, toward the red moon itself. "This is as far as any of my scouts have gone and come back, hero. Eidas built this bridge three centuries ago and never came down it again. Break his sentinels, gather what sigil-shards you can carry off them, and get your own eyes on his sanctum. After that, it isn\'t my map anymore."',
+    intro: 'Landing Overseer Sabine leads you out past the Landing\'s own platform to a span of rune-stone that has no business existing — arcing up and out, past the sky, toward the red moon itself. "This is as far as anyone stationed here has gone and come back, hero. Eidas built this bridge three centuries ago and never came down it again. Break his sentinels, gather what sigil-shards you can carry off them, and get your own eyes on his sanctum. After that, it isn\'t my platform to send you from anymore."',
     steps: [
       { kind: 'kill', monsterId: 'moonbridge_ward_sentinel', count: 5 },
       { kind: 'collect', itemId: 'quest_eidas_sigil_shard', count: 3 },
       { kind: 'visit', areaId: 'eidas_sanctum' }
     ],
     rewards: { gold: 1900, xp: 2900, items: ['sword_redmoon_blade'], trainingPoints: 3 },
-    completionText: 'Thessaly turns the sigil-shards over to Cipher-Adept Rennick without a word of protest this time. "The Society\'s pages, the Warden-Prime\'s ward-stone, and now this. Eidas\'s own sigil, cut fresh, on shards that can\'t be more than a few years old. Whatever he\'s been doing out there, hero, he never stopped. Rennick will want to know exactly what these say before you go any further."'
+    completionText: 'Sabine turns the sigil-shards over to Cipher-Adept Rennick without a word of protest this time — Rennick keeps her own table just across the Landing. "The Society\'s pages, the Warden-Prime\'s ward-stone, and now this. Eidas\'s own sigil, cut fresh, on shards that can\'t be more than a few years old. Whatever he\'s been doing out there, hero, he never stopped. Rennick will want to know exactly what these say before you go any further."'
   },
 
   // ---------- Band F side quest: Rennick's cipher research pays off ----------
   {
     id: 'what_rennick_deciphered',
     name: 'What Rennick Deciphered',
-    giver: { areaId: 'frosthold_waystation', npc: 'Cipher-Adept Rennick' },
+    // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [revised]: re-homed from Frosthold Waystation
+    // to Skyspire Landing (minLevel 85, below this quest's own levelMin 96) — see
+    // what_the_society_grew's own comment above for why this overrides the v1.6 P4 CF-1 call.
+    // Rennick's own giver area moves alongside her (she is already re-homed to Skyspire Landing
+    // for what_the_society_grew, above).
+    giver: { areaId: 'skyspire_landing', npc: 'Cipher-Adept Rennick' },
     levelMin: 96,
     // G5 chain (v1.4 P1): side quest chains behind Band F's own main-spine entry
-    // (the_red_moon_crossing) — same pattern as every prior band's hunt-quest. Deliberately NOT a
-    // prerequisite for the_ascendants_fall (the FINALE, spine) — see that quest's own comment.
+    // (the_red_moon_crossing, also now at Skyspire Landing — see that quest's own comment) — same
+    // pattern as every prior band's hunt-quest. Deliberately NOT a prerequisite for
+    // the_ascendants_fall (the FINALE, spine) — see that quest's own comment.
     requiresQuest: 'the_red_moon_crossing',
     intro: 'Cipher-Adept Rennick has every page and every shard laid out edge to edge, and for the first time since Kastengard she looks less like a scholar than someone who wishes she\'d been wrong. "It\'s all one hand, hero — the Society\'s ciphers, the sigil-shards, all of it Eidas\'s own work, decades apart but never abandoned. The \'divine race\' wasn\'t a failure. It\'s out there, growing, in the thing the sanctum calls a Devourer. Put down four Moon-Anima Devourers and bring me back proof it can still be killed."',
     steps: [
@@ -1071,20 +1146,27 @@ Game.Data.quests = [
   {
     id: 'the_ascendants_fall',
     name: "The Ascendant's Fall",
-    giver: { areaId: 'frosthold_waystation', npc: 'Waystation Commander Thessaly' },
+    // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [revised]: re-homed from Frosthold Waystation
+    // to Skyspire Landing (minLevel 85, below this quest's own levelMin 100) — see
+    // what_the_society_grew's own comment above for why this overrides the v1.6 P4 CF-1 call.
+    // Landing Overseer Sabine (introduced at the_societys_last_stand above) sends THE FINALE, since
+    // the Landing is the last solid ground before the crossing itself — Frosthold's own command-post
+    // framing (the old intro text below) moves to Sabine's platform instead.
+    giver: { areaId: 'skyspire_landing', npc: 'Landing Overseer Sabine' },
     levelMin: 100,
     // G5 chain (v1.4 P1 + §7 guardrail): THE FINALE chains behind Band F's own main-spine entry
-    // (the_red_moon_crossing) — deliberately NOT behind what_rennick_deciphered (side content):
-    // the phase brief is explicit that spine quests never gate behind side quests, even a
-    // thematically-relevant one, and this is the single most important link in the whole graph to
-    // get right (it would strand the arc's own finale behind an optional detour otherwise).
+    // (the_red_moon_crossing, also now at Skyspire Landing — see that quest's own comment) —
+    // deliberately NOT behind what_rennick_deciphered (side content): the phase brief is explicit
+    // that spine quests never gate behind side quests, even a thematically-relevant one, and this
+    // is the single most important link in the whole graph to get right (it would strand the arc's
+    // own finale behind an optional detour otherwise).
     requiresQuest: 'the_red_moon_crossing',
-    intro: 'Thessaly has no map left to pin up. Everything Frosthold has sent north for the last forty levels — the Kuraan fringe, the Majiku highlands, the Ukai passage, the Wellspring, the Skyspire, and now this bridge to the red moon itself — has been pointing at the same place, and the same name. "The Warlord, the Chieftain, the Deep-Dweller, the Warden-Prime, the Society\'s last horror — every one of them was only ever guarding the road to Eidas, hero, whether they knew it or not. He\'s waiting at the heart of his own sanctum, ascended and unhurried, three centuries into a plan nobody else ever got to see finished. Finish it for him. End Eidas Ascendant, and end the arc that\'s carried you from Kuraan to the red moon."',
+    intro: 'Sabine has no ledger left to check. Everything sent up this tower for the last forty levels — the Kuraan fringe, the Majiku highlands, the Ukai passage, the Wellspring, the Skyspire, and now this bridge to the red moon itself — has been pointing at the same place, and the same name. "The Warlord, the Chieftain, the Deep-Dweller, the Warden-Prime, the Society\'s last horror — every one of them was only ever guarding the road to Eidas, hero, whether they knew it or not. He\'s waiting at the heart of his own sanctum, ascended and unhurried, three centuries into a plan nobody else ever got to see finished. Finish it for him. End Eidas Ascendant, and end the arc that\'s carried you from Kuraan to the red moon — and from this landing, the last solid ground before it."',
     steps: [
       { kind: 'kill', monsterId: 'eidas_ascendant', count: 1 }
     ],
     rewards: { gold: 4000, xp: 5000, items: ['heavy_head_redmoon_helm'], trainingPoints: 5 },
-    completionText: 'Thessaly holds the Ascendant\'s Judgment up to the light of the very moon it was cut from, and for once she has nothing clever to say. "The Warlord held Kuraan. The Chieftain held the highlands. The Deep-Dweller held the undercaverns. The Warden-Prime held the Wellspring. The Society\'s horror held the Skyspire. And Eidas — Eidas held all of it, hero, the whole reach of his \'divine race,\' from Kastengard to the red moon and back. He doesn\'t hold any of it anymore. Whatever comes next for Exos, it starts today, and it starts because of you."'
+    completionText: 'Sabine holds the Ascendant\'s Judgment up to the light of the very moon it was cut from, and for once she has nothing clever to say. "The Warlord held Kuraan. The Chieftain held the highlands. The Deep-Dweller held the undercaverns. The Warden-Prime held the Wellspring. The Society\'s horror held the Skyspire. And Eidas — Eidas held all of it, hero, the whole reach of his \'divine race,\' from Kastengard to the red moon and back. He doesn\'t hold any of it anymore. Whatever comes next for Exos, it starts today, and it starts because of you."'
   }
 ];
 

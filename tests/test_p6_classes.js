@@ -247,7 +247,11 @@ assert(Array.isArray(firstCalling.rewards.classChoice) &&
 
 var trials = Game.Data.quests.filter(function (q) { return q.id === 'trials_of_eldor'; })[0];
 assert(!!trials, 'trials_of_eldor quest exists (id unchanged for old-save coherence)');
-assert(trials.name === 'The Trials of Ascension', 'trials_of_eldor renamed for display to "The Trials of Ascension", got "' + (trials && trials.name) + '"');
+// v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2): re-homed Eldor -> Kastengard Vanguard Camp,
+// renamed a second time to match ("The Trials of Eldor" -> "The Trials of Ascension" -> "The
+// Trials of the Vanguard") — the id and class-advancement mechanic are unchanged.
+assert(trials.name === 'The Trials of the Vanguard', 'trials_of_eldor renamed for display to "The Trials of the Vanguard", got "' + (trials && trials.name) + '"');
+assert(trials.giver.areaId === 'kastengard_vanguard_camp', 'trials_of_eldor giver re-homed to kastengard_vanguard_camp, got ' + (trials && trials.giver.areaId));
 assert(trials.levelMin === 30, 'trials_of_eldor still gates at level 30');
 assert(trials.requiresBaseClass === true, 'trials_of_eldor requires a base class (new field)');
 assert(trials.rewards.classChoice === 'advanced', 'trials_of_eldor classChoice is the "advanced" sentinel, got ' + JSON.stringify(trials.rewards.classChoice));
@@ -395,6 +399,8 @@ assert(reTurnIn4.ok === false, 'cannot turn in first_calling a second time: ' + 
 console.log('\n=== Test 5: Trials of Ascension accept blocked without a base class ===');
 var c5 = makeCharacter({ name: 'NoCalling' });
 setLevel(c5, 30);
+// v1.7 Phase Q: trials_of_eldor re-homed Eldor -> Kastengard Vanguard Camp (minLevel 26).
+Game.World.travelTo('kastengard_vanguard_camp');
 var acceptNoBase5 = Game.Quests.accept('trials_of_eldor');
 assert(acceptNoBase5.ok === false, 'accept refused with no base class obtained: ' + acceptNoBase5.message);
 assert(/base class/i.test(acceptNoBase5.message), 'refusal message explains the base-class requirement');
@@ -420,6 +426,8 @@ console.log('\n=== Test 7: Trials of Ascension turn-in rejects a wrong-branch ch
 var c7 = makeCharacter({ name: 'BranchTester' });
 setLevel(c7, 30);
 Game.Classes.obtainClass(c7, 'warrior'); // warrior base -> gladiator/crusader only
+// v1.7 Phase Q: trials_of_eldor re-homed Eldor -> Kastengard Vanguard Camp (minLevel 26).
+Game.World.travelTo('kastengard_vanguard_camp');
 var acceptTrials7 = Game.Quests.accept('trials_of_eldor');
 assert(acceptTrials7.ok === true, 'trials_of_eldor accepted with warrior base: ' + acceptTrials7.message);
 winBattle('estari_ruin_warden');
@@ -650,7 +658,8 @@ var loopActivateThief = Game.Classes.activate(c15, 'thief', 'primary');
 assert(loopActivateThief.ok === true, 'loop: thief activated as primary');
 
 setLevel(c15, 30);
-c15.currentLocation = 'eldor';
+// v1.7 Phase Q: trials_of_eldor re-homed Eldor -> Kastengard Vanguard Camp (minLevel 26).
+c15.currentLocation = 'kastengard_vanguard_camp';
 var loopTrialsAccept = Game.Quests.accept('trials_of_eldor');
 assert(loopTrialsAccept.ok === true, 'loop: Trials of Ascension accepted (base class already obtained)');
 winBattle('estari_ruin_warden');
@@ -795,6 +804,8 @@ Object.keys(THIRD_TIER_PAIRS).forEach(function (tier2Id) {
 console.log('\n=== Test 18: masters_calling accept blocked without an advanced class; full tier-3 loop (obtain -> activate -> buyAbility -> class-tech usable in battle) ===');
 var c18 = makeCharacter({ name: 'MastersCallingTester' });
 setLevel(c18, 60); // masters_calling levelMin re-gated 38 -> 60 (level-arc F4)
+// v1.7 Phase Q: masters_calling re-homed Eldor -> Kuraan Reclamation Camp (minLevel 44).
+Game.World.travelTo('kuraan_reclamation_camp');
 var acceptNoAdv18 = Game.Quests.accept('masters_calling');
 assert(acceptNoAdv18.ok === false, 'accept refused with no advanced class obtained: ' + acceptNoAdv18.message);
 assert(/advanced/i.test(acceptNoAdv18.message), 'refusal message explains the advanced-class requirement');
@@ -845,6 +856,8 @@ Game.Battle.endBattle();
 console.log('\n=== Test 19: Vaultbreaker unlock — a genuine boss-COMBINATION kill via a hidden quest (distinct from Runeblade\'s silent single boss-kill latch) ===');
 var c19 = makeCharacter({ name: 'VaultbreakerHunter' });
 setLevel(c19, 33);
+// v1.7 Phase Q: vaultbreakers_reckoning re-homed Eldor -> Kastengard Vanguard Camp (minLevel 26).
+Game.World.travelTo('kastengard_vanguard_camp');
 var acceptVb19 = Game.Quests.accept('vaultbreakers_reckoning');
 assert(acceptVb19.ok === true, 'vaultbreakers_reckoning accepted: ' + acceptVb19.message);
 assert(Game.Quests.canTurnIn('vaultbreakers_reckoning') === false, 'not ready before either boss is killed');

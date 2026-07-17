@@ -67,6 +67,22 @@ delivery model as the original ("text-based, web 2.0", AJAX-era) and as the Avat
   flags — moved. No new area/town/quest ids were removed or renamed; travel reachability needs no
   extra wiring (`js/ui/screens.js` `renderExplore` already lists every `Game.Data.areas` entry as
   a destination, gated only by `Game.World.travelTo`'s level check — no adjacency graph).
+- **v1.7 Phase Q — quest arc redistribution [revised]** (`docs/SPEC-V1.7-CONTENT-UX.md` §2):
+  playtest feedback found quests front-loaded in Eldor (12 of ~43 givers) while Skyspire Landing
+  (added v1.6 P4, above) had zero. 14 quests' `giver.areaId`/`npc` were reassigned so each town
+  tavern owns its own level band — ids, objectives, `requiresQuest` chains, and rewards are
+  unchanged; only the giver and (for the 3 re-homed class-advancement quests, `trials_of_eldor`/
+  `vaultbreakers_reckoning`/`masters_calling`) the display name/flavor text changed. This
+  **overrides the v1.6 P4 CF-1 call above** that deliberately kept Band E/F's quest givers at
+  Frosthold after their shop moved to Skyspire Landing: `what_the_society_grew`,
+  `the_societys_last_stand`, `the_red_moon_crossing`, `what_rennick_deciphered`, and
+  `the_ascendants_fall` (THE FINALE) now give from Skyspire Landing itself (new NPC Landing
+  Overseer Sabine; Cipher-Adept Rennick moves with them); `the_skyspire_ascent` (levelMin 81, below
+  Skyspire Landing's own gate of 85) and Bands C/D stay at Frosthold with Waystation Commander
+  Thessaly, unmoved. A Tavern facility was **added** to `kastengard_vanguard_camp` (`js/data/
+  areas.js`, previously shop/inn/academy only) so the L26-33 band has its own quest hub. Reachability
+  is absolute (giver town `minLevel` ≤ quest `levelMin`) and chain-walked end to end; test-covered
+  in `tests/test_p5_quests.js` Test 30 (per-quest reachability + a whole-table connectivity sweep).
 
 ## 3. Character system
 
