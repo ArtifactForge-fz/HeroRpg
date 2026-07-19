@@ -8,10 +8,9 @@ from `v1.7-content` (or from `main` after the v1.7 merge, whichever the user doe
 learned techs persist by id in the existing list; all new battle statuses are transient; new
 item/tech fields are data-side only. No migration, no version bump.
 
-> **PLACEHOLDER — user playtest feedback.** The prompt that opened this cycle referenced
-> feedback ("the following feedback") that did not arrive with the message. This spec covers
-> SPEC-T~2 + AUDIT-ITEM-REACHABILITY; when the feedback lands, triage it into the phase plan
-> below (or into a REVIEW-triage doc if it's large) before implementation starts.
+> **RESOLVED — user playtest feedback.** The feedback referenced by the cycle-opening prompt
+> arrived after v1.8.0 shipped; triage in `docs/REVIEW-2026-07-19-FEEDBACK.md` (5 findings:
+> 3 already fixed by v1.7/v1.8.0, the other 2 shipped same-day as **v1.8.1**).
 
 ## 0. What this release is
 
