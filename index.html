@@ -235,6 +235,19 @@
     weight.textContent = 'Weight: ' + currentWeight + ' / ' + capacity;
     if (currentWeight > capacity) weight.className += ' req-bad';
     wrap.appendChild(weight);
+
+    // v1.8 P4 (user-directed QoL, SPEC-V1.8-TECHS-AND-REACHABILITY.md §3 P4 "Persistent gold
+    // readout"): a gold line beside the weight readout, formatted EXACTLY like the Status screen
+    // (js/ui/screens.js renderStatus, c.platinum + 'p ' + c.gold + 'g') so the two never disagree.
+    // The load-bearing part is refresh, not rendering — see the gold-mutation-site audit in this
+    // phase's delivery report; every flow that changes c.gold/c.platinum already runs through a
+    // path that calls Game.renderStatusBars() (shared post-action re-renders, battle end, or
+    // Game.navigate() re-invoking the current screen, which itself calls renderStatusBars for the
+    // screens that touch gold).
+    var goldRow = document.createElement('div');
+    goldRow.className = 'weight-readout smallfont gold-readout';
+    goldRow.textContent = 'Gold: ' + c.platinum + 'p ' + c.gold + 'g';
+    wrap.appendChild(goldRow);
   };
 
   // ---------- Actions panel (Phase 8) ----------

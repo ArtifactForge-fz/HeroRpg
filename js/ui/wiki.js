@@ -64,6 +64,88 @@ Game.Wiki = (function () {
     return out;
   }
 
+  // v1.8 P4 (Task B, audit §6): the remaining Source axes the v1.7 wiki never covered — forage,
+  // quest rewards, quest hand-outs, recipe outputs, and AA-Exchange stock. All read straight from
+  // Game.Data at render time, same discipline as itemShopSources/itemDropSources above.
+
+  // Every area whose forage[] table (js/data/areas.js) contains itemId.
+  function itemForageSources(itemId) {
+    var out = [];
+    (Game.Data.areas || []).forEach(function (area) {
+      if ((area.forage || []).indexOf(itemId) !== -1) out.push(area.name);
+    });
+    return out;
+  }
+
+  // Every quest whose rewards.items[] (js/data/quests.js) contains itemId — a turn-in reward.
+  function itemQuestRewardSources(itemId) {
+    var out = [];
+    (Game.Data.quests || []).forEach(function (q) {
+      if (q.rewards && (q.rewards.items || []).indexOf(itemId) !== -1) out.push(q.name);
+    });
+    return out;
+  }
+
+  // Every quest whose acceptItems[] (js/data/quests.js) hands itemId to the player on accept —
+  // distinct from a turn-in reward (e.g. quest_sealed_supply_crate, handed over then carried
+  // back for its own collect step).
+  function itemQuestHandoutSources(itemId) {
+    var out = [];
+    (Game.Data.quests || []).forEach(function (q) {
+      if ((q.acceptItems || []).indexOf(itemId) !== -1) out.push(q.name);
+    });
+    return out;
+  }
+
+  // Every recipe whose output === itemId (js/data/recipes.js) — a synthesized item.
+  function itemRecipeOutputSources(itemId) {
+    var out = [];
+    (Game.Data.recipes || []).forEach(function (r) {
+      if (r.output === itemId) out.push(r.id);
+    });
+    return out;
+  }
+
+  // Every AA-Exchange facility stocking itemId. AUDIT-ITEM-REACHABILITY.md §1 scan-bug note: the
+  // Exchange's stock array holds `{itemId, costAp}` OBJECTS, not plain ids like a shop's stock —
+  // missing this falsely marks all AP-shop stock unobtainable, so it's checked explicitly here
+  // rather than reusing itemShopSources' plain-id `.indexOf`.
+  function itemExchangeSources(itemId) {
+    var out = [];
+    (Game.Data.areas || []).forEach(function (area) {
+      (area.facilities || []).forEach(function (f) {
+        if (f.type !== 'exchange' || !f.stock) return;
+        f.stock.forEach(function (entry) {
+          if (entry && entry.itemId === itemId) out.push({ areaName: area.name, costAp: entry.costAp });
+        });
+      });
+    });
+    return out;
+  }
+
+  // ---------- "Used for" (audit §6's other half — what consumes a drop-only material) ----------
+
+  // Every recipe whose inputs[] (js/data/recipes.js) includes itemId — a crafting ingredient.
+  function itemRecipeInputTargets(itemId) {
+    var out = [];
+    (Game.Data.recipes || []).forEach(function (r) {
+      if ((r.inputs || []).indexOf(itemId) !== -1) out.push(r);
+    });
+    return out;
+  }
+
+  // Every quest with a `{kind:'collect', itemId}` step (js/data/quests.js) targeting itemId — the
+  // Condensed-Anima-Core class of confusion this audit exists to close.
+  function itemQuestCollectTargets(itemId) {
+    var out = [];
+    (Game.Data.quests || []).forEach(function (q) {
+      (q.steps || []).forEach(function (step) {
+        if (step.kind === 'collect' && step.itemId === itemId) out.push(q.name);
+      });
+    });
+    return out;
+  }
+
   // Every area whose hunt list or lair carries monsterId.
   function monsterLocations(monsterId) {
     var out = [];
@@ -99,11 +181,23 @@ Game.Wiki = (function () {
   // ---------- Row builders (pure data; DOM-free, directly testable) ----------
 
   function buildItemRows() {
+    var items = itemIndex();
     return (Game.Data.items || []).map(function (item) {
       return {
         item: item,
+        // ---- Source ----
         shops: itemShopSources(item.id),
-        drops: itemDropSources(item.id)
+        drops: itemDropSources(item.id),
+        forage: itemForageSources(item.id),
+        questRewards: itemQuestRewardSources(item.id),
+        questHandouts: itemQuestHandoutSources(item.id),
+        recipeOutputs: itemRecipeOutputSources(item.id),
+        exchanges: itemExchangeSources(item.id),
+        // ---- Used for ----
+        recipeInputs: itemRecipeInputTargets(item.id).map(function (r) {
+          return r.id + ' -> ' + itemName(r.output, items);
+        }),
+        collectTargets: itemQuestCollectTargets(item.id)
       };
     });
   }
@@ -241,7 +335,7 @@ Game.Wiki = (function () {
     var box = filterBox('Filter items by name, slot, skill, id, or tag...');
     wrap.appendChild(el('div', { class: 'panel mb8' }, [box]));
 
-    var t = table(['Icon', 'Name', 'Slot', 'Skill', 'Stats', 'Value', 'Tags', 'Source']);
+    var t = table(['Icon', 'Name', 'Slot', 'Skill', 'Stats', 'Value', 'Tags', 'Source', 'Used for']);
     var entries = [];
     rows.forEach(function (r) {
       var item = r.item;
@@ -252,12 +346,30 @@ Game.Wiki = (function () {
       var reqText = statReqText(item.statReqs);
       if (reqText) stats.push('Req: ' + reqText);
 
+      // v1.8 P4 (Task B, audit §6): Source now covers every acquisition path the audit's own
+      // reachability scan checks (js/ui/wiki.js buildItemRows) — shops, drops, forage, quest
+      // rewards, quest hand-outs, recipe outputs, and AA-Exchange stock.
       var sourceParts = [];
       if (r.shops.length) sourceParts.push('Sold: ' + r.shops.join(', '));
       if (r.drops.length) {
         sourceParts.push('Drops: ' + r.drops.map(function (d) { return d.monsterName + ' (' + d.pct + '%)'; }).join(', '));
       }
+      if (r.forage.length) sourceParts.push('Forage: ' + r.forage.join(', '));
+      if (r.questRewards.length) sourceParts.push('Quest reward: ' + r.questRewards.join(', '));
+      if (r.questHandouts.length) sourceParts.push('Quest hand-out: ' + r.questHandouts.join(', '));
+      if (r.recipeOutputs.length) sourceParts.push('Synthesized: ' + r.recipeOutputs.join(', '));
+      if (r.exchanges.length) {
+        sourceParts.push('AA Exchange: ' + r.exchanges.map(function (x) { return x.areaName + ' (' + x.costAp + ' AP)'; }).join(', '));
+      }
       if (!sourceParts.length) sourceParts.push('—');
+
+      // NEW "Used for" column (audit §6): recipe inputs + quest collect-step targets — the exact
+      // cross-reference that would have made a drop-only quest material like
+      // quest_condensed_anima_core legible without reading js/data/quests.js by hand.
+      var usedForParts = [];
+      if (r.recipeInputs.length) usedForParts.push('Recipe input: ' + r.recipeInputs.join(', '));
+      if (r.collectTargets.length) usedForParts.push('Quest collect target: ' + r.collectTargets.join(', '));
+      if (!usedForParts.length) usedForParts.push('—');
 
       var tr = el('tr', { title: item.desc || '' }, [
         el('td', {}, [icon(item.id)]),
@@ -267,7 +379,8 @@ Game.Wiki = (function () {
         el('td', { class: 'tinyfont' }, [stats.join(' / ') || '—']),
         el('td', { class: 'tinyfont right' }, [item.value != null ? String(item.value) : '']),
         el('td', { class: 'tinyfont' }, [(item.tags || []).join(', ')]),
-        el('td', { class: 'tinyfont' }, [sourceParts.join('  —  ')])
+        el('td', { class: 'tinyfont' }, [sourceParts.join('  —  ')]),
+        el('td', { class: 'tinyfont' }, [usedForParts.join('  —  ')])
       ]);
       var text = [item.name, item.id, item.slot, item.skill, (item.tags || []).join(' ')].join(' ');
       entries.push({ node: tr, text: text });
@@ -346,6 +459,37 @@ Game.Wiki = (function () {
     return wrap;
   }
 
+  // v1.8 P4 (Task B, SPEC-TECH-POLARITY.md §2.0): plain-English summary of a tech's new v1.8 P1
+  // fields (typed statKind buffs, debuffs incl. bleed, equipment gates, goldSteal) — a standalone
+  // copy of js/ui/screens.js's techEffectSummary, kept independent because wiki.html is a
+  // standalone page that never loads screens.js (only js/data/*.js + this file). Purely
+  // tech-field-driven so the concurrent P3 agent's 72 new techs render with no changes here.
+  var WIKI_STAT_KIND_LABEL = { armor: 'Armor', dodge: 'Dodge', double_attack: 'Double Attack', spellpower: 'Spell Power' };
+  var WIKI_DEBUFF_KIND_LABEL = { damage: 'Damage', armor: 'Armor' };
+  var WIKI_ARMOR_CLASS_LABEL = { light: 'Light Armor', medium: 'Medium Armor', heavy: 'Heavy Armor' };
+
+  function techDetailText(tech) {
+    var parts = [];
+    if (tech.effect === 'buff' && tech.statKind) {
+      var buffLabel = WIKI_STAT_KIND_LABEL[tech.statKind] || tech.statKind;
+      var buffDuration = tech.buffDuration || 3;
+      parts.push((tech.statKind === 'dodge' || tech.statKind === 'double_attack')
+        ? ('+' + Math.round(tech.power * 100) + '% ' + buffLabel + ' (' + buffDuration + ' turns)')
+        : ('+' + tech.power + ' ' + buffLabel + ' (' + buffDuration + ' turns)'));
+    }
+    if (tech.effect === 'debuff') {
+      var debuffDuration = tech.debuffDuration || 3;
+      parts.push(tech.debuffKind === 'bleed'
+        ? ('Bleed ' + tech.power + '/turn (' + debuffDuration + ' turns)')
+        : ('Weakens enemy ' + (WIKI_DEBUFF_KIND_LABEL[tech.debuffKind] || tech.debuffKind) + ' (' + debuffDuration + ' turns)'));
+    }
+    if (tech.requiresShield) parts.push('Requires Shield');
+    if (tech.requiresOffhandWeapon) parts.push('Requires offhand weapon');
+    if (tech.requiresArmorClass) parts.push('Requires ' + (WIKI_ARMOR_CLASS_LABEL[tech.requiresArmorClass] || tech.requiresArmorClass));
+    if (tech.goldSteal) parts.push('Steals ' + tech.goldSteal + ' gold on hit');
+    return parts.join('; ') || '—';
+  }
+
   function renderTechsSection() {
     var chains = buildTechChains();
     var totalCount = (Game.Data.techs || []).length;
@@ -353,7 +497,7 @@ Game.Wiki = (function () {
     var box = filterBox('Filter techniques by name, chain, or skill...');
     wrap.appendChild(el('div', { class: 'panel mb8' }, [box]));
 
-    var t = table(['Chain', 'Name', 'Skill', 'Grade', 'Effect', 'Power', 'Energy', 'Skill Req', 'Shard Cost', 'Class Only']);
+    var t = table(['Chain', 'Name', 'Skill', 'Grade', 'Effect', 'Power', 'Details', 'Energy', 'Skill Req', 'Shard Cost', 'Class Only']);
     var entries = [];
     chains.forEach(function (group) {
       group.techs.forEach(function (tech) {
@@ -364,6 +508,9 @@ Game.Wiki = (function () {
           el('td', { class: 'tinyfont' }, [tech.grade || '—']),
           el('td', { class: 'tinyfont' }, [tech.effect || '']),
           el('td', { class: 'tinyfont right' }, [tech.power != null ? String(tech.power) : (tech.powerMult != null ? ('x' + tech.powerMult) : '')]),
+          // v1.8 P4 (Task B): the new effect types (debuff / typed statKind buff) and their key
+          // numbers — equipment gates and goldSteal riders, which can accompany any effect type.
+          el('td', { class: 'tinyfont' }, [techDetailText(tech)]),
           el('td', { class: 'tinyfont right' }, [tech.energyCost != null ? String(tech.energyCost) : '']),
           el('td', { class: 'tinyfont right' }, [tech.skillReq != null ? String(tech.skillReq) : '']),
           el('td', { class: 'tinyfont right' }, [tech.shardCost != null ? String(tech.shardCost) : '']),
@@ -434,8 +581,17 @@ Game.Wiki = (function () {
     // cross-references
     itemShopSources: itemShopSources,
     itemDropSources: itemDropSources,
+    // v1.8 P4 (Task B, audit §6): the remaining Source/Used-for axes.
+    itemForageSources: itemForageSources,
+    itemQuestRewardSources: itemQuestRewardSources,
+    itemQuestHandoutSources: itemQuestHandoutSources,
+    itemRecipeOutputSources: itemRecipeOutputSources,
+    itemExchangeSources: itemExchangeSources,
+    itemRecipeInputTargets: itemRecipeInputTargets,
+    itemQuestCollectTargets: itemQuestCollectTargets,
     monsterLocations: monsterLocations,
     areaLevelRange: areaLevelRange,
+    techDetailText: techDetailText,
     // row builders
     buildItemRows: buildItemRows,
     buildMonsterRows: buildMonsterRows,

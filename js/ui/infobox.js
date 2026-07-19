@@ -150,10 +150,15 @@ Game.Infobox = (function () {
       if (ev.target === overlay) close();
     });
 
+    // v1.8 P4 (Task A, D2 disambiguation): the Conjuration tech "Curse" must not be confusable
+    // with the player-afflicting Curse STATUS — Game.UI.techDisplayName (js/ui/screens.js,
+    // loaded before this file) appends the owning skill wherever that's ambiguous.
+    var displayName = (Game.UI && Game.UI.techDisplayName) ? Game.UI.techDisplayName(tech) : tech.name;
+
     var box = e('div', { class: 'infobox panelsurround' });
     box.appendChild(e('div', { class: 'tcat' }, [
       Game.UI.icon(tech.id, 32),
-      ' ' + tech.name,
+      ' ' + displayName,
       e('span', { class: 'infobox-close', onclick: close }, [' [x]'])
     ]));
 
@@ -202,6 +207,28 @@ Game.Infobox = (function () {
         var wHi = Math.round(weaponEffective * (1 + BALANCE.DAMAGE_VARIANCE));
         body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Effective Damage']), e('span', {}, [wLo + '–' + wHi + (tech.hits > 1 ? ' (total, ' + tech.hits + ' hits)' : '') + ' (before enemy defenses)'])]));
       }
+    } else if (tech.effect === 'debuff') {
+      // v1.8 P4 (Task A, SPEC-TECH-POLARITY.md §2.0 items 2-3): a debuff tech weakens the MONSTER,
+      // it does not deal damage/heal itself — the "Scales with Intelligence"/"Effective Damage"
+      // framing below (which describes the player's OWN offense/healing) does not apply, so this
+      // gets its own plain description instead, mirroring useTech's own battle-log wording.
+      var debuffLabel = tech.debuffKind === 'bleed' ? null
+        : (tech.debuffKind === 'armor' ? 'Armor' : (tech.debuffKind === 'damage' ? 'Damage' : tech.debuffKind));
+      var debuffText = tech.debuffKind === 'bleed'
+        ? ('Bleed ' + tech.power + ' damage/turn')
+        : ('Weakens enemy ' + debuffLabel + ' by ' + tech.power);
+      body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Effect']), e('span', {}, [debuffText])]));
+      body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Duration']), e('span', {}, [(tech.debuffDuration || 3) + ' turns'])]));
+    } else if (tech.effect === 'buff' && tech.statKind) {
+      // v1.8 P4 (Task A, SPEC-TECH-POLARITY.md §2.0 item 1): a typed statKind buff (armor/dodge/
+      // double_attack/spellpower) — percent formatting for dodge/double_attack, flat for the
+      // other two, matching battle.js's own STAT_KIND_LABEL wording (js/core/battle.js useTech).
+      var statLabels = { armor: 'Armor', dodge: 'Dodge', double_attack: 'Double Attack', spellpower: 'Spell Power' };
+      var statLabel = statLabels[tech.statKind] || tech.statKind;
+      var statText = (tech.statKind === 'dodge' || tech.statKind === 'double_attack')
+        ? ('+' + Math.round(tech.power * 100) + '% ' + statLabel)
+        : ('+' + tech.power + ' ' + statLabel);
+      body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Effect']), e('span', {}, [statText])]));
     } else {
       body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Scales with']), e('span', {}, ['Intelligence'])]));
       body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Power']), e('span', {}, [String(tech.power)])]));
@@ -221,6 +248,24 @@ Game.Infobox = (function () {
     }
     if (tech.effect === 'buff' && tech.buffDuration) {
       body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Duration']), e('span', {}, [tech.buffDuration + ' turns'])]));
+    }
+    // v1.8 P4 (Task A, SPEC-TECH-POLARITY.md §2.0 items 5-6): equipment gates + goldSteal apply
+    // across every effect branch above (Shield Bash is a plain 'damage' tech with requiresShield;
+    // Crosscut is weaponTech with requiresOffhandWeapon; Fleetstep/Battle Harness/Ironroot are
+    // statKind buffs with requiresArmorClass; Cutpurse Strike is a plain 'damage' tech with
+    // goldSteal) — shown once here rather than duplicated per branch.
+    if (tech.requiresShield) {
+      body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Requires']), e('span', {}, ['a Shield equipped in your offhand'])]));
+    }
+    if (tech.requiresOffhandWeapon) {
+      body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Requires']), e('span', {}, ['a weapon equipped in your offhand'])]));
+    }
+    if (tech.requiresArmorClass) {
+      var armorClassLabels = { light: 'Light Armor', medium: 'Medium Armor', heavy: 'Heavy Armor' };
+      body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Requires']), e('span', {}, [(armorClassLabels[tech.requiresArmorClass] || tech.requiresArmorClass) + ' worn on your body'])]));
+    }
+    if (tech.goldSteal) {
+      body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Gold Steal']), e('span', {}, ['Steals ' + tech.goldSteal + ' gold on first hit, paid on victory'])]));
     }
     if (typeof tech.trainingCost === 'number') {
       body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Training Cost']), e('span', {}, [tech.trainingCost + ' TP'])]));

@@ -47,6 +47,10 @@
 <script src="js/data/techs.js"></script>
 <script src="js/data/areas.js"></script>
 <script src="js/data/recipes.js"></script>
+<!-- v1.8 P4 (Task B, audit §6): quests.js added so the wiki's Source ("quest reward"/"quest
+     hand-out") and Used-for ("quest collect target") cross-references can read Game.Data.quests
+     — the wiki previously never loaded it at all. Pure data file, no other script dependency. -->
+<script src="js/data/quests.js"></script>
 <script src="js/ui/wiki.js"></script>
 <script>
 (function () {

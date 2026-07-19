@@ -28,13 +28,16 @@ function loadScript(relPath) {
 
 // Same script set + order wiki.html itself loads (see wiki.html <script src> list) — no
 // js/core/* modules, since the wiki reads Game.Data.* directly and never touches battle/world
-// state.
+// state. v1.8 P4 (Task B): quests.js added, mirroring wiki.html's own new <script> line, so the
+// Source/Used-for quest cross-references (quest reward / hand-out / collect target) have
+// Game.Data.quests to read.
 loadScript('balance.js');
 loadScript('data/items.js');
 loadScript('data/monsters.js');
 loadScript('data/techs.js');
 loadScript('data/areas.js');
 loadScript('data/recipes.js');
+loadScript('data/quests.js');
 loadScript('ui/wiki.js');
 
 // Every data/ui file ends with `window.Game = Game;`, so the fully-populated object lives at
@@ -82,6 +85,68 @@ assert(!!wardenLair, 'estari_ruin_warden should be located as the estari_ruins l
 var estariArea = Game.Data.areas.filter(function (a) { return a.id === 'estari_ruins'; })[0];
 var estariRange = Game.Wiki.areaLevelRange(estariArea);
 assert(estariRange === 'Lv 4–10', 'estari_ruins level range should be "Lv 4–10", got ' + estariRange);
+
+// ---------------------------------------------------------------------------
+// 1b) v1.8 P4 (Task B, audit §6): the new Source axes (forage/quest-reward/quest-handout/
+// recipe-output/AA-Exchange) and the new "Used for" axis (recipe input / quest collect target).
+// Fixtures per the phase brief: quest_wardframe_rune_shard (forage + drop source, AND a recipe
+// input after v1.8 P2's D-C sink landed) and quest_condensed_anima_core (drop source + collect
+// target of the advanced-class quest — the audit's own headline "not dead" example).
+// ---------------------------------------------------------------------------
+
+// quest_wardframe_rune_shard: foraged at Saratus's plains (js/data/areas.js saratus_plains).
+var shardForage = Game.Wiki.itemForageSources('quest_wardframe_rune_shard');
+assert(shardForage.indexOf('Plains East of Saratus') !== -1,
+  'quest_wardframe_rune_shard should list "Plains East of Saratus" as a forage source, got ' + JSON.stringify(shardForage));
+
+// quest_wardframe_rune_shard: also drops from the saratus_wardframe construct at 30%.
+var shardDrops = Game.Wiki.itemDropSources('quest_wardframe_rune_shard');
+var shardDrop = shardDrops.filter(function (d) { return d.monsterId === 'saratus_wardframe'; })[0];
+assert(!!shardDrop && shardDrop.pct === 30,
+  'quest_wardframe_rune_shard should drop from saratus_wardframe at 30%, got ' + JSON.stringify(shardDrop));
+
+// quest_wardframe_rune_shard: v1.8 P2 (D-C) added a recipe input consuming it — "Used for" should
+// surface that recipe by id, resolving to its output item name.
+var shardRecipeTargets = Game.Wiki.itemRecipeInputTargets('quest_wardframe_rune_shard');
+var shardRecipe = shardRecipeTargets.filter(function (r) { return r.id === 'synth_pure_anima_from_wardframe_shards'; })[0];
+assert(!!shardRecipe && shardRecipe.output === 'crystal_pure_anima',
+  'quest_wardframe_rune_shard should be a recipe input for synth_pure_anima_from_wardframe_shards -> crystal_pure_anima, got ' + JSON.stringify(shardRecipe));
+// And the built item row should render that recipe with its resolved output name, not a bare id.
+var shardRow = Game.Wiki.buildItemRows().filter(function (r) { return r.item.id === 'quest_wardframe_rune_shard'; })[0];
+assert(!!shardRow && shardRow.recipeInputs.some(function (s) { return s.indexOf('Crystal of Pure Anima') !== -1; }),
+  'quest_wardframe_rune_shard\'s item row "Used for" should name Crystal of Pure Anima, got ' + JSON.stringify(shardRow && shardRow.recipeInputs));
+
+// quest_condensed_anima_core: drops from estari_ruin_warden at 60% (the audit's headline example).
+var animaCoreDrops = Game.Wiki.itemDropSources('quest_condensed_anima_core');
+var animaCoreDrop = animaCoreDrops.filter(function (d) { return d.monsterId === 'estari_ruin_warden'; })[0];
+assert(!!animaCoreDrop && animaCoreDrop.pct === 60,
+  'quest_condensed_anima_core should drop from estari_ruin_warden at 60%, got ' + JSON.stringify(animaCoreDrop));
+
+// quest_condensed_anima_core: the collect-step target of trials_of_eldor, now named "The Trials
+// of the Vanguard" (v1.7 Phase Q re-homed + renamed it — the audit doc and this phase's own brief
+// cite the STALE pre-v1.7 name "The Trials of Ascension"; the wiki must show the CURRENT
+// quest.name field, since that's what a player actually sees in the Journal).
+var animaCoreTargets = Game.Wiki.itemQuestCollectTargets('quest_condensed_anima_core');
+assert(animaCoreTargets.indexOf('The Trials of the Vanguard') !== -1,
+  'quest_condensed_anima_core should be a collect target of "The Trials of the Vanguard", got ' + JSON.stringify(animaCoreTargets));
+
+// The rendered items table should show BOTH new columns' text for these two known items.
+var shardRootCheck = document.createElement('div');
+Game.Wiki.render(shardRootCheck);
+var itemsSectionCheck = shardRootCheck.children.filter(function (c) { return c.id === 'wiki-items'; })[0];
+var itemsTableText = itemsSectionCheck.textContent;
+assert(itemsTableText.indexOf('Forage: Plains East of Saratus') !== -1,
+  'rendered items table should show the Wardframe Rune Shard\'s forage source');
+assert(itemsTableText.indexOf('Recipe input: synth_pure_anima_from_wardframe_shards -> Crystal of Pure Anima') !== -1,
+  'rendered items table should show the Wardframe Rune Shard\'s recipe "Used for" entry');
+assert(itemsTableText.indexOf('Quest collect target: The Trials of the Vanguard') !== -1,
+  'rendered items table should show the Condensed Anima Core\'s quest collect "Used for" entry');
+
+// Techs table: the "Details" column renders the v1.8 P1 debuff/statKind-buff fields for any tech
+// that carries them — degrades to '—' for every pre-v1.8 tech with none of those fields.
+var plainTech = (Game.Data.techs || []).filter(function (t) { return !t.statKind && t.effect !== 'debuff' && !t.requiresShield && !t.requiresOffhandWeapon && !t.requiresArmorClass && !t.goldSteal; })[0];
+assert(!!plainTech && Game.Wiki.techDetailText(plainTech) === '—',
+  'a pre-v1.8 tech with none of the new fields should render Details as "—"');
 
 // ---------------------------------------------------------------------------
 // 2) Row builders match the loaded data's shape/counts

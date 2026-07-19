@@ -864,6 +864,9 @@ Game.Screens = (function () {
 
   var techsSelectedId = null; // tech id selected in the known list, pending slot assignment
   var techsActiveSet = 0; // which of the 3 sets is shown on the Techs screen
+  // v1.8 P4 (Task A): the "techs page" type tabs — archived precedent "Added tabs to the techs
+  // page to sort techniques by type" [archived: reference/manual/Version_2.1_Changes.md].
+  var techsTypeTab = 'all';
 
   function getTechById(id) {
     var list = Game.Data.techs || [];
@@ -893,7 +896,23 @@ Game.Screens = (function () {
     if (!c.techs || c.techs.length === 0) {
       listPanel.appendChild(el('div', { class: 'smallfont mt8' }, ['You know no techniques yet. Visit an Academy to learn some.']));
     } else {
-      c.techs.forEach(function (techId, idx) {
+      var knownTechDefs = c.techs.map(getTechById).filter(function (t) { return !!t; });
+      listPanel.appendChild(techCategoryTabs(techsTypeTab, function (cat) {
+        techsTypeTab = cat;
+        refreshTechsScreen();
+      }, knownTechDefs));
+
+      var shownTechIds = techsTypeTab === 'all'
+        ? c.techs
+        : c.techs.filter(function (techId) {
+          var t = getTechById(techId);
+          return t && techCategory(t) === techsTypeTab;
+        });
+
+      if (shownTechIds.length === 0) {
+        listPanel.appendChild(el('div', { class: 'smallfont mt8' }, ['No known techniques in this category.']));
+      }
+      shownTechIds.forEach(function (techId, idx) {
         var tech = getTechById(techId);
         if (!tech) return;
         var selected = techsSelectedId === techId;
@@ -906,7 +925,7 @@ Game.Screens = (function () {
           ondblclick: function () { Game.Infobox.openTech(tech, c); }
         }, [
           techIcon(tech),
-          el('span', { class: 'stat-name' }, [tech.name]),
+          el('span', { class: 'stat-name' }, [techDisplayName(tech)]),
           // v1.6 P1 (CB-4, SPEC-V1.6-REBALANCE.md §6): show the ACTUAL Energy cost (Rod-discounted
           // for an offensive tech while a Rod is equipped), via the same helper useTech charges
           // from, so this readout never disagrees with battle.
@@ -917,6 +936,11 @@ Game.Screens = (function () {
           }, ['Info'])
         ]);
         listPanel.appendChild(row);
+        // v1.8 P4 (Task A): second line naming the tech's buff/debuff/gate/goldSteal fields.
+        var summary = techEffectSummary(tech);
+        if (summary) {
+          listPanel.appendChild(el('div', { class: 'tinyfont mt2', style: 'padding-left:38px;' }, [summary]));
+        }
       });
     }
     root.appendChild(listPanel);
@@ -984,6 +1008,93 @@ Game.Screens = (function () {
   function techIcon(tech) {
     return Game.UI.icon(tech.id, 32);
   }
+
+  // v1.8 P4 (SPEC-TECH-POLARITY.md §2.0; SPEC-V1.8-TECHS-AND-REACHABILITY.md §3 Task A): UI-only
+  // presentation copies of js/core/battle.js's STAT_KIND_LABEL / debuffKind wording. Kept
+  // independent rather than reading them off Game.Battle — js/core/battle.js is DOM-free per
+  // CLAUDE.md and out of scope for this phase; the engine's own battle-log lines (useTech) remain
+  // the single source of truth for what actually happens in a fight. This is purely how a tech's
+  // details render BEFORE it's cast (Academy list, Techs screen, battle grid, infobox), and is
+  // deliberately data-driven off the tech object's own fields — never a hardcoded id/count, so the
+  // concurrent P3 agent's 72 new techs (js/data/techs.js) render correctly with zero changes here.
+  var UI_STAT_KIND_LABEL = { armor: 'Armor', dodge: 'Dodge', double_attack: 'Double Attack', spellpower: 'Spell Power' };
+  var UI_DEBUFF_KIND_LABEL = { damage: 'Damage', armor: 'Armor' };
+  var UI_ARMOR_CLASS_LABEL = { light: 'Light Armor', medium: 'Medium Armor', heavy: 'Heavy Armor' };
+
+  // D2 (SPEC-TECH-POLARITY.md §5, resolved): the Conjuration tech "Curse" (tech.chain === 'Curse')
+  // must never be confusable with the player-afflicting Curse STATUS anywhere its name renders in
+  // a list — disambiguated by appending its owning skill. A chain-name check, not a hardcoded id.
+  function techDisplayName(tech) {
+    if (!tech) return '';
+    if (tech.chain === 'Curse') return tech.name + ' — ' + (tech.skill || 'Conjuration');
+    return tech.name;
+  }
+
+  // One-line plain-English summary of a tech's v1.8 P1 fields (statKind buff / debuff / equipment
+  // gates / goldSteal) — empty string for techs that carry none (every pre-v1.8 tech). Used
+  // wherever a tech's details render outside the full infobox (Academy learn list, Techs screen
+  // known-list, battle tech-slot tooltip).
+  function techEffectSummary(tech) {
+    if (!tech) return '';
+    var parts = [];
+    if (tech.effect === 'buff' && tech.statKind) {
+      var buffLabel = UI_STAT_KIND_LABEL[tech.statKind] || tech.statKind;
+      var buffDuration = tech.buffDuration || 3;
+      if (tech.statKind === 'dodge' || tech.statKind === 'double_attack') {
+        parts.push('+' + Math.round(tech.power * 100) + '% ' + buffLabel + ' for ' + buffDuration + ' turns');
+      } else {
+        parts.push('+' + tech.power + ' ' + buffLabel + ' for ' + buffDuration + ' turns');
+      }
+    }
+    if (tech.effect === 'debuff') {
+      var debuffDuration = tech.debuffDuration || 3;
+      if (tech.debuffKind === 'bleed') {
+        parts.push('Bleed ' + tech.power + '/turn for ' + debuffDuration + ' turns');
+      } else {
+        var debuffLabel = UI_DEBUFF_KIND_LABEL[tech.debuffKind] || tech.debuffKind;
+        parts.push('Weakens enemy ' + debuffLabel + ' for ' + debuffDuration + ' turns');
+      }
+    }
+    if (tech.requiresShield) parts.push('Requires: Shield');
+    if (tech.requiresOffhandWeapon) parts.push('Requires: offhand weapon');
+    if (tech.requiresArmorClass) parts.push('Requires: ' + (UI_ARMOR_CLASS_LABEL[tech.requiresArmorClass] || tech.requiresArmorClass) + ' worn');
+    if (tech.goldSteal) parts.push('Steals ' + tech.goldSteal + ' gold on first hit, paid on victory');
+    return parts.join(' — ');
+  }
+
+  // Category the Academy/Techs type tabs group by — purely tech.effect-driven. Order is fixed
+  // (a stable enum of engine effect kinds, not tech ids/counts), but a tab only appears if at
+  // least one tech in the list being shown actually uses that category.
+  var TECH_CATEGORY_LABEL = { damage: 'Damage', drain: 'Drain', heal: 'Heal', buff: 'Buff', debuff: 'Debuff', summon: 'Summon' };
+  var TECH_CATEGORY_ORDER = ['damage', 'drain', 'heal', 'buff', 'debuff', 'summon'];
+  function techCategory(tech) {
+    return (tech && tech.effect) || 'damage';
+  }
+  function techCategoryTabs(activeVal, onPick, availableTechs) {
+    var present = {};
+    (availableTechs || []).forEach(function (t) { present[techCategory(t)] = true; });
+    var tabsWrap = el('div', { class: 'techset-tabs mt4' });
+    tabsWrap.appendChild(el('span', {
+      class: 'infobox-tab' + (activeVal === 'all' ? ' active' : ''),
+      onclick: function () { onPick('all'); }
+    }, ['All']));
+    TECH_CATEGORY_ORDER.forEach(function (cat) {
+      if (!present[cat]) return;
+      tabsWrap.appendChild(el('span', {
+        class: 'infobox-tab' + (activeVal === cat ? ' active' : ''),
+        onclick: function () { onPick(cat); }
+      }, [TECH_CATEGORY_LABEL[cat]]));
+    });
+    return tabsWrap;
+  }
+
+  // Re-exported on Game.UI (established by icons.js, loaded before this file — index.html script
+  // order) so js/ui/infobox.js, loaded AFTER screens.js, can reuse the exact same wording without
+  // duplicating it a third time.
+  Game.UI = Game.UI || {};
+  Game.UI.techDisplayName = techDisplayName;
+  Game.UI.techEffectSummary = techEffectSummary;
+  Game.UI.techCategory = techCategory;
 
   // ---------- Explore screen (Phase 4; New_Player_Guide.md §5.1-5.2 Traveling/Hunting) ----------
   // Current location panel, destination list with level-gated Explore buttons, and — in
@@ -1590,26 +1701,42 @@ Game.Screens = (function () {
   }
 
   // ---- Academy sub-panel: TP readout, learnable techs (met/unmet/learned) ----
+  // v1.8 P4 (Task A, SPEC-V1.8-TECHS-AND-REACHABILITY.md §3): archived precedent "Added tabs to
+  // the techs page to sort techniques by type" [archived: reference/manual/Version_2.1_Changes.md]
+  // — the Academy learn list gains type tabs (All/Damage/Drain/Heal/Buff/Debuff/Summon), purely
+  // tech.effect-driven so it sorts the concurrent P3 agent's 72 new techs with no changes here.
+  var academyTypeTab = 'all';
+
   function renderAcademyPanel(body, c) {
     body.appendChild(el('div', { class: 'stat-row' }, [
       el('span', { class: 'stat-name' }, ['Training Points']),
       el('span', {}, [String(c.trainingPoints)])
     ]));
 
-    Game.World.learnableTechs().forEach(function (tech, idx) {
+    var allLearnable = Game.World.learnableTechs();
+    body.appendChild(techCategoryTabs(academyTypeTab, function (cat) {
+      academyTypeTab = cat;
+      refreshTownScreen();
+    }, allLearnable));
+
+    var shownLearnable = academyTypeTab === 'all'
+      ? allLearnable
+      : allLearnable.filter(function (t) { return techCategory(t) === academyTypeTab; });
+
+    shownLearnable.forEach(function (tech, idx) {
       var known = c.techs.indexOf(tech.id) !== -1;
       var check = Game.World.canLearn(c, tech);
       var row = el('div', { class: 'stat-row alt' + (idx % 2) + (known ? ' greyed' : '') });
       row.appendChild(Game.UI.icon(tech.id, 32));
       row.appendChild(el('span', { class: 'stat-name', style: 'width:150px; flex:0 0 150px;' }, [
-        tech.name + (tech.chain ? ' (' + tech.chain + ' ' + tech.rank + ')' : '')
+        techDisplayName(tech) + (tech.chain ? ' (' + tech.chain + ' ' + tech.rank + ')' : '')
       ]));
       // v1.4.2 (user feedback): the Academy learn list had no way to inspect a technique before
       // paying for it. Same ⓘ affordance as the Status/battle screens — opens the full tech info
       // window (Game.Infobox.openTech: desc, Scales with, effective damage/heal range, grade, etc.).
       row.appendChild(el('span', {
         class: 'info-btn',
-        title: 'About ' + tech.name,
+        title: 'About ' + techDisplayName(tech),
         onclick: function (ev) {
           if (ev && ev.stopPropagation) ev.stopPropagation();
           Game.Infobox.openTech(tech, c);
@@ -1631,6 +1758,13 @@ Game.Screens = (function () {
         row.appendChild(el('span', { class: 'tinyfont req-bad' }, [check.failures.join(' ')]));
       }
       body.appendChild(row);
+      // v1.8 P4 (Task A): a second, indented line naming the tech's buff/debuff/gate/goldSteal
+      // fields sensibly, when it has any (empty string for every pre-v1.8 tech — no visual noise
+      // added to the shipped 75).
+      var summary = techEffectSummary(tech);
+      if (summary) {
+        body.appendChild(el('div', { class: 'tinyfont mt2', style: 'padding-left:38px;' }, [summary]));
+      }
     });
 
     // ---- Phase 6a: Class Abilities section (Classes.md: "Gaining Class Levels will allow you
@@ -2347,14 +2481,18 @@ Game.Screens = (function () {
         var castable = tech && !over && canAct && c.energy >= techCost;
         // Fix #6: techs are also gated by canAct — explain why a tech is unusable when the
         // player is simply out of Energy, same wording as the Attack/Item buttons above.
+        // v1.8 P4 (Task A, D2): techDisplayName disambiguates the Curse tech from the Curse
+        // status; techEffectSummary appends the new buff/debuff/gate/goldSteal fields to the
+        // tooltip so a hovered battle-grid slot is self-explanatory without opening the infobox.
+        var slotSummary = tech ? techEffectSummary(tech) : '';
         var slotTitle = tech
-          ? ((!over && !canAct) ? (tech.name + ' — ' + outOfEnergyMsg) : (tech.name + ' (' + techCost + ' energy)'))
+          ? ((!over && !canAct) ? (techDisplayName(tech) + ' — ' + outOfEnergyMsg) : (techDisplayName(tech) + ' (' + techCost + ' energy)' + (slotSummary ? ' — ' + slotSummary : '')))
           : 'Empty slot';
         var slotChildren = [tech ? techIcon(tech) : el('span', { class: 'tinyfont' }, ['—'])];
         if (tech) {
           slotChildren.push(el('span', {
             class: 'info-btn tech-slot-info',
-            title: 'About ' + tech.name,
+            title: 'About ' + techDisplayName(tech),
             onclick: function (ev) {
               if (ev && ev.stopPropagation) ev.stopPropagation();
               Game.Infobox.openTech(tech, c);
