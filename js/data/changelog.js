@@ -12,6 +12,34 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.8.0',
+    date: '2026-07-19',
+    title: 'The Expanded Curriculum',
+    saveVersion: 10,
+    highlights: [
+      'The Academies of Averast have expanded their curriculum: every skill now has its own ' +
+        'technique chain — 72 new techniques across 18 chains, including the first guard-breaking ' +
+        'and strike-sapping debuffs, bleeding wounds, defensive battle stances, a caster\'s ' +
+        'power-gathering attunement, shield blows, rod strikes, and coin-lifting cutpurse work. ' +
+        'The Techniques and Academy pages now sort everything with type tabs (damage, buff, ' +
+        'debuff, and more), and every technique explains exactly what it does before you learn it.',
+      'The armories have restocked: paired offhand blades and cesti are finally on sale — from ' +
+        'the humble Twinfang Dirk all the way to the King\'s Fang — so fighting with a weapon in ' +
+        'each hand truly works at last, crowned by the new Crosscut technique that strikes with ' +
+        'both blades in one motion.',
+      'Lost things have resurfaced: a too-tempting circlet with a hollow king\'s curse now waits ' +
+        'in mid-level hunting grounds (choose your headwear carefully — a Spirit Shrine can free ' +
+        'you, for a price), battle trophies and lore curios can now be sold to any shopkeeper, ' +
+        'and Arkan runecraft can distill Wardframe Rune Shards into Crystals of Pure Anima.',
+      'The Reference Wiki now answers the two questions every pack-rat asks: where does this come ' +
+        'from, and what is it for? Every item lists its full sources (shops, drops, foraging, ' +
+        'quests, recipes, the AA Exchange) and everything that consumes it. And a small mercy: ' +
+        'your gold now sits in plain view beside your health and energy bars, updating as you ' +
+        'earn and spend.'
+    ]
+  },
+
+  {
     version: 'v1.7.0',
     date: '2026-07-17',
     title: 'The Traveler\'s Arc & the Reference Wiki',
