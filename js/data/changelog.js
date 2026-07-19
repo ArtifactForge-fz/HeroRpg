@@ -12,6 +12,23 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.8.1',
+    date: '2026-07-19',
+    title: 'Clearer Coin & Visible Magic',
+    saveVersion: 10,
+    highlights: [
+      'Money now reads the same everywhere: your balance shows plain gold until you\'ve earned ' +
+        'your first Platinum piece, and from then on always shows its full gold value alongside ' +
+        '(1 Platinum = 100 Gold) — so what you carry is always directly comparable to a shop ' +
+        'price. The Vault also explains that deposits and withdrawals are entered in gold, with ' +
+        'conversion handled for you.',
+      'The five magic schools finally show their worth on the Skills panel: each one now ' +
+        'displays the bonus spell power your training grants its techniques — a bonus that has ' +
+        'been quietly strengthening your spells since the great rebalance, just never shown.'
+    ]
+  },
+
+  {
     version: 'v1.8.0',
     date: '2026-07-19',
     title: 'The Expanded Curriculum',

@@ -246,7 +246,12 @@
     // screens that touch gold).
     var goldRow = document.createElement('div');
     goldRow.className = 'weight-readout smallfont gold-readout';
-    goldRow.textContent = 'Gold: ' + c.platinum + 'p ' + c.gold + 'g';
+    // v1.8.1 (feedback #3): shared money formatter (js/ui/screens.js Game.UI.formatMoney) —
+    // plain gold until Platinum exists, then p/g with the gold-equivalent alongside, so the
+    // readout always compares directly against shop prices.
+    goldRow.textContent = 'Gold: ' + (Game.UI && Game.UI.formatMoney
+      ? Game.UI.formatMoney(c.platinum, c.gold)
+      : c.platinum + 'p ' + c.gold + 'g');
     wrap.appendChild(goldRow);
   };
 

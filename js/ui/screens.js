@@ -338,7 +338,7 @@ Game.Screens = (function () {
     }
 
     var wealth = el('div', { class: 'mt8' }, [
-      el('b', {}, ['Gold: ']), c.platinum + 'p ' + c.gold + 'g', '   ',
+      el('b', {}, ['Gold: ']), formatMoney(c.platinum, c.gold), '   ',
       el('b', {}, ['Anima Shards: ']), String(c.animaShards), '   ',
       // v1.4 P2 (G1): Advantage Points, a kills-only currency spent at a town's AA Exchange.
       el('b', {}, ['Advantage Points: ']), String(c.ap || 0)
@@ -651,6 +651,11 @@ Game.Screens = (function () {
   // Status screen's Skills table shows what each skill is currently worth in combat.
   var SKILL_EFFECT_WEAPON_SKILLS = ['Swords', 'Polearms', 'Knives', 'Rods', 'Hand to Hand'];
   var SKILL_EFFECT_ARMOR_SKILLS = ['Light Armor', 'Medium Armor', 'Heavy Armor', 'Shields'];
+  // v1.8.1 (playtest feedback 2026-07-19 #5, docs/REVIEW-2026-07-19-FEEDBACK.md): the v1.6
+  // CB-2 spell-power scaling (BALANCE.MAGIC_SKILL_DAMAGE_PER_LEVEL, battle.js
+  // techEffectivePower) existed but was invisible here — skillEffectFor returned '' for all
+  // five schools. Display-only mirror of the shipped formula, like every branch above.
+  var SKILL_EFFECT_MAGIC_SCHOOLS = ['Evocation', 'Conjuration', 'Alteration', 'Absorption', 'Abjuration'];
 
   function skillEffectFor(c, skillName) {
     var lvl = (c.skills[skillName] && c.skills[skillName].level) || 0;
@@ -661,6 +666,10 @@ Game.Screens = (function () {
     if (SKILL_EFFECT_ARMOR_SKILLS.indexOf(skillName) !== -1) {
       var armorPct = Math.min(BALANCE.ARMOR_SKILL_ARMOR_PER_LEVEL * lvl, BALANCE.ARMOR_SKILL_ARMOR_CAP);
       return '+' + Math.round(armorPct * 100) + '% Armor when worn';
+    }
+    if (SKILL_EFFECT_MAGIC_SCHOOLS.indexOf(skillName) !== -1) {
+      var spellPct = Math.min(BALANCE.MAGIC_SKILL_DAMAGE_PER_LEVEL * lvl, BALANCE.MAGIC_SKILL_DAMAGE_CAP);
+      return '+' + Math.round(spellPct * 100) + '% spell power with ' + skillName + ' techniques';
     }
     if (skillName === 'Dodge' && Game.Battle && Game.Battle.playerDodgeChance) {
       return Math.round(Game.Battle.playerDodgeChance(c) * 100) + '% Dodge chance';
@@ -679,6 +688,18 @@ Game.Screens = (function () {
     }
     return '';
   }
+
+  // v1.8.1 (playtest feedback 2026-07-19 #3, docs/REVIEW-2026-07-19-FEEDBACK.md): ONE money
+  // formatter for every balance display. Prices/rewards/deposits speak plain gold everywhere,
+  // so a balance shows plain gold too until Platinum exists ([archived: Gold.md — "100 Gold
+  // pieces equals 1 Platinum piece"]), then keeps the archived p/g denomination WITH its
+  // gold-equivalent alongside, so a balance is always directly comparable to a price.
+  function formatMoney(platinum, gold) {
+    if (!platinum) return gold + 'g';
+    return platinum + 'p ' + gold + 'g (' + (platinum * BALANCE.GOLD_PER_PLATINUM + gold) + 'g total)';
+  }
+  Game.UI = Game.UI || {};
+  Game.UI.formatMoney = formatMoney;
 
   // ---------- Inventory screen (DESIGN.md §6, §8; New_Player_Guide.md "The Inventory Screen") ----------
 
@@ -1620,11 +1641,16 @@ Game.Screens = (function () {
     Game.Inventory.ensureFields(c);
     body.appendChild(el('div', { class: 'stat-row' }, [
       el('span', { class: 'stat-name' }, ['Your Gold']),
-      el('span', {}, [c.platinum + 'p ' + c.gold + 'g'])
+      el('span', {}, [formatMoney(c.platinum, c.gold)])
     ]));
     body.appendChild(el('div', { class: 'stat-row' }, [
       el('span', { class: 'stat-name' }, ['Vault Gold']),
-      el('span', {}, [c.vault.platinum + 'p ' + c.vault.gold + 'g'])
+      el('span', {}, [formatMoney(c.vault.platinum, c.vault.gold)])
+    ]));
+    // v1.8.1 (feedback #3): the deposit/withdraw fields were always gold-denominated with
+    // automatic platinum conversion (js/core/world.js depositGold/withdrawGold) — say so.
+    body.appendChild(el('div', { class: 'smallfont mt4' }, [
+      '1 Platinum = ' + BALANCE.GOLD_PER_PLATINUM + ' Gold. Enter deposit and withdraw amounts in Gold — conversion is automatic.'
     ]));
 
     var goldInput = el('input', { type: 'text', value: townVaultGoldAmount, style: 'width:70px;' });
