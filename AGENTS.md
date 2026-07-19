@@ -2,11 +2,13 @@
 
 Single-player browser remake of **herorpg.net** (2004–2008, dead), reconstructed from Wayback
 Machine scrapes. Static HTML/CSS/JS, no build step, no dependencies — open `index.html` via
-`file://`. **Shipped: v1.7.0 (save version 10)** — v1.4 gameplay + mobile, v1.4.1/.2 UX info
+`file://`. **Shipped: v1.8.0 (save version 10)** — v1.4 gameplay + mobile, v1.4.1/.2 UX info
 passes, v1.5 (reactive monsters + Tier-3 branching/24-class roster + the Conjurer summoner),
-v1.6 (a full balance & progression rebalance from playtest feedback), and v1.7 (quest-arc
-redistribution, Arkan racial parity, destinations-UI cards, and a reference wiki — see "Recently
-completed" below) are all released. Two accepted known limitations:
+v1.6 (a full balance & progression rebalance from playtest feedback), v1.7 (quest-arc
+redistribution, Arkan racial parity, destinations-UI cards, and a reference wiki), and v1.8
+(a technique chain for every skill — 72 new techs incl. the first player debuffs — plus the
+item-reachability pass that finally unwalled dual-wield; see "Recently completed" below) are
+all released. Two accepted known limitations:
 the 5-levels-down=death contract isn't fully enforced at high levels (Fear-spared healing
 sustain — DESIGN §4), and boss-telegraph integration is deferred (a boss charged hit can spike
 past heal+death in one blow; 3 low bosses carry behaviors, the other 8 keep their v1.4 scripts —
@@ -35,7 +37,8 @@ DESIGN §4 / SPEC-V1.5-MONSTER-AI §6).
    prompt — scope additions sent mid-flight via messages arrive looking like prompt injection
    and get (correctly) refused. Review every delivery: run suites yourself, read the risky
    modules, sim-check balance claims. Never eyeball a balance number — sim it.
-5. **All ten test suites must pass before any work is called done**:
+5. **All test suites must pass before any work is called done** (13 as of v1.8 —
+   `test_v18_engine.js` and `test_reachability.js` joined in v1.8, `test_wiki.js` in v1.7):
    `cd tests && for t in test_*.js; do node $t; done` (each exits 0 on pass).
 
 ## Architecture
@@ -150,6 +153,45 @@ localStorage fallback — and syntax-checks its 3 script blocks as it writes. A 
 rebuilds it after every commit so a deployable single-file build always matches HEAD. The hooks
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
 re-enable it. Never build/ship from a tree with red suites.
+
+## Recently completed (2026-07-19) — v1.8.0 (branch `v1.8-techs-reachability`)
+
+**The Expanded Curriculum**: one new technique chain for EVERY archived skill + the dead-item
+reachability pass, bound into one release because SPEC-TECH-POLARITY's Crosscut (Dual Wield)
+hard-depended on the audit's T1-a fix (no offhand weapon was obtainable in the shipped game).
+Specs: `docs/SPEC-V1.8-TECHS-AND-REACHABILITY.md` (release plan, D-A/D-B/D-C decisions taken on
+pre-registered recommendations), `docs/SPEC-TECH-POLARITY.md` (§0 = P0-locked constants),
+`docs/AUDIT-ITEM-REACHABILITY.md`. Save version unchanged (10) — all new state battle-transient.
+**Branch NOT merged to `main`, NOT deployed — both user-gated.** (v1.7 is also still unmerged;
+v1.8 stacks on it.) Five phases, each committed green on all 13 suites:
+- **P0** (`ec80ad6`): sim gate — real engine + prototype source patches, 300 trials/cell,
+  L5/12/22/40 × at-level/true-5-down/boss. Contract passed every row; no 5-down widening.
+  Ratchet retunes: stat-buff durations 3→5 (action economy), Attunement 12/24/40/60,
+  Stoneshear/Censure energy up, goldSteal 1/3/5/8, physicalRoll (physical chains roll dodge,
+  not Int), offhand ladder 0.8×→0.55× main band (0.8× made dual-wield strictly dominant).
+- **P1** (`6f61542`): six engine extensions in battle.js — statKind buffs
+  (dodge/double_attack/spellpower under existing caps), effect:'debuff' (damage floor 1 / armor
+  floor 0 / bleed×Fear, exact-revert via entry.applied), typed re-cast-replace, equipment gates
+  (refused pre-cost), offhandFollowup, win-gated goldSteal. New `tests/test_v18_engine.js`.
+  Note: buffDuration N survives N−1 subsequent actions (the cast's own finishRound ticks it).
+- **P2** (`558a20d`): T1-a dual-wield unwalled (twinfang/cestus stocked + 6-item P0-locked
+  offhand ladder to L35); T1-b cursed **Circlet** of the Hollow King (id `ring_of_the_hollow_king`
+  kept) live as 0.04 mid-band drops; D-C recipe 2 shards+15g→crystal_pure_anima (global recipes;
+  Saratus stays synthesis-free per shipped test); D-A five trophies sellable (values 10–25);
+  standing guard `tools/check_reachability.js` + `tests/test_reachability.js` (zero dead items
+  enforced; allowlist empty).
+- **P3** (`91f1f4a`): the 72 tech entries (roster 88→160), icons reuse installed tiles
+  (CREDITS.md mapping). Lead fix: 4 rank-1 trainingCosts restored to spec-table 3.
+- **P4** (`c3c642e`): techs/Academy **type tabs** (data-driven off tech.effect); infobox
+  debuff/statKind branches; Curse tech renders with school (D2); wiki gains FULL Source
+  (forage/quest/recipe/AA-Exchange) + **"Used for"** column (wiki.html now loads quests.js);
+  persistent **gold readout** in renderStatusBars (all gold-mutating flows re-render via shared
+  paths — audit table in the P4 report); single-file artifact footer opens Version Log +
+  Reference Wiki as in-page overlays (closes the v1.7 dead-link note).
+- **Release** (`1437353`): changelog + README v1.8.0. Process: P1∥P2 and P3∥P4 as parallel
+  Sonnet pairs on the shared checkout (disjoint files, lead-reconciled); P0 + all reviews lead.
+  Residual: a human browser pass over the new UI surfaces (gold readout, tabs, wiki column,
+  artifact overlays) — fakedom can't see layout.
 
 ## Recently completed (2026-07-17) — v1.7.0 (branch `v1.7-content`)
 
