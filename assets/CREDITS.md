@@ -321,3 +321,28 @@ copies of already-installed same-family weapon tiles:
 | hth_offhand_stormfist | hth_construct_gauntlets.png | same-tier main-hand tier mate |
 | knife_offhand_kingsfang | knife_custodian_needle.png | same-tier main-hand tier mate |
 | hth_offhand_titangrip | hth_vault_gauntlets.png | same-tier main-hand tier mate |
+
+## v1.8 icons — the 72 new skill-chain techs (reuse; only monsters require byte-distinctness)
+P3 (SPEC-TECH-POLARITY.md): all 72 `tech_*` icons are byte-identical copies of already-installed
+tiles, rank-laddered where a ranked donor chain exists:
+
+| chain (4 ranks each) | donors |
+|---|---|
+| tech_sunder_guard_1..4 | tech_cleave_1..4 |
+| tech_crippling_thrust_1..4 | tech_impale_1..4 |
+| tech_grave_wound_1..4 | knife_worn_dagger, knife_fringewood_fang, knife_gares_fang, knife_icebound_fang |
+| tech_steel_resolve_1..4 | tech_warcry_1, tech_warcry_2, tech_crushing_blow, tech_warden_bulwark |
+| tech_attunement_1..4 | tech_focus_1, tech_anima_surge, tech_anima_reckoning, tech_arcane_cataclysm |
+| tech_curse_1..4 | crystal_dark, sphere_dark, tech_shadowlash_2, tech_shadowlash_3 |
+| tech_stoneshear_1..4 | kastengard_earthbound_sentinel, heavy_body_stoneback_warplate, heavy_body_kuraan_bulwark_plate, heavy_legs_kuraan_greatplate_legguards |
+| tech_nullward_1..4 | tech_lifetap_1, crystal_dark, sphere_dark, shield_arkan_wardplate |
+| tech_censure_1..4 | crystal_light, sphere_light, tech_radiant_smite, tech_paladin_smite |
+| tech_fleetstep_1..4 | light_feet_soft_boots, light_legs_supple_leggings, light_body_traveler_tunic, light_body_skysilk_shroud |
+| tech_battle_harness_1..4 | medium_feet_reinforced_boots, medium_feet_estari_boots, medium_feet_stormline_boots, medium_body_custodian_plate |
+| tech_ironroot_stance_1..4 | heavy_body_plate_cuirass, heavy_body_ridgeplate_cuirass, heavy_body_warden_plate, heavy_body_redmoon_plate |
+| tech_shield_bash_1..4 | shield_wooden_buckler, shield_ironbound_kite, shield_highland_bulwark, shield_redmoon_aegis |
+| tech_channeled_strike_1..4 | rod_apprentice_wand, rod_anima_channeling_rod, rod_arkan_runic_conduit, rod_eidas_remnant_wand |
+| tech_sidestep_1..4 | tech_quick_stab, tech_shadowstep_strike, tech_dragoon_leap, skyspire_wisp |
+| tech_cutpurse_strike_1..4 | knife_thieves_edge, plains_cutpurse_vole, tech_dice_throw, tech_vault_reckoning |
+| tech_crosscut_1..4 | knife_offhand_twinfang, knife_offhand_swiftfang, knife_offhand_nightedge, knife_offhand_kingsfang |
+| tech_tempo_1..4 | tech_efficient_strike, tech_flurry_1, tech_flurry_2, tech_berserker_frenzy |

@@ -1484,7 +1484,1222 @@ Game.Data.techs = [
     effect: 'damage',
     monsterOnly: true,
     desc: "Eidas's own working, a devastating lance of Star-grade Anima drawn straight from the red moon itself — used by nothing else in Exos."
-  }
+  },
+
+  // =====================================================================
+  // v1.8 P3 (docs/SPEC-TECH-POLARITY.md §2.1-2.3; constants P0-locked §0, 2026-07-19 sim gate):
+  // 18 new chains x 4 ranks = 72 techs, one additional chain per archived skill
+  // [archived: reference/manual/Skills.md] -- the missing damage/buff/debuff polarity for the
+  // 9 skills that already had techs, and a from-scratch chain for the 9 skills that had none.
+  // Rank spacing is looser than the shipped 9-rank chains (skillReq 0(+-4)/10/25/45, request
+  // explicitly permits this) and Band-A/B precedent (group per chain, APPEND only, never touch
+  // existing entries). Locked engine field names per js/core/battle.js v1.8 P1 comments:
+  // statKind ('armor'|'dodge'|'double_attack'|'spellpower'), debuffKind ('armor'|'damage'|
+  // 'bleed'), buffDuration/debuffDuration, weaponDebuff, physicalRoll, requiresShield,
+  // requiresOffhandWeapon, requiresArmorClass, offhandFollowup, goldSteal. Every chain below
+  // carries the P0-locked retunes verbatim (buffDuration 5, Battle Harness 6; Attunement
+  // 12/24/40/60; Stoneshear/Censure energy retuned; Cutpurse goldSteal 1/3/5/8; Shield
+  // Bash/Cutpurse physicalRoll) -- these WIN over the earlier §2.1-2.3 table drafts, which the
+  // spec itself documents as superseded by the P0 sim gate.
+  // =====================================================================
+
+  // ---------- Swords: Sunder Guard (debuff, armor) [invented] (SPEC-TECH-POLARITY.md §2.1) ----------
+  {
+    id: 'tech_sunder_guard_1',
+    name: 'Sunder Guard I',
+    chain: 'Sunder Guard',
+    rank: 1,
+    skill: 'Swords',
+    grade: null,
+    energyCost: 12,
+    power: 3,
+    debuffKind: 'armor',
+    weaponDebuff: true,
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 2,
+    skillReq: 0,
+    desc: "A precise slash that tests the enemy's guard, opening cracks in their armor. The most basic Swords technique taught at any Academy."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+  {
+    id: 'tech_sunder_guard_2',
+    name: 'Sunder Guard II',
+    chain: 'Sunder Guard',
+    rank: 2,
+    skill: 'Swords',
+    grade: null,
+    energyCost: 16,
+    power: 6,
+    debuffKind: 'armor',
+    weaponDebuff: true,
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'A deliberate riposte that deepens the fissures, progressively unraveling the foe\'s defensive layers.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+  {
+    id: 'tech_sunder_guard_3',
+    name: 'Sunder Guard III',
+    chain: 'Sunder Guard',
+    rank: 3,
+    skill: 'Swords',
+    grade: null,
+    energyCost: 22,
+    power: 10,
+    debuffKind: 'armor',
+    weaponDebuff: true,
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: "A masterful counter-cut that shatters the enemy's guard with surgical precision, leaving them vulnerable to follow-up strikes."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+  {
+    id: 'tech_sunder_guard_4',
+    name: 'Sunder Guard IV',
+    chain: 'Sunder Guard',
+    rank: 4,
+    skill: 'Swords',
+    grade: null,
+    energyCost: 28,
+    power: 16,
+    debuffKind: 'armor',
+    weaponDebuff: true,
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: "An elite technique that strips away armor and resolve in one devastating thrust, taught only to the Academy's most accomplished swordsmen."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+
+  // ---------- Polearms: Crippling Thrust (debuff, damage) [invented] (SPEC-TECH-POLARITY.md §2.1) ----------
+  {
+    id: 'tech_crippling_thrust_1',
+    name: 'Crippling Thrust I',
+    chain: 'Crippling Thrust',
+    rank: 1,
+    skill: 'Polearms',
+    grade: null,
+    energyCost: 12,
+    power: 4,
+    debuffKind: 'damage',
+    weaponDebuff: true,
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 2,
+    skillReq: 0,
+    desc: 'A driving spear-thrust that keeps the enemy at distance, forcing them to expend effort to close the gap. The most basic Polearms technique taught at any Academy.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+  {
+    id: 'tech_crippling_thrust_2',
+    name: 'Crippling Thrust II',
+    chain: 'Crippling Thrust',
+    rank: 2,
+    skill: 'Polearms',
+    grade: null,
+    energyCost: 16,
+    power: 8,
+    debuffKind: 'damage',
+    weaponDebuff: true,
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: "A measured thrust that disrupts the foe's stance, weakening their ability to mount a coordinated offense."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+  {
+    id: 'tech_crippling_thrust_3',
+    name: 'Crippling Thrust III',
+    chain: 'Crippling Thrust',
+    rank: 3,
+    skill: 'Polearms',
+    grade: null,
+    energyCost: 22,
+    power: 14,
+    debuffKind: 'damage',
+    weaponDebuff: true,
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: 'A disciplined feint followed by a full extension that leaves the enemy off-balance and struggling to regain their rhythm.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+  {
+    id: 'tech_crippling_thrust_4',
+    name: 'Crippling Thrust IV',
+    chain: 'Crippling Thrust',
+    rank: 4,
+    skill: 'Polearms',
+    grade: null,
+    energyCost: 28,
+    power: 22,
+    debuffKind: 'damage',
+    weaponDebuff: true,
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: "An expert polearm technique that neutralizes the foe's offensive potential, leaving them unable to mount more than token resistance."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+
+  // ---------- Knives: Grave Wound (debuff, bleed) [invented] (SPEC-TECH-POLARITY.md §2.1) ----------
+  {
+    id: 'tech_grave_wound_1',
+    name: 'Grave Wound I',
+    chain: 'Grave Wound',
+    rank: 1,
+    skill: 'Knives',
+    grade: null,
+    energyCost: 10,
+    power: 5,
+    debuffKind: 'bleed',
+    weaponDebuff: true,
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 2,
+    skillReq: 0,
+    desc: 'A quick, shallow slash that opens a bleeding wound. The most basic Knives technique taught at any Academy.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+  {
+    id: 'tech_grave_wound_2',
+    name: 'Grave Wound II',
+    chain: 'Grave Wound',
+    rank: 2,
+    skill: 'Knives',
+    grade: null,
+    energyCost: 14,
+    power: 10,
+    debuffKind: 'bleed',
+    weaponDebuff: true,
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: "A deeper cut that prolongs the bleeding, each turn draining the foe of strength as the wound refuses to close."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+  {
+    id: 'tech_grave_wound_3',
+    name: 'Grave Wound III',
+    chain: 'Grave Wound',
+    rank: 3,
+    skill: 'Knives',
+    grade: null,
+    energyCost: 20,
+    power: 16,
+    debuffKind: 'bleed',
+    weaponDebuff: true,
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: "A vicious laceration that severs deeper tissues, causing severe bleeding that saps the enemy's vitality turn after turn."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+  {
+    id: 'tech_grave_wound_4',
+    name: 'Grave Wound IV',
+    chain: 'Grave Wound',
+    rank: 4,
+    skill: 'Knives',
+    grade: null,
+    energyCost: 26,
+    power: 24,
+    debuffKind: 'bleed',
+    weaponDebuff: true,
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: "An assassin's masterwork: a precise strike that opens arterial bleeding, leaving the enemy weakened and desperate as they hemorrhage."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+
+  // ---------- Hand to Hand: Steel Resolve (buff, armor) [invented] (SPEC-TECH-POLARITY.md §2.1) ----------
+  {
+    id: 'tech_steel_resolve_1',
+    name: 'Steel Resolve I',
+    chain: 'Steel Resolve',
+    rank: 1,
+    skill: 'Hand to Hand',
+    grade: null,
+    energyCost: 10,
+    power: 6,
+    statKind: 'armor',
+    buffDuration: 5, // P0-locked retune 3->5 (§0 finding 1): a whole-action buff at 3 turns starved action economy
+    effect: 'buff',
+    trainingCost: 2,
+    skillReq: 0,
+    desc: 'A short breathing technique that stiffens the body, raising Armor through disciplined focus. The most basic Hand to Hand technique taught at any Academy.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+  {
+    id: 'tech_steel_resolve_2',
+    name: 'Steel Resolve II',
+    chain: 'Steel Resolve',
+    rank: 2,
+    skill: 'Hand to Hand',
+    grade: null,
+    energyCost: 16,
+    power: 12,
+    statKind: 'armor',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'A deeper meditative stance that hardens flesh and sinew, significantly bolstering the caster\'s defensive resilience.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+  {
+    id: 'tech_steel_resolve_3',
+    name: 'Steel Resolve III',
+    chain: 'Steel Resolve',
+    rank: 3,
+    skill: 'Hand to Hand',
+    grade: null,
+    energyCost: 22,
+    power: 20,
+    statKind: 'armor',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: "An advanced martial posture that channels inner strength into an impenetrable guard, the body becoming nearly as unyielding as stone."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+  {
+    id: 'tech_steel_resolve_4',
+    name: 'Steel Resolve IV',
+    chain: 'Steel Resolve',
+    rank: 4,
+    skill: 'Hand to Hand',
+    grade: null,
+    energyCost: 28,
+    power: 30,
+    statKind: 'armor',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: "The pinnacle of martial discipline: a transcendent state where the caster's Armor becomes formidable, their entire being hardened against incoming blows."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.1; constants P0-locked §0)
+
+  // ---------- Evocation: Attunement (buff, spellpower) [invented] (SPEC-TECH-POLARITY.md §2.2) ----------
+  {
+    id: 'tech_attunement_1',
+    name: 'Attunement I',
+    chain: 'Attunement',
+    rank: 1,
+    skill: 'Evocation',
+    grade: null,
+    energyCost: 10,
+    power: 12, // P0-locked retune 6->12 (§0 finding 2): at spec power the wind-up was parity-at-best with recasting Firebolt
+    statKind: 'spellpower',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 2,
+    skillReq: 0,
+    desc: 'Draws a slow ember of Anima into the palm, banking it for the next strike. The most basic Evocation technique taught at any Academy.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_attunement_2',
+    name: 'Attunement II',
+    chain: 'Attunement',
+    rank: 2,
+    skill: 'Evocation',
+    grade: null,
+    energyCost: 16,
+    power: 24, // P0-locked retune 12->24 (§0 finding 2)
+    statKind: 'spellpower',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'Holds the gathered ember a beat longer, banking more heat before it is spent.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_attunement_3',
+    name: 'Attunement III',
+    chain: 'Attunement',
+    rank: 3,
+    skill: 'Evocation',
+    grade: null,
+    energyCost: 22,
+    power: 40, // P0-locked retune 20->40 (§0 finding 2)
+    statKind: 'spellpower',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: 'Kindles a deep well of Anima, banked and ready to feed the next several spells cast.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_attunement_4',
+    name: 'Attunement IV',
+    chain: 'Attunement',
+    rank: 4,
+    skill: 'Evocation',
+    grade: null,
+    energyCost: 28,
+    power: 60, // P0-locked retune 30->60 (§0 finding 2)
+    statKind: 'spellpower',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: 'Gathers Anima until it strains against the skin, promising a far harder-hitting spell to follow.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+
+  // ---------- Conjuration: Curse (debuff, damage) -- name [archived: reference/manual/Version_2.1_Changes.md]
+  // ("Added new detrimental effects (Poison, Haunting, Curse)"), mechanics [invented] (SPEC-TECH-POLARITY.md
+  // §2.2; distinct from the existing player-afflicting Curse STATUS, tech_mend_wounds_2) ----------
+  {
+    id: 'tech_curse_1',
+    name: 'Curse I',
+    chain: 'Curse',
+    rank: 1,
+    skill: 'Conjuration',
+    grade: 'Dark',
+    energyCost: 13,
+    power: 4,
+    debuffKind: 'damage',
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 3,
+    skillReq: 4,
+    desc: 'Binds a flickering wisp of Dark-grade Anima to the enemy, its constant harrying dulling their strikes. The most basic Conjuration technique taught at any Academy.'
+  }, // name [archived: reference/manual/Version_2.1_Changes.md]; mechanics [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_curse_2',
+    name: 'Curse II',
+    chain: 'Curse',
+    rank: 2,
+    skill: 'Conjuration',
+    grade: 'Dark',
+    energyCost: 18,
+    power: 8,
+    debuffKind: 'damage',
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'A hungrier wisp clings tighter, sapping more strength from every blow the enemy lands.'
+  }, // name [archived: reference/manual/Version_2.1_Changes.md]; mechanics [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_curse_3',
+    name: 'Curse III',
+    chain: 'Curse',
+    rank: 3,
+    skill: 'Conjuration',
+    grade: 'Dark',
+    energyCost: 24,
+    power: 14,
+    debuffKind: 'damage',
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: 'A small conjured swarm harries the enemy from every side, wearing their guard to nothing.'
+  }, // name [archived: reference/manual/Version_2.1_Changes.md]; mechanics [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_curse_4',
+    name: 'Curse IV',
+    chain: 'Curse',
+    rank: 4,
+    skill: 'Conjuration',
+    grade: 'Dark',
+    energyCost: 30,
+    power: 22,
+    debuffKind: 'damage',
+    debuffDuration: 3,
+    effect: 'debuff',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: "A gloom-wrought familiar shadows the enemy's every motion, sapping their strikes to almost nothing for as long as it clings."
+  }, // name [archived: reference/manual/Version_2.1_Changes.md]; mechanics [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+
+  // ---------- Alteration: Stoneshear (damage, Earth) [invented] (SPEC-TECH-POLARITY.md §2.2) ----------
+  {
+    id: 'tech_stoneshear_1',
+    name: 'Stoneshear I',
+    chain: 'Stoneshear',
+    rank: 1,
+    skill: 'Alteration',
+    grade: 'Earth',
+    energyCost: 12,
+    power: 14,
+    effect: 'damage',
+    trainingCost: 2,
+    skillReq: 0,
+    desc: 'Wrenches a shard of raw stone from the ground and hurls it with transmuted force. The most basic Alteration technique taught at any Academy.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_stoneshear_2',
+    name: 'Stoneshear II',
+    chain: 'Stoneshear',
+    rank: 2,
+    skill: 'Alteration',
+    grade: 'Earth',
+    energyCost: 18,
+    power: 26,
+    effect: 'damage',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'Fuses several shards into a single jagged spear before releasing it at the enemy.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_stoneshear_3',
+    name: 'Stoneshear III',
+    chain: 'Stoneshear',
+    rank: 3,
+    skill: 'Alteration',
+    grade: 'Earth',
+    energyCost: 28, // P0-locked retune 24->28 (§0 finding 3): at spec cost this undercut the shipped tapered Firebolt band
+    power: 40,
+    effect: 'damage',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: 'Transmutes a slab of bedrock into a screaming volley in a single motion.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_stoneshear_4',
+    name: 'Stoneshear IV',
+    chain: 'Stoneshear',
+    rank: 4,
+    skill: 'Alteration',
+    grade: 'Earth',
+    energyCost: 38, // P0-locked retune 30->38 (§0 finding 3)
+    power: 56,
+    effect: 'damage',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: 'Rips a column of living rock from the earth and drives it through the enemy whole.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+
+  // ---------- Absorption: Nullward (buff, armor, Dark) [invented] (SPEC-TECH-POLARITY.md §2.2) ----------
+  {
+    id: 'tech_nullward_1',
+    name: 'Nullward I',
+    chain: 'Nullward',
+    rank: 1,
+    skill: 'Absorption',
+    grade: 'Dark',
+    energyCost: 12,
+    power: 6,
+    statKind: 'armor',
+    buffDuration: 5, // P0-locked retune 3->5 (§0 finding 1)
+    effect: 'buff',
+    trainingCost: 3,
+    skillReq: 4,
+    desc: 'Wraps the caster in a skin of hungry Dark-grade Anima that annuls part of each blow it meets. The most basic Absorption technique taught at any Academy.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_nullward_2',
+    name: 'Nullward II',
+    chain: 'Nullward',
+    rank: 2,
+    skill: 'Absorption',
+    grade: 'Dark',
+    energyCost: 17,
+    power: 12,
+    statKind: 'armor',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'A deeper skein of hungry Anima, annulling more force from every blow it swallows.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_nullward_3',
+    name: 'Nullward III',
+    chain: 'Nullward',
+    rank: 3,
+    skill: 'Absorption',
+    grade: 'Dark',
+    energyCost: 23,
+    power: 20,
+    statKind: 'armor',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: 'A greedy shroud of Dark-grade Anima that drinks incoming force nearly whole.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_nullward_4',
+    name: 'Nullward IV',
+    chain: 'Nullward',
+    rank: 4,
+    skill: 'Absorption',
+    grade: 'Dark',
+    energyCost: 29,
+    power: 30,
+    statKind: 'armor',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: 'A near-impenetrable veil of starving Anima, annulling almost everything thrown against it.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+
+  // ---------- Abjuration: Censure (damage, Light) [invented] (SPEC-TECH-POLARITY.md §2.2) ----------
+  {
+    id: 'tech_censure_1',
+    name: 'Censure I',
+    chain: 'Censure',
+    rank: 1,
+    skill: 'Abjuration',
+    grade: 'Light',
+    energyCost: 13,
+    power: 14,
+    effect: 'damage',
+    trainingCost: 3,
+    skillReq: 4,
+    desc: 'Turns a sliver of Light-grade Anima outward as a censuring lance, condemning the enemy in the same breath the Academy teaches to heal. The most basic Abjuration technique taught at any Academy.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_censure_2',
+    name: 'Censure II',
+    chain: 'Censure',
+    rank: 2,
+    skill: 'Abjuration',
+    grade: 'Light',
+    energyCost: 19,
+    power: 26,
+    effect: 'damage',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'A harsher censure — the same Light-grade Anima that mends wounds, turned instead to punish them.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_censure_3',
+    name: 'Censure III',
+    chain: 'Censure',
+    rank: 3,
+    skill: 'Abjuration',
+    grade: 'Light',
+    energyCost: 29, // P0-locked retune 25->29 (§0 finding 3)
+    power: 40,
+    effect: 'damage',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: 'A judgment cast in unflinching Light, striking with the same certainty as the deepest Mend Wounds.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+  {
+    id: 'tech_censure_4',
+    name: 'Censure IV',
+    chain: 'Censure',
+    rank: 4,
+    skill: 'Abjuration',
+    grade: 'Light',
+    energyCost: 39, // P0-locked retune 31->39 (§0 finding 3)
+    power: 56,
+    effect: 'damage',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: "A blinding censure of Light-grade Anima, condemning the enemy with the full weight of the Academy's sanctified teaching."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.2; constants P0-locked §0)
+
+  // ---------- Light Armor: Fleetstep (buff, dodge) [invented] (SPEC-TECH-POLARITY.md §2.3) ----------
+  {
+    id: 'tech_fleetstep_1',
+    name: 'Fleetstep I',
+    chain: 'Fleetstep',
+    rank: 1,
+    skill: 'Light Armor',
+    grade: null,
+    energyCost: 10,
+    power: 0.04,
+    statKind: 'dodge',
+    buffDuration: 5, // P0-locked retune 3->5 (§0 finding 1)
+    requiresArmorClass: 'light',
+    effect: 'buff',
+    trainingCost: 2,
+    skillReq: 0,
+    desc: 'Shrugs the weight off a leather cuirass and settles into a lighter stance, adding to Dodge for a few turns. The most basic Light Armor technique taught at any Academy.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_fleetstep_2',
+    name: 'Fleetstep II',
+    chain: 'Fleetstep',
+    rank: 2,
+    skill: 'Light Armor',
+    grade: null,
+    energyCost: 15,
+    power: 0.06,
+    statKind: 'dodge',
+    buffDuration: 5,
+    requiresArmorClass: 'light',
+    effect: 'buff',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'A surer feel for how far unburdened leather and cloth will let a body twist and turn before an incoming blow.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_fleetstep_3',
+    name: 'Fleetstep III',
+    chain: 'Fleetstep',
+    rank: 3,
+    skill: 'Light Armor',
+    grade: null,
+    energyCost: 20,
+    power: 0.09,
+    statKind: 'dodge',
+    buffDuration: 5,
+    requiresArmorClass: 'light',
+    effect: 'buff',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: 'The wearer moves as if the armor were a second skin, slipping strikes that would stagger a heavier fighter.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_fleetstep_4',
+    name: 'Fleetstep IV',
+    chain: 'Fleetstep',
+    rank: 4,
+    skill: 'Light Armor',
+    grade: null,
+    energyCost: 26,
+    power: 0.12,
+    statKind: 'dodge',
+    buffDuration: 5,
+    requiresArmorClass: 'light',
+    effect: 'buff',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: 'Mastery of light armor turns evasion into a weapon in itself — a fighter who is never quite where the blow expects.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+
+  // ---------- Medium Armor: Battle Harness (buff, armor) [invented] (SPEC-TECH-POLARITY.md §2.3) ----------
+  {
+    id: 'tech_battle_harness_1',
+    name: 'Battle Harness I',
+    chain: 'Battle Harness',
+    rank: 1,
+    skill: 'Medium Armor',
+    grade: null,
+    energyCost: 11,
+    power: 6,
+    statKind: 'armor',
+    buffDuration: 6, // P0-locked exception (§0 finding 1): Battle Harness is 6, not 5, per the locked-constants list
+    requiresArmorClass: 'medium',
+    effect: 'buff',
+    trainingCost: 2,
+    skillReq: 0,
+    desc: 'Cinches the harness and straps tight mid-fight, adding to Armor for a few turns. The most basic Medium Armor technique taught at any Academy.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_battle_harness_2',
+    name: 'Battle Harness II',
+    chain: 'Battle Harness',
+    rank: 2,
+    skill: 'Medium Armor',
+    grade: null,
+    energyCost: 16,
+    power: 12,
+    statKind: 'armor',
+    buffDuration: 6,
+    requiresArmorClass: 'medium',
+    effect: 'buff',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'Braces the straps and plates as one unit, turning a glancing hit into a shrugged-off one.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_battle_harness_3',
+    name: 'Battle Harness III',
+    chain: 'Battle Harness',
+    rank: 3,
+    skill: 'Medium Armor',
+    grade: null,
+    energyCost: 22,
+    power: 20,
+    statKind: 'armor',
+    buffDuration: 6,
+    requiresArmorClass: 'medium',
+    effect: 'buff',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: "The wearer reads an incoming blow's angle and rolls the reinforced hide to meet it squarely."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_battle_harness_4',
+    name: 'Battle Harness IV',
+    chain: 'Battle Harness',
+    rank: 4,
+    skill: 'Medium Armor',
+    grade: null,
+    energyCost: 28,
+    power: 30,
+    statKind: 'armor',
+    buffDuration: 6,
+    requiresArmorClass: 'medium',
+    effect: 'buff',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: 'Mastery of the harness and plate hybrid, holding a line no lighter fighter could and no heavier one could match for speed.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+
+  // ---------- Heavy Armor: Ironroot Stance (buff, armor) [invented] (SPEC-TECH-POLARITY.md §2.3) ----------
+  {
+    id: 'tech_ironroot_stance_1',
+    name: 'Ironroot Stance I',
+    chain: 'Ironroot Stance',
+    rank: 1,
+    skill: 'Heavy Armor',
+    grade: null,
+    energyCost: 13,
+    power: 9,
+    statKind: 'armor',
+    buffDuration: 5, // P0-locked retune 3->5 (§0 finding 1)
+    requiresArmorClass: 'heavy',
+    effect: 'buff',
+    trainingCost: 2,
+    skillReq: 0,
+    desc: 'Sets the plate and locks the stance, adding to Armor for a few turns. The most basic Heavy Armor technique taught at any Academy.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_ironroot_stance_2',
+    name: 'Ironroot Stance II',
+    chain: 'Ironroot Stance',
+    rank: 2,
+    skill: 'Heavy Armor',
+    grade: null,
+    energyCost: 19,
+    power: 16,
+    statKind: 'armor',
+    buffDuration: 5,
+    requiresArmorClass: 'heavy',
+    effect: 'buff',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'Turns the full weight of plate into a wall, angling it to shed a blow rather than absorb it whole.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_ironroot_stance_3',
+    name: 'Ironroot Stance III',
+    chain: 'Ironroot Stance',
+    rank: 3,
+    skill: 'Heavy Armor',
+    grade: null,
+    energyCost: 25,
+    power: 26,
+    statKind: 'armor',
+    buffDuration: 5,
+    requiresArmorClass: 'heavy',
+    effect: 'buff',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: 'An immovable stance, plate locked joint to joint, that no ordinary strike can shift.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_ironroot_stance_4',
+    name: 'Ironroot Stance IV',
+    chain: 'Ironroot Stance',
+    rank: 4,
+    skill: 'Heavy Armor',
+    grade: null,
+    energyCost: 32,
+    power: 38,
+    statKind: 'armor',
+    buffDuration: 5,
+    requiresArmorClass: 'heavy',
+    effect: 'buff',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: 'Mastery of heavy plate: a fighter who simply refuses to be moved, let alone felled.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+
+  // ---------- Shields: Shield Bash (damage) [invented] (SPEC-TECH-POLARITY.md §2.3) ----------
+  {
+    id: 'tech_shield_bash_1',
+    name: 'Shield Bash I',
+    chain: 'Shield Bash',
+    rank: 1,
+    skill: 'Shields',
+    grade: null,
+    energyCost: 12,
+    power: 12,
+    requiresShield: true,
+    physicalRoll: true, // P0-locked retune (§0 finding 5): flat damage on a non-Int chassis rolls monster dodge, not the Int spell-hit
+    effect: 'damage',
+    trainingCost: 2,
+    skillReq: 0,
+    desc: 'Slams the shield\'s rim into the enemy like a blunt weapon. The most basic Shields technique taught at any Academy.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_shield_bash_2',
+    name: 'Shield Bash II',
+    chain: 'Shield Bash',
+    rank: 2,
+    skill: 'Shields',
+    grade: null,
+    energyCost: 16,
+    power: 22,
+    requiresShield: true,
+    physicalRoll: true,
+    effect: 'damage',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'A full-body check with the shield face, driving the rim into ribs or skull.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_shield_bash_3',
+    name: 'Shield Bash III',
+    chain: 'Shield Bash',
+    rank: 3,
+    skill: 'Shields',
+    grade: null,
+    energyCost: 22,
+    power: 34,
+    requiresShield: true,
+    physicalRoll: true,
+    effect: 'damage',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: "Turns a raised guard into a sudden charge, the shield's edge leading."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_shield_bash_4',
+    name: 'Shield Bash IV',
+    chain: 'Shield Bash',
+    rank: 4,
+    skill: 'Shields',
+    grade: null,
+    energyCost: 28,
+    power: 48,
+    requiresShield: true,
+    physicalRoll: true,
+    effect: 'damage',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: 'Mastery of the shield as a weapon: a single blow that can drop an opponent as surely as any blade.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+
+  // ---------- Rods: Channeled Strike (weapon damage) [invented] (SPEC-TECH-POLARITY.md §2.3) ----------
+  {
+    id: 'tech_channeled_strike_1',
+    name: 'Channeled Strike I',
+    chain: 'Channeled Strike',
+    rank: 1,
+    skill: 'Rods',
+    grade: null,
+    energyCost: 12,
+    weaponTech: true,
+    powerMult: 1.3,
+    effect: 'damage',
+    trainingCost: 2,
+    skillReq: 0,
+    desc: "A short, snapping strike with the rod's haft, the caster's cudgel. The most basic Rods technique taught at any Academy."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_channeled_strike_2',
+    name: 'Channeled Strike II',
+    chain: 'Channeled Strike',
+    rank: 2,
+    skill: 'Rods',
+    grade: null,
+    energyCost: 16,
+    weaponTech: true,
+    powerMult: 1.7,
+    effect: 'damage',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'Channels a crack of will through the rod on impact, hardening the wood or rune-etched core against the swing itself.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_channeled_strike_3',
+    name: 'Channeled Strike III',
+    chain: 'Channeled Strike',
+    rank: 3,
+    skill: 'Rods',
+    grade: null,
+    energyCost: 22,
+    weaponTech: true,
+    powerMult: 2.0,
+    effect: 'damage',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: 'A full two-handed swing that treats the rod as cudgel first, focus second.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_channeled_strike_4',
+    name: 'Channeled Strike IV',
+    chain: 'Channeled Strike',
+    rank: 4,
+    skill: 'Rods',
+    grade: null,
+    energyCost: 26,
+    weaponTech: true,
+    powerMult: 2.3, // D4 primary lock (SPEC-TECH-POLARITY.md §0/§2.3): rod melee stays slower than Cleave, the v1.6 halving holds
+    effect: 'damage',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: 'Mastery of the rod as a melee weapon: every swing lands with the full weight of the caster\'s training behind it.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+
+  // ---------- Dodge: Sidestep (buff, dodge) [invented] (SPEC-TECH-POLARITY.md §2.3) ----------
+  {
+    id: 'tech_sidestep_1',
+    name: 'Sidestep I',
+    chain: 'Sidestep',
+    rank: 1,
+    skill: 'Dodge',
+    grade: null,
+    energyCost: 10,
+    power: 0.05,
+    statKind: 'dodge',
+    buffDuration: 5, // P0-locked retune 3->5 (§0 finding 1)
+    effect: 'buff',
+    trainingCost: 2,
+    skillReq: 0,
+    desc: "Reads the first beat of the enemy's rhythm and steps just wide of it, adding to Dodge for a few turns. The most basic Dodge technique taught at any Academy."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_sidestep_2',
+    name: 'Sidestep II',
+    chain: 'Sidestep',
+    rank: 2,
+    skill: 'Dodge',
+    grade: null,
+    energyCost: 15,
+    power: 0.08,
+    statKind: 'dodge',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'A trained eye for the half-second before a swing commits, enough to slip clear of it.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_sidestep_3',
+    name: 'Sidestep III',
+    chain: 'Sidestep',
+    rank: 3,
+    skill: 'Dodge',
+    grade: null,
+    energyCost: 21,
+    power: 0.12,
+    statKind: 'dodge',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: "The body moves before the mind finishes deciding to — pure reflex built from countless close calls."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_sidestep_4',
+    name: 'Sidestep IV',
+    chain: 'Sidestep',
+    rank: 4,
+    skill: 'Dodge',
+    grade: null,
+    energyCost: 27,
+    power: 0.16,
+    statKind: 'dodge',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: "Mastery of Dodge: for a few turns, the enemy's rhythm holds no surprises left."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+
+  // ---------- Thievery: Cutpurse Strike (damage + gold) [invented] (SPEC-TECH-POLARITY.md §2.3) ----------
+  {
+    id: 'tech_cutpurse_strike_1',
+    name: 'Cutpurse Strike I',
+    chain: 'Cutpurse Strike',
+    rank: 1,
+    skill: 'Thievery',
+    grade: null,
+    energyCost: 11,
+    power: 10,
+    physicalRoll: true, // P0-locked retune (§0 finding 5): flat damage on a non-Int chassis rolls monster dodge
+    goldSteal: 1, // P0-locked retune 3->1 (§0 finding 4): spec values were +35-86%/kill vs the Thievery passive cap
+    effect: 'damage',
+    trainingCost: 2,
+    skillReq: 0,
+    desc: 'A dirty, opportunistic strike that lifts a coin purse in the same motion. The most basic Thievery technique taught at any Academy.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_cutpurse_strike_2',
+    name: 'Cutpurse Strike II',
+    chain: 'Cutpurse Strike',
+    rank: 2,
+    skill: 'Thievery',
+    grade: null,
+    energyCost: 15,
+    power: 18,
+    physicalRoll: true,
+    goldSteal: 3, // P0-locked retune 6->3 (§0 finding 4)
+    effect: 'damage',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'A quick cut followed by quicker fingers, leaving the enemy hurt and lighter in the pocket.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_cutpurse_strike_3',
+    name: 'Cutpurse Strike III',
+    chain: 'Cutpurse Strike',
+    rank: 3,
+    skill: 'Thievery',
+    grade: null,
+    energyCost: 21,
+    power: 28,
+    physicalRoll: true,
+    goldSteal: 5, // P0-locked retune 12->5 (§0 finding 4)
+    effect: 'damage',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: 'A practiced thief\'s strike, timed to land exactly when the enemy is too busy reeling to notice the theft.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_cutpurse_strike_4',
+    name: 'Cutpurse Strike IV',
+    chain: 'Cutpurse Strike',
+    rank: 4,
+    skill: 'Thievery',
+    grade: null,
+    energyCost: 27,
+    power: 40,
+    physicalRoll: true,
+    goldSteal: 8, // P0-locked retune 20->8 (§0 finding 4)
+    effect: 'damage',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: 'Mastery of Thievery: a wound and a windfall dealt in the same breath.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+
+  // ---------- Dual Wield: Crosscut (weapon damage) [invented] (SPEC-TECH-POLARITY.md §2.3) ----------
+  {
+    id: 'tech_crosscut_1',
+    name: 'Crosscut I',
+    chain: 'Crosscut',
+    rank: 1,
+    skill: 'Dual Wield',
+    grade: null,
+    energyCost: 14,
+    weaponTech: true,
+    powerMult: 1.2,
+    requiresOffhandWeapon: true,
+    offhandFollowup: true,
+    effect: 'damage',
+    trainingCost: 3,
+    skillReq: 4,
+    desc: 'Both blades move as one — a main strike immediately trailed by the offhand. The most basic Dual Wield technique taught at any Academy.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_crosscut_2',
+    name: 'Crosscut II',
+    chain: 'Crosscut',
+    rank: 2,
+    skill: 'Dual Wield',
+    grade: null,
+    energyCost: 18,
+    weaponTech: true,
+    powerMult: 1.5,
+    requiresOffhandWeapon: true,
+    offhandFollowup: true,
+    effect: 'damage',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'The gap between the two blades closes further, the offhand arriving almost before the eye registers the first cut.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_crosscut_3',
+    name: 'Crosscut III',
+    chain: 'Crosscut',
+    rank: 3,
+    skill: 'Dual Wield',
+    grade: null,
+    energyCost: 24,
+    weaponTech: true,
+    powerMult: 1.8,
+    requiresOffhandWeapon: true,
+    offhandFollowup: true,
+    effect: 'damage',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: "Both edges committed in a single fluid motion, each strike disguising the other's angle."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_crosscut_4',
+    name: 'Crosscut IV',
+    chain: 'Crosscut',
+    rank: 4,
+    skill: 'Dual Wield',
+    grade: null,
+    energyCost: 30,
+    weaponTech: true,
+    powerMult: 2.1, // D4 primary lock (SPEC-TECH-POLARITY.md §0/§2.3): Cleave stays the faster at-level killer
+    requiresOffhandWeapon: true,
+    offhandFollowup: true,
+    effect: 'damage',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: 'Mastery of Dual Wield: two blades that strike as a single weapon, no gap left to answer.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+
+  // ---------- Double Attack: Tempo (buff, double_attack) [invented] (SPEC-TECH-POLARITY.md §2.3) ----------
+  {
+    id: 'tech_tempo_1',
+    name: 'Tempo I',
+    chain: 'Tempo',
+    rank: 1,
+    skill: 'Double Attack',
+    grade: null,
+    energyCost: 10,
+    power: 0.05,
+    statKind: 'double_attack',
+    buffDuration: 5, // P0-locked retune 3->5 (§0 finding 1)
+    effect: 'buff',
+    trainingCost: 2,
+    skillReq: 0,
+    desc: "Finds the gap between the enemy's heartbeats and strikes twice into it, adding to Double Attack chance for a few turns. The most basic Double Attack technique taught at any Academy."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_tempo_2',
+    name: 'Tempo II',
+    chain: 'Tempo',
+    rank: 2,
+    skill: 'Double Attack',
+    grade: null,
+    energyCost: 15,
+    power: 0.08,
+    statKind: 'double_attack',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 4,
+    skillReq: 10,
+    desc: 'A tightening sense of tempo, letting the second strike land closer on the heels of the first.'
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_tempo_3',
+    name: 'Tempo III',
+    chain: 'Tempo',
+    rank: 3,
+    skill: 'Double Attack',
+    grade: null,
+    energyCost: 21,
+    power: 0.12,
+    statKind: 'double_attack',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 6,
+    skillReq: 25,
+    desc: "The fighter's rhythm outpaces the enemy's own, fitting a second blow into a beat that shouldn't have one."
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  {
+    id: 'tech_tempo_4',
+    name: 'Tempo IV',
+    chain: 'Tempo',
+    rank: 4,
+    skill: 'Double Attack',
+    grade: null,
+    energyCost: 27,
+    power: 0.15,
+    statKind: 'double_attack',
+    buffDuration: 5,
+    effect: 'buff',
+    trainingCost: 8,
+    skillReq: 45,
+    desc: 'Mastery of Double Attack: every strike arrives as a pair, with no beat left uncovered.'
+  } // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
 ];
 
 window.Game = Game;

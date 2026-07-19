@@ -876,7 +876,12 @@ var balChars = {};
   balChars[skillName] = c;
 });
 var balMonster = Game.Battle.getMonsterDef('majiku_forest_scout'); // level 6 regular, armor 6 — below the level-10 reference build, matching the sim
-Game.Data.techs.filter(function (t) { return t.weaponTech; }).forEach(function (tech) {
+// v1.8 P3 (SPEC-TECH-POLARITY.md §2.3): Channeled Strike (Rods) and Crosscut (Dual Wield) are
+// new weaponTech chains, but this generic 4-skill DPT/DPE loop has no equipment-gated fixture
+// for them (Rod caster identity / requiresOffhandWeapon+offhandFollowup) — those two chains were
+// already balance-sim-gated on their own fixture (D4, locked powerMults 2.3/2.1). Guard against
+// an undefined balChars[tech.skill] rather than widen this unrelated loop's scope.
+Game.Data.techs.filter(function (t) { return t.weaponTech && balChars[t.skill]; }).forEach(function (tech) {
   var c = balChars[tech.skill];
   var weaponDamage = Game.Character.getDamage(c);
   var armorTerm = balMonster.armor * (1 - (tech.armorPierce || 0));
