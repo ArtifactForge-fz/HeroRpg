@@ -825,7 +825,12 @@ Game.Data.monsters = [
     shardChance: 0.11,
     drops: [
       { itemId: 'medium_legs_foothills_greaves', chance: 0.03 },
-      { itemId: 'potion_greater_healing', chance: 0.1 }
+      { itemId: 'potion_greater_healing', chance: 0.1 },
+      // v1.8 P2 (T1-b, D-B, docs/AUDIT-ITEM-REACHABILITY.md): places the cursed Circlet of the
+      // Hollow King (ring_of_the_hollow_king, id unchanged) as a rare mid-band drop so the cursed
+      // trap actually fires — a Spirit Shrine cleanse is reachable but costs a trip. Appended last
+      // so prior loot rates are unchanged.
+      { itemId: 'ring_of_the_hollow_king', chance: 0.04 }
     ],
     desc: 'A rangy, pack-hunting hound that runs the high ridgelines in tireless bursts, trading hide for raw speed.'
   },
@@ -947,7 +952,11 @@ Game.Data.monsters = [
       { itemId: 'crystal_pure_anima', chance: 0.06 },
       // v1.2 Phase 3 (Content-B): graded Sphere (js/data/items.js). Appended last so prior loot
       // rates are unchanged (drops roll top-down, first hit wins).
-      { itemId: 'sphere_bclass_1', chance: 0.06 }
+      { itemId: 'sphere_bclass_1', chance: 0.06 },
+      // v1.8 P2 (T1-b, D-B, docs/AUDIT-ITEM-REACHABILITY.md): places the cursed Circlet of the
+      // Hollow King (ring_of_the_hollow_king, id unchanged) as a rare mid-band drop. Appended last
+      // so prior loot rates are unchanged.
+      { itemId: 'ring_of_the_hollow_king', chance: 0.04 }
     ],
     desc: 'A quicksilver eel-thing that rides the isle\'s riptides, striking fast and hard with none of the Reefstalker\'s armored patience.'
   },
@@ -1169,7 +1178,11 @@ Game.Data.monsters = [
       { itemId: 'quest_society_ledger_page', chance: 0.5 },
       // v1.2 Phase 3 (Content-B): graded Crystal (js/data/items.js). Appended last so prior loot
       // rates are unchanged (drops roll top-down, first hit wins).
-      { itemId: 'crystal_bclass_2', chance: 0.06 }
+      { itemId: 'crystal_bclass_2', chance: 0.06 },
+      // v1.8 P2 (T1-b, D-B, docs/AUDIT-ITEM-REACHABILITY.md): places the cursed Circlet of the
+      // Hollow King (ring_of_the_hollow_king, id unchanged) as a rare mid-band drop. Appended last
+      // so prior loot rates are unchanged.
+      { itemId: 'ring_of_the_hollow_king', chance: 0.04 }
     ],
     // archived: Chapter_I.md — "the runologist research group dispersed" when the Council
     // condemned the Society; a remnant left behind, still following orders three centuries stale.

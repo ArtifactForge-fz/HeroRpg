@@ -251,6 +251,28 @@ Game.Data.recipes = [
     gold: 650,
     output: 'crystal_hclass_2',
     desc: 'Fuse two H-Class Crystal Is into a single, denser H-Class Crystal II.'
+  },
+
+  // =====================================================================
+  // v1.8 P2 (D-C, docs/SPEC-V1.8-TECHS-AND-REACHABILITY.md §2; SPEC-ARKAN-DIFFERENTIATION.md):
+  // the Wardframe Rune Shard (quest_wardframe_rune_shard, dropped by saratus_wardframe /
+  // foraged at saratus_plains, js/data/monsters.js / areas.js) had no sink at all (audit §5,
+  // docs/AUDIT-ITEM-REACHABILITY.md). Recipe over a quest-collect step per D-C's own reasoning:
+  // additive only, doesn't retroactively change a shipped quest's turn-in requirements.
+  // Output is an EXISTING item (crystal_pure_anima, an energy-restore consumable, no combat
+  // stats) — deliberately no new item, zero combat-stat surface, no sim required. Recipes are
+  // global data (no per-recipe facility/town field; Game.World.craft only checks a `synthesis`
+  // facility is present at the CURRENT area) and Eldor's Synthesis Shop has minLevel 0, so an
+  // Arkan player can already reach it from level 1 — no areas.js change needed to keep this
+  // craftable (Saratus intentionally still has no synthesis facility, DESIGN.md §6, and
+  // tests/test_p6b_content.js asserts that fact).
+  // =====================================================================
+  {
+    id: 'synth_pure_anima_from_wardframe_shards',
+    inputs: ['quest_wardframe_rune_shard', 'quest_wardframe_rune_shard'],
+    gold: 15,
+    output: 'crystal_pure_anima',
+    desc: 'Arkan runecraft distills a pair of Wardframe Rune Shards into a single Crystal of Pure Anima.'
   }
 ];
 

@@ -233,6 +233,93 @@ Game.Data.items = [
     desc: 'A weighted leather cestus worn on the off hand to double up a bare-knuckle fighter\'s strikes.'
   },
 
+  // ---------- Offhand: Dual Wield weapon ladder (v1.8 P2, T1-a) ----------
+  // [invented] (P0-locked, SPEC-TECH-POLARITY.md §0 T1-a ladder). Twinfang Dirk/Brawler's Cestus
+  // above were the only two offhand weapons in the game and neither was ever stocked anywhere
+  // (audit T1-a, docs/AUDIT-ITEM-REACHABILITY.md) — dual-wield never activated. This ladder gives
+  // Knives/Hand to Hand builds an offhand rung at each main-hand weapon tier (levelReq 10/25/35)
+  // so dual-wield stays viable past level 1. statReqs mirror the same-skill main-hand weapon at
+  // the matching levelReq where one exists exactly (levelReq 25/35 both have an exact same-skill
+  // tier mate); no Knives/Hand to Hand main-hand weapon exists at exactly levelReq 10 (the 5-15
+  // band's nearest entries are levelReq 9/8), so per the brief's own fallback ("if a tier mate has
+  // none, none") the levelReq 10 pair carries no statReqs, same as the levelReq 1 pair above.
+  {
+    id: 'knife_offhand_swiftfang',
+    name: 'Swiftfang Dirk',
+    slot: 'offhand',
+    skill: 'Knives',
+    damage: 12,
+    weight: 2,
+    levelReq: 10,
+    value: 260,
+    tags: [],
+    desc: 'A quicker, harder-tempered dirk for the offhand, meant to keep pace with a fighter who has outgrown the Twinfang.'
+  },
+  {
+    id: 'hth_offhand_ironknuckle',
+    name: 'Iron Knuckle Guard',
+    slot: 'offhand',
+    skill: 'Hand to Hand',
+    damage: 13,
+    weight: 2,
+    levelReq: 10,
+    value: 260,
+    tags: [],
+    desc: 'A reinforced iron guard worn over the off hand, adding real weight to a bare-knuckle fighter\'s second strike.'
+  },
+  {
+    id: 'knife_offhand_nightedge',
+    name: 'Night-Edge Dirk',
+    slot: 'offhand',
+    skill: 'Knives',
+    damage: 29,
+    weight: 2,
+    levelReq: 25,
+    value: 900,
+    statReqs: { dexterity: 34 },
+    tags: [],
+    desc: 'A blackened dirk honed to a whisper-thin edge, carried in the off hand by killers who never let the main blade do all the work.'
+  },
+  {
+    id: 'hth_offhand_stormfist',
+    name: 'Stormfist Cestus',
+    slot: 'offhand',
+    skill: 'Hand to Hand',
+    damage: 32,
+    weight: 2,
+    levelReq: 25,
+    value: 900,
+    statReqs: { strength: 34 },
+    tags: [],
+    desc: 'A storm-tempered cestus that cracks like thunder on the follow-up strike, matched to a fighter\'s hardest-won gauntlets.'
+  },
+  {
+    id: 'knife_offhand_kingsfang',
+    name: "King's Fang",
+    slot: 'offhand',
+    skill: 'Knives',
+    damage: 40,
+    weight: 2,
+    levelReq: 35,
+    value: 2200,
+    statReqs: { dexterity: 44 },
+    tags: [],
+    desc: 'A regal, needle-fine dirk fit for the offhand of a killer who no longer needs a main blade to prove anything.'
+  },
+  {
+    id: 'hth_offhand_titangrip',
+    name: 'Titangrip Cestus',
+    slot: 'offhand',
+    skill: 'Hand to Hand',
+    damage: 44,
+    weight: 2,
+    levelReq: 35,
+    value: 2200,
+    statReqs: { strength: 44 },
+    tags: [],
+    desc: 'A titan-forged cestus, twin to the deadliest gauntlets on the market, that turns a follow-up strike into a second main hand.'
+  },
+
   // ---------- Armor: Light Armor (body/head/legs/feet) ----------
   {
     id: 'light_body_traveler_tunic',
@@ -625,9 +712,16 @@ Game.Data.items = [
   },
 
   // ---------- Cursed item (classic trap: good stats, tag 'cursed') ----------
+  // v1.8 P2 (T1-b, D-B): renamed/reflavored from "Ring of the Hollow King" — the item equips in
+  // the head slot (no ring slot exists), so the ring framing was a data smell (audit T1-b,
+  // docs/AUDIT-ITEM-REACHABILITY.md). id UNCHANGED (saves reference it); armor 18 at levelReq 1 is
+  // deliberately over-stat trap bait — a Spirit Shrine cleanse exists (world.js) so the curse is
+  // costly, not permanent. [invented] (archived basis: Cursed.md "cannot be removed"; placement
+  // D-B, SPEC-V1.8 §2). Now placed as a rare drop below (js/data/monsters.js) so the cursed-trap
+  // mechanic actually fires.
   {
     id: 'ring_of_the_hollow_king',
-    name: 'Ring of the Hollow King',
+    name: 'Circlet of the Hollow King',
     slot: 'head',
     skill: 'Light Armor',
     armor: 18,
@@ -635,10 +729,13 @@ Game.Data.items = [
     levelReq: 1,
     value: 1,
     tags: ['cursed'],
-    desc: 'A cold band of black iron. Its previous wearer is nowhere to be found. It fits suspiciously well, and does not want to come off.'
+    desc: 'A slim circlet of black iron, its inside band etched with a crown that has no house left to claim it. It settles onto the brow far more easily than it should, and offers uncanny protection for so plain a thing — too good, some would say, for anything found lying around.'
   },
 
   // ---------- Lore item (no stats, flavor only) ----------
+  // v1.8 P2 (D-A option b, SPEC-V1.8 §2 — trophies sellable, codex deferred): small sell value so
+  // an over-collected surplus isn't permanent clutter; deliberately below at-band per-kill gold.
+  // [invented] (D-A option b, SPEC-V1.8 §2 — trophies sellable, codex deferred)
   {
     id: 'lore_estari_shard_tablet',
     name: 'Estari Shard-Tablet',
@@ -646,7 +743,7 @@ Game.Data.items = [
     skill: null,
     weight: 2,
     levelReq: 1,
-    value: 0,
+    value: 15,
     tags: ['lore'],
     desc: 'A fragment of dark stone covered in Estari glyphs, cool to the touch. Scholars in Eldor say its markings speak of a "ninth dimension" long before the first Anima mines were sunk.'
   },
@@ -1092,6 +1189,9 @@ Game.Data.items = [
   // Phase 6b: quest-only collect materials (DESIGN.md §7), same convention as the Phase 5/6a
   // blocks above — no combat/equip stats, small sell-back value, no-trade tagged.
   // =====================================================================
+  // v1.8 P2 (D-A option b, SPEC-V1.8 §2 — trophies sellable, codex deferred): no-trade dropped,
+  // small sell values below at-band per-kill gold so repeat farming stays pointless (v1.6 gold
+  // curbs must not reopen). [invented] (D-A option b, SPEC-V1.8 §2 — trophies sellable, codex deferred)
   {
     id: 'quest_frostram_hide',
     name: 'Frost Ram Hide',
@@ -1099,8 +1199,8 @@ Game.Data.items = [
     skill: null,
     weight: 2,
     levelReq: 1,
-    value: 8,
-    tags: ['no-trade'],
+    value: 10,
+    tags: [],
     desc: 'A thick, frost-flecked hide from a Stoneback Giant\'s favorite prey, prized by Saratus tailors for cold-weather cloaks.'
   },
   {
@@ -1110,8 +1210,8 @@ Game.Data.items = [
     skill: null,
     weight: 3,
     levelReq: 1,
-    value: 20,
-    tags: ['no-trade'],
+    value: 25,
+    tags: [],
     desc: 'A cracked horn taken from the fallen Matriarch of the High Camp, still warm to the touch long after the fight.'
   },
   {
@@ -1169,6 +1269,9 @@ Game.Data.items = [
     tags: ['no-trade'],
     desc: 'An intricate key taken from the Forsaken Archivist, said to open the Society\'s deepest sealed record-cases.'
   },
+  // v1.8 P2 (D-A option b, SPEC-V1.8 §2 — trophies sellable, codex deferred): no-trade dropped,
+  // small sell value below at-band per-kill gold. [invented] (D-A option b, SPEC-V1.8 §2 — trophies
+  // sellable, codex deferred)
   {
     id: 'quest_eidas_echo_seal',
     name: "Eidas' Echo-Seal",
@@ -1176,12 +1279,14 @@ Game.Data.items = [
     skill: null,
     weight: 2,
     levelReq: 1,
-    value: 50,
-    tags: ['no-trade'],
+    value: 25,
+    tags: [],
     desc: 'A seal of crystallized Anima that held the Echo bound to the Skyspire\'s old ground anchor. It no longer hums, now that the Echo is finally, truly gone.'
   },
 
   // ---------- Lore item: closes the story arc (dropped by eidas_echo) ----------
+  // v1.8 P2 (D-A option b, SPEC-V1.8 §2 — trophies sellable, codex deferred): small sell value.
+  // [invented] (D-A option b, SPEC-V1.8 §2 — trophies sellable, codex deferred)
   {
     id: 'lore_eidas_final_journal',
     name: "Eidas' Final Journal",
@@ -1189,7 +1294,7 @@ Game.Data.items = [
     skill: null,
     weight: 1,
     levelReq: 1,
-    value: 0,
+    value: 20,
     tags: ['lore'],
     // invented continuation, closing chapter_2 (js/data/story.js) — the journal is the payoff
     // for "somewhere above Van Arius, past the clouds, a twinkling light still crosses the night

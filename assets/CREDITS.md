@@ -308,3 +308,16 @@ reuse above passes cleanly.
 - `quest_wardframe_rune_shard` ← copied from the existing `quest_ukai_deep_rune.png` tile (an
   already-installed rune-flavored icon). The new forage material (js/data/items.js, R-A/A2) is an
   item, not a monster, so tile reuse is permitted per the standing convention.
+
+## v1.8 icons — offhand-weapon ladder (reuse; only monsters require byte-distinctness)
+P2 (T1-a, docs/AUDIT-ITEM-REACHABILITY.md): the six new offhand-weapon items are byte-identical
+copies of already-installed same-family weapon tiles:
+
+| new item icon | copied from | rationale |
+|---|---|---|
+| knife_offhand_swiftfang | knife_thieves_edge.png | light dirk tile |
+| hth_offhand_ironknuckle | hth_iron_knuckles.png | name-matched knuckle tile |
+| knife_offhand_nightedge | knife_leviathan_fang.png | same-tier main-hand tier mate |
+| hth_offhand_stormfist | hth_construct_gauntlets.png | same-tier main-hand tier mate |
+| knife_offhand_kingsfang | knife_custodian_needle.png | same-tier main-hand tier mate |
+| hth_offhand_titangrip | hth_vault_gauntlets.png | same-tier main-hand tier mate |

@@ -43,7 +43,10 @@ Game.Data.areas = [
           'crystal_energy_shard',
           // v1.4 P4 (G4b): cheap tavern provisions (js/data/items.js) — appended, existing stock
           // order unchanged.
-          'provision_trail_rations', 'provision_honeyed_mead', 'provision_spice_tea'
+          'provision_trail_rations', 'provision_honeyed_mead', 'provision_spice_tea',
+          // v1.8 P2 (T1-a, docs/AUDIT-ITEM-REACHABILITY.md): the two levelReq-1 offhand weapons
+          // now stocked so dual-wield actually activates — appended, existing stock order unchanged.
+          'knife_offhand_twinfang', 'hth_offhand_cestus'
         ]
       },
       { type: 'synthesis' },
@@ -128,7 +131,11 @@ Game.Data.areas = [
           'crystal_energy_shard',
           // v1.4 P4 (G4b): cheap tavern provisions (js/data/items.js) — appended, existing stock
           // order unchanged.
-          'provision_trail_rations', 'provision_honeyed_mead', 'provision_spice_tea'
+          'provision_trail_rations', 'provision_honeyed_mead', 'provision_spice_tea',
+          // v1.8 P2 (T1-a, docs/AUDIT-ITEM-REACHABILITY.md): the levelReq-10 offhand pair, stocked
+          // alongside the same-tier knife_gares_fang/hth_monks_wraps already sold here — appended,
+          // existing stock order unchanged.
+          'knife_offhand_swiftfang', 'hth_offhand_ironknuckle'
         ]
       },
       { type: 'inn' },
@@ -281,7 +288,13 @@ Game.Data.areas = [
           // v1.4 P4 (G4b): cheap tavern provisions (js/data/items.js) — appended, existing stock
           // order unchanged. Saratus is the Arkan starting town, so provisions belong here too
           // (Eldor/Ju`Mak/Laik cover the Human side).
-          'provision_trail_rations', 'provision_honeyed_mead', 'provision_spice_tea'
+          'provision_trail_rations', 'provision_honeyed_mead', 'provision_spice_tea',
+          // v1.8 P2 (T1-a, docs/AUDIT-ITEM-REACHABILITY.md): Saratus is the Arkan starting town, so
+          // it needs the levelReq-1 offhand pair too (dual-wield parity with Eldor), plus the
+          // levelReq-25 pair alongside the same-tier knife_leviathan_fang/hth_construct_gauntlets
+          // already sold here — appended, existing stock order unchanged.
+          'knife_offhand_twinfang', 'hth_offhand_cestus',
+          'knife_offhand_nightedge', 'hth_offhand_stormfist'
         ]
       },
       { type: 'inn' },
@@ -433,7 +446,11 @@ Game.Data.areas = [
           'crystal_pure_anima', 'crystal_bclass_3', 'crystal_bclass_4',
           'sphere_bclass_3', 'sphere_bclass_4',
           'stone_energy_lesser', 'stone_energy_greater',
-          'material_refined_anima_dust'
+          'material_refined_anima_dust',
+          // v1.8 P2 (T1-a, docs/AUDIT-ITEM-REACHABILITY.md): the levelReq-35 offhand pair, stocked
+          // alongside the same-tier knife_custodian_needle/hth_vault_gauntlets already sold here —
+          // appended, existing stock order unchanged.
+          'knife_offhand_kingsfang', 'hth_offhand_titangrip'
         ]
       },
       { type: 'inn' },
