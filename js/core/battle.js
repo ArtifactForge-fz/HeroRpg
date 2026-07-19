@@ -67,6 +67,12 @@ Game.Battle = (function () {
     if (Game.World && Game.World.shrineBonus) chance += Game.World.shrineBonus(c, 'dodge');
     // Phase 6a: active-class "dodge_flat" passives (js/core/classes.js classBonus).
     if (Game.Classes && Game.Classes.classBonus) chance += Game.Classes.classBonus(c, 'dodge_flat');
+    // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 1, Fleetstep/Sidestep): a typed 'dodge' buff adds
+    // flat chance AFTER every other bonus above, BEFORE the hard DODGE_CAP ceiling below — this
+    // function is called both in-battle (monsterAct) and out-of-battle (screens.js character-sheet
+    // display), so the bonus is read from Game.state.battle directly (see playerStatKindBuff),
+    // never a passed battle param — outside battle it safely reads 0.
+    chance += playerStatKindBuff('dodge');
     return Math.min(BALANCE.DODGE_CAP, chance);
   }
 
@@ -105,6 +111,9 @@ Game.Battle = (function () {
     // Assault — js/data/classes.js; js/core/classes.js classBonus, guarded-hook style matching
     // Game.World.shrineBonus).
     if (Game.Classes && Game.Classes.classBonus) chance += Game.Classes.classBonus(c, 'double_attack_flat');
+    // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 1, Tempo): a typed 'double_attack' buff, same
+    // discipline as playerDodgeChance above — read from Game.state.battle, applied before the cap.
+    chance += playerStatKindBuff('double_attack');
     return Math.min(BALANCE.DOUBLE_ATTACK_CAP, chance);
   }
 
@@ -249,7 +258,11 @@ Game.Battle = (function () {
       // v1.4 P4 (G3): Rage's armor rider (below) reuses this exact same {type:'buff', name,
       // power, turnsLeft} shape but marks itself statKind:'armor' so it is picked up by
       // playerBuffArmorBonus() instead of being double-counted here as bonus Damage.
-      if (st.type === 'buff' && st.statKind !== 'armor') bonus += st.power;
+      // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 1): widened from `statKind !== 'armor'` to
+      // `!statKind` — now that 'dodge'/'double_attack'/'spellpower' typed buffs also exist, ONLY
+      // untyped (legacy) buffs add flat Damage here; every typed buff is read by its own dedicated
+      // site (playerDodgeChance/playerDoubleAttackChance/techEffectivePower/playerBuffArmorBonus).
+      if (st.type === 'buff' && !st.statKind) bonus += st.power;
     }
     // Phase 4: Spirit Shrine "Battle Fervor" buff adds flat Damage for its remaining battles
     // (js/data/shrine.js), on top of any in-battle tech buffs above.
@@ -267,6 +280,49 @@ Game.Battle = (function () {
       if (st.type === 'buff' && st.statKind === 'armor') bonus += st.power;
     }
     return bonus;
+  }
+
+  // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 1): generalized statKind-buff summer for the three
+  // NEW typed buff kinds ('dodge', 'double_attack', 'spellpower'). Unlike playerBuffDamageBonus/
+  // playerBuffArmorBonus above (which always run inside a live battle action and so take a
+  // `battle` param), this one is called from playerDodgeChance/playerDoubleAttackChance/
+  // techEffectivePower, which ALSO run outside any battle (screens.js character-sheet display,
+  // Techs-screen "effective damage" preview) — so it reads Game.state.battle directly and
+  // returns 0 when there is no active battle, rather than requiring every caller to thread a
+  // battle reference through code paths that don't have one.
+  function playerStatKindBuff(kind) {
+    var battle = Game.state && Game.state.battle;
+    if (!battle || !battle.playerStatuses) return 0;
+    var bonus = 0;
+    for (var i = 0; i < battle.playerStatuses.length; i++) {
+      var st = battle.playerStatuses[i];
+      if (st.type === 'buff' && st.statKind === kind) bonus += st.power;
+    }
+    return bonus;
+  }
+
+  // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 items 3-4): applies/reverts a monster debuff's stat
+  // reduction on the battle-transient monster COPY only (deepCopyMonster deep-clones the shared
+  // js/data/monsters.js def via JSON.parse(JSON.stringify(...)), so this can never mutate it).
+  // `entry.applied` records the ACTUAL amount subtracted (which can be less than `entry.power`
+  // once the floor bites), so revertMonsterDebuff always restores the exact pre-debuff value with
+  // no drift, even across an expiry or an immediate re-cast-replace. debuffKind 'bleed' applies/
+  // reverts nothing here — its effect is the per-round tick in tickMonsterStatuses below, not a
+  // stat reduction.
+  function applyMonsterDebuff(monster, entry) {
+    if (entry.debuffKind === 'damage') {
+      entry.applied = monster.damage - Math.max(1, monster.damage - entry.power); // floor 1
+      monster.damage -= entry.applied;
+    } else if (entry.debuffKind === 'armor') {
+      entry.applied = monster.armor - Math.max(0, monster.armor - entry.power); // floor 0
+      monster.armor -= entry.applied;
+    }
+  }
+
+  function revertMonsterDebuff(monster, entry) {
+    if (entry.debuffKind === 'damage' || entry.debuffKind === 'armor') {
+      monster[entry.debuffKind] += (entry.applied || 0);
+    }
   }
 
   // v1.2 Phase 1 item 8 (Curse): true while any 'curse' entry is active among the player's
@@ -352,12 +408,24 @@ Game.Battle = (function () {
         var dmg = Math.max(1, Math.round(raw - battle.monster.magicArmor));
         battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
         log(battle, 'Your ' + st.name + ' strikes the ' + battle.monster.name + (glancing ? ' (glancing)' : '') + ' for ' + dmg + ' damage.');
+      } else if (st.type === 'debuff' && st.debuffKind === 'bleed' && battle.monster.hp > 0) {
+        // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 3/4, Grave Wound; P0 finding): flat tick —
+        // deliberately NO variance/glancing/armor/magic-armor mitigation/resistance (grade null),
+        // but Fear and Curse discipline is preserved (P0-locked: a bleed cannot bypass Fear).
+        var bleedDmg = Math.max(1, Math.round(st.power * fearMultiplier(battle) * playerCurseMultiplier(battle)));
+        battle.monster.hp = Math.max(0, battle.monster.hp - bleedDmg);
+        log(battle, 'The ' + battle.monster.name + ' bleeds for ' + bleedDmg + ' damage.');
       }
       st.turnsLeft -= 1;
       if (st.turnsLeft > 0) {
         remaining.push(st);
       } else if (st.type === 'servitor') {
         log(battle, 'Your Elemental Servitor fades away.');
+      } else if (st.type === 'debuff') {
+        // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 3): expiry reverts the stat reduction (no-op
+        // for 'bleed') and logs it wearing off.
+        revertMonsterDebuff(battle.monster, st);
+        log(battle, 'The ' + battle.monster.name + "'s " + st.name + ' wears off.');
       }
     }
     battle.monster.statuses = remaining;
@@ -806,6 +874,36 @@ Game.Battle = (function () {
       : tech.energyCost;
   }
 
+  var ARMOR_CLASS_SKILL = { light: 'Light Armor', medium: 'Medium Armor', heavy: 'Heavy Armor' };
+
+  // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 1): human-readable stat names for the buff cast log
+  // (D2 note: also disambiguates a typed buff from the untyped legacy "Damage +N" wording).
+  var STAT_KIND_LABEL = { armor: 'Armor', dodge: 'Dodge', double_attack: 'Double Attack', spellpower: 'Spell Power' };
+
+  // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 5): checks the three optional equipment-gate tech
+  // fields (requiresShield/requiresOffhandWeapon/requiresArmorClass), mirroring the shardCost
+  // refusal pattern in useTech — called BEFORE any Energy/shard deduction. Returns a friendly
+  // description of what's missing (falsy = gate satisfied or tech has no gate at all).
+  function equipmentGateRefusal(c, tech) {
+    if (tech.requiresShield) {
+      var shieldId = c.equipment && c.equipment.offhand;
+      var shieldItem = shieldId ? Game.Inventory.getItem(shieldId) : null;
+      if (!shieldItem || shieldItem.damage !== undefined) return 'a Shield equipped in your offhand';
+    }
+    if (tech.requiresOffhandWeapon) {
+      var ohId = c.equipment && c.equipment.offhand;
+      var ohItem = ohId ? Game.Inventory.getItem(ohId) : null;
+      if (!ohItem || ohItem.damage === undefined) return 'a weapon equipped in your offhand';
+    }
+    if (tech.requiresArmorClass) {
+      var wantSkill = ARMOR_CLASS_SKILL[tech.requiresArmorClass];
+      var bodyId = c.equipment && c.equipment.body;
+      var bodyItem = bodyId ? Game.Inventory.getItem(bodyId) : null;
+      if (!bodyItem || bodyItem.skill !== wantSkill) return wantSkill + ' worn on your body';
+    }
+    return null;
+  }
+
   // invented: Intelligence spell factors (DESIGN.md §4 "Intelligence factors spell damage";
   // Recent_Updates.md 2007-08-02). Also used by the Techs infobox "effective damage" display
   // (Version_2.1_Changes.md: "Tech dialog boxes show 'effective damage' which figures in
@@ -824,7 +922,14 @@ Game.Battle = (function () {
     var skillLevel = tech.skill ? ((c.skills[tech.skill] || {}).level || 0) : 0;
     var magicSkillMult = 1 + Math.min(BALANCE.MAGIC_SKILL_DAMAGE_PER_LEVEL * skillLevel, BALANCE.MAGIC_SKILL_DAMAGE_CAP);
     var rodMult = isRodEquipped(c) ? (1 + BALANCE.ROD_SPELL_MULT) : 1;
-    return Math.round(tech.power * (1 + c.intelligence * 0.02) * magicSkillMult * rodMult); // invented: Int spell-damage factor
+    // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 1, Attunement): a typed 'spellpower' buff adds
+    // flat power BEFORE the Int/magic-skill/Rod multipliers below. P0 finding (d), deliberate: this
+    // is the SAME pipeline the Conjurer servitor tick calls (tickMonsterStatuses, above, passes a
+    // synthetic {effect:'damage', power} tech through this exact function), so Attunement also
+    // boosts servitor ticks — no special case, single pipeline (see SPEC-TECH-POLARITY.md §0
+    // finding d; test_v18_engine.js documents this explicitly).
+    var spellpowerBuff = playerStatKindBuff('spellpower');
+    return Math.round((tech.power + spellpowerBuff) * (1 + c.intelligence * 0.02) * magicSkillMult * rodMult); // invented: Int spell-damage factor
   }
 
   function useTech(techId) {
@@ -863,6 +968,14 @@ Game.Battle = (function () {
     // weapon equipped."). Checked before the Energy deduction below, matching attack()'s ordering.
     if (tech.weaponTech && !battle.player.equipment.weapon) {
       log(battle, 'You have no weapon equipped and cannot use ' + tech.name + '.');
+      return battle;
+    }
+    // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 5): optional equipment gates (requiresShield /
+    // requiresOffhandWeapon / requiresArmorClass), checked before any Energy/shard cost — same
+    // ordering discipline as the weaponTech check just above.
+    var gateMissing = equipmentGateRefusal(battle.player, tech);
+    if (gateMissing) {
+      log(battle, 'You need ' + gateMissing + ' to use ' + tech.name + '.');
       return battle;
     }
     // v1.6 P1 (CB-4, SPEC-V1.6-REBALANCE.md §6): while a Rod is equipped, OFFENSIVE techs
@@ -916,11 +1029,83 @@ Game.Battle = (function () {
         }
       }
     } else if (tech.effect === 'buff') {
+      var buffDuration = tech.buffDuration || 3;
+      // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 2): re-cast-replace — a TYPED buff (statKind AND
+      // chain both present) with a same-chain entry already active is replaced, not stacked.
+      // Legacy untyped buffs (no statKind/chain — e.g. Warrior's Edge) keep their existing
+      // stacking behavior untouched (ratchet).
+      if (tech.statKind && tech.chain) {
+        battle.playerStatuses = battle.playerStatuses.filter(function (st) {
+          return !(st.type === 'buff' && st.chain === tech.chain);
+        });
+      }
       battle.playerStatuses.push({
         type: 'buff', name: tech.name, power: tech.power,
-        turnsLeft: tech.buffDuration || 3
+        statKind: tech.statKind, chain: tech.chain,
+        turnsLeft: buffDuration
       });
-      log(battle, 'You cast ' + tech.name + ' — Damage +' + tech.power + ' for ' + (tech.buffDuration || 3) + ' turns.');
+      // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 1): the cast log names the affected stat for
+      // typed buffs (percent formatting for dodge/double_attack, flat for armor/spellpower);
+      // untyped buffs keep the shipped "Damage +N" wording verbatim (ratchet).
+      var statLabel = STAT_KIND_LABEL[tech.statKind];
+      var buffDesc;
+      if (statLabel && (tech.statKind === 'dodge' || tech.statKind === 'double_attack')) {
+        buffDesc = statLabel + ' +' + Math.round(tech.power * 100) + '% for ' + buffDuration + ' turns.';
+      } else if (statLabel) {
+        buffDesc = statLabel + ' +' + tech.power + ' for ' + buffDuration + ' turns.';
+      } else {
+        buffDesc = 'Damage +' + tech.power + ' for ' + buffDuration + ' turns.';
+      }
+      log(battle, 'You cast ' + tech.name + ' — ' + buffDesc);
+    } else if (tech.effect === 'debuff') {
+      // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 3): the first player-castable monster debuffs.
+      // Hit roll splits like the damage/drain branch below: weapon-skill debuffs (Sunder Guard,
+      // Crippling Thrust) roll the monster's dodge (physical); magic-school debuffs (Curse) roll
+      // the archived Int spell-hit formula. Energy is already spent above either way — a miss
+      // still costs the cast, exactly like a missed damage tech.
+      var debuffMissed = false;
+      if (tech.weaponDebuff) {
+        if (rng() < monsterDodgeChance(battle.monster)) {
+          log(battle, 'The ' + battle.monster.name + ' avoids your ' + tech.name + '!');
+          debuffMissed = true;
+        }
+      } else {
+        var debuffHitChance = Math.max(BALANCE.INT_SPELL_HIT_MIN, Math.min(BALANCE.INT_SPELL_HIT_MAX,
+          BALANCE.INT_SPELL_HIT_BASE + BALANCE.INT_SPELL_HIT_PER_INT * battle.player.intelligence -
+          BALANCE.INT_SPELL_HIT_PER_MON_LEVEL * battle.monster.level));
+        if (rng() >= debuffHitChance) {
+          log(battle, 'Your ' + tech.name + ' fails to take hold!');
+          debuffMissed = true;
+        }
+      }
+      if (!debuffMissed) {
+        // Re-cast-replace (generalized servitor rule, §2.0 item 4): a same-chain debuff already on
+        // the monster is reverted FIRST (restoring its exact pre-debuff stat), THEN the new entry
+        // is applied fresh — no drift across a re-cast.
+        var dChain = tech.chain;
+        var keptMonsterStatuses = [];
+        var monsterStatusList = battle.monster.statuses || [];
+        for (var msi = 0; msi < monsterStatusList.length; msi++) {
+          var msEntry = monsterStatusList[msi];
+          if (msEntry.type === 'debuff' && msEntry.chain === dChain) {
+            revertMonsterDebuff(battle.monster, msEntry);
+          } else {
+            keptMonsterStatuses.push(msEntry);
+          }
+        }
+        var debuffEntry = {
+          type: 'debuff', chain: dChain, name: tech.name, debuffKind: tech.debuffKind,
+          power: tech.power, turnsLeft: tech.debuffDuration || 3
+        };
+        applyMonsterDebuff(battle.monster, debuffEntry);
+        keptMonsterStatuses.push(debuffEntry);
+        battle.monster.statuses = keptMonsterStatuses;
+        if (tech.debuffKind === 'bleed') {
+          log(battle, 'Your ' + tech.name + ' opens a bleeding wound on the ' + battle.monster.name + '!');
+        } else {
+          log(battle, 'Your ' + tech.name + " weakens the " + battle.monster.name + "'s " + tech.debuffKind + '!');
+        }
+      }
     } else if (tech.effect === 'summon') {
       // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a): the Conjurer's "Elemental Servitor" — NOT a
       // second combatant (the engine is strictly 1v1; archived dev quote, forum/t-449.md: "there
@@ -974,7 +1159,18 @@ Game.Battle = (function () {
       // offensive techs (damage/drain) — a miss still spends Energy but deals no damage/effect.
       // Weapon techs are physical and instead roll the monster's dodge per-hit below (like a
       // basic attack), not this Int check.
-      if (!tech.weaponTech) {
+      // v1.8 P1 (SPEC-TECH-POLARITY.md §0 finding 5, P0 retune): `physicalRoll: true` (Shield
+      // Bash, Cutpurse Strike — flat damage on a non-Int chassis) rolls monster dodge ONCE per
+      // cast INSTEAD of the Int spell-hit roll below; the Int roll is skipped entirely, exactly
+      // like weaponTech (guard: `!tech.weaponTech && !tech.physicalRoll`).
+      if (tech.physicalRoll) {
+        if (rng() < monsterDodgeChance(battle.monster)) {
+          log(battle, 'The ' + battle.monster.name + ' dodges your ' + tech.name + '!');
+          if (checkEnd(battle)) return battle;
+          finishRound(battle);
+          return battle;
+        }
+      } else if (!tech.weaponTech) {
         var hitChance = Math.max(BALANCE.INT_SPELL_HIT_MIN, Math.min(BALANCE.INT_SPELL_HIT_MAX,
           BALANCE.INT_SPELL_HIT_BASE + BALANCE.INT_SPELL_HIT_PER_INT * battle.player.intelligence -
           BALANCE.INT_SPELL_HIT_PER_MON_LEVEL * battle.monster.level));
@@ -1032,6 +1228,55 @@ Game.Battle = (function () {
           log(battle, 'You absorb ' + drained + ' HP from the ' + battle.monster.name + '.');
         }
       }
+
+      // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 6, Cutpurse Strike): `goldSteal: N` banks N gold
+      // on the BATTLE object the first time this tech's chain lands at least one hit this battle
+      // (once per chain, never re-triggered by a later cast of the same chain). Nothing is
+      // persisted here — the bank lives only on the transient battle object and is paid out with
+      // the win gold in onWin (forfeited by construction on flee/loss/monsterFled, since those
+      // paths never call onWin).
+      if (tech.goldSteal && totalDmgDealt > 0) {
+        battle.goldStealFiredChains = battle.goldStealFiredChains || {};
+        if (!battle.goldStealFiredChains[tech.chain]) {
+          battle.goldStealFiredChains[tech.chain] = true;
+          battle.goldStealBanked = (battle.goldStealBanked || 0) + tech.goldSteal;
+          log(battle, 'You lift ' + tech.goldSteal + ' gold from the ' + battle.monster.name + '.');
+        }
+      }
+
+      // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 6, Crosscut): `offhandFollowup: true` — after the
+      // main hit(s), while the monster still lives and the player is dual-wielding (weapon +
+      // offhand item with a `.damage` field), fire ONE extra offhand swing through the exact same
+      // pipeline as attack()'s own dual-wield block (same variance/glancing/armor/guardian
+      // handling, same DUAL_WIELD_* multiplier, independent monster-dodge roll, Dual Wield skill
+      // XP) — added to totalDmgDealt so the interrupt check below sees the whole action.
+      if (tech.offhandFollowup && battle.monster.hp > 0) {
+        var fuOffhandId = battle.player.equipment.offhand;
+        var fuOffhandItem = fuOffhandId ? Game.Inventory.getItem(fuOffhandId) : null;
+        var fuDualWielding = !!(battle.player.equipment.weapon && fuOffhandItem && fuOffhandItem.damage !== undefined);
+        if (fuDualWielding) {
+          var fuDwSkillLevel = (battle.player.skills['Dual Wield'] && battle.player.skills['Dual Wield'].level) || 0;
+          var fuDwMult = Math.min(
+            BALANCE.DUAL_WIELD_OFFHAND_MULT_BASE + BALANCE.DUAL_WIELD_OFFHAND_MULT_PER_LEVEL * fuDwSkillLevel,
+            BALANCE.DUAL_WIELD_OFFHAND_MULT_CAP
+          );
+          var fuOffhandBase = (Game.Character.getOffhandDamage(battle.player) + playerBuffDamageBonus(battle)) * fear * curseMult * fuDwMult;
+          if (rng() < monsterDodgeChance(battle.monster)) {
+            log(battle, 'The ' + battle.monster.name + ' dodges your offhand strike!');
+          } else {
+            var fuGlancing = rng() < BALANCE.GLANCING_CHANCE;
+            var fuRaw = rollVariance(fuOffhandBase);
+            if (fuGlancing) fuRaw *= BALANCE.GLANCING_MULT;
+            var fuDmg = Math.max(1, Math.round(fuRaw - battle.monster.armor));
+            if (guarding) fuDmg = Math.max(1, Math.round(fuDmg * (1 - BALANCE.GUARDIAN_REDUCTION)));
+            battle.monster.hp = Math.max(0, battle.monster.hp - fuDmg);
+            totalDmgDealt += fuDmg;
+            log(battle, 'Your offhand strikes the ' + battle.monster.name + (fuGlancing ? ' with a glancing blow' : '') + ' for ' + fuDmg + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
+          }
+          Game.Character.addSkillXp(battle.player, 'Dual Wield', 1);
+        }
+      }
+
       // v1.5 P1 (docs/SPEC-V1.5-MONSTER-AI.md §2a): Interrupt check — scoped to this damage/drain
       // branch only (a heal/buff cast never reaches here, so it can never accidentally interrupt
       // with a false dealtDamage=0 >= threshold read). A no-op unless a telegraph charge is pending.
@@ -1391,6 +1636,18 @@ Game.Battle = (function () {
     goldGain = Math.round(goldGain * (1 + goldPctBonus) * championMult);
     Game.Character.addGold(c, goldGain);
 
+    // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 6, goldSteal rider): pay out the banked goldSteal
+    // total (built up in useTech during the fight) alongside the win gold — a flat per-kill rider,
+    // NOT multiplied by champion/gold-pct bonuses (those already apply to goldGain above). Paid
+    // exactly once per battle regardless of how many times the chain landed (useTech's per-chain
+    // fired-flag). Forfeited by construction on flee/loss/monsterFled: those paths return before
+    // ever reaching onWin, so a nonzero battle.goldStealBanked simply never gets paid — nothing to
+    // persist or roll back.
+    if (battle.goldStealBanked) {
+      Game.Character.addGold(c, battle.goldStealBanked);
+      log(battle, 'You lift ' + battle.goldStealBanked + ' gold from the corpse.');
+    }
+
     // v1.2 Phase 1 item 4: Thievery -> bonus gold on every win. invented (user-directed):
     // use-based skill system (SPEC-V1.2.md Phase 1 #4; BALANCE.THIEVERY_GOLD_PER_LEVEL/_CAP).
     var thieveryLevel = (c.skills['Thievery'] && c.skills['Thievery'].level) || 0;
@@ -1538,7 +1795,8 @@ Game.Battle = (function () {
     battle.rewards = {
       xp: xpGain, gold: goldGain, shards: shardsGain,
       skillXp: skillXpGranted, loot: lootId, cutoff: false,
-      thieveryGold: thieveryGoldGain, stolenLoot: stolenId, ap: apGain
+      thieveryGold: thieveryGoldGain, stolenLoot: stolenId, ap: apGain,
+      goldSteal: battle.goldStealBanked || 0 // v1.8 P1: mirrors the thieveryGold field above
     };
 
     log(battle, 'You gain ' + xpGain + ' experience, ' + goldGain + ' gold, and ' + apGain + ' Advantage Points.' +
