@@ -1,8 +1,73 @@
 # SPEC — Tech Polarity Expansion (one new technique chain for every skill)
 
-**Status:** DECISIONS RESOLVED (user, 2026-07-17) — D0–D4 all settled on the recommended
-option (§5). Combat-affecting numbers remain sim-gated (§3); next step is /balance-sim, then
-implementation.
+**Status:** P0 SIM GATE PASSED (lead, 2026-07-19) — constants LOCKED below; implementation may
+begin. Decisions D0–D4 resolved (user, 2026-07-17).
+
+## 0. P0 SIM RESULTS (2026-07-19) — LOCKED CONSTANTS
+
+Harness: real engine in node vm (test_p3 preamble), battle.js run with prototype source patches
+implementing all §2.0 extensions; seeded mulberry32 on `Game.Battle._rng`; 300 trials/cell;
+levels 5/12/22/40 (rank unlock points), cells at-level / true-5-down (monster ≥ L+5) / boss
+(prepared player at the boss's own level). Grid: every §3 row + the release spec's added rows
+(cross-chain dodge & armor stacks, offhand ladder, debuff×telegraph, goldSteal analytic).
+
+**Contract: PASS on every row.** At-level ≥97% win on all 18 chains; bosses stay
+winnable-but-costly under every new rotation (89–100% win, real HP/consumable cost — armor-stack
+boss cells cost 3.7–5.0 consumables); true-5-down stays 0–2% under every new mechanic vs a
+0–20% baseline (the L22+ baseline leak is the accepted DESIGN §4 limitation — **no new mechanic
+widens it**; debuff powers are flat and unscaled, and their action tax outweighs their shave);
+debuffed telegraph/enrage monsters stay threatening (rounds go UP under debuff rotations, never
+down; charged releases still spike).
+
+**Locked exactly as specced (§2.1–2.3 tables):** Sunder Guard 3/6/10/16 · Crippling Thrust
+4/8/14/22 · Curse 4/8/14/22 · Grave Wound 5/10/16/24 · Steel Resolve 6/12/20/30 · Nullward
+6/12/20/30 · Battle Harness 6/12/20/30 · Ironroot 9/16/26/38 · Fleetstep +4/6/9/12% · Sidestep
++5/8/12/16% · Tempo +5/8/12/15% · Shield Bash 12/22/34/48 · Cutpurse 10/18/28/40 · Crosscut
+1.2/1.5/1.8/2.1 (**D4 primary locks; fallback 1.85 not needed** — Cleave stays the faster
+at-level killer) · Channeled Strike 1.3/1.7/2.0/2.3 (D4 primary; rod melee stays slower than
+Cleave, the v1.6 halving holds) · all energy/trainingCost/skillReq scaffolds except the two
+retunes below.
+
+**Sim-forced retunes (ratchet: the NEW mechanic bent, shipped constants untouched):**
+1. **Stat-buff durations 3→5 turns** (Battle Harness 4→6; debuffs stay 3). At 3 turns a
+   whole-action buff eats 1-in-3 actions per chain — a 2-chain defensive stack literally never
+   attacks (grid pass 1: 0% win, monster flees). At 5 turns rotations work; a 3-chain armor
+   stack is still action-economy-bounded (finding below).
+2. **Attunement 6/12/20/30 → 12/24/40/60.** At spec powers the wind-up was parity-at-best with
+   simply re-casting Firebolt even on bosses (a dead pick). Locked powers give +10/+21/+33%
+   boss damage-per-energy at L10/L25/L40, still strictly worse in short at-level fights
+   (self-balancing opportunity cost). No contract cell moved.
+3. **Stoneshear rank III/IV energy 24/30 → 28/38; Censure 25/31 → 29/39** (powers unchanged).
+   At spec costs both chains undercut the shipped tapered Firebolt VI/VII band by 30–55%
+   damage-per-energy; locked costs land ≈+8% at L40 (parity) and slightly under-band at L12.
+4. **goldSteal 3/6/12/20 → 1/3/5/8** (tracks the monster gold curve at each rank's unlock
+   level; ≈25% uplift there, +14% by L40, absolute ceiling 8g/kill, win-gated). Spec values
+   were +35–86%/kill vs the Thievery passive cap of +25% and would have reopened the v1.6 gold
+   curbs.
+5. **Hit-roll split extended (engine semantics):** flat damage chains from physical skills
+   (Shield Bash, Cutpurse Strike) roll **monster dodge** (new data flag `physicalRoll: true`),
+   not the Int spell-hit — on their no-Int chassis the Int roll floored them to 63% hit and
+   they stalled out (grid pass 1).
+
+**T1-a offhand-weapon ladder (companion lock, release spec P2):** Twinfang Dirk (4)/Brawler's
+Cestus (5) L1 (shipped stats, now shop-stocked) → Swiftfang Dirk 12 / Iron Knuckle Guard 13
+(L10) → Night-Edge Dirk 29 / Stormfist Cestus 32 (L25) → King's Fang 40 / Titangrip Cestus 44
+(L35). ≈0.55× the main-hand damage band — at the first-cut 0.8× a dual-wield build strictly
+dominated sword-and-board at L22–40 (the offhand swing re-carries the full stat term under the
+shipped 0.75 mult cap, so item damage is the only free lever). Locked trade on the same knife
+chassis: offhand blade = −14% rounds / +7pt HP-left vs shield — an offensive tilt, not a
+dominant lane.
+
+**Findings for the record:** (a) a 3-chain armor-buff stack is impossible to sustain (action
+economy) and the 2-chain max stack cannot trivialize bosses — the v1.6 penetration floor 0.30
+holds the damage floor (S4 boss cells 96.7–99.3% win at 3.7–5.0 consumables); (b) the existing
+`DODGE_CAP` 0.5 / `DOUBLE_ATTACK_CAP` 0.35 already answer the §3 ceiling question — dedicated
+builds saturate dodge passively by ~L22, making Fleetstep/Sidestep an early/mid-game and
+off-build tool (no new cap constant needed); (c) pre-existing, out of scope: the L5
+knife/dex chassis underperforms vs armored at-level monsters with ALL rotations incl. shipped
+ones (melee floor-1 vs construct armor) — content observation for a later pass, not a v1.8
+regression; (d) the spellpower buff flows through `techEffectivePower` and therefore also
+boosts Conjurer servitor ticks — kept (single pipeline, no special case), noted for P1 tests.
 **Relationship to authority:** extends `docs/DESIGN.md` §5 (Techniques) and §3 (Skills). Adds new
 engine mechanisms (§2.0) but overrides no archived rule — **no [revised] tags in this spec**.
 Tech chain/gating model follows the archived May-2007 trainer/skill-gate design
