@@ -185,10 +185,16 @@ Game.Classes = (function () {
       for (var i = 0; i < entry.abilities.length; i++) {
         var ability = getAbility(classDef, entry.abilities[i]);
         if (ability && ability.kind === 'tech') {
-          removeTech(c, ability.techId);
+          if (ability.techId) removeTech(c, ability.techId);
+          // v1.9 (SPEC-COMPANION-SYSTEM.md §2.5): strip every tech in `techIds` too (Conjurer
+          // Pacts), same back-compatible extension as buyAbility above.
+          if (Array.isArray(ability.techIds)) {
+            ability.techIds.forEach(function (tid) { removeTech(c, tid); });
+          }
         }
       }
     }
+
 
     c.classes[classId] = freshEntry(); // permanent wipe: xp/levels/abilities all reset to zero
     c[key] = null;
@@ -295,10 +301,19 @@ Game.Classes = (function () {
     entry.classLevelsSpent += ability.classLevelCost;
     entry.abilities.push(abilityId);
     if (ability.kind === 'tech') {
-      if (c.techs.indexOf(ability.techId) === -1) c.techs.push(ability.techId);
+      if (ability.techId && c.techs.indexOf(ability.techId) === -1) c.techs.push(ability.techId);
+      // v1.9 (SPEC-COMPANION-SYSTEM.md §2.5): a tech ability may instead carry `techIds` (array) —
+      // e.g. the Conjurer's Pact abilities grant a Bind (summon) tech + its command tech together.
+      // Back-compatible: every pre-existing ability keeps its single `techId` untouched above.
+      if (Array.isArray(ability.techIds)) {
+        ability.techIds.forEach(function (tid) {
+          if (c.techs.indexOf(tid) === -1) c.techs.push(tid);
+        });
+      }
     }
     if (Game.Character) Game.Character.recalcDerived(c);
     return { ok: true, message: 'Purchased ' + ability.name + ' for ' + classDef.name + '.' };
+
   }
 
   // ---------------- Passive effect hook (guarded-hook style, matches Game.World.shrineBonus) ----------------

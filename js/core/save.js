@@ -5,7 +5,8 @@ var Game = window.Game || {};
 Game.Save = (function () {
 
   var STORAGE_KEY = 'herorpg_save';
-  var CURRENT_VERSION = 10;
+  var CURRENT_VERSION = 11;
+
 
   // Transient fields are never persisted: `battle` (Phase 3) holds a live reference to the
   // character plus per-fight state; reloading mid-battle simply abandons the battle.
@@ -220,9 +221,21 @@ Game.Save = (function () {
       version = 10;
     }
 
+    // v10 -> v11: v1.9 added the companion system, character.companion (js/core/character.js
+    // create(); docs/SPEC-COMPANION-SYSTEM.md §2.1/§4). Existing v10 saves are upgraded in place
+    // (no data lost); a pre-existing character simply starts with no companion bound, same as a
+    // fresh one.
+    if (version === 10) {
+      if (state && state.character && typeof state.character.companion === 'undefined') {
+        state.character.companion = null;
+      }
+      version = 11;
+    }
+
     if (version === CURRENT_VERSION) return state;
     return null;
   }
+
 
   function wipe() {
     try {

@@ -85,13 +85,24 @@ exception:** the **Conjurer** (§3a) is the single class here that needs a small
 mechanic (its summoned elemental) — every other new class is pure data. Its two passives still use
 the existing `classBonus` vocabulary; only its signature tech introduces new behaviour.
 
-### 3a. The Conjurer's summon — "Elemental Servitor" (invented, 1v1-safe)
+### 3a. The Conjurer's summon — "Elemental Servitor" (invented, 1v1-safe) — **SUPERSEDED v1.9**
 
-**The hard constraint:** the battle engine is strictly **1v1** and the original developer explicitly
-rejected summons-as-a-second-combatant (*"there won't be summons in battle. It's just 1v1"* —
-`forum/t-449.md`). So the Conjurer's "summon" is **not** a second combatant with its own HP/turn/
-targeting — it is a **persistent battle-transient damage rider**, reusing the existing DoT/status-tick
-pipeline (the same machinery as Poison — `BALANCE.POISON_*`, `tickPlayerStatuses`, buff durations).
+> **[SUPERSEDED] v1.9 (`docs/SPEC-COMPANION-SYSTEM.md`, D0 APPROVED 2026-07-22):** the "hard
+> constraint" this section describes below is no longer absolute — it has been deliberately
+> overridden for the Conjurer's companion system, which is now a genuine second combatant (its
+> own HP, an automatic action each round, and it can be targeted). `tech_summon_elemental` and the
+> "Elemental Servitor" design described in this section were RETIRED and replaced by four
+> per-element Bind techs + companion kinds. This section is kept below verbatim as the historical
+> record of the ORIGINAL (v1.5 P4) design; it no longer describes the shipped Conjurer — see
+> `docs/SPEC-COMPANION-SYSTEM.md` for the current system.
+
+**The hard constraint (historical, as of v1.5 P4 — see the superseded-notice above):** the battle
+engine is strictly **1v1** and the original developer explicitly rejected summons-as-a-second-
+combatant (*"there won't be summons in battle. It's just 1v1"* — `forum/t-449.md`). So the
+Conjurer's "summon" is **not** a second combatant with its own HP/turn/targeting — it is a
+**persistent battle-transient damage rider**, reusing the existing DoT/status-tick pipeline (the
+same machinery as Poison — `BALANCE.POISON_*`, `tickPlayerStatuses`, buff durations).
+
 
 **How it plays:**
 - The Conjurer's signature `classOnly` tech is **Summon Elemental** — a new tech `effect: 'summon'`

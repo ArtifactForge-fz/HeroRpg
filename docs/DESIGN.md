@@ -209,12 +209,17 @@ Archived balance rules (`Recent_Updates.md`):
   create-a-class thread, `forum/t-787.md`; Conjurer from the archived Conjuration skill,
   `Skills.md`); effects/numbers **[invented]**, tuned inside the Tier-3 band (≤+25% per effect
   over the Tier-2 parent, below the Legendary tier; sim-locked, spec §6).
-  - **The Conjurer is summon-based [invented, 1v1-safe]:** its Summon Elemental places an
-    "Elemental Servitor" — a battle-transient DoT rider on the enemy, auto-attuned to the enemy's
-    weakest Anima grade, ticking Int-scaled damage each round through the full mitigation
-    pipeline. NOT a second combatant (the archived 1v1 rule, `forum/t-449.md` "no summons in
-    battle", is preserved — the servitor has no HP, is never targeted, and never grants the
-    monster an action). Its niche is energy-efficient attrition vs the Magus's burst.
+  - **The Conjurer commands a companion [revised, v1.9 — `docs/SPEC-COMPANION-SYSTEM.md`, D0
+    APPROVED]:** superseded its original design (an "Elemental Servitor" DoT rider with no HP,
+    deliberately kept 1v1-safe). The redesigned Conjurer binds one of four elementals — Ember
+    Salamander (Fire, DoT), Tidal Undine (Water, healer), Granite Golem (Earth, tank/Taunt), Gale
+    Sylph (Wind, support/dps) — via a per-element Pact ability (four Bind + command tech pairs,
+    `conjurer_pact_fire/water/earth/wind`). The companion is a REAL second combatant: persisted
+    HP that carries between battles (`character.companion`, save v11), an automatic Int-scaled
+    basic action each player round (`js/core/companion.js`), and it can be targeted by the enemy
+    (Taunt redirect, or a monster tech's `target` field). Dies on hp 0 or on player defeat — must
+    be re-summoned (an Energy tax).
+
   - Legacy note: saves holding an old-convergence combo (e.g. a Crusader with Shadowknight) keep
     it fully functional; only future offers follow the new branching.
   - **v1.6 P2 — class pacing steepened [revised]** (`docs/SPEC-V1.6-REBALANCE.md` §6.2, PG-2;
@@ -250,6 +255,15 @@ purchases, deactivation wipe):
 ## 4. Combat — [archived flow] (`New_Player_Guide.md`, `Fear.md`, `Energy.md`, `Recent_Updates.md`)
 
 - 1v1, turn-based; player action → enemy counters. First strike decided by higher Dexterity.
+  - **[revised] v1.9 override (D0, `docs/SPEC-COMPANION-SYSTEM.md`):** a bound companion (§3
+    Classes, the Conjurer) is now a genuine second combatant — its own HP, an automatic action
+    each player round, and it can be targeted by the enemy. This deliberately overrides the
+    archived "no summons in battle — it's just 1v1" guardrail (`forum/t-449.md`) that the
+    pre-v1.9 Conjurer and the monster-AI/champion-affix design previously treated as absolute
+    (see the two notes below, both now superseded). The override is scoped to the companion
+    system specifically — the PLAYER's own turn/action economy is still strictly one action per
+    round; only the total combatant count on the field changed.
+
 - Player actions: weapon attack (requires equipped weapon), item use (combat-usable items),
   technique (from equipped sets), flee. Every action costs Energy.
 - **Fear**: fighting above your level shows a yellow bar; stats −10% per level difference; affects
@@ -293,9 +307,14 @@ purchases, deactivation wipe):
   casts each battle), **Venomous** (35% chance per successful *basic* attack — not techs — to
   poison an unpoisoned player), **Hoarder** (combat-neutral: drop chance ×3 instead of the
   champion's usual ×2). The battle log announces the affix at the start of the fight and again
-  on each trigger, so the rule is always learnable in play. The engine's own 1v1 constraint
-  (`forum/t-449.md`: "no summons in battle") rules summons out — the affix roster is the
-  invented substitute within the archived intent. **Boss scripts:** all 11 bosses (the 3 pre-arc
+  on each trigger, so the rule is always learnable in play. At the time this affix roster was
+  designed, the engine's own blanket 1v1 constraint (`forum/t-449.md`: "no summons in battle")
+  ruled summons out entirely, so the affix roster was the invented substitute within the archived
+  intent — **[note] v1.9 (`docs/SPEC-COMPANION-SYSTEM.md` D0) overrode that blanket constraint for
+  the Conjurer's own companion system**, but champion monsters still don't summon anything
+  themselves; this affix roster remains their (unrelated) variety mechanic. **Boss scripts:** all
+  11 bosses (the 3 pre-arc
+
   bosses plus the level-100 arc's 6 band bosses) carry a data-driven `script:` array (HP-fraction
   thresholds → a named effect, e.g. the Ruin Warden of the Estari fortifies its Armor at 50%
   HP), read by one interpreter in `battle.js` — never per-boss code branches. Script effects are
