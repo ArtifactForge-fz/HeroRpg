@@ -186,7 +186,32 @@ Game.Battle = (function () {
     // never leaks between battles or into the save).
     battle.playerStatuses = [];
 
+    // v1.9 (SPEC-COMPANION-SYSTEM.md §2.1): if a companion is bound, build a transient
+    // battle.companion VIEW from the persisted character.companion — mirrors deepCopyMonster's
+    // own def+state split above. hp/hpMax/armor/magicArmor are re-derived from the kind def +
+    // character.level EVERY battle (D5: they scale off level only, never stored), so a level-up
+    // between battles is picked up automatically; hp is clamped to the freshly-computed hpMax.
+    // battle.companion is itself transient and NEVER persisted (js/core/save.js strips
+    // state.battle wholesale, same as the rest of `battle`) — only character.companion survives.
+    battle.companion = null;
+    if (c.companion && Game.Companion) {
+      var compKind = Game.Companion.getKind(c.companion.kindId);
+      if (compKind) {
+        var compHpMax = Game.Companion.hpMaxFor(c);
+        battle.companion = {
+          kindId: c.companion.kindId,
+          def: compKind,
+          hp: Math.min(c.companion.hp, compHpMax),
+          hpMax: compHpMax,
+          armor: Game.Companion.armorFor(c),
+          magicArmor: Game.Companion.magicArmorFor(c),
+          statuses: [] // per-battle only (e.g. Taunt) — never persisted
+        };
+      }
+    }
+
     log(battle, 'A ' + monsterCopy.name + ' (Lv ' + def.level + ') appears!');
+
     if (monsterCopy.champion) {
       log(battle, 'A Champion prowls the area — it looks far stronger than its kin!');
       if (monsterCopy.affix) log(battle, AFFIX_ANNOUNCE[monsterCopy.affix]);
@@ -242,12 +267,14 @@ Game.Battle = (function () {
       // the one phase that skipped both, closing a player-favorable gap (a free battle-end that
       // cost a shrine buff none of its remaining battles, and could revert on a later un-persisted
       // reload).
+      persistCompanionOnBattleEnd(battle); // v1.9: monsterFled still writes back/disperses the companion
       if (Game.World && Game.World.tickShrineBuffsOnBattleEnd) Game.World.tickShrineBuffsOnBattleEnd(battle.player);
       if (Game.persist) Game.persist();
       return true;
     }
     return false;
   }
+
 
   // ---------------- Statuses (invented simple effects; names archived in Version_2.1_Changes.md) ----------------
 
@@ -359,75 +386,48 @@ Game.Battle = (function () {
     battle.playerStatuses.push({ type: 'curse', name: 'Curse', turnsLeft: BALANCE.CURSE_DURATION });
   }
 
-  // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a, D4): the Conjurer's Summon Elemental always
-  // auto-attunes to the enemy's WEAKEST Anima grade (lowest resistance multiplier — negative
-  // values are vulnerabilities, so a vulnerability always wins over an unlisted/neutral grade at
-  // 0) so the servitor is always effective, mirroring the archived "align to the enemy's
-  // weakness" grade game. Ties resolve to whichever grade sorts first below (arbitrary — spec:
-  // "ties -> any"). A monster with no resistances at all (or none of the seven listed grades)
-  // naturally falls through to the fixed default 'Fire' (spec D4), since every grade then reads
-  // 0 and Fire is checked first.
-  var SERVITOR_GRADES = ['Fire', 'Water', 'Wind', 'Earth', 'Star', 'Light', 'Dark']; // archived Anima-grade roster, DESIGN.md §5
-  function pickWeaknessGrade(monster) {
-    var res = (monster && monster.resistances) || {};
-    var best = 'Fire';
-    var bestVal = null;
-    for (var i = 0; i < SERVITOR_GRADES.length; i++) {
-      var g = SERVITOR_GRADES[i];
-      var val = typeof res[g] === 'number' ? res[g] : 0;
-      if (bestVal === null || val < bestVal) {
-        bestVal = val;
-        best = g;
-      }
-    }
-    return best;
-  }
-
-  // Ticks the monster's per-battle statuses (currently only the Conjurer's 'servitor' rider) once
-  // per round, mirroring tickPlayerStatuses below exactly but on the OTHER side of the fight.
-  // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a): the servitor is NOT a second combatant — no HP,
-  // never targeted, and this function never calls monsterAct, so it can never grant the monster an
-  // extra action. Its damage routes through the SAME variance/grade-resistance/Magic-Armor
-  // mitigation pipeline as any other graded tech hit (guardrail: "no unmitigated 'true' tick"),
-  // including Fear and Curse — the servitor reads the caster's own Anima the same way a live cast
-  // would, so it cannot be used to bypass either debuff's discipline.
+  // Ticks the monster's per-battle statuses (Grave Wound's 'bleed' debuff, the Fire companion's
+  // 'burn' debuff) once per round, mirroring tickPlayerStatuses below exactly but on the OTHER
+  // side of the fight. v1.9 (SPEC-COMPANION-SYSTEM.md D0): the retired Conjurer "Elemental
+  // Servitor" ('servitor' status/pickWeaknessGrade) that used to tick here is SUPERSEDED by the
+  // companion system (js/core/companion.js) — a companion is a real combatant with its own HP/
+  // turn/target now, so its damage output lives in Game.Companion.act (called from finishRound),
+  // not in this per-round status tick.
   function tickMonsterStatuses(battle) {
     if (isOver(battle)) return;
     var remaining = [];
     var statuses = battle.monster.statuses || [];
     for (var i = 0; i < statuses.length; i++) {
       var st = statuses[i];
-      if (st.type === 'servitor' && battle.monster.hp > 0) {
-        var fear = fearMultiplier(battle);
-        var curseMult = playerCurseMultiplier(battle);
-        var base = techEffectivePower(battle.player, { effect: 'damage', power: st.power }) * fear * curseMult;
-        var glancing = rng() < BALANCE.GLANCING_CHANCE;
-        var raw = rollVariance(base);
-        if (glancing) raw *= BALANCE.GLANCING_MULT;
-        raw = applyResistance(battle.monster, st.grade, raw);
-        var dmg = Math.max(1, Math.round(raw - battle.monster.magicArmor));
-        battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
-        log(battle, 'Your ' + st.name + ' strikes the ' + battle.monster.name + (glancing ? ' (glancing)' : '') + ' for ' + dmg + ' damage.');
-      } else if (st.type === 'debuff' && st.debuffKind === 'bleed' && battle.monster.hp > 0) {
+      if (st.type === 'debuff' && st.debuffKind === 'bleed' && battle.monster.hp > 0) {
         // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 3/4, Grave Wound; P0 finding): flat tick —
         // deliberately NO variance/glancing/armor/magic-armor mitigation/resistance (grade null),
         // but Fear and Curse discipline is preserved (P0-locked: a bleed cannot bypass Fear).
         var bleedDmg = Math.max(1, Math.round(st.power * fearMultiplier(battle) * playerCurseMultiplier(battle)));
         battle.monster.hp = Math.max(0, battle.monster.hp - bleedDmg);
         log(battle, 'The ' + battle.monster.name + ' bleeds for ' + bleedDmg + ' damage.');
+      } else if (st.type === 'debuff' && st.debuffKind === 'burn' && battle.monster.hp > 0) {
+        // v1.9 (SPEC-COMPANION-SYSTEM.md §2.4): the Fire companion's Burn DoT (applied by
+        // js/core/companion.js act(), refreshed by tech_cmd_conflagration's detonation removing
+        // it early) — mirrors the 'bleed' branch's flat-tick shape exactly, but resolves Fire-grade
+        // resistance (applyResistance) since Burn IS a graded elemental effect, unlike bleed.
+        // Fear/Curse discipline preserved, floored at 1.
+        var burnRaw = applyResistance(battle.monster, 'Fire', st.power);
+        var burnDmg = Math.max(1, Math.round(burnRaw * fearMultiplier(battle) * playerCurseMultiplier(battle)));
+        battle.monster.hp = Math.max(0, battle.monster.hp - burnDmg);
+        log(battle, 'The ' + battle.monster.name + ' burns for ' + burnDmg + ' damage.');
       }
       st.turnsLeft -= 1;
       if (st.turnsLeft > 0) {
         remaining.push(st);
-      } else if (st.type === 'servitor') {
-        log(battle, 'Your Elemental Servitor fades away.');
       } else if (st.type === 'debuff') {
         // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 3): expiry reverts the stat reduction (no-op
-        // for 'bleed') and logs it wearing off.
+        // for 'bleed'/'burn') and logs it wearing off.
         revertMonsterDebuff(battle.monster, st);
         log(battle, 'The ' + battle.monster.name + "'s " + st.name + ' wears off.');
       }
     }
+
     battle.monster.statuses = remaining;
     checkEnd(battle);
   }
@@ -457,9 +457,52 @@ Game.Battle = (function () {
     checkEnd(battle);
   }
 
+  // v1.9 (SPEC-COMPANION-SYSTEM.md §2.3): reusable path for a MONSTER action's damage to the
+  // COMPANION (taunt-redirected basic, or a monster tech with target 'companion'/'both') — rolled
+  // INDEPENDENTLY of any simultaneous hit on the player. No Fear/Dodge term: the companion's own
+  // combat stats (armor/magicArmor) scale off character LEVEL only (D5, js/data/companions.js),
+  // not a player stat Fear would weaken, and no dodge mechanic is specced for a companion — every
+  // hit that targets it lands, mitigated only by its own armor (physical) or magicArmor (graded).
+  // Disperses the companion (D6-adjacent mid-battle death) when its hp reaches 0: battle.companion
+  // is left in place (hp 0) for the rest of the battle so later log/lookup code never crashes on a
+  // missing `def`, but battle.companionDispersed is set so persistCompanionOnBattleEnd (below)
+  // nulls character.companion at battle end instead of writing back a dead companion.
+  function damageCompanion(battle, base, grade, actionName) {
+    if (!battle.companion || battle.companion.hp <= 0) return 0;
+    var glancing = rng() < BALANCE.GLANCING_CHANCE;
+    var raw = rollVariance(base);
+    if (glancing) raw *= BALANCE.GLANCING_MULT;
+    var mitigation = grade ? battle.companion.magicArmor : battle.companion.armor;
+    var dmg = Math.max(1, Math.round(raw - mitigation));
+    battle.companion.hp = Math.max(0, battle.companion.hp - dmg);
+    log(battle, 'The ' + battle.monster.name + (actionName ? ' uses ' + actionName : ' attacks') +
+      (glancing ? ' — a glancing blow —' : '') + ' at your ' + battle.companion.def.name + ' for ' + dmg + ' damage.');
+    if (battle.companion.hp <= 0) {
+      battle.companionDispersed = true;
+      log(battle, 'Your ' + battle.companion.def.name + ' is destroyed.');
+    }
+    return dmg;
+  }
+
+  // v1.9 (SPEC-COMPANION-SYSTEM.md §2.1/§2.6): writes the battle-transient companion's current HP
+  // back to the persisted character.companion on every NON-loss battle end (won/fled/monsterFled)
+  // — mirrors how `battle.player` already IS the live character (no copy to write back). A
+  // companion dispersed mid-battle (hp hit 0 — see damageCompanion above) is nulled here instead,
+  // so a fully-dead companion never persists with hp:0; it must be re-summoned (an Energy tax).
+  // onLoss (D6) nulls character.companion unconditionally and does not call this helper.
+  function persistCompanionOnBattleEnd(battle) {
+    if (!battle.companion) return;
+    if (battle.companionDispersed || battle.companion.hp <= 0) {
+      battle.player.companion = null;
+    } else if (battle.player.companion) {
+      battle.player.companion.hp = battle.companion.hp;
+    }
+  }
+
   // ---------------- Monster action (counter after each player action) ----------------
 
   function monsterAct(battle) {
+
     if (isOver(battle)) return;
     var monster = battle.monster;
     // v1.4 P3 (G2) Frenzied champion affix: counts monster actions this battle (every action,
@@ -577,6 +620,49 @@ Game.Battle = (function () {
     var cost = usedTech ? usedTech.energyCost : BALANCE.MONSTER_ATTACK_ENERGY_COST;
     monster.energy = Math.max(0, monster.energy - cost);
 
+    // v1.9 (SPEC-COMPANION-SYSTEM.md §2.3): target resolution. Default (every existing monster,
+    // `tech.target` absent) is the PLAYER — unchanged. A monster TECH may declare an explicit
+    // `target` ('player'|'companion'|'both'); a plain BASIC attack (no usedTech) instead consults
+    // Taunt (Game.Companion.tauntActive) — a live Taunt on the companion (the Earth Golem's Stone
+    // Fist/Bulwark) redirects the basic onto it. 'companion' falls back to 'player' if no companion
+    // is bound/alive (spec: "falls back to the player").
+    var target = (usedTech && usedTech.target) ? usedTech.target : 'player';
+    var companionAlive = !!(battle.companion && battle.companion.hp > 0);
+    if (!usedTech && companionAlive && Game.Companion && Game.Companion.tauntActive(battle)) {
+      target = 'companion';
+    }
+    if (target === 'companion' && !companionAlive) target = 'player';
+    var hitsPlayer = (target === 'player' || target === 'both');
+    var hitsCompanion = (target === 'companion' || target === 'both') && companionAlive;
+
+    // Base power/charge/frenzied computed ONCE — shared by every target this action hits; each
+    // target is still rolled/mitigated INDEPENDENTLY below (spec: "each rolled/mitigated
+    // independently"), so a 'both' cleave doesn't let one glancing roll cover two victims.
+    var actionBase = usedTech ? usedTech.power : monster.damage;
+    // v1.5 P1: a charged release = normal basic-attack damage x AFFIX_CHARGED_MULT, applied to
+    // `actionBase` BEFORE the rest of this pipeline (variance/glancing/mitigation/Fear/defending)
+    // below — reuses it verbatim, same as every other action.
+    if (releasing) actionBase *= chargeMult;
+    // v1.4 P3 (G2) Frenzied champion affix: escalating +5%/action, capped +40% (LOCKED by the P0
+    // sim — docs/SPEC-V1.4-GAMEPLAY.md P0 RESULTS item 2; the uncapped version broke the >=85% win
+    // floor at L90/100). Applies to the raw base power, upstream of the same variance/glancing/
+    // mitigation pipeline every other action already uses.
+    if (monster.affix === 'frenzied') {
+      var frenzyMult = 1 + Math.min(BALANCE.AFFIX_FRENZIED_RATE * battle.monsterActionsTaken, BALANCE.AFFIX_FRENZIED_CAP);
+      actionBase = Math.round(actionBase * frenzyMult);
+    }
+
+    // v1.9: resolve the companion hit (if any) BEFORE the player's own dodge roll below, so a
+    // 'companion'-only target never rolls the player's Dodge at all (nothing is aimed at them).
+    if (hitsCompanion) {
+      damageCompanion(battle, actionBase, usedTech ? usedTech.grade : null,
+        releasing ? 'a charged blow' : (usedTech ? usedTech.name : null));
+    }
+    if (!hitsPlayer) {
+      checkEnd(battle);
+      return;
+    }
+
     // Player dodge roll (Dodge skill + Dex). v1.2 Phase 1 item 3: a successful dodge grants Dodge
     // skill XP at the proc site (use-based skill system; addSkillXp already enforces the 2L+1 cap).
     if (rng() < playerDodgeChance(battle.player)) {
@@ -586,22 +672,11 @@ Game.Battle = (function () {
       return;
     }
 
-    var base = usedTech ? usedTech.power : monster.damage;
-    // v1.5 P1: a charged release = normal basic-attack damage x AFFIX_CHARGED_MULT, applied to
-    // `base` BEFORE the rest of this pipeline (variance/glancing/mitigation/Fear/defending) below —
-    // reuses it verbatim, same as every other action.
-    if (releasing) base *= chargeMult;
-    // v1.4 P3 (G2) Frenzied champion affix: escalating +5%/action, capped +40% (LOCKED by the P0
-    // sim — docs/SPEC-V1.4-GAMEPLAY.md P0 RESULTS item 2; the uncapped version broke the >=85% win
-    // floor at L90/100). Applies to the raw base power, upstream of the same variance/glancing/
-    // mitigation pipeline every other action already uses.
-    if (monster.affix === 'frenzied') {
-      var frenzyMult = 1 + Math.min(BALANCE.AFFIX_FRENZIED_RATE * battle.monsterActionsTaken, BALANCE.AFFIX_FRENZIED_CAP);
-      base = Math.round(base * frenzyMult);
-    }
+    var base = actionBase;
     var glancing = rng() < BALANCE.GLANCING_CHANCE;
     var raw = rollVariance(base);
     if (glancing) raw *= BALANCE.GLANCING_MULT;
+
 
     // Armor mitigates physical hits; Magic Armor mitigates graded tech hits (DESIGN.md §4).
     // Fear also weakens the player's defensive stat-derived numbers (Fear.md: "lower your
@@ -707,15 +782,40 @@ Game.Battle = (function () {
   // Runs the monster counter + end-of-round status ticks after a player action, unless the
   // battle already ended. Boss scripts (above) are checked first so a threshold crossed by the
   // player's own action can affect the monster's counter-attack that follows in the same round.
+  // v1.9 (SPEC-COMPANION-SYSTEM.md §2.6): decrements the companion's own per-battle statuses
+  // (currently only Taunt) once per round — mirrors tickPlayerStatuses/tickMonsterStatuses exactly,
+  // one round-resolution slot later. Nothing else ticks here yet (future companion-side DoTs,
+  // per spec).
+  function tickCompanionStatuses(battle) {
+    if (isOver(battle)) return;
+    if (!battle.companion) return;
+    var remaining = [];
+    var statuses = battle.companion.statuses || [];
+    for (var i = 0; i < statuses.length; i++) {
+      var st = statuses[i];
+      st.turnsLeft -= 1;
+      if (st.turnsLeft > 0) remaining.push(st);
+    }
+    battle.companion.statuses = remaining;
+  }
+
   function finishRound(battle) {
     if (isOver(battle)) return;
+    // v1.9 (SPEC-COMPANION-SYSTEM.md §2.6): guarded-hook style (CLAUDE.md architecture) — the
+    // companion's automatic basic fires FIRST, on the player's own turn, before the monster's
+    // counter. If the companion's hit already ended the battle (killed the monster), bail out here
+    // exactly like every other player action does (attack()/useTech() already do
+    // `if (checkEnd(battle)) return;` at their own call sites) so the monster never gets a "free"
+    // counter-attack after already being defeated.
+    if (Game.Companion) Game.Companion.act(battle);
+    if (checkEnd(battle)) return;
     runBossScript(battle);
     monsterAct(battle);
     tickPlayerStatuses(battle);
-    // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a): the Conjurer's Elemental Servitor tick, same
-    // round-resolution slot as the player-status tick just above it.
     tickMonsterStatuses(battle);
+    tickCompanionStatuses(battle);
   }
+
 
   // ---------------- Player actions ----------------
 
@@ -963,7 +1063,20 @@ Game.Battle = (function () {
       log(battle, tech.name + ' requires its class to be active.');
       return battle;
     }
+    // v1.9 (SPEC-COMPANION-SYSTEM.md §2.4): a command tech (`requiresCompanion`) is only castable
+    // while the matching companion is bound AND still alive this battle — a companion dispersed
+    // mid-battle (hp 0, about to be nulled at battle end) can no longer be commanded. Same ordering
+    // discipline as the classOnly gate just above.
+    if (tech.requiresCompanion) {
+      var companionMatches = battle.companion && battle.companion.hp > 0 && battle.companion.kindId === tech.requiresCompanion;
+      if (!companionMatches) {
+        var reqKindDef = Game.Companion ? Game.Companion.getKind(tech.requiresCompanion) : null;
+        log(battle, tech.name + ' requires a bound ' + (reqKindDef ? reqKindDef.element : tech.requiresCompanion) + ' companion.');
+        return battle;
+      }
+    }
     // Feature C: weapon techniques (js/data/techs.js `weaponTech: true`) need a weapon equipped,
+
     // same archived rule as attack() (New_Player_Guide.md: "You may not attack an enemy without a
     // weapon equipped."). Checked before the Energy deduction below, matching attack()'s ordering.
     if (tech.weaponTech && !battle.player.equipment.weapon) {
@@ -1057,7 +1170,15 @@ Game.Battle = (function () {
         buffDesc = 'Damage +' + tech.power + ' for ' + buffDuration + ' turns.';
       }
       log(battle, 'You cast ' + tech.name + ' — ' + buffDesc);
+      // v1.9 (SPEC-COMPANION-SYSTEM.md §2.4, Bulwark): refreshes the Earth companion's Taunt to a
+      // longer duration on cast, on top of the Armor buff above (gated by `requiresCompanion`
+      // already having confirmed the Golem is bound and alive).
+      if (tech.refreshesCompanionTaunt && Game.Companion && battle.companion && battle.companion.hp > 0) {
+        Game.Companion.setTaunt(battle, BALANCE.COMPANION_TAUNT_TURNS_BULWARK);
+        log(battle, 'Your ' + battle.companion.def.name + ' plants itself firmly, daring the ' + battle.monster.name + ' to strike.');
+      }
     } else if (tech.effect === 'debuff') {
+
       // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 3): the first player-castable monster debuffs.
       // Hit roll splits like the damage/drain branch below: weapon-skill debuffs (Sunder Guard,
       // Crippling Thrust) roll the monster's dodge (physical); magic-school debuffs (Curse) roll
@@ -1107,29 +1228,31 @@ Game.Battle = (function () {
         }
       }
     } else if (tech.effect === 'summon') {
-      // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a): the Conjurer's "Elemental Servitor" — NOT a
-      // second combatant (the engine is strictly 1v1; archived dev quote, forum/t-449.md: "there
-      // won't be summons in battle. It's just 1v1"). A persistent battle-transient DoT rider
-      // stored on the ENEMY's own status list (battle.monster.statuses, already an empty array
-      // from deepCopyMonster/start()), so it reuses the identical tick/removal machinery as a
-      // player-side status — just ticked by tickMonsterStatuses (above) instead of
-      // tickPlayerStatuses. Deals NO immediate damage here — only the round tick strikes. Grade
-      // auto-picks the monster's own weakest Anima grade (pickWeaknessGrade, D4) so the Conjurer
-      // needs no Fire/Water/Wind/Earth tech variants. One servitor at a time: re-summoning
-      // REPLACES the existing entry rather than stacking a second (spec: "One servitor at a time").
-      var servitorGrade = pickWeaknessGrade(battle.monster);
-      battle.monster.statuses = (battle.monster.statuses || []).filter(function (st) {
-        return st.type !== 'servitor';
-      });
-      battle.monster.statuses.push({
-        type: 'servitor',
-        name: 'Elemental Servitor',
-        turnsLeft: tech.servitorTurns,
-        power: tech.servitorPower,
-        grade: servitorGrade
-      });
-      log(battle, 'You summon an Elemental Servitor, attuned to ' + servitorGrade + ' Anima — it will strike the ' + battle.monster.name + ' each round.');
+      // v1.9 (SPEC-COMPANION-SYSTEM.md D0/§2.1/§2.4): SUPERSEDES the retired Conjurer "Elemental
+      // Servitor" (a battle-transient DoT rider that deliberately honoured the archived "no
+      // summons in battle — it's just 1v1" guardrail, forum/t-449.md). That override is now
+      // authorised (D0 APPROVED) — a companion is a genuine second combatant with its own HP,
+      // automatic turn, and can be targeted (js/core/companion.js). Binding REPLACES any existing
+      // companion at full HP (D2) — Game.Companion.summon writes the persisted
+      // character.companion; the battle-transient battle.companion VIEW is rebuilt immediately so
+      // THIS battle's very next round already sees the new companion (mirrors start()'s own
+      // construction).
+      if (Game.Companion && tech.summonKind) {
+        Game.Companion.summon(battle.player, tech.summonKind);
+        var summonedKind = Game.Companion.getKind(tech.summonKind);
+        battle.companion = {
+          kindId: tech.summonKind,
+          def: summonedKind,
+          hp: Game.Companion.hpMaxFor(battle.player),
+          hpMax: Game.Companion.hpMaxFor(battle.player),
+          armor: Game.Companion.armorFor(battle.player),
+          magicArmor: Game.Companion.magicArmorFor(battle.player),
+          statuses: []
+        };
+        log(battle, 'You bind a ' + summonedKind.name + ' to your side — it will fight at your command each round.');
+      }
     } else {
+
       // 'damage' | 'drain'
       // v1.4 P3 (G2) Warded champion affix: the FIRST hostile (damage/drain) tech the player
       // casts this battle is negated outright — Energy is already spent (deducted above), damage
@@ -1229,7 +1352,33 @@ Game.Battle = (function () {
         }
       }
 
+      // v1.9 (SPEC-COMPANION-SYSTEM.md §2.4, Conflagration): `detonatesBurn: true` — after this
+      // cast's own damage above, if the monster carries an active Burn (the Fire companion's DoT,
+      // js/core/companion.js act()), its remaining dotPower*turnsLeft is dealt immediately
+      // (Fire-resisted, Fear+Curse preserved, min 1), then the entry is removed (no further ticks).
+      // A no-op if no Burn is active. Reuses `fear`/`curseMult` already computed above for this
+      // same cast.
+      if (tech.detonatesBurn && battle.monster.hp > 0) {
+        var keptAfterDetonate = [];
+        var preDetonateStatuses = battle.monster.statuses || [];
+        for (var bi = 0; bi < preDetonateStatuses.length; bi++) {
+          var burnEntry = preDetonateStatuses[bi];
+          if (burnEntry.type === 'debuff' && burnEntry.debuffKind === 'burn' && battle.monster.hp > 0) {
+            var burnRemaining = burnEntry.power * burnEntry.turnsLeft;
+            var detonateRaw = applyResistance(battle.monster, 'Fire', burnRemaining);
+            var detonateDmg = Math.max(1, Math.round(detonateRaw * fear * curseMult));
+            battle.monster.hp = Math.max(0, battle.monster.hp - detonateDmg);
+            totalDmgDealt += detonateDmg;
+            log(battle, 'The smouldering wound erupts, detonating for ' + detonateDmg + ' damage!');
+          } else {
+            keptAfterDetonate.push(burnEntry);
+          }
+        }
+        battle.monster.statuses = keptAfterDetonate;
+      }
+
       // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 6, Cutpurse Strike): `goldSteal: N` banks N gold
+
       // on the BATTLE object the first time this tech's chain lands at least one hit this battle
       // (once per chain, never re-triggered by a later cast of the same chain). Nothing is
       // persisted here — the bank lives only on the transient battle object and is paid out with
@@ -1343,11 +1492,13 @@ Game.Battle = (function () {
       battle.phase = 'fled';
       battle.player.fury = 0; // archived: Fury resets on flee (Recent_Updates.md 2007-08-11)
       log(battle, 'You escape from the battle. Your Fury fades.');
+      persistCompanionOnBattleEnd(battle); // v1.9: a successful flee still writes back/disperses the companion
       // Phase 4: Spirit Shrine buffs tick down once per battle-end; win/loss/flee all count (spec).
       if (Game.World && Game.World.tickShrineBuffsOnBattleEnd) Game.World.tickShrineBuffsOnBattleEnd(battle.player);
       if (Game.persist) Game.persist();
       return battle;
     }
+
     // Failure (user-directed): Fury is NOT reset, the battle stays active, and the monster gets
     // its normal counter-attack via the same finishRound path every other action uses.
     log(battle, 'You fail to escape — the ' + battle.monster.name + ' blocks your path!');
@@ -1604,10 +1755,12 @@ Game.Battle = (function () {
         var cutoffItem = Game.Inventory.getItem(cutoffLootId);
         log(battle, 'The ' + monster.name + ' dropped: ' + (cutoffItem ? cutoffItem.name : cutoffLootId) + '. Click Loot to claim it.');
       }
+      persistCompanionOnBattleEnd(battle); // v1.9: a cutoff win still writes back/disperses the companion
       if (Game.World && Game.World.tickShrineBuffsOnBattleEnd) Game.World.tickShrineBuffsOnBattleEnd(c);
       if (Game.persist) Game.persist();
       return;
     }
+
 
     // Combat XP with Fury bonus (archived: +1% per tick, Recent_Updates.md 2007-08-11). v1.6 P2
     // (PG-1, SPEC-V1.6-REBALANCE.md §6.2): [revised] capped at BALANCE.FURY_XP_CAP (+25%) — the
@@ -1806,10 +1959,12 @@ Game.Battle = (function () {
       log(battle, 'The ' + monster.name + ' dropped: ' + (lootItem ? lootItem.name : lootId) + '. Click Loot to claim it.');
     }
 
+    persistCompanionOnBattleEnd(battle); // v1.9: a normal win still writes back/disperses the companion
     // Phase 4: Spirit Shrine buffs tick down once per battle-end; win/loss/flee all count (spec).
     if (Game.World && Game.World.tickShrineBuffsOnBattleEnd) Game.World.tickShrineBuffsOnBattleEnd(c);
     if (Game.persist) Game.persist();
   }
+
 
   // Feature B (revised, user-directed): death penalties — deliberately OVERRIDES the archived
   // no-loss rule (New_Player_Guide.md "you don't lose anything either"); see balance.js DEATH_*
@@ -1821,7 +1976,9 @@ Game.Battle = (function () {
     var c = battle.player;
     c.deaths += 1; // archived: Deaths.md counter
     c.fury = 0; // archived: Fury resets on death (Recent_Updates.md 2007-08-11)
+    c.companion = null; // v1.9 (SPEC-COMPANION-SYSTEM.md D6): disperse the companion on defeat too — an extra Energy tax layered on the existing death penalty; must be re-summoned
     battle.rewards = null;
+
     battle.pendingLoot = null;
     battle.pendingStolenLoot = null;
 
@@ -1999,8 +2156,11 @@ Game.Battle = (function () {
     playerCurseMultiplier: playerCurseMultiplier,
     getTech: getTech,
     getMonsterDef: getMonsterDef,
+    rollVariance: rollVariance, // v1.9 (SPEC-COMPANION-SYSTEM.md): exported so js/core/companion.js's own damage pipeline reuses the exact same variance roll, never a second one
+    applyResistance: applyResistance, // v1.9: exported for the same reason (companion damage vs. the monster's grade resistances)
     _rng: Math.random // overridable for deterministic tests
   };
 })();
+
 
 window.Game = Game;

@@ -158,10 +158,41 @@ assert(loaded.character.equipment && loaded.character.equipment.weapon === null,
 Game.state = loaded;
 Game.persist();
 var resaved = JSON.parse(localStorageStore['herorpg_save']);
-assert(resaved.version === 10, 'resaved payload is stamped CURRENT_VERSION 10 (v1.4 P2 Advantage Points migration), got ' + resaved.version);
+assert(resaved.version === 11, 'resaved payload is stamped CURRENT_VERSION 11 (v1.9 companion migration), got ' + resaved.version);
+
 assert(loaded.character.ap === 0, 'v1 save migration adds ap:0 (v9->v10 step), got ' + loaded.character.ap);
+assert(loaded.character.companion === null, 'v1 save migration adds companion:null (v10->v11 step, full v1->v11 chain), got ' + JSON.stringify(loaded.character.companion));
+
+// =================== Test 2b: v10 -> v11 migration adds companion:null ===================
+console.log('\n=== Test 2b: a hand-crafted v10 save (no `companion` field) migrates to v11 with companion:null ===');
+var v10Character = JSON.parse(JSON.stringify(v1Character));
+v10Character.inventory = []; v10Character.equipment = { weapon: null, offhand: null, head: null, body: null, legs: null, feet: null };
+v10Character.techs = []; v10Character.techSets = [
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null]
+];
+v10Character.fury = 0;
+v10Character.currentLocation = 'eldor';
+v10Character.vault = { platinum: 0, gold: 0, items: [] };
+v10Character.shrineBuffs = [];
+v10Character.quests = {};
+v10Character.classes = {}; v10Character.primaryClass = null; v10Character.secondaryClass = null; v10Character.legendaryUnlocked = false;
+v10Character.afflictions = [];
+v10Character.ap = 5;
+// NOTE: no `companion` field at all — a real v10 (pre-v1.9) save.
+localStorageStore['herorpg_save'] = JSON.stringify({ version: 10, state: { character: v10Character } });
+var loadedV10 = Game.Save.load();
+assert(loadedV10 !== null, 'v10 save loads without error');
+assert(loadedV10.character.ap === 5, 'migrated v10 character identity intact (ap)');
+assert(loadedV10.character.companion === null, 'v10->v11 migration adds companion:null, got ' + JSON.stringify(loadedV10.character.companion));
+Game.state = loadedV10;
+Game.persist();
+var resavedV10 = JSON.parse(localStorageStore['herorpg_save']);
+assert(resavedV10.version === 11, 'v10->v11 resave stamps CURRENT_VERSION 11, got ' + resavedV10.version);
 
 // ================= Test 3: level/stat requirement gating =================
+
 console.log('\n=== Test 3: equip blocked with red reqs when unmet; cursed item traps ===');
 var c3 = Game.Character.create({ race: 'Human', name: 'Newbie', gender: 'Male', skillPoints: skillPoints });
 // Give a level-10 item the level-1 character cannot use.

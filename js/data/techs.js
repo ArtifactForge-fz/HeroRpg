@@ -6,10 +6,23 @@
 //
 // Shape: { id, name, chain, rank, skill, grade, energyCost, power, effect, trainingCost,
 //          skillReq, desc }
-//   effect: 'damage' | 'heal' | 'buff' | 'drain'
+//   effect: 'damage' | 'heal' | 'buff' | 'drain' | 'debuff' | 'summon'
 //   grade: the Anima grade (DESIGN.md §5) used for resistance lookups; null for physical/no grade.
+//
+// v1.9 (docs/SPEC-COMPANION-SYSTEM.md): companion-system tech fields, all optional/back-compatible
+// (every pre-existing tech is unaffected):
+//   summonKind: on effect:'summon' techs — the js/data/companions.js kind id to bind
+//               (js/core/battle.js useTech -> Game.Companion.summon).
+//   requiresCompanion: the companion kind id that must be bound AND alive this battle for a
+//               command tech to be castable (js/core/battle.js useTech).
+//   detonatesBurn: true on a damage tech that detonates the Fire companion's active Burn DoT.
+//   refreshesCompanionTaunt: true on a buff tech that also refreshes the Earth companion's Taunt.
+// Monster techs (js/data/monsters.js `techs` arrays) may also carry:
+//   target: 'player' | 'companion' | 'both' — who a monster's tech strikes (js/core/battle.js
+//           monsterAct); ABSENT ⇒ 'player' (every shipped monster tech is unaffected).
 
 var Game = window.Game || {};
+
 
 Game.Data = Game.Data || {};
 
@@ -746,32 +759,13 @@ Game.Data.techs = [
     classId: 'warden',
     desc: 'A Light-grade blow driven through the Warden\'s own barrier, turning defense briefly into attack. Warden class technique.'
   },
-  // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md §3a): the Conjurer's "Elemental Servitor" — a NEW
-  // effect kind, 'summon'. NOT a second combatant (the battle engine stays strictly 1v1; archived
-  // dev quote, forum/t-449.md: "there won't be summons in battle. It's just 1v1") — casting it
-  // places a persistent battle-transient DoT rider on the ENEMY's own status list
-  // (battle.monster.statuses), auto-attuned to whichever Anima grade the enemy resists LEAST (see
-  // js/core/battle.js pickWeaknessGrade), then struck automatically each round by
-  // tickMonsterStatuses — never targeted, never grants the monster an extra action, no HP of its
-  // own. servitorPower/servitorTurns are PROVISIONAL (Part B brief) — the lead's P5 sim calibrates
-  // damage-per-Energy vs. Magus's Anima Reckoning burst (spec §3a/§6).
-  {
-    id: 'tech_summon_elemental',
-    name: 'Summon Elemental',
-    chain: null,
-    rank: 1,
-    skill: null,
-    grade: null, // the servitor's OWN grade is chosen at cast time (auto-weakness, js/core/battle.js pickWeaknessGrade), not a fixed grade on the tech itself
-    energyCost: 35, // invented: provisional Part B brief number — paid ONCE per summon, not per tick (the class's "pay Energy once, get free recurring damage" identity, spec §3a)
-    servitorPower: 50, // invented, LOCKED v1.5 P5 sim: per-tick base power, Int-scaled via techEffectivePower like any spell. The provisional 14 (naive "5 ticks ≈ one 84-power Reckoning" pre-mitigation math) floored at ~1 dmg/tick — flat monster Magic Armor per tick punishes multi-hit (L70 Int-build: eff(14)=54 vs boss MA 56). At 50, each tick lands ≈55-60% of a Magus Reckoning post-mitigation; 5 ticks ≈ 2.7 Reckonings for one 35-Energy cast = the energy-efficient attrition niche vs Magus's faster, costlier burst (spec §3a). The auto-weakness grade also makes it the better tool vs nuke-resistant bosses — a niche, not a strict upgrade.
-    servitorTurns: 5, // invented: provisional Part B brief number — capped duration so a long boss fight isn't trivialized (spec §3a guardrail)
-    effect: 'summon',
-    classOnly: true,
-    classId: 'conjurer',
-    desc: 'Binds a lingering Elemental Servitor to the battle, auto-attuned to the enemy\'s weakest Anima grade — it strikes automatically each round for 5 rounds until it fades. Pay Energy once for recurring damage while you spend your own turns elsewhere. Conjurer class technique.'
-  },
+  // v1.9 (docs/SPEC-COMPANION-SYSTEM.md D0): the Conjurer's old "Elemental Servitor"
+  // (tech_summon_elemental, effect:'summon') that used to live here is RETIRED/superseded — see
+  // the new companion-system Bind/command techs appended at the end of this file, and
+  // js/data/classes.js's redesigned Conjurer (four Pact abilities).
   {
     id: 'tech_greater_restoration',
+
     name: 'Greater Restoration',
     chain: null,
     rank: 1,
@@ -2699,7 +2693,194 @@ Game.Data.techs = [
     trainingCost: 8,
     skillReq: 45,
     desc: 'Mastery of Double Attack: every strike arrives as a pair, with no beat left uncovered.'
-  } // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+  }, // [invented] (SPEC-TECH-POLARITY.md §2.3; constants P0-locked §0)
+
+  // =====================================================================
+  // v1.9: Companion System — Conjurer Bind (summon) + command techs (docs/SPEC-COMPANION-
+  // SYSTEM.md §2.4). APPENDED (no index shift). All classOnly:true, classId:'conjurer',
+  // chain:null, rank:1, skill:null, trainingCost:0, skillReq:0 (granted directly by the Conjurer's
+  // Pact abilities, js/data/classes.js conjurer_pact_*, never trained at the Academy).
+  //
+  // Two NEW optional tech-schema fields, both back-compatible (every other tech is unaffected):
+  //   summonKind: on effect:'summon' techs — which js/data/companions.js kind id to bind
+  //               (js/core/battle.js useTech -> Game.Companion.summon).
+  //   requiresCompanion: on the command techs — the companion kind id that must be bound AND
+  //               alive this battle for the tech to be castable (js/core/battle.js useTech).
+  // Two further per-tech behavior flags (also optional/back-compatible), each read by a small
+  // dedicated js/core/battle.js useTech branch: `detonatesBurn` (Conflagration) and
+  // `refreshesCompanionTaunt` (Bulwark).
+  //
+  // IMPORTANT (as with every tech in this file): `power` is a FLAT number that
+  // Game.Battle.techEffectivePower scales by Intelligence/magic-skill/Rod at cast time — it is
+  // NOT written as a formula-of-level. The command techs' flat `power` values below are
+  // PROVISIONAL placeholders picked to sit in the same ballpark as other classOnly Tier-3
+  // signature techs (e.g. tech_anima_reckoning/tech_shadow_blade), sim-gated pending the lead's
+  // /balance-sim — none are locked. (Companion BASIC powers, by contrast, DO scale with
+  // character level — js/data/companions.js coefficients, computed per-battle in
+  // js/core/companion.js — that is intentional, not an inconsistency.)
+  // =====================================================================
+
+  {
+    id: 'tech_summon_fire',
+    name: 'Bind Salamander',
+    chain: null,
+    rank: 1,
+    skill: 'Conjuration',
+    grade: 'Fire',
+    energyCost: 30, // [invented][sim-gated] docs/SPEC-COMPANION-SYSTEM.md §2.2 — anchored near the retired servitor's 35 so re-summoning stays a meaningful Energy tax
+    summonKind: 'comp_fire',
+    effect: 'summon',
+    classOnly: true,
+    classId: 'conjurer',
+    desc: 'Bind an Ember Salamander to your side — a patient arsonist that sears foes over time. Replaces any companion already bound.'
+  },
+  {
+    id: 'tech_summon_water',
+    name: 'Bind Undine',
+    chain: null,
+    rank: 1,
+    skill: 'Conjuration',
+    grade: 'Water',
+    energyCost: 30, // [invented][sim-gated]
+    summonKind: 'comp_water',
+    effect: 'summon',
+    classOnly: true,
+    classId: 'conjurer',
+    desc: 'Bind a Tidal Undine — a healer that mends your wounds each round. Replaces any companion already bound.'
+  },
+  {
+    id: 'tech_summon_earth',
+    name: 'Bind Golem',
+    chain: null,
+    rank: 1,
+    skill: 'Conjuration',
+    grade: 'Earth',
+    energyCost: 30, // [invented][sim-gated]
+    summonKind: 'comp_earth',
+    effect: 'summon',
+    classOnly: true,
+    classId: 'conjurer',
+    desc: 'Bind a Granite Golem — a bulwark that draws blows away from you. Replaces any companion already bound.'
+  },
+  {
+    id: 'tech_summon_wind',
+    name: 'Bind Sylph',
+    chain: null,
+    rank: 1,
+    skill: 'Conjuration',
+    grade: 'Wind',
+    energyCost: 30, // [invented][sim-gated]
+    summonKind: 'comp_wind',
+    effect: 'summon',
+    classOnly: true,
+    classId: 'conjurer',
+    desc: 'Bind a Gale Sylph — a swift striker whose winds sharpen your own magic. Replaces any companion already bound.'
+  },
+
+  {
+    id: 'tech_cmd_conflagration',
+    name: 'Conflagration',
+    chain: null,
+    rank: 1,
+    skill: 'Conjuration',
+    grade: 'Fire',
+    energyCost: 24,
+    power: 70, // [invented][sim-gated] PROVISIONAL flat value — same order of magnitude as other classOnly Tier-3 damage signatures; pending the lead's sim (spec §3 S3: DoT+detonate must not exceed a Magus burst of equal investment)
+    detonatesBurn: true, // js/core/battle.js useTech: detonates the Fire companion's active Burn (remaining dotPower*turnsLeft, Fire-resisted) then removes it
+    requiresCompanion: 'comp_fire',
+    effect: 'damage',
+    classOnly: true,
+    classId: 'conjurer',
+    desc: 'Command the Salamander to blast the foe and ignite every smouldering wound at once.'
+  },
+  {
+    id: 'tech_cmd_renewing_tide',
+    name: 'Renewing Tide',
+    chain: null,
+    rank: 1,
+    skill: 'Conjuration',
+    grade: null,
+    energyCost: 22,
+    power: 90, // [invented][sim-gated] PROVISIONAL flat value, pending the lead's sim
+    clearsStatus: true, // reuses the existing clearsStatus handler (cleanses Poison/Curse)
+    requiresCompanion: 'comp_water',
+    effect: 'heal',
+    classOnly: true,
+    classId: 'conjurer',
+    desc: 'Command the Undine to wash over you — a surging heal that flushes out poison and curses.'
+  },
+  {
+    id: 'tech_cmd_bulwark',
+    name: 'Bulwark',
+    chain: null,
+    rank: 1,
+    skill: 'Conjuration',
+    grade: null,
+    energyCost: 20,
+    statKind: 'armor',
+    power: 30, // [invented][sim-gated] PROVISIONAL flat value, pending the lead's sim
+    buffDuration: 5,
+    refreshesCompanionTaunt: true, // js/core/battle.js useTech: also refreshes the Golem's Taunt to BALANCE.COMPANION_TAUNT_TURNS_BULWARK
+    requiresCompanion: 'comp_earth',
+    effect: 'buff',
+    classOnly: true,
+    classId: 'conjurer',
+    desc: 'The Golem raises a wall of stone — your Armor climbs and the foe fixes on your guardian.'
+  },
+  {
+    id: 'tech_cmd_tailwind',
+    name: 'Tailwind',
+    chain: null,
+    rank: 1,
+    skill: 'Conjuration',
+    grade: null,
+    energyCost: 20,
+    statKind: 'spellpower',
+    power: 25, // [invented][sim-gated] PROVISIONAL flat value, pending the lead's sim
+    buffDuration: 5,
+    requiresCompanion: 'comp_wind',
+    effect: 'buff',
+    classOnly: true,
+    classId: 'conjurer',
+    desc: 'The Sylph wraps you in a rising wind — your techniques strike harder.'
+  },
+
+  // =====================================================================
+  // v1.9: monster-example techs demonstrating the new optional `target` field on monster techs
+  // (docs/SPEC-COMPANION-SYSTEM.md §2.3) — `target: 'player'|'companion'|'both'`, ABSENT ⇒
+  // 'player' (every existing monster tech is unaffected). These two are SPEC EXAMPLES ONLY and are
+  // NOT wired to any monster's `techs` list — which monsters/bosses receive them is deferred to a
+  // future monster-AI pass (out of scope here, per spec §6). PROVISIONAL/[invented][sim-gated].
+  // =====================================================================
+  {
+    id: 'mon_cleaving_roar',
+    name: 'Cleaving Roar',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null,
+    energyCost: 10,
+    power: 40, // [invented][sim-gated] PROVISIONAL — a cleave/AoE special hitting player AND companion
+    target: 'both',
+    effect: 'damage',
+    monsterOnly: true,
+    desc: 'A roar of raw force that buffets everything before it.'
+  },
+  {
+    id: 'mon_banish_conduit',
+    name: 'Banish Conduit',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null,
+    energyCost: 10,
+    power: 55, // [invented][sim-gated] PROVISIONAL — a focused special aimed squarely at a bound companion
+    target: 'companion',
+    effect: 'damage',
+    monsterOnly: true,
+    desc: "A focused blow meant to shatter a summoner's bound servant."
+  }
 ];
 
 window.Game = Game;
+

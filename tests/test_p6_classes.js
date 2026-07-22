@@ -73,10 +73,13 @@ loadScript('data/quests.js');
 loadScript('data/story.js');
 loadScript('data/classes.js');
 loadScript('data/statinfo.js');
+loadScript('data/companions.js');
 loadScript('core/character.js');
 loadScript('core/inventory.js');
 loadScript('core/battle.js');
+loadScript('core/companion.js');
 loadScript('core/world.js');
+
 loadScript('core/quests.js');
 loadScript('core/save.js');
 loadScript('core/classes.js');
@@ -168,9 +171,14 @@ var CLASS_TECH_IDS = [
   'tech_efficient_strike', 'tech_runic_severance',
   'tech_shadow_blade', 'tech_anima_reckoning', 'tech_dice_throw', 'tech_vault_reckoning', 'tech_echoing_judgment',
   // v1.5 P4: the 9 new Tier-3 classOnly signature techs (docs/SPEC-TIER3-EXPANSION.md Part B).
-  'tech_berserker_frenzy', 'tech_paladin_smite', 'tech_warden_bulwark', 'tech_summon_elemental',
-  'tech_greater_restoration', 'tech_seers_ward', 'tech_lethal_strike', 'tech_ranger_volley', 'tech_dragoon_leap'
+  // tech_summon_elemental RETIRED v1.9 (docs/SPEC-COMPANION-SYSTEM.md D0) — replaced below by the
+  // Conjurer's 8 new companion-system tech ids (4 Bind + 4 command, granted via `techIds` arrays).
+  'tech_berserker_frenzy', 'tech_paladin_smite', 'tech_warden_bulwark',
+  'tech_greater_restoration', 'tech_seers_ward', 'tech_lethal_strike', 'tech_ranger_volley', 'tech_dragoon_leap',
+  'tech_summon_fire', 'tech_summon_water', 'tech_summon_earth', 'tech_summon_wind',
+  'tech_cmd_conflagration', 'tech_cmd_renewing_tide', 'tech_cmd_bulwark', 'tech_cmd_tailwind'
 ];
+
 
 // =================== Test 0: data sanity ===================
 console.log('\n=== Test 0: four-tier class/tech/quest data sanity (v1.5 P4 branching) ===');
@@ -192,7 +200,11 @@ Object.keys(ADVANCED_PAIRS).forEach(function (baseId) {
 });
 
 // v1.5 P4 (docs/SPEC-TIER3-EXPANSION.md): tier-3 roster — BRANCHING, baseClass is now a TIER-2 id,
-// 2 classes per tier-2 (12 total), 3 abilities each (2 passive + 1 signature classOnly tech).
+// 2 classes per tier-2 (12 total), 3 abilities each (2 passive + 1 signature classOnly tech) —
+// EXCEPT the v1.9-redesigned Conjurer (docs/SPEC-COMPANION-SYSTEM.md D4), which deliberately
+// exceeds the standard budget with 6 abilities (2 passives + 4 per-element Pacts, each granting a
+// Bind + command tech pair via the new `techIds` array field).
+var THIRD_TIER_ABILITY_COUNT = { conjurer: 6 };
 var THIRD_TIER_IDS = [];
 Object.keys(THIRD_TIER_PAIRS).forEach(function (tier2Id) {
   THIRD_TIER_PAIRS[tier2Id].forEach(function (tierId) {
@@ -200,9 +212,11 @@ Object.keys(THIRD_TIER_PAIRS).forEach(function (tier2Id) {
     var cd = Game.Classes.getClass(tierId);
     assert(cd && cd.tier === 3 && !cd.legendary && cd.baseClass === tier2Id,
       tierId + ' is a tier-3 class with baseClass ' + tier2Id + ' (a TIER-2 id, v1.5 P4 branching), got baseClass=' + (cd && cd.baseClass));
-    assert(cd.abilities.length === 3, tierId + ' has 3 abilities, got ' + (cd ? cd.abilities.length : 'undefined'));
+    var expectedAbilityCount = THIRD_TIER_ABILITY_COUNT[tierId] || 3;
+    assert(cd.abilities.length === expectedAbilityCount, tierId + ' has ' + expectedAbilityCount + ' abilities, got ' + (cd ? cd.abilities.length : 'undefined'));
   });
 });
+
 assert(THIRD_TIER_IDS.length === 12, '12 tier-3 classes total (2 per tier-2 class), got ' + THIRD_TIER_IDS.length);
 
 var legendary = Game.Classes.getClass('runeblade_of_kuraan');
@@ -228,12 +242,18 @@ assert(heirOfEcho0.abilities.length === 4, 'heir_of_the_echo has 4 abilities, go
 
 Game.Data.classes.forEach(function (cd) {
   cd.abilities.forEach(function (a) {
-    if (a.kind === 'tech') {
-      var t = Game.Battle.getTech(a.techId);
-      assert(t && t.classOnly === true && t.classId === cd.id, cd.id + ' tech ability ' + a.id + ' resolves to a classOnly tech tagged with classId ' + cd.id);
-    }
+    if (a.kind !== 'tech') return;
+    // v1.9 (SPEC-COMPANION-SYSTEM.md §2.5): an ability may carry a single `techId` OR an array
+    // `techIds` (the Conjurer's Pact abilities) — resolve and check EVERY tech id either way.
+    var idsToCheck = a.techId ? [a.techId] : (a.techIds || []);
+    assert(idsToCheck.length > 0, cd.id + ' tech ability ' + a.id + ' has at least one tech id (techId or techIds)');
+    idsToCheck.forEach(function (tid) {
+      var t = Game.Battle.getTech(tid);
+      assert(t && t.classOnly === true && t.classId === cd.id, cd.id + ' tech ability ' + a.id + ' resolves ' + tid + ' to a classOnly tech tagged with classId ' + cd.id);
+    });
   });
 });
+
 CLASS_TECH_IDS.forEach(function (id) {
   assert(Game.World.learnableTechs().indexOf(Game.Battle.getTech(id)) === -1, id + ' excluded from the general Academy TP tech list');
 });
@@ -309,7 +329,8 @@ assert(loadedV6.character.primaryClass === 'thief', 'primaryClass (active slot) 
 Game.state = loadedV6;
 Game.persist();
 var resavedV6 = JSON.parse(localStorageStore['herorpg_save']);
-assert(resavedV6.version === 10, 'resaved payload is stamped CURRENT_VERSION 10, got ' + resavedV6.version);
+assert(resavedV6.version === 11, 'resaved payload is stamped CURRENT_VERSION 11, got ' + resavedV6.version);
+
 
 // Second crafted payload: rogue in the SECONDARY slot instead of primary ("incl. active slots").
 console.log('\n=== Test 1b: v6 save with rogue in the SECONDARY slot also migrates ===');
@@ -360,7 +381,8 @@ assert(loadedV1.character.primaryClass === null && loadedV1.character.secondaryC
 assert(loadedV1.character.legendaryUnlocked === false, 'v1->v7: legendary latch false');
 Game.state = loadedV1;
 Game.persist();
-assert(JSON.parse(localStorageStore['herorpg_save']).version === 10, 'v1->v10 resave stamps version 10');
+assert(JSON.parse(localStorageStore['herorpg_save']).version === 11, 'v1->v11 resave stamps version 11');
+
 
 // =================== Test 3: first_calling gates at level 5 ===================
 console.log('\n=== Test 3: first_calling gated at level 5 ===');
@@ -977,90 +999,226 @@ assert(battle23b.monster.hp === beforeHp23b, "Paladin's Smite does NOT land whil
 Game.Battle.flee();
 Game.Battle.endBattle();
 
-// =================== Test 24 (v1.5 P4 §3a): the Conjurer's Elemental Servitor ===================
-console.log("\n=== Test 24 (v1.5 P4 §3a): Conjurer's Elemental Servitor — auto-weakness grade, per-round tick, replace-not-stack, expiry, transient on battle end ===");
-var summonTechDef24 = Game.Battle.getTech('tech_summon_elemental');
-assert(summonTechDef24 && summonTechDef24.effect === 'summon' && summonTechDef24.classOnly === true && summonTechDef24.classId === 'conjurer',
-  'tech_summon_elemental exists with effect "summon", classOnly, classId conjurer');
-
-var c24 = makeCharacter({ name: 'ConjurerTester' });
-setLevel(c24, 60);
-c24.currentLocation = 'eldor';
-c24.intelligence = 50; // representative caster build so the servitor's tick is clearly, measurably nonzero
-Game.Character.recalcDerived(c24);
-Game.Classes.obtainClass(c24, 'conjurer');
-Game.Classes.activate(c24, 'conjurer', 'primary');
-Game.Classes.addClassXp(c24, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
-var buySummon24 = Game.Classes.buyAbility(c24, 'conjurer', 'conjurer_summon_elemental');
-assert(buySummon24.ok === true, 'Summon Elemental purchased: ' + buySummon24.message);
-c24.techSets[0][0] = 'tech_summon_elemental';
-
-c24.hitPoints = c24.hitPointsMax; c24.energy = c24.energyMax;
-// rng fixed at 0.5: no dodge, no glancing, and rollVariance's uniform-in-[1-v,1+v] formula
-// collapses to exactly the base value at the midpoint — deterministic tick damage.
-setRng(fixedRng(0.5));
-// estari_construct_sentinel: resistances { Earth: 0.5, Water: -0.25 } — Water is its ONLY
-// vulnerability (lowest resistance value), so the auto-weakness pick must be Water, not the
-// Fire default (D4's default only applies when NO grade is negative/lower than the others).
-var battle24 = Game.Battle.start('estari_construct_sentinel');
-assert(battle24.monster.statuses.length === 0, 'no servitor present before casting');
-var actionsBeforeSummon24 = battle24.monsterActionsTaken || 0;
-var hpBeforeSummon24 = battle24.monster.hp;
-Game.Battle.useTech('tech_summon_elemental');
-assert(battle24.monster.statuses.length === 1, 'exactly one servitor status present after casting');
-var servitor24 = battle24.monster.statuses[0];
-assert(servitor24.type === 'servitor' && servitor24.name === 'Elemental Servitor', 'servitor entry shaped correctly, got ' + JSON.stringify(servitor24));
-assert(servitor24.grade === 'Water', "auto-weakness picked the monster's ONLY vulnerability (Water, -0.25) over its Earth resistance (+0.5) or any neutral grade, got " + servitor24.grade);
-assert(servitor24.turnsLeft === summonTechDef24.servitorTurns - 1, 'servitor.turnsLeft already decremented once by the SAME-ROUND tick in finishRound (mirrors Poison\'s own apply-then-tick-this-round convention), got ' + servitor24.turnsLeft + ' (servitorTurns=' + summonTechDef24.servitorTurns + ')');
-assert(battle24.monster.hp < hpBeforeSummon24, "the servitor's same-round tick already dealt damage this round (hp " + hpBeforeSummon24 + ' -> ' + battle24.monster.hp + ')');
-assert((battle24.monsterActionsTaken || 0) === actionsBeforeSummon24 + 1, 'the servitor granted the monster NO extra action — exactly one monsterAct (the normal counter-attack) ran this round, not two');
-
-// Re-summon REPLACES, not stacks.
-Game.Battle.useTech('tech_summon_elemental');
-assert(battle24.monster.statuses.length === 1, 'STILL exactly one servitor after re-summoning (replace, not stack)');
-assert(battle24.monster.statuses[0].turnsLeft === summonTechDef24.servitorTurns - 1, "the replaced servitor is freshly re-ticked from a FULL servitorTurns, not stacked on top of the old one's remaining turns");
-
-// Tick it down to expiry (defend() needs no weapon, so it isolates the servitor tick cleanly).
-var turnsToExpire24 = summonTechDef24.servitorTurns - 1;
-for (var t24 = 0; t24 < turnsToExpire24 && battle24.phase === 'active'; t24++) {
-  Game.Battle.defend();
-}
-if (battle24.phase === 'active') {
-  assert(battle24.monster.statuses.filter(function (st) { return st.type === 'servitor'; }).length === 0,
-    'servitor removed once its servitorTurns (' + summonTechDef24.servitorTurns + ') fully elapse, got statuses=' + JSON.stringify(battle24.monster.statuses));
-} else {
-  // The servitor's own recurring damage killed the monster before it expired naturally — an
-  // equally valid outcome of "strong vs. a long fight" (spec §3a) and still proves the tick fired
-  // every round; the battle-end branch below re-covers the transience assertion independently.
-  assert(battle24.phase === 'won', 'if the battle ended before the servitor expired, it must be because the servitor\'s own ticks won the fight, got phase=' + battle24.phase);
-  Game.Battle.endBattle();
+// =================== Test 24 (v1.9): the Companion System ===================
+// Replaces the retired Conjurer "Elemental Servitor" test (docs/SPEC-COMPANION-SYSTEM.md D0) —
+// covers summon-at-full-HP, HP carrying across battles, automatic basic action + Energy tax,
+// energy-starve idle, Fire's Burn DoT, Earth's Taunt redirect, a monster tech's `target:'both'`,
+// mid-battle death forcing a resummon, and disperse-on-loss (D6).
+console.log('\n=== Test 24 (v1.9): Companion System — summon/persist/idle/burn/taunt/target-both/death/loss ===');
+function seqRng(values) {
+  var i = 0;
+  return function () {
+    var v = values[Math.min(i, values.length - 1)];
+    i++;
+    return v;
+  };
 }
 
-// Battle-transient: absent on a fresh battle, even against the same monster with the same class active.
-var battle24b = Game.Battle.start('estari_construct_sentinel');
-assert(battle24b.monster.statuses.length === 0, 'a fresh battle starts with NO servitor carried over from the previous battle (battle-transient, never persisted)');
-Game.Battle.useTech('tech_summon_elemental');
-assert(battle24b.monster.statuses.length === 1, 'servitor re-summoned in the new battle');
-Game.Battle.flee();
-Game.Battle.endBattle();
-assert(Game.state.battle === null, 'battle object (and its monster.statuses) discarded after endBattle');
+// ---- A) Binding via the Pact's Bind tech sets character.companion at full HP; the SAME battle's
+// transient view is rebuilt immediately (useTech's summon branch). ----
+var cA = makeCharacter({ name: 'CompanionTesterA' });
+setLevel(cA, 60);
+cA.currentLocation = 'eldor';
+cA.intelligence = 50;
+Game.Character.recalcDerived(cA);
+Game.Classes.obtainClass(cA, 'conjurer');
+Game.Classes.activate(cA, 'conjurer', 'primary');
+Game.Classes.addClassXp(cA, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
+var buyFireA = Game.Classes.buyAbility(cA, 'conjurer', 'conjurer_pact_fire');
+assert(buyFireA.ok === true, 'Pact of Cinders purchased: ' + buyFireA.message);
+assert(cA.techs.indexOf('tech_summon_fire') !== -1 && cA.techs.indexOf('tech_cmd_conflagration') !== -1,
+  "buying Pact of Cinders grants BOTH tech_summon_fire and tech_cmd_conflagration (js/core/classes.js buyAbility's new techIds-array handling)");
+cA.techSets[0][0] = 'tech_summon_fire';
+cA.techSets[0][1] = 'tech_cmd_conflagration';
+cA.hitPoints = cA.hitPointsMax; cA.energy = cA.energyMax;
 
-// D4 default: a monster with NO resistances at all falls through to the fixed default grade (Fire).
-var c24c = makeCharacter({ name: 'ConjurerDefaultGrade' });
-setLevel(c24c, 60);
-c24c.currentLocation = 'eldor';
-Game.Classes.obtainClass(c24c, 'conjurer');
-Game.Classes.activate(c24c, 'conjurer', 'primary');
-Game.Classes.addClassXp(c24c, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
-Game.Classes.buyAbility(c24c, 'conjurer', 'conjurer_summon_elemental');
-c24c.techSets[0][0] = 'tech_summon_elemental';
-c24c.hitPoints = c24c.hitPointsMax; c24c.energy = c24c.energyMax;
-setRng(fixedRng(0.5));
-var battle24c = Game.Battle.start('plains_field_rat'); // resistances: {} — no grade is more negative than any other
-Game.Battle.useTech('tech_summon_elemental');
-assert(battle24c.monster.statuses[0].grade === 'Fire', 'a monster with no resistances at all defaults to Fire (D4), got ' + battle24c.monster.statuses[0].grade);
+assert(cA.companion === null, 'no companion bound before summoning');
+setRng(fixedRng(0.99));
+var battleA = Game.Battle.start('plains_field_rat');
+assert(battleA.companion === null, 'battle starts with no companion view (none bound yet)');
+Game.Battle.useTech('tech_summon_fire');
+var fireHpMax = Game.Companion.hpMaxFor(cA);
+assert(cA.companion !== null && cA.companion.kindId === 'comp_fire', 'summoning binds character.companion to comp_fire');
+assert(cA.companion.hp === fireHpMax, 'summoned companion starts at full HP, got ' + cA.companion.hp + ' / ' + fireHpMax);
+assert(battleA.companion && battleA.companion.kindId === 'comp_fire' && battleA.companion.hp === fireHpMax,
+  "the SAME battle already sees the new companion (useTech's summon branch rebuilds battle.companion immediately)");
 Game.Battle.flee();
 Game.Battle.endBattle();
+
+// ---- B) HP carries across battles: damage the companion, end the battle (win), start a NEW
+// battle, and confirm the SAME (reduced) HP is what the new battle rehydrates from. ----
+var cB = makeCharacter({ name: 'CompanionTesterB' });
+setLevel(cB, 60);
+Game.Companion.summon(cB, 'comp_earth'); // pre-summon directly (isolates from useTech/Pact bookkeeping)
+var earthHpMaxB = Game.Companion.hpMaxFor(cB);
+cB.hitPoints = cB.hitPointsMax; cB.energy = cB.energyMax;
+setRng(fixedRng(0.99));
+var battleB1 = Game.Battle.start('plains_field_rat');
+assert(battleB1.companion && battleB1.companion.kindId === 'comp_earth' && battleB1.companion.hp === earthHpMaxB,
+  'Game.Battle.start() rehydrates a transient battle.companion view from a pre-existing character.companion');
+battleB1.monster.hp = 999999; battleB1.monster.hpMax = 999999; battleB1.monster.energy = 999999; battleB1.monster.damage = 0;
+var dmgToCompanionB = 20;
+battleB1.companion.hp = Math.max(1, battleB1.companion.hp - dmgToCompanionB); // simulate prior damage this battle
+setRng(fixedRng(0.01)); // comfortably below fleeChance -> flee succeeds
+Game.Battle.flee();
+assert(battleB1.phase === 'fled', 'sanity: battle B1 resolved as fled, phase=' + battleB1.phase);
+assert(cB.companion.hp === battleB1.companion.hp, "a successful flee writes the companion's current (damaged) HP back to character.companion");
+Game.Battle.endBattle();
+var hpAfterB1 = cB.companion.hp;
+assert(hpAfterB1 < earthHpMaxB, 'sanity: the persisted HP is indeed reduced from max, got ' + hpAfterB1 + ' / ' + earthHpMaxB);
+setRng(fixedRng(0.99));
+var battleB2 = Game.Battle.start('plains_field_rat');
+assert(battleB2.companion && battleB2.companion.hp === hpAfterB1,
+  'a NEW battle rehydrates the companion at the SAME persisted (damaged) HP it ended the last battle with — semi-permanent, not restored between battles');
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// ---- C) The companion's automatic basic fires each player round and pays the player's Energy;
+// also verifies Fire's Burn DoT applies (and already ticks once, same-round). ----
+var cC = makeCharacter({ name: 'CompanionTesterC' });
+setLevel(cC, 60);
+cC.intelligence = 50;
+Game.Character.recalcDerived(cC);
+Game.Companion.summon(cC, 'comp_fire');
+cC.hitPoints = cC.hitPointsMax; cC.energy = cC.energyMax;
+setRng(fixedRng(0.99));
+var battleC = Game.Battle.start('plains_field_rat');
+battleC.monster.hp = battleC.monster.hpMax = 999999; battleC.monster.magicArmor = 0; battleC.monster.resistances = {};
+var energyBeforeC = cC.energy;
+var hpBeforeC = battleC.monster.hp;
+Game.Battle.defend(); // any player action -> finishRound -> Game.Companion.act() fires FIRST
+var energyAfterC = cC.energy;
+assert(energyAfterC === energyBeforeC - BALANCE.DEFEND_ENERGY_COST - Game.Companion.getKind('comp_fire').basic.energyCost,
+  "the companion's basic paid its own energyCost (4) on top of Defend's own cost, got energy " + energyBeforeC + ' -> ' + energyAfterC);
+assert(battleC.monster.hp < hpBeforeC, "the Fire companion's Ember Lash already struck the monster this round, hp " + hpBeforeC + ' -> ' + battleC.monster.hp);
+var burnAfterFirstTick = battleC.monster.statuses.filter(function (st) { return st.type === 'debuff' && st.debuffKind === 'burn'; });
+assert(burnAfterFirstTick.length === 1, 'Ember Lash applied exactly one Burn debuff entry, got ' + JSON.stringify(battleC.monster.statuses));
+assert(burnAfterFirstTick[0].turnsLeft === BALANCE.BURN_TURNS - 1, 'Burn already ticked down once this same round (apply-then-tick-this-round convention), got turnsLeft=' + burnAfterFirstTick[0].turnsLeft);
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// ---- D) Energy-starve -> idle: a companion with NO status rider (Gale Sylph) makes the
+// "zero damage while idle" check unambiguous (no leftover DoT ticking on its own to confound it). ----
+var cD = makeCharacter({ name: 'CompanionTesterD' });
+setLevel(cD, 60);
+Game.Companion.summon(cD, 'comp_wind');
+cD.hitPoints = cD.hitPointsMax;
+setRng(fixedRng(0.99));
+var battleD = Game.Battle.start('plains_field_rat');
+battleD.monster.hp = battleD.monster.hpMax = 999999;
+cD.energy = 2; // >= Defend's own cost (2) but < the Sylph's basic energyCost (6) -> idles
+var hpBeforeD = battleD.monster.hp;
+Game.Battle.defend();
+assert(cD.energy === 0, "Defend spent its own 2 Energy; the companion's own cost (6) was NOT deducted (idled), energy=" + cD.energy);
+assert(battleD.monster.hp === hpBeforeD, 'an idled companion (insufficient Energy) deals NO damage this round, hp unchanged at ' + battleD.monster.hp);
+assert(battleD.log.some(function (l) { return /starved of Anima and holds back/.test(l); }), 'an idle round logs the starved-of-Anima message: ' + battleD.log.join(' | '));
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// ---- F) Earth's Taunt redirects a monster's plain BASIC attack onto the companion instead of
+// the player (no monster techs, so its only action is a basic attack). ----
+var cF = makeCharacter({ name: 'CompanionTesterF' });
+setLevel(cF, 60);
+Game.Companion.summon(cF, 'comp_earth');
+cF.hitPoints = cF.hitPointsMax; cF.energy = cF.energyMax;
+setRng(fixedRng(0.99)); // no dodge/glancing anywhere (constant stub, safe regardless of call count)
+var battleF = Game.Battle.start('plains_field_rat');
+battleF.monster.techs = []; // basic attacks only
+battleF.monster.hp = battleF.monster.hpMax = 999999;
+battleF.monster.damage = 20;
+Game.Companion.setTaunt(battleF, BALANCE.COMPANION_TAUNT_TURNS_BASIC);
+assert(Game.Companion.tauntActive(battleF) === true, 'Taunt is active on the companion');
+var playerHpBeforeF = battleF.player.hitPoints;
+var companionHpBeforeF = battleF.companion.hp;
+Game.Battle.defend();
+assert(battleF.player.hitPoints === playerHpBeforeF, "the monster's basic attack did NOT hit the player while Taunt is active, hp unchanged at " + battleF.player.hitPoints);
+assert(battleF.companion.hp < companionHpBeforeF, "the monster's basic attack was redirected onto the taunting companion instead, hp " + companionHpBeforeF + ' -> ' + battleF.companion.hp);
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// ---- G) A monster tech with `target:'both'` (mon_cleaving_roar) hits the player AND the
+// companion in one action, each rolled/mitigated independently. ----
+var cG = makeCharacter({ name: 'CompanionTesterG' });
+setLevel(cG, 60);
+Game.Companion.summon(cG, 'comp_water'); // any kind — this test is about monster targeting, not the companion's own kit
+cG.hitPoints = cG.hitPointsMax; cG.energy = cG.energyMax;
+var cleavingRoar = Game.Battle.getTech('mon_cleaving_roar');
+assert(cleavingRoar && cleavingRoar.target === 'both' && cleavingRoar.effect === 'damage', 'mon_cleaving_roar exists with target "both"');
+setRng(fixedRng(0.99));
+var battleG = Game.Battle.start('plains_field_rat');
+battleG.monster.techs = ['mon_cleaving_roar'];
+battleG.monster.energy = 999999;
+battleG.monster.hp = battleG.monster.hpMax = 999999;
+cG.energy = 2; // >= Defend's own cost (2) but < the Undine's basic energyCost (4) -> idles this round, isolating the monster's own action
+var playerHpBeforeG = battleG.player.hitPoints;
+var companionHpBeforeG = battleG.companion.hp;
+// rng sequence for monsterAct: [0] tech-inclination roll (<0.5 -> pick a tech), [1] tech-array
+// index pick (only 1 affordable tech, any value floors to index 0), [2] damageCompanion's own
+// glancing roll, [3] damageCompanion's own variance roll, [4] player's dodge roll, [5] player's
+// own glancing roll, [6] player's own variance roll — all kept comfortably away from proc
+// thresholds (glancing 0.1, dodge low) except the [0] tech-pick roll.
+setRng(seqRng([0.1, 0.1, 0.9, 0.5, 0.9, 0.9, 0.5]));
+Game.Battle.defend();
+assert(battleG.player.hitPoints < playerHpBeforeG, "target:'both' hit the PLAYER, hp " + playerHpBeforeG + ' -> ' + battleG.player.hitPoints);
+assert(battleG.companion.hp < companionHpBeforeG, "target:'both' ALSO hit the COMPANION independently, hp " + companionHpBeforeG + ' -> ' + battleG.companion.hp);
+Game.Battle.flee();
+Game.Battle.endBattle();
+
+// ---- H) Companion death (hp hits 0) mid-battle disperses it — battle.companionDispersed is set,
+// a command tech requiring it is refused, and battle end nulls character.companion (must be
+// re-summoned). ----
+var cH = makeCharacter({ name: 'CompanionTesterH' });
+setLevel(cH, 60);
+Game.Classes.obtainClass(cH, 'conjurer');
+Game.Classes.activate(cH, 'conjurer', 'primary');
+Game.Classes.addClassXp(cH, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
+Game.Classes.buyAbility(cH, 'conjurer', 'conjurer_pact_fire');
+cH.techSets[0][0] = 'tech_summon_fire';
+cH.techSets[0][1] = 'tech_cmd_conflagration';
+// Pre-summon directly (rather than via useTech('tech_summon_fire')) so the companion's own
+// automatic basic never fires against the field rat's tiny starting HP before the monster.hp
+// override below can take effect.
+Game.Companion.summon(cH, 'comp_fire');
+cH.hitPoints = cH.hitPointsMax; cH.energy = cH.energyMax;
+setRng(fixedRng(0.99));
+var battleH = Game.Battle.start('plains_field_rat');
+battleH.monster.techs = [];
+battleH.monster.hp = battleH.monster.hpMax = 999999;
+battleH.monster.damage = 999999; // guaranteed one-shot on the companion once redirected
+Game.Companion.setTaunt(battleH, 5);
+Game.Battle.defend(); // fixedRng(0.99) still active: no dodge/glancing anywhere
+
+assert(battleH.companion.hp === 0, "the companion's HP is driven to exactly 0 by the redirected hit");
+assert(battleH.companionDispersed === true, "battle.companionDispersed is set once the companion's hp reaches 0");
+assert(battleH.log.some(function (l) { return /is destroyed/.test(l); }), 'a destruction log line was recorded: ' + battleH.log.join(' | '));
+cH.energy = cH.energyMax;
+var conflagrationRefusalLenBefore = battleH.log.length;
+Game.Battle.useTech('tech_cmd_conflagration');
+assert(battleH.log.length === conflagrationRefusalLenBefore + 1 && /requires a bound/.test(battleH.log[battleH.log.length - 1]),
+  'a command tech refuses to cast once its companion has been dispersed mid-battle: ' + battleH.log[battleH.log.length - 1]);
+Game.Battle.flee();
+Game.Battle.endBattle();
+assert(cH.companion === null, 'battle end nulls character.companion once it was dispersed mid-battle — must be re-summoned');
+
+// ---- I) Disperse on player defeat (D6): a lost battle nulls character.companion unconditionally,
+// even if the companion itself is still alive at full HP. Uses Wind (no self-taunt rider) so the
+// monster's lethal counter always targets the player, not the companion. ----
+var cI = makeCharacter({ name: 'CompanionTesterI' });
+setLevel(cI, 60);
+Game.Companion.summon(cI, 'comp_wind');
+cI.hitPoints = 1; cI.energy = cI.energyMax;
+setRng(fixedRng(0.99)); // no dodge
+var battleI = Game.Battle.start('plains_field_rat');
+assert(cI.companion !== null, 'sanity: the companion is bound and alive before the loss');
+battleI.monster.techs = [];
+battleI.monster.hp = battleI.monster.hpMax = 999999; // survives the companion's own automatic hit, so the monster still gets its counter-attack
+battleI.monster.damage = 999999; // guaranteed lethal counter-attack
+Game.Battle.defend();
+
+assert(battleI.phase === 'lost', 'sanity: battle I resolved as lost, phase=' + battleI.phase);
+assert(cI.companion === null, 'onLoss disperses the companion unconditionally (D6), even though it was still alive at full HP');
+Game.Battle.endBattle();
+
 
 // =================== Test 25 (v1.5 P4 §5, legacy): a hand-crafted save with a Crusader who ======
 // =================== obtained Shadowknight under the OLD convergence rule (now "impossible" =====
