@@ -46,6 +46,119 @@ Game.Data.techs = [
     skillReq: 4,
     desc: 'Calls down a crackling arc of Star-grade Anima, the technique that replaced the old "lightning" spells.'
   },
+  // ---------- Starspark ranks 2-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  {
+    id: 'tech_starspark_2',
+    name: 'Starspark II',
+    chain: 'Starspark',
+    rank: 2,
+    skill: 'Evocation',
+    grade: 'Star',
+    energyCost: 20,
+    power: 28,
+    effect: 'damage',
+    trainingCost: 4,
+    skillReq: 8,
+    desc: 'A stronger Starspark, requiring the first rank be learned and a proven Evocation skill. Requires Starspark I and Evocation 8.'
+  },
+  {
+    id: 'tech_starspark_3',
+    name: 'Starspark III',
+    chain: 'Starspark',
+    rank: 3,
+    skill: 'Evocation',
+    grade: 'Star',
+    energyCost: 26,
+    power: 42,
+    effect: 'damage',
+    trainingCost: 5,
+    skillReq: 12,
+    desc: 'The master Evocation form of Starspark, a crackling cascade of star-touched lightning. Requires Starspark II and Evocation 12.'
+  },
+  {
+    id: 'tech_starspark_4',
+    name: 'Starspark IV',
+    chain: 'Starspark',
+    rank: 4,
+    skill: 'Evocation',
+    grade: 'Star',
+    energyCost: 32,
+    power: 58,
+    effect: 'damage',
+    trainingCost: 6,
+    skillReq: 20,
+    desc: 'The Kuraan-era form of Starspark, where the sky itself answers to the Evocationist\'s call. Requires Starspark III and Evocation 20.'
+  },
+  {
+    id: 'tech_starspark_5',
+    name: 'Starspark V',
+    chain: 'Starspark',
+    rank: 5,
+    skill: 'Evocation',
+    grade: 'Star',
+    energyCost: 38,
+    power: 76,
+    effect: 'damage',
+    trainingCost: 8,
+    skillReq: 30,
+    desc: 'The Majiku-Highlands-era form of Starspark, an arc of lightning drawn down from the storm-laden peaks. Requires Starspark IV and Evocation 30.'
+  },
+  {
+    id: 'tech_starspark_6',
+    name: 'Starspark VI',
+    chain: 'Starspark',
+    rank: 6,
+    skill: 'Evocation',
+    grade: 'Star',
+    energyCost: 44,
+    power: 52,
+    effect: 'damage',
+    trainingCost: 10,
+    skillReq: 40,
+    desc: 'The Frozen-Reaches-era form of Starspark, a refined strike of concentrated Star-grade Anima. Requires Starspark V and Evocation 40.'
+  },
+  {
+    id: 'tech_starspark_7',
+    name: 'Starspark VII',
+    chain: 'Starspark',
+    rank: 7,
+    skill: 'Evocation',
+    grade: 'Star',
+    energyCost: 50,
+    power: 63,
+    effect: 'damage',
+    trainingCost: 12,
+    skillReq: 50,
+    desc: 'The Estari-Wellspring-era form of Starspark, where the raw power of the sky burns with unmatched clarity. Requires Starspark VI and Evocation 50.'
+  },
+  {
+    id: 'tech_starspark_8',
+    name: 'Starspark VIII',
+    chain: 'Starspark',
+    rank: 8,
+    skill: 'Evocation',
+    grade: 'Star',
+    energyCost: 56,
+    power: 74,
+    effect: 'damage',
+    trainingCost: 14,
+    skillReq: 60,
+    desc: 'The Skyspire-era form of Starspark, a column of electric force that shakes the heavens themselves. Requires Starspark VII and Evocation 60.'
+  },
+  {
+    id: 'tech_starspark_9',
+    name: 'Starspark IX',
+    chain: 'Starspark',
+    rank: 9,
+    skill: 'Evocation',
+    grade: 'Star',
+    energyCost: 62,
+    power: 85,
+    effect: 'damage',
+    trainingCost: 16,
+    skillReq: 70,
+    desc: 'The Red-Moon-era form of Starspark, the highest rank ever taught, a cataclysmic arc of star-called lightning that ignites the very air. Requires Starspark VIII and Evocation 70.'
+  },
 
   // ---------- Conjuration: summoned/DoT-flavored damage (Dark) ----------
   {
@@ -144,6 +257,119 @@ Game.Data.techs = [
     trainingCost: 3,
     skillReq: 4,
     desc: 'Siphons a portion of the enemy\'s vitality into the caster as damage is dealt.'
+  },
+  // ---------- Lifetap ranks 2-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  {
+    id: 'tech_lifetap_2',
+    name: 'Lifetap II',
+    chain: 'Lifetap',
+    rank: 2,
+    skill: 'Absorption',
+    grade: 'Dark',
+    energyCost: 21,
+    power: 22,
+    effect: 'drain',
+    trainingCost: 4,
+    skillReq: 8,
+    desc: 'A steadier trickle of stolen vitality flows back to the caster as the wound is opened. Requires Lifetap I and Absorption 8.'
+  },
+  {
+    id: 'tech_lifetap_3',
+    name: 'Lifetap III',
+    chain: 'Lifetap',
+    rank: 3,
+    skill: 'Absorption',
+    grade: 'Dark',
+    energyCost: 27,
+    power: 34,
+    effect: 'drain',
+    trainingCost: 5,
+    skillReq: 12,
+    desc: 'The siphon widens to a stream, restoring the caster with each drawn breath of vitality. Requires Lifetap II and Absorption 12.'
+  },
+  {
+    id: 'tech_lifetap_4',
+    name: 'Lifetap IV',
+    chain: 'Lifetap',
+    rank: 4,
+    skill: 'Absorption',
+    grade: 'Dark',
+    energyCost: 33,
+    power: 48,
+    effect: 'drain',
+    trainingCost: 6,
+    skillReq: 20,
+    desc: 'The Kuraan-era form of Lifetap, a stream of stolen vitality taught only to Absorption adepts who have proven the first three ranks. Requires Lifetap III and Absorption 20.'
+  },
+  {
+    id: 'tech_lifetap_5',
+    name: 'Lifetap V',
+    chain: 'Lifetap',
+    rank: 5,
+    skill: 'Absorption',
+    grade: 'Dark',
+    energyCost: 39,
+    power: 64,
+    effect: 'drain',
+    trainingCost: 8,
+    skillReq: 30,
+    desc: 'The Majiku-Highlands-era form of Lifetap, drawing a fuller stream of vitality and returning more to the caster. Requires Lifetap IV and Absorption 30.'
+  },
+  {
+    id: 'tech_lifetap_6',
+    name: 'Lifetap VI',
+    chain: 'Lifetap',
+    rank: 6,
+    skill: 'Absorption',
+    grade: 'Dark',
+    energyCost: 45,
+    power: 45,
+    effect: 'drain',
+    trainingCost: 10,
+    skillReq: 40,
+    desc: 'The Frozen-Reaches-era form of Lifetap, a torrent of stolen vitality drawn out even through numbing cold. Requires Lifetap V and Absorption 40.'
+  },
+  {
+    id: 'tech_lifetap_7',
+    name: 'Lifetap VII',
+    chain: 'Lifetap',
+    rank: 7,
+    skill: 'Absorption',
+    grade: 'Dark',
+    energyCost: 51,
+    power: 55,
+    effect: 'drain',
+    trainingCost: 12,
+    skillReq: 50,
+    desc: 'The Estari-Wellspring-era form of Lifetap, the torrent swelling until the caster feels the enemy\'s strength become their own. Requires Lifetap VI and Absorption 50.'
+  },
+  {
+    id: 'tech_lifetap_8',
+    name: 'Lifetap VIII',
+    chain: 'Lifetap',
+    rank: 8,
+    skill: 'Absorption',
+    grade: 'Dark',
+    energyCost: 57,
+    power: 65,
+    effect: 'drain',
+    trainingCost: 14,
+    skillReq: 60,
+    desc: 'The Skyspire-era form of Lifetap, taught only to the tower\'s resident Absorption adepts who have proven the first seven ranks. Requires Lifetap VII and Absorption 60.'
+  },
+  {
+    id: 'tech_lifetap_9',
+    name: 'Lifetap IX',
+    chain: 'Lifetap',
+    rank: 9,
+    skill: 'Absorption',
+    grade: 'Dark',
+    energyCost: 63,
+    power: 75,
+    effect: 'drain',
+    trainingCost: 16,
+    skillReq: 70,
+    desc: 'The final, highest rank ever taught — a torrent of vitality that leaves the caster restored and the enemy hollowed out, recorded before Eidas departed for the red moon. Requires Lifetap VIII and Absorption 70.'
   },
 
   // ---------- Second damage tech (Fire chain rank 2) so the Fire chain has depth ----------
@@ -268,6 +494,91 @@ Game.Data.techs = [
     skillReq: 12,
     desc: 'A third, consuming lash of shadow-stuff, taught only to Conjurers who have mastered the first two ranks. Requires Shadowlash II and Conjuration 12.'
   },
+  // ---------- Shadowlash ranks 4-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  {
+    id: 'tech_shadowlash_4',
+    name: 'Shadowlash IV',
+    chain: 'Shadowlash',
+    rank: 4,
+    skill: 'Conjuration',
+    grade: 'Dark',
+    energyCost: 32,
+    power: 58,
+    effect: 'damage',
+    trainingCost: 6,
+    skillReq: 20,
+    desc: 'A many-tongued lash of shadow-stuff, first taught in the Kuraan forests to Conjurers who have mastered the first three ranks. Requires Shadowlash III and Conjuration 20.'
+  },
+  {
+    id: 'tech_shadowlash_5',
+    name: 'Shadowlash V',
+    chain: 'Shadowlash',
+    rank: 5,
+    skill: 'Conjuration',
+    grade: 'Dark',
+    energyCost: 38,
+    power: 76,
+    effect: 'damage',
+    trainingCost: 8,
+    skillReq: 30,
+    desc: 'The whip grows coiling extra tongues, a technique carried down from the Majiku Highlands academies. Requires Shadowlash IV and Conjuration 30.'
+  },
+  {
+    id: 'tech_shadowlash_6',
+    name: 'Shadowlash VI',
+    chain: 'Shadowlash',
+    rank: 6,
+    skill: 'Conjuration',
+    grade: 'Dark',
+    energyCost: 44,
+    power: 52,
+    effect: 'damage',
+    trainingCost: 10,
+    skillReq: 40,
+    desc: 'A devouring lash of shadow-stuff, taught in the Frozen Reaches to Conjurers hardened against the cold. Requires Shadowlash V and Conjuration 40.'
+  },
+  {
+    id: 'tech_shadowlash_7',
+    name: 'Shadowlash VII',
+    chain: 'Shadowlash',
+    rank: 7,
+    skill: 'Conjuration',
+    grade: 'Dark',
+    energyCost: 50,
+    power: 63,
+    effect: 'damage',
+    trainingCost: 12,
+    skillReq: 50,
+    desc: 'The lash hungers now, a form preserved at the Estari Wellspring for Conjurers who have proven the first six ranks. Requires Shadowlash VI and Conjuration 50.'
+  },
+  {
+    id: 'tech_shadowlash_8',
+    name: 'Shadowlash VIII',
+    chain: 'Shadowlash',
+    rank: 8,
+    skill: 'Conjuration',
+    grade: 'Dark',
+    energyCost: 56,
+    power: 74,
+    effect: 'damage',
+    trainingCost: 14,
+    skillReq: 60,
+    desc: 'A shadow-stuff lash spun thick as the dark that clings to Skyspire\'s rafters, taught only to its resident Conjurers. Requires Shadowlash VII and Conjuration 60.'
+  },
+  {
+    id: 'tech_shadowlash_9',
+    name: 'Shadowlash IX',
+    chain: 'Shadowlash',
+    rank: 9,
+    skill: 'Conjuration',
+    grade: 'Dark',
+    energyCost: 62,
+    power: 85,
+    effect: 'damage',
+    trainingCost: 16,
+    skillReq: 70,
+    desc: 'The final, all-consuming form of the lash, the highest rank ever taught — recorded before Eidas departed for the red moon. Requires Shadowlash VIII and Conjuration 70.'
+  },
 
   // ---------- Phase 6b: new Water-grade chain (fills the missing element, DESIGN.md §3 school
   // assignments — Evocation=direct damage, per the Firebolt/Starspark precedent above) ----------
@@ -298,6 +609,105 @@ Game.Data.techs = [
     trainingCost: 4,
     skillReq: 8,
     desc: 'A stronger Tidal Lance, requiring the first rank be learned and a proven Evocation skill. Requires Tidal Lance I and Evocation 8.'
+  },
+  // ---------- Tidal Lance ranks 3-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  {
+    id: 'tech_tidal_lance_3',
+    name: 'Tidal Lance III',
+    chain: 'Tidal Lance',
+    rank: 3,
+    skill: 'Evocation',
+    grade: 'Water',
+    energyCost: 25,
+    power: 41,
+    effect: 'damage',
+    trainingCost: 5,
+    skillReq: 12,
+    desc: 'The master Evocation form of Tidal Lance, a driving lance of crushing water that answers to the Evocationist\'s will. Requires Tidal Lance II and Evocation 12.'
+  },
+  {
+    id: 'tech_tidal_lance_4',
+    name: 'Tidal Lance IV',
+    chain: 'Tidal Lance',
+    rank: 4,
+    skill: 'Evocation',
+    grade: 'Water',
+    energyCost: 31,
+    power: 57,
+    effect: 'damage',
+    trainingCost: 6,
+    skillReq: 20,
+    desc: 'The Kuraan-era form of Tidal Lance, where the seas themselves bend to command. Requires Tidal Lance III and Evocation 20.'
+  },
+  {
+    id: 'tech_tidal_lance_5',
+    name: 'Tidal Lance V',
+    chain: 'Tidal Lance',
+    rank: 5,
+    skill: 'Evocation',
+    grade: 'Water',
+    energyCost: 37,
+    power: 75,
+    effect: 'damage',
+    trainingCost: 8,
+    skillReq: 30,
+    desc: 'The Majiku-Highlands-era form of Tidal Lance, a torrent of Water-grade Anima that drowns all in its path. Requires Tidal Lance IV and Evocation 30.'
+  },
+  {
+    id: 'tech_tidal_lance_6',
+    name: 'Tidal Lance VI',
+    chain: 'Tidal Lance',
+    rank: 6,
+    skill: 'Evocation',
+    grade: 'Water',
+    energyCost: 43,
+    power: 51,
+    effect: 'damage',
+    trainingCost: 10,
+    skillReq: 40,
+    desc: 'The Frozen-Reaches-era form of Tidal Lance, a lance of refined aquatic force carved from ice-bound waters. Requires Tidal Lance V and Evocation 40.'
+  },
+  {
+    id: 'tech_tidal_lance_7',
+    name: 'Tidal Lance VII',
+    chain: 'Tidal Lance',
+    rank: 7,
+    skill: 'Evocation',
+    grade: 'Water',
+    energyCost: 49,
+    power: 62,
+    effect: 'damage',
+    trainingCost: 12,
+    skillReq: 50,
+    desc: 'The Estari-Wellspring-era form of Tidal Lance, where waters flow with unmatched power and precision. Requires Tidal Lance VI and Evocation 50.'
+  },
+  {
+    id: 'tech_tidal_lance_8',
+    name: 'Tidal Lance VIII',
+    chain: 'Tidal Lance',
+    rank: 8,
+    skill: 'Evocation',
+    grade: 'Water',
+    energyCost: 55,
+    power: 73,
+    effect: 'damage',
+    trainingCost: 14,
+    skillReq: 60,
+    desc: 'The Skyspire-era form of Tidal Lance, a surging wave of force that overwhelms all obstacles. Requires Tidal Lance VII and Evocation 60.'
+  },
+  {
+    id: 'tech_tidal_lance_9',
+    name: 'Tidal Lance IX',
+    chain: 'Tidal Lance',
+    rank: 9,
+    skill: 'Evocation',
+    grade: 'Water',
+    energyCost: 61,
+    power: 84,
+    effect: 'damage',
+    trainingCost: 16,
+    skillReq: 70,
+    desc: 'The Red-Moon-era form of Tidal Lance, the highest rank ever taught, a cataclysmic flood of Water-grade Anima that sweeps away entire fortifications. Requires Tidal Lance VIII and Evocation 70.'
   },
 
   // =====================================================================
@@ -1001,6 +1411,109 @@ Game.Data.techs = [
     skillReq: 12,
     desc: 'The master form of Vital Strike, taught only once a knife-fighter has proven the first two ranks. Requires Vital Strike II and Knives 12.'
   },
+  // ---------- Vital Strike ranks 4-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 powerMult pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  {
+    id: 'tech_vital_strike_4',
+    name: 'Vital Strike IV',
+    chain: 'Vital Strike',
+    rank: 4,
+    skill: 'Knives',
+    grade: null,
+    weaponTech: true,
+    powerMult: 2.3, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
+    energyCost: 22,
+    effect: 'damage',
+    trainingCost: 6,
+    skillReq: 20,
+    desc: 'The Kuraan-era form of Vital Strike, taught only to knife-fighters who have mastered the first three ranks. Requires Vital Strike III and Knives 20.'
+  },
+
+  {
+    id: 'tech_vital_strike_5',
+    name: 'Vital Strike V',
+    chain: 'Vital Strike',
+    rank: 5,
+    skill: 'Knives',
+    grade: null,
+    weaponTech: true,
+    powerMult: 2.6, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
+    energyCost: 26,
+    effect: 'damage',
+    trainingCost: 8,
+    skillReq: 30,
+    desc: 'The Majiku-Highlands-era form of Vital Strike, where the blade finds seams between plating with surgical precision. Requires Vital Strike IV and Knives 30.'
+  },
+
+  {
+    id: 'tech_vital_strike_6',
+    name: 'Vital Strike VI',
+    chain: 'Vital Strike',
+    rank: 6,
+    skill: 'Knives',
+    grade: null,
+    weaponTech: true,
+    powerMult: 1.6, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
+    energyCost: 30,
+    effect: 'damage',
+    trainingCost: 10,
+    skillReq: 40,
+    desc: 'The Frozen-Reaches-era form of Vital Strike, honed for quick, lethal strikes in bitter cold. Requires Vital Strike V and Knives 40.'
+  },
+
+  {
+    id: 'tech_vital_strike_7',
+    name: 'Vital Strike VII',
+    chain: 'Vital Strike',
+    rank: 7,
+    skill: 'Knives',
+    grade: null,
+    weaponTech: true,
+    powerMult: 1.76, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
+    energyCost: 34,
+    effect: 'damage',
+    trainingCost: 12,
+    skillReq: 50,
+    desc: 'The Estari-Wellspring-era form of Vital Strike, known for its uncanny ability to exploit gaps in any armor. Requires Vital Strike VI and Knives 50.'
+  },
+
+  {
+    id: 'tech_vital_strike_8',
+    name: 'Vital Strike VIII',
+    chain: 'Vital Strike',
+    rank: 8,
+    skill: 'Knives',
+    grade: null,
+    weaponTech: true,
+    powerMult: 1.93, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
+    energyCost: 38,
+    effect: 'damage',
+    trainingCost: 14,
+    skillReq: 60,
+    desc: 'The Skyspire-era form of Vital Strike, a lightning-swift technique that reveals the vital points in any defense. Requires Vital Strike VII and Knives 60.'
+  },
+
+  {
+    id: 'tech_vital_strike_9',
+    name: 'Vital Strike IX',
+    chain: 'Vital Strike',
+    rank: 9,
+    skill: 'Knives',
+    grade: null,
+    weaponTech: true,
+    powerMult: 2.09, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
+    energyCost: 42,
+    effect: 'damage',
+    trainingCost: 16,
+    skillReq: 70,
+    desc: 'The Red-Moon-era form of Vital Strike, the highest rank ever taught — each stroke a death sentence carved through armor and flesh alike. Requires Vital Strike VIII and Knives 70.'
+  },
+
   {
     id: 'tech_flurry_1',
     name: 'Flurry I',
@@ -1033,6 +1546,126 @@ Game.Data.techs = [
     skillReq: 6,
     desc: 'A stronger Flurry, requiring the first rank be learned and a proven Hand to Hand skill. Requires Flurry I and Hand to Hand 6.'
   },
+  // ---------- Flurry ranks 3-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 powerMult pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  {
+    id: 'tech_flurry_3',
+    name: 'Flurry III',
+    chain: 'Flurry',
+    rank: 3,
+    skill: 'Hand to Hand',
+    grade: null,
+    weaponTech: true,
+    powerMult: 1.3, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
+    energyCost: 26,
+    effect: 'damage',
+    trainingCost: 5,
+    skillReq: 12,
+    desc: 'The master form of bare-knuckle striking, where both fists move in perfect rhythm. Requires Flurry II and Hand to Hand 12.'
+  },
+
+  {
+    id: 'tech_flurry_4',
+    name: 'Flurry IV',
+    chain: 'Flurry',
+    rank: 4,
+    skill: 'Hand to Hand',
+    grade: null,
+    weaponTech: true,
+    powerMult: 1.45, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
+    energyCost: 30,
+    effect: 'damage',
+    trainingCost: 6,
+    skillReq: 20,
+    desc: 'The Kuraan-era form of Flurry, where the practitioner drives forward with relentless momentum. Requires Flurry III and Hand to Hand 20.'
+  },
+
+  {
+    id: 'tech_flurry_5',
+    name: 'Flurry V',
+    chain: 'Flurry',
+    rank: 5,
+    skill: 'Hand to Hand',
+    grade: null,
+    weaponTech: true,
+    powerMult: 1.6, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
+    energyCost: 34,
+    effect: 'damage',
+    trainingCost: 8,
+    skillReq: 30,
+    desc: 'The Majiku-Highlands-era form of Flurry, where each strike builds on the last in an ever-accelerating tempo. Requires Flurry IV and Hand to Hand 30.'
+  },
+
+  {
+    id: 'tech_flurry_6',
+    name: 'Flurry VI',
+    chain: 'Flurry',
+    rank: 6,
+    skill: 'Hand to Hand',
+    grade: null,
+    weaponTech: true,
+    powerMult: 0.96, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
+    energyCost: 38,
+    effect: 'damage',
+    trainingCost: 10,
+    skillReq: 40,
+    desc: 'The Frozen-Reaches-era form of Flurry, a technique refined by brawlers who fought in deep snow and ice. Requires Flurry V and Hand to Hand 40.'
+  },
+
+  {
+    id: 'tech_flurry_7',
+    name: 'Flurry VII',
+    chain: 'Flurry',
+    rank: 7,
+    skill: 'Hand to Hand',
+    grade: null,
+    weaponTech: true,
+    powerMult: 1.05, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
+    energyCost: 42,
+    effect: 'damage',
+    trainingCost: 12,
+    skillReq: 50,
+    desc: 'The Estari-Wellspring-era form of Flurry, where the body becomes a blur of fists and fury. Requires Flurry VI and Hand to Hand 50.'
+  },
+
+  {
+    id: 'tech_flurry_8',
+    name: 'Flurry VIII',
+    chain: 'Flurry',
+    rank: 8,
+    skill: 'Hand to Hand',
+    grade: null,
+    weaponTech: true,
+    powerMult: 1.13, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
+    energyCost: 46,
+    effect: 'damage',
+    trainingCost: 14,
+    skillReq: 60,
+    desc: 'The Skyspire-era form of Flurry, where the rhythm becomes hypnotic — strike after strike flowing like a mountain river. Requires Flurry VII and Hand to Hand 60.'
+  },
+
+  {
+    id: 'tech_flurry_9',
+    name: 'Flurry IX',
+    chain: 'Flurry',
+    rank: 9,
+    skill: 'Hand to Hand',
+    grade: null,
+    weaponTech: true,
+    powerMult: 1.21, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
+    energyCost: 50,
+    effect: 'damage',
+    trainingCost: 16,
+    skillReq: 70,
+    desc: 'The Red-Moon-era form of Flurry, the highest rank ever taught — an unstoppable storm of bare-knuckle fury that overwhelms any opponent. Requires Flurry VIII and Hand to Hand 70.'
+  },
+
 
   // =====================================================================
   // Level-Arc Band A (docs/SPEC-ARC-BANDS.md, F2/F3): one step further into two magic-school
