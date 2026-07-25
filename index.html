@@ -75,10 +75,13 @@
 <script src="js/data/story.js"></script>
 <script src="js/data/classes.js"></script>
 <script src="js/data/statinfo.js"></script>
+<script src="js/data/companions.js"></script>
 <script src="js/core/character.js"></script>
 <script src="js/core/inventory.js"></script>
 <script src="js/core/battle.js"></script>
+<script src="js/core/companion.js"></script>
 <script src="js/core/world.js"></script>
+
 <script src="js/core/quests.js"></script>
 <script src="js/core/classes.js"></script>
 <script src="js/core/save.js"></script>
@@ -227,6 +230,26 @@
     var xpNeeded = Game.Character.xpNeededForNext(c);
     var xpInto = Game.Character.xpIntoCurrentLevel(c);
     wrap.appendChild(barRow('XP', 'xp', xpInto, xpNeeded));
+
+    // v1.9.1 (docs/SPEC-COMPANION-SYSTEM.md §7.4): the bound companion in the PERSISTENT header,
+    // shown only when one is present. In battle the LIVE battle.companion HP is used (round-by-
+    // round, matching the "Your Vitality" panel — refreshBattleScreen re-renders this header every
+    // action); out of battle the persisted character.companion HP (which carries between fights).
+    // Name goes on its own compact line because .statbar-label is only 42px (css/theme.css); the
+    // bar itself uses the short "Ally" label + the companion (Anima-purple) fill. [invented]
+    if (c.companion && Game.Companion) {
+      var compKind = Game.Companion.getKind(c.companion.kindId);
+      if (compKind) {
+        var liveComp = (Game.state.battle && Game.state.battle.companion) ? Game.state.battle.companion : null;
+        var compHp = liveComp ? liveComp.hp : c.companion.hp;
+        var compHpMax = liveComp ? liveComp.hpMax : Game.Companion.hpMaxFor(c);
+        var compInfo = document.createElement('div');
+        compInfo.className = 'charinfo-row smallfont';
+        compInfo.textContent = 'Companion: ' + compKind.name;
+        wrap.appendChild(compInfo);
+        wrap.appendChild(barRow('Ally', 'companion', compHp, compHpMax));
+      }
+    }
 
     var weight = document.createElement('div');
     weight.className = 'weight-readout smallfont';

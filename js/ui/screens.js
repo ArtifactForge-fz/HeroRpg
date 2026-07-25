@@ -306,6 +306,16 @@ Game.Screens = (function () {
     var levelRow = el('div', { class: 'hrpg-table mt8' });
     levelRow.appendChild(makeInfoRow('Level', String(c.level) + (c.level >= BALANCE.LEVEL_CAP ? ' (MAX)' : '')));
     levelRow.appendChild(makeInfoRow('Class', classLabel(c)));
+    // v1.9.1 (docs/SPEC-COMPANION-SYSTEM.md §7.2): the bound companion is semi-permanent — its HP
+    // carries between fights — so surface it out of battle too, alongside class identity. [invented]
+    if (Game.Companion) {
+      var compStatusText = 'None bound';
+      if (c.companion) {
+        var compKindS = Game.Companion.getKind(c.companion.kindId);
+        compStatusText = (compKindS ? compKindS.name : c.companion.kindId) + ' (' + c.companion.hp + ' / ' + Game.Companion.hpMaxFor(c) + ' HP)';
+      }
+      levelRow.appendChild(makeInfoRow('Companion', compStatusText));
+    }
     levelRow.appendChild(makeInfoRow('Monster Kills', String(c.monsterKills)));
     levelRow.appendChild(makeInfoRow('Deaths', String(c.deaths)));
     top.appendChild(scrollX(levelRow));
@@ -2387,6 +2397,30 @@ Game.Screens = (function () {
     // shown on Status — see renderStatus below).
     if (Game.Character && Game.Character.hasAffliction && Game.Character.hasAffliction(c, 'haunting')) {
       vit.appendChild(el('div', { class: 'smallfont mt4 affliction-red' }, ['Haunted (magical/consumable healing halved)']));
+    }
+
+    // ---- Companion (v1.9.1, docs/SPEC-COMPANION-SYSTEM.md §7): the bound ally shares the
+    // "Your Vitality" panel — it fights beside you. [invented]; guarded so a companion-less fight
+    // (and the fakedom test harness, which binds none) renders nothing at all.
+    if (battle.companion && battle.companion.def) {
+      var comp = battle.companion;
+      vit.appendChild(el('div', { class: 'mt8', style: 'display:flex; align-items:center; gap:6px;' }, [
+        Game.UI.icon(comp.kindId, 32),
+        el('span', { class: 'statbar-label' }, [comp.def.name])
+      ]));
+      vit.appendChild(battleBar('Ally', 'companion', comp.hp, comp.hpMax));
+      var compNote;
+      if (comp.hp <= 0) {
+        compNote = 'Destroyed — bind a new elemental to summon one again.';
+      } else if (Game.Battle.fearLevels(battle) >= BALANCE.COMPANION_FEAR_SUPPRESS_LEVELS) {
+        compNote = 'Overwhelmed — it cannot act while you are this outmatched.';
+      } else if (Game.Companion && Game.Companion.tauntActive(battle)) {
+        compNote = "Guarding you — drawing the enemy's attacks onto itself.";
+      } else {
+        var roleBlurb = { healer: 'mends your wounds', tank: 'shields you', support: 'sharpens your magic', dps: 'sears the enemy' };
+        compNote = comp.def.element + ' elemental — ' + (roleBlurb[comp.def.role] || 'fights at your side') + ' each round.';
+      }
+      vit.appendChild(el('div', { class: 'tinyfont mt4' }, [compNote]));
     }
 
     // ---- Action icons: Attack (sword) / Item (bag) / Defend (shield) / Escape (tornado) —

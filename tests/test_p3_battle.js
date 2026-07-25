@@ -593,7 +593,8 @@ assert(loaded.character.fury === 0, 'migration adds fury=0');
 Game.state = loaded;
 Game.persist();
 var resaved = JSON.parse(localStorageStore['herorpg_save']);
-assert(resaved.version === 10, 'resave stamps current version 10 (v1.4 P2 Advantage Points migration on top), got ' + resaved.version);
+assert(resaved.version === 11, 'resave stamps current version 11 (v1.9 companion migration on top), got ' + resaved.version);
+
 
 // v1 chain still works end-to-end (v1 -> v2 -> v3 -> v4)
 var v1c = JSON.parse(JSON.stringify(v2Character));
@@ -641,7 +642,8 @@ assert(loadedV9.character.equipment.offhand === null, 'v8->v9 migration backfill
 Game.state = loadedV9;
 Game.persist();
 var resavedV9 = JSON.parse(localStorageStore['herorpg_save']);
-assert(resavedV9.version === 10, 'resave stamps CURRENT_VERSION 10, got ' + resavedV9.version);
+assert(resavedV9.version === 11, 'resave stamps CURRENT_VERSION 11, got ' + resavedV9.version);
+
 
 // v1 -> v9 full chain also ends up with equipment.offhand present (SPEC-V1.2.md Phase 1 #5).
 var v1ToV9 = JSON.parse(JSON.stringify(v8Character));

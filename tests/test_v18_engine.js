@@ -66,10 +66,13 @@ loadScript('data/recipes.js');
 loadScript('data/quests.js');
 loadScript('data/classes.js');
 loadScript('data/statinfo.js');
+loadScript('data/companions.js');
 loadScript('core/character.js');
 loadScript('core/inventory.js');
 loadScript('core/battle.js');
+loadScript('core/companion.js');
 loadScript('core/world.js');
+
 loadScript('core/quests.js');
 loadScript('core/save.js');
 loadScript('core/classes.js');
@@ -237,24 +240,35 @@ console.log('\n=== Test 2: spellpower buff raises techEffectivePower pre-multipl
   assert(after === expectedAfter, 'techEffectivePower WITH +20 spellpower buff = ' + expectedAfter + ' (power+buff, then Int factor), got ' + after);
   assert(after > before, 'spellpower buff strictly raised the offensive tech\'s effective power');
 
-  // P0 finding (d): the buff flows through the SAME techEffectivePower pipeline the Conjurer
-  // servitor tick calls (tickMonsterStatuses passes a synthetic {effect:'damage', power} tech
-  // through it) — so it also boosts servitor ticks. Documented here via a synthetic servitor
-  // status entry + a real tick (triggered by any subsequent player action -> finishRound ->
-  // tickMonsterStatuses), with grade:null and magicArmor 0 so the tick damage is EXACTLY
-  // round(techEffectivePower(...)) at fixedRng(0.5) (variance factor 1, no glancing).
+  // P0 finding (d), v1.9 successor: the buff flows through the SAME techEffectivePower pipeline a
+  // COMPANION's own basic damage tick calls (js/core/companion.js dealDamageToMonster passes a
+  // synthetic {effect:'damage', power} tech through it, exactly like the retired Conjurer
+  // "Elemental Servitor" tick used to before the companion system superseded it,
+  // docs/SPEC-COMPANION-SYSTEM.md D0) — so it also boosts a companion's damage output. Documented
+  // here via a real Gale Sylph (comp_wind — plain graded damage, no DoT/taunt rider to contaminate
+  // the hp delta), magicArmor/resistances zeroed so the tick damage is EXACTLY
+  // round(techEffectivePower(...)) at fixedRng(0.5) (variance-neutral, no glancing).
   b.monster.magicArmor = 0;
-  b.monster.statuses.push({ type: 'servitor', name: 'Test Servitor', turnsLeft: 2, power: 50, grade: null });
-  var expectedTick = Math.round(Game.Battle.techEffectivePower(c, { effect: 'damage', power: 50 }));
+  b.monster.resistances = {};
+  Game.Companion.summon(c, 'comp_wind');
+  var windKind = Game.Companion.getKind('comp_wind');
+  b.companion = {
+    kindId: 'comp_wind', def: windKind,
+    hp: Game.Companion.hpMaxFor(c), hpMax: Game.Companion.hpMaxFor(c),
+    armor: 0, magicArmor: 0, statuses: []
+  };
+  var galePower = Math.round(windKind.basic.powerBase + windKind.basic.powerPerLevel * c.level);
+  var expectedTick = Math.round(Game.Battle.techEffectivePower(c, { effect: 'damage', power: galePower }));
   var hpBefore = b.monster.hp;
   setRng(fixedRng(0.5)); // variance-neutral, no glancing, no monster dodge/tech proc against the player
-  Game.Battle.defend(); // any action triggers finishRound -> tickMonsterStatuses
+  Game.Battle.defend(); // any action triggers finishRound -> Game.Companion.act (companion goes FIRST)
   var tickDealt = hpBefore - b.monster.hp;
-  assert(tickDealt === expectedTick, 'servitor tick WITH the spellpower buff active dealt ' + tickDealt + ', expected ' + expectedTick + ' (buff flows into the shared techEffectivePower pipeline)');
-  var expectedTickNoBuff = Math.round(50 * (1 + c.intelligence * 0.02));
-  assert(tickDealt > expectedTickNoBuff, 'the buffed servitor tick (' + tickDealt + ') is strictly larger than the no-buff baseline (' + expectedTickNoBuff + ')');
+  assert(tickDealt === expectedTick, 'companion basic tick WITH the spellpower buff active dealt ' + tickDealt + ', expected ' + expectedTick + ' (buff flows into the shared techEffectivePower pipeline)');
+  var expectedTickNoBuff = Math.round(galePower * (1 + c.intelligence * 0.02));
+  assert(tickDealt > expectedTickNoBuff, 'the buffed companion tick (' + tickDealt + ') is strictly larger than the no-buff baseline (' + expectedTickNoBuff + ')');
   Game.Battle.endBattle();
 })();
+
 
 // =================== Test 3: typed buff does NOT add flat Damage; untyped buff still does ===================
 console.log('\n=== Test 3: playerBuffDamageBonus — typed buffs excluded, untyped (legacy) buffs still add flat Damage ===');

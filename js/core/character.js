@@ -119,8 +119,17 @@ Game.Character = (function () {
       // on battle victory (js/core/battle.js onWin, BALANCE.AP_PER_WIN), spent at the AA Exchange
       // town facility (js/core/world.js buyAp). Never gold-convertible (docs/SPEC-V1.4-GAMEPLAY.md
       // §7 guardrail: AP is a parallel currency, not a gold faucet).
-      ap: 0
+      ap: 0,
+
+      // v1.9 (docs/SPEC-COMPANION-SYSTEM.md §2.1): the active companion, save v10->v11
+      // (js/core/save.js). null = no companion bound; otherwise { kindId, hp } — hpMax/armor/
+      // magicArmor are always DERIVED from the kind def (js/data/companions.js) + character.level
+      // (js/core/companion.js hpMaxFor/armorFor/magicArmorFor), never stored. First bound by a
+      // Conjurer "Bind" tech (js/data/techs.js tech_summon_*); dispersed (set back to null) on
+      // death (D6) or when its hp reaches 0 mid-battle (js/core/battle.js).
+      companion: null
     };
+
 
     recalcDerived(character);
     character.hitPoints = character.hitPointsMax;

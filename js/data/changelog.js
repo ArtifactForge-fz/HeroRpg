@@ -12,7 +12,29 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.9.0',
+    date: '2026-07-22',
+    title: 'The Conjurer Binds a Companion',
+    saveVersion: 11,
+    highlights: [
+      'The Conjurer walks with a servant again — and this time it fights. Bind one of four ' +
+        'elementals (an Ember Salamander, Tidal Undine, Granite Golem, or Gale Sylph); it battles ' +
+        'at your side, keeps its wounds between fights, and answers your commands. Fire burns ' +
+        'foes over time, Water heals and cleanses you, Earth draws blows onto itself, and Wind ' +
+        'sharpens your own magic. Bind a different elemental and the old one steps aside; let it ' +
+        'fall in battle (or fall yourself) and you\'ll need to bind again.',
+      'Enemies can now strike at your companion directly — a guardian\'s Taunt pulls a foe\'s ' +
+        'plain attacks off you, and a few foes have learned specials that can hit your companion, ' +
+        'or you both at once.',
+      'Your companion is right there on the battle screen — its own health bar sits with your ' +
+        'Vitality, showing when it is guarding you or overwhelmed by a far stronger foe — and its ' +
+        'health is listed on your Status page between fights.'
+    ]
+  },
+
+  {
     version: 'v1.8.1',
+
     date: '2026-07-19',
     title: 'Clearer Coin & Visible Magic',
     saveVersion: 10,

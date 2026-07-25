@@ -469,6 +469,7 @@ body {
 /* ===== Phase 3: Battle & Techs ===== */
 
 .statbar-fill.fear { background: #d4c832; } /* yellow Fear bar (New_Player_Guide.md, Fear.md) */
+.statbar-fill.companion { background: #7a4dbd; } /* v1.9.1 companion (ally) HP bar — Anima purple (invented, docs/SPEC-COMPANION-SYSTEM.md §7) */
 
 /* Feature B (user-directed): persistent afflictions (Haunting) shown in dark red on Status and
    the battle "Your Vitality" panel — deliberately darker/less saturated than .req-bad (#cc3333,

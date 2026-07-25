@@ -287,8 +287,8 @@ every band tech rank, including `tech_firebolt_5`/`tech_impale_5`/`tech_impale_7
 | tech_berserker_frenzy | tech_execution_blow.png | heavy, full-strength melee finisher — Berserker's Gladiator-line sibling already owns this look |
 | tech_paladin_smite | tech_radiant_smite.png | literal "smite" — Crusader-line Light-grade precedent |
 | tech_warden_bulwark | shield_ironbound_kite.png | bulwark/shield theme for the anti-magic-wall class |
-| tech_summon_elemental | tech_firebolt_5.png | fire/elemental tile for the summon (auto-weakness grade is chosen at runtime, not fixed art) |
 | tech_greater_restoration | tech_greater_mending.png | direct heal-tech reuse — Cleric is Sage's restoration option |
+
 | tech_seers_ward | tech_focus_1.png | existing buff-tech tile (foresight/focus) |
 | tech_lethal_strike | tech_impale_5.png | piercing burst strike |
 | tech_ranger_volley | tech_flurry_2.png | multi-hit tile, matches the tech's own `hits: 2` shape |
@@ -346,3 +346,26 @@ tiles, rank-laddered where a ranked donor chain exists:
 | tech_cutpurse_strike_1..4 | knife_thieves_edge, plains_cutpurse_vole, tech_dice_throw, tech_vault_reckoning |
 | tech_crosscut_1..4 | knife_offhand_twinfang, knife_offhand_swiftfang, knife_offhand_nightedge, knife_offhand_kingsfang |
 | tech_tempo_1..4 | tech_efficient_strike, tech_flurry_1, tech_flurry_2, tech_berserker_frenzy |
+
+## v1.9 companion system (docs/SPEC-COMPANION-SYSTEM.md)
+
+New ids reuse existing Dungeon Crawl 32x32 tiles, each given a small hue-shift tweak (Python/PIL)
+so no two are byte-identical (monster-icon distinctness is test-enforced; techs are not, but the
+same courtesy is extended so no two ids render as visually-identical tiles):
+
+| new game id | copied from (existing file) | hue tweak | why |
+|---|---|---|---|
+| comp_fire | tech_firebolt_5.png | +18° | Ember Salamander — fire tile |
+| comp_water | juneros_tidewalker.png | -15° | Tidal Undine — watery creature tile |
+| comp_earth | estari_construct_sentinel.png | +20° | Granite Golem — stone guardian tile |
+| comp_wind | kuraan_wind_spirit.png | -20° | Gale Sylph — a literal wind-spirit tile |
+| tech_summon_fire | tech_firebolt_3.png | +10° | Bind Salamander |
+| tech_summon_water | tech_tidal_lance_1.png | -10° | Bind Undine |
+| tech_summon_earth | tech_stoneshear_1.png | +12° | Bind Golem |
+| tech_summon_wind | foothills_gale_harrier.png | +15° | Bind Sylph (no player-castable Wind tech icon existed yet) |
+| tech_cmd_conflagration | tech_firebolt_9.png | +25° | Conflagration — a bigger, later-rank fire tile |
+| tech_cmd_renewing_tide | tech_greater_restoration.png | -12° | Renewing Tide — an existing heal-tech tile |
+| tech_cmd_bulwark | tech_warden_bulwark.png | +8° | Bulwark — literal name match |
+| tech_cmd_tailwind | tech_attunement_1.png | -18° | Tailwind — an existing spellpower-buff tile |
+| mon_cleaving_roar | tech_cleave_1.png | +30° | example monster tech (target 'both'), not wired to any monster |
+| mon_banish_conduit | estari_anima_conduit.png | -25° | example monster tech (target 'companion'), not wired to any monster |

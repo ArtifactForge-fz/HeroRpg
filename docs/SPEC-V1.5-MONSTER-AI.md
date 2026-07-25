@@ -308,8 +308,14 @@ pillar (§2a) — not deferred. **M3 Perfect guard is CUT** — Defend is not bu
 
 ## 11. Out of scope
 
-- **Summons / multi-enemy fights** — the engine is strictly 1v1 (`forum/t-449.md`: "no summons in
-  battle"); archived AND cut. Telegraphs are single-enemy reads only.
+- **Summons / multi-enemy fights** — AT THE TIME THIS SPEC WAS WRITTEN, the engine was strictly
+  1v1 (`forum/t-449.md`: "no summons in battle"); archived AND cut. **[note] v1.9
+  (`docs/SPEC-COMPANION-SYSTEM.md`, D0 APPROVED): this blanket constraint has since been overridden
+  for the Conjurer's companion system** (a real second combatant with its own HP/turn/target) — the
+  override does not retroactively change anything in THIS spec (monster telegraphs/behaviors are
+  still single-enemy reads of the PLAYER, unaffected by an optional companion on the field), but the
+  absolute "1v1, full stop" framing above no longer holds project-wide.
+
 - **Full boss-script authoring** beyond generalizing G2 — bosses already have their own scripted
   beats from v1.4; this spec brings the *standard* population up, and only reuses/extends the boss
   interpreter.

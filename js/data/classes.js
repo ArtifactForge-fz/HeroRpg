@@ -791,15 +791,24 @@ Game.Data.classes = [
 
   // ---------- Conjurer (baseClass: wizard; NAME [archived] derives from the archived Conjuration
   // skill (reference/manual/Skills.md), which DESIGN.md §3 already defines as "summoned/DoT
-  // effects" — see docs/SPEC-TIER3-EXPANSION.md §2/§3a) — Wizard's summon-based SUSTAINED option,
-  // paired with Magus's burst above. The one class in this batch needing a small new battle
-  // mechanic; see its signature tech below and js/core/battle.js useTech/tickMonsterStatuses. -----
+  // effects" — see docs/SPEC-TIER3-EXPANSION.md §2/§3a for the ORIGINAL (now superseded) design) —
+  // Wizard's summon-based option, paired with Magus's burst above. v1.9 REDESIGN
+  // (docs/SPEC-COMPANION-SYSTEM.md D0/D4): the single "Elemental Servitor" DoT-rider signature is
+  // RETIRED (tech_summon_elemental removed) and replaced by FOUR per-element Pact abilities, each
+  // granting that element's Bind (summon) tech + its command tech — the Conjurer now commands a
+  // genuine second combatant (js/core/companion.js), not a rider on the enemy. The two passives
+  // are KEPT unchanged (still fit a pet-commander identity: Energy for re-summoning, Magic Armor
+  // warding). This intentionally EXCEEDS the standard Tier-3 ability-cost budget (11) — the four
+  // Pacts total 12 on top of the two passives' 6 = 21 — because a Conjurer unlocks one usable
+  // elemental early and the rest with further class-XP investment (there is no hard class-level
+  // cap, js/core/classes.js); see js/core/classes.js buyAbility's `techIds` (array) extension,
+  // which each Pact below relies on. -----
   {
     id: 'conjurer',
     name: 'Conjurer',
-    desc: 'A Wizard who channels Anima into a lingering, semi-autonomous elemental rather than a ' +
-      'single burst — patient, sustained damage in place of a Magus\'s single verdict. The ' +
-      'Wizard\'s summon-based Tier-3 calling.',
+    desc: 'A Wizard who binds living Anima into an elemental servant that fights at their side — ' +
+      'commanding fire, water, earth, or wind. Where the Magus ends a fight in one verdict, the ' +
+      'Conjurer wages it two-against-one. The Wizard\'s summon-based Tier-3 calling.',
     tier: 3,
     baseClass: 'wizard',
     legendary: false,
@@ -809,28 +818,53 @@ Game.Data.classes = [
         name: 'Bound Conduit',
         kind: 'passive',
         effect: 'energy_max_flat',
-        power: 36, // invented: +20% over Wizard's Overcharged Reserves (30) — matches Magus's own Overflowing Wellspring (36), its Wizard-line sibling; a deeper well to keep re-summoning the servitor per spec §3a. Provisional (Part B), pending lead's P5 sim.
+        power: 36, // [archived-carried] unchanged from the pre-redesign Conjurer — invented: +20% over Wizard's Overcharged Reserves (30), matches Magus's own Overflowing Wellspring (36). Provisional, pending the lead's sim.
         classLevelCost: 3,
-        desc: 'A deeper well of Energy, kept full for summoning again the moment the last servitor fades — flat +36 max Energy.'
+        desc: 'A deeper well of Energy, kept full for binding and commanding your elemental — flat +36 max Energy.'
       },
       {
         id: 'conjurer_warding_sigil',
         name: 'Warding Sigil',
         kind: 'passive',
         effect: 'magic_armor_flat',
-        power: 12, // invented: matches Wizard's own Mind Over Matter (12) rather than exceeding it — per spec §3a the Conjurer's Tier-3 "step up" is concentrated in the summon mechanic itself plus Bound Conduit's Energy well, not this defensive passive. FLAGGED for the lead's sign-off (T0 numbers lock).
+        power: 12, // [archived-carried] unchanged from the pre-redesign Conjurer — invented: matches Wizard's own Mind Over Matter (12). Provisional, pending the lead's sim.
         classLevelCost: 3,
-        desc: 'A standing sigil of protective Anima, drawn from the same discipline that binds the servitor — flat +12 Magic Armor.'
+        desc: 'A standing sigil of protective Anima, kept from the same discipline that binds your elemental — flat +12 Magic Armor.'
       },
       {
-        id: 'conjurer_summon_elemental',
-        name: 'Summon Elemental',
+        id: 'conjurer_pact_fire',
+        name: 'Pact of Cinders',
         kind: 'tech',
-        techId: 'tech_summon_elemental',
-        classLevelCost: 5,
-        desc: 'Binds a lingering Elemental Servitor to the battle, auto-attuned to the enemy\'s weakest Anima grade — it strikes automatically each round until it fades. NOT a second combatant (the battle stays strictly 1v1): a persistent damage rider, not a fighter with its own HP or turn. Conjurer class technique.'
+        techIds: ['tech_summon_fire', 'tech_cmd_conflagration'], // [invented] docs/SPEC-COMPANION-SYSTEM.md §2.5
+        classLevelCost: 3,
+        desc: 'Bind the Ember Salamander and learn to command its Conflagration — a patient arsonist that burns foes over time.'
+      },
+      {
+        id: 'conjurer_pact_water',
+        name: 'Pact of Tides',
+        kind: 'tech',
+        techIds: ['tech_summon_water', 'tech_cmd_renewing_tide'], // [invented] docs/SPEC-COMPANION-SYSTEM.md §2.5
+        classLevelCost: 3,
+        desc: 'Bind the Tidal Undine and learn its Renewing Tide — a healer that mends and cleanses you.'
+      },
+      {
+        id: 'conjurer_pact_earth',
+        name: 'Pact of Stone',
+        kind: 'tech',
+        techIds: ['tech_summon_earth', 'tech_cmd_bulwark'], // [invented] docs/SPEC-COMPANION-SYSTEM.md §2.5
+        classLevelCost: 3,
+        desc: 'Bind the Granite Golem and learn its Bulwark — a guardian that draws blows away from you.'
+      },
+      {
+        id: 'conjurer_pact_wind',
+        name: 'Pact of Gales',
+        kind: 'tech',
+        techIds: ['tech_summon_wind', 'tech_cmd_tailwind'], // [invented] docs/SPEC-COMPANION-SYSTEM.md §2.5
+        classLevelCost: 3,
+        desc: 'Bind the Gale Sylph and learn its Tailwind — a swift striker whose winds sharpen your magic.'
       }
     ]
+
   },
 
   // ---------- Cleric (baseClass: sage; NAME [archived] forum/t-449.md, Nerevar's own suggested

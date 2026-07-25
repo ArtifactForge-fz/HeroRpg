@@ -234,16 +234,24 @@ console.log('\n=== Part 1: referential integrity ===');
   assert(bad.length === 0, 'every tech skill name is one of BALANCE.SKILLS' + (bad.length ? (': ' + bad.join(', ')) : ''));
 })();
 
-// ---- 1h) every class ability techId exists in techs.js ----
+// ---- 1h) every class ability techId exists in techs.js (incl. v1.9 `techIds` array form) ----
 (function () {
   var bad = [];
   Game.Data.classes.forEach(function (cd) {
     cd.abilities.forEach(function (a) {
-      if (a.kind === 'tech' && !techExists(a.techId)) bad.push(cd.id + ' -> ability tech ' + a.techId);
+      if (a.kind !== 'tech') return;
+      if (a.techId && !techExists(a.techId)) bad.push(cd.id + ' -> ability tech ' + a.techId);
+      if (Array.isArray(a.techIds)) {
+        a.techIds.forEach(function (tid) {
+          if (!techExists(tid)) bad.push(cd.id + ' -> ability tech ' + tid);
+        });
+      }
+      if (!a.techId && !Array.isArray(a.techIds)) bad.push(cd.id + ' -> ability ' + a.id + ' has neither techId nor techIds');
     });
   });
-  assert(bad.length === 0, 'every class ability techId exists in techs.js' + (bad.length ? (': ' + bad.join(', ')) : ''));
+  assert(bad.length === 0, 'every class ability techId/techIds resolves in techs.js' + (bad.length ? (': ' + bad.join(', ')) : ''));
 })();
+
 
 // ---- 1i) every class boss_kill obtain.monsterId exists ----
 (function () {
