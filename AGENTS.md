@@ -2,17 +2,20 @@
 
 Single-player browser remake of **herorpg.net** (2004–2008, dead), reconstructed from Wayback
 Machine scrapes. Static HTML/CSS/JS, no build step, no dependencies — open `index.html` via
-`file://`. **Shipped: v1.8.0 (save version 10)** — v1.4 gameplay + mobile, v1.4.1/.2 UX info
-passes, v1.5 (reactive monsters + Tier-3 branching/24-class roster + the Conjurer summoner),
-v1.6 (a full balance & progression rebalance from playtest feedback), v1.7 (quest-arc
-redistribution, Arkan racial parity, destinations-UI cards, and a reference wiki), and v1.8
-(a technique chain for every skill — 72 new techs incl. the first player debuffs — plus the
-item-reachability pass that finally unwalled dual-wield; see "Recently completed" below) are
-all released. Two accepted known limitations:
+`file://`. **Shipped: v1.9.0 (save version 11) — merged, pushed and DEPLOYED LIVE 2026-07-25.**
+v1.4 gameplay + mobile, v1.4.1/.2 UX info passes, v1.5 (reactive monsters + Tier-3
+branching/24-class roster + the Conjurer summoner), v1.6 (a full balance & progression rebalance
+from playtest feedback), v1.7 (quest-arc redistribution, Arkan racial parity, destinations-UI
+cards, and a reference wiki), v1.8 (a technique chain for every skill — 72 new techs incl. the
+first player debuffs — plus the item-reachability pass that finally unwalled dual-wield), and
+v1.9 (the companion system + Conjurer redesign, and six tech chains completed to rank IX; see
+"Recently completed" below) are all released. Two accepted known limitations:
 the 5-levels-down=death contract isn't fully enforced at high levels (Fear-spared healing
 sustain — DESIGN §4), and boss-telegraph integration is deferred (a boss charged hit can spike
 past heal+death in one blow; 3 low bosses carry behaviors, the other 8 keep their v1.4 scripts —
-DESIGN §4 / SPEC-V1.5-MONSTER-AI §6).
+DESIGN §4 / SPEC-V1.5-MONSTER-AI §6). **v1.9 carries four KNOWN-ACCEPTED review items** (the user
+merged over them on 2026-07-25) — see "Recently completed" below; the two cheap ones (legacy
+Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's queue.
 
 ## Cardinal rules
 
@@ -37,8 +40,9 @@ DESIGN §4 / SPEC-V1.5-MONSTER-AI §6).
    prompt — scope additions sent mid-flight via messages arrive looking like prompt injection
    and get (correctly) refused. Review every delivery: run suites yourself, read the risky
    modules, sim-check balance claims. Never eyeball a balance number — sim it.
-5. **All test suites must pass before any work is called done** (13 as of v1.8 —
-   `test_v18_engine.js` and `test_reachability.js` joined in v1.8, `test_wiki.js` in v1.7):
+5. **All test suites must pass before any work is called done** (14 as of v1.9 —
+   `test_companion.js` joined in v1.9, `test_v18_engine.js` and `test_reachability.js` in v1.8,
+   `test_wiki.js` in v1.7):
    `cd tests && for t in test_*.js; do node $t; done` (each exits 0 on pass).
 
 ## Architecture
@@ -96,7 +100,7 @@ DESIGN §4 / SPEC-V1.5-MONSTER-AI §6).
 
 ## Testing
 
-`tests/` (fakedom.js + 10 suites) is the source of truth; suites reference the game by absolute
+`tests/` (fakedom.js + 14 suites) is the source of truth; suites reference the game by absolute
 path so they run from anywhere. When a change breaks a hardcoded expectation (monster counts,
 save version), update the stale constant — never weaken a behavioral assertion. New mechanics
 need stubbed-RNG tests. fakedom quirk: dynamically created elements lack `.style` unless the
@@ -153,6 +157,50 @@ localStorage fallback — and syntax-checks its 3 script blocks as it writes. A 
 rebuilds it after every commit so a deployable single-file build always matches HEAD. The hooks
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
 re-enable it. Never build/ship from a tree with red suites.
+
+## Recently completed (2026-07-25) — v1.9.0 (merged from two EXTERNAL PRs; live)
+
+**First release assembled from outside contributions.** Two GitHub PRs by `Nayan-cl` were
+reviewed by the lead, merged to `main` on user direction, pushed, and deployed to Strato the same
+day. Merge commits: `df40f22` (PR #1), `a0fa04e` (PR #2). All 14 suites green on the merged tree
+(neither PR had been tested against the other; both edited `js/data/techs.js` and merged clean —
+final roster 211 techs, no duplicate ids). Save version **10 → 11**.
+- **PR #2 — companion system + Conjurer redesign** (spec `docs/SPEC-COMPANION-SYSTEM.md`): a
+  persistent, targetable **second combatant** as a reusable class-agnostic framework
+  (`js/core/companion.js` + `js/data/companions.js`), first consumed by a redesigned Conjurer —
+  four per-element Pact abilities (Fire DoT / Water heal / Earth taunt-tank / Wind support), each
+  granting a Bind tech + a command tech. `tech_summon_elemental` retired. New persisted
+  `character.companion` + v10→v11 migration; `js/core/classes.js` gained a back-compatible
+  `techIds` array form. **This is a `[revised]` override of the archived "no summons in battle —
+  it's just 1v1" guardrail** (`forum/t-449.md`), recorded as D0 APPROVED 2026-07-22; the three
+  guardrail comments (DESIGN.md, SPEC-TIER3-EXPANSION.md, SPEC-V1.5-MONSTER-AI.md) now cite it.
+- **PR #1 — six tech chains completed to rank IX**: Starspark, Tidal Lance, Shadowlash, Lifetap,
+  Vital Strike, Flurry (+42 entries, +42 icons). Spell chains continue the shipped Firebolt
+  deltas; ranks 6–9 pre-tapered by the established `OFFENSE_TECH_TAPER` 0.55.
+- **Lead review findings — ALL FOUR KNOWINGLY ACCEPTED by the user (merge over stated concerns,
+  2026-07-25). Do not re-litigate; these are the queue, not open questions:**
+  1. **PR #1 cites `docs/SPEC-TECH-CHAIN-COMPLETION.md`, which does not exist** in the repo — 42
+     `[invented]` constants carry no reviewable authority (breaks cardinal rule 1).
+  2. **PR #1 ran no `/balance-sim`.** Per-chain parity with Firebolt IX holds, but four new
+     rank-IX chains in four Anima grades give best-of-4 **grade coverage 1.270× vs Firebolt-only
+     0.965×** across all 88 monsters (**+31.6%** top-end caster damage) against the baseline the
+     0.55 taper was locked to. A sim gate is still owed.
+  3. **The +4 companion cliff** (absent from PR #2's grid; lead sim, 300 trials/cell, shipped L40
+     warrior fixture): just under `COMPANION_FEAR_SUPPRESS_LEVELS = 5` a companion turns a 53.3%
+     coin flip into **99.7% (Water) / 91.3% (Earth) / 76.0% (Fire)**, then 0% at +5 — a hard
+     cliff. At-level also gets cheaper (HP left 62% → 87–91%, consumables 0.7 → 0.0). The **true
+     5-down contract is intact** — independently verified, all five companion states identical at
+     +6, so the Fear-suppress ratchet genuinely works.
+  4. **Legacy Conjurer saves keep ghosts** (verified by probe — no crash, screens render, the dead
+     tech reports "Unknown technique"): the retired tech id stays in `c.techs`, the retired
+     ability id in the class entry, and the **5 class levels spent on it are burned unrefunded**
+     (a class-level-8 Conjurer is left 3 free — one of four Pacts). ~3 lines in the v10→v11
+     migration would clear it. **This one is live for real players — fix it first.**
+- Also open from PR #2's own notes: companion icons are adapted copies (bespoke art wanted), no
+  shipped monster carries the new `target` specials yet, command-tech powers are provisional.
+- Ops note: the tracked `post-commit` hook did NOT fire on the merge commits — the single-file
+  artifact was left stale and had to be rebuilt by hand (`node tools/build_artifact.js`). Check
+  `tools/herorpg_artifact.html`'s timestamp after any merge.
 
 ## Recently completed (2026-07-19) — v1.8.0 (branch `v1.8-techs-reachability`)
 

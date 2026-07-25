@@ -13,7 +13,7 @@ Game.Data.changelog = [
 
   {
     version: 'v1.9.0',
-    date: '2026-07-22',
+    date: '2026-07-25',
     title: 'The Conjurer Binds a Companion',
     saveVersion: 11,
     highlights: [
@@ -28,7 +28,12 @@ Game.Data.changelog = [
         'or you both at once.',
       'Your companion is right there on the battle screen — its own health bar sits with your ' +
         'Vitality, showing when it is guarding you or overwhelmed by a far stronger foe — and its ' +
-        'health is listed on your Status page between fights.'
+        'health is listed on your Status page between fights.',
+      'Six more technique chains now run their full course. Starspark, Tidal Lance, Shadowlash, ' +
+        'Lifetap, Vital Strike and Flurry each gain their late-game ranks up to rank IX — 42 new ' +
+        'ranks in all, taught in the far-north academies — so Firebolt is no longer the only ' +
+        'spell a master can carry to the end of its chain, and the knife and unarmed chains run ' +
+        'as far as the sword and polearm ones do.'
     ]
   },
 
