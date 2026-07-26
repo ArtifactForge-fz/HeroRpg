@@ -51,6 +51,11 @@
      hand-out") and Used-for ("quest collect target") cross-references can read Game.Data.quests
      — the wiki previously never loaded it at all. Pure data file, no other script dependency. -->
 <script src="js/data/quests.js"></script>
+<!-- v1.10 (per-town Academy curricula): world.js supplies academyForTech() for the Techniques
+     table's "Taught at" column, so the cap ladder in js/balance.js has exactly one reader and the
+     wiki can never drift from the game. It loads cleanly with no character/battle state present —
+     the functions the wiki calls read only Game.Data + BALANCE. -->
+<script src="js/core/world.js"></script>
 <script src="js/ui/wiki.js"></script>
 <script>
 (function () {

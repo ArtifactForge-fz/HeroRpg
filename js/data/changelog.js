@@ -12,6 +12,32 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.10.0',
+    date: '2026-07-26',
+    title: 'Every Academy Teaches Its Own',
+    saveVersion: 11,
+    highlights: [
+      'Academies no longer all teach the same book. Each one now carries the ranks that suit the ' +
+        'country around it: Eldor drills the first rank of everything, Ju‘Mak the second, and the ' +
+        'later ranks are taught further out — Saratus, Kastengard, Kuraan, Frosthold, and finally ' +
+        'Skyspire Landing, where the master ranks are taught and nowhere else. Starspark III is no ' +
+        'longer something you buy on your first afternoon in the capital.',
+      'Nothing is hidden from you. Any rank your local Academy does not carry is still listed, ' +
+        'under "Taught elsewhere", named with the town that does teach it and the level you need ' +
+        'to get there — so the Academy doubles as a signpost for where to travel next. Every ' +
+        'first rank stays available in the starting city, and every technique you have already ' +
+        'learned is yours to keep, wherever you learned it.',
+      'Each Academy has a tradition of its own, named on its door: the Ju‘Mak drill-yard\'s quick ' +
+        'and quiet trades, the Arkan battlemage schools of Saratus, the Vanguard proctors\' arms ' +
+        'and shields at Kastengard, close work and the shaping arts with the Kuraan column, the ' +
+        'long guard at Frosthold, and the Society\'s last masters at Skyspire. A town\'s own schools ' +
+        'are listed first — but everything within its rank is still taught to anyone who walks in.',
+      'The Reference Wiki now names the Academy that teaches each technique, so you can plan a ' +
+        'chain before you set out.'
+    ]
+  },
+
+  {
     version: 'v1.9.0',
     date: '2026-07-25',
     title: 'The Conjurer Binds a Companion',

@@ -424,6 +424,23 @@ purchases, deactivation wipe):
   2007-04-06). Techs cost Energy; crystals restore it, spheres restore HP. Shard-cost enhancement
   techs (`shardCost`) spend Anima Shards on cast (`Anima_Shards.md`).
 - Concrete tech list: **[invented]** (~5 chains per magic school + weapon techs).
+- **Per-town curricula (v1.10) — [invented]** (user-directed 2026-07-26: "skills/techs should also
+  be separated over the different towns — e.g. Starspark 3 is quite late, and does not need to be
+  learnable in the starting city"). `Techniques.md` says "**most** towns have an Academy from which
+  you can learn techniques" but never records which techs a given town taught; the 2007 news post
+  frames rank availability as a deliberate lever ("we can easily change the levels at which spells
+  can be learned"). So each Academy now teaches only the techs whose `skillReq` is at or below its
+  own cap (`BALANCE.ACADEMY_SKILLREQ_CAP`, resolved by `Game.World.teachesTech` /
+  `academyForTech`), the caps being the existing skillReq ladder projected onto the towns' existing
+  `minLevel` ladder — Eldor 5 → Ju‘Mak 10 → Saratus 12 → Kastengard 25 → Kuraan 45 → Frosthold 60
+  → Skyspire 70. Consequences held as invariants by `tests/test_academy.js`: every **rank 1** stays
+  in the starting city, the ladder is **monotonic** (a later town never teaches less), the final
+  town teaches **everything**, and no tech or chain rank is stranded. This gates *where* a rank is
+  bought, never what it does — no combat math changes, so no sim gate is owed — and it is
+  **legacy-safe**: a tech already known is untouched wherever the player stands.
+  Each academy also carries a `specialty` school list (`js/data/areas.js`), which is **flavour
+  only**: home schools sort first and name the town's tradition. It grants no discount and blocks
+  nothing, so a build can never be walled by standing in the "wrong" town.
 
 ## 6. Economy & towns — [archived] 
 

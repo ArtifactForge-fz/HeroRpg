@@ -518,6 +518,45 @@ Game.World = (function () {
     return (Game.Data.techs || []).filter(function (t) { return !t.monsterOnly && !t.classOnly; });
   }
 
+  // ---------------- v1.10: per-town Academy curricula ----------------
+  // Each academy teaches only techs whose governing-skill requirement is at or below its own cap
+  // (js/balance.js ACADEMY_SKILLREQ_CAP -- see there for the citation and the full ladder). This
+  // gates WHERE a rank is bought, never what it does: a tech already known is never touched, so
+  // legacy saves keep every technique they learned under the old flat curriculum.
+
+  function academyCap(areaId) {
+    var caps = (typeof BALANCE !== 'undefined' && BALANCE.ACADEMY_SKILLREQ_CAP) || {};
+    // Fail-open: an academy town absent from the table teaches everything, so adding a town can
+    // never silently strand a tech (tests/test_academy.js asserts the table stays complete).
+    return Object.prototype.hasOwnProperty.call(caps, areaId) ? caps[areaId] : Infinity;
+  }
+
+  // Every academy town, cheapest cap first — the order techs become available along the journey.
+  function academyTowns() {
+    var out = [];
+    (Game.Data.areas || []).forEach(function (a) {
+      if (getFacility(a, 'academy')) out.push({ id: a.id, name: a.name, minLevel: a.minLevel || 0, cap: academyCap(a.id) });
+    });
+    out.sort(function (x, y) { return x.cap - y.cap || x.minLevel - y.minLevel; });
+    return out;
+  }
+
+  function teachesTech(areaId, tech) {
+    if (!tech) return false;
+    return (tech.skillReq || 0) <= academyCap(areaId);
+  }
+
+  // The EARLIEST academy that teaches this tech — what the UI/wiki tell the player when a rank is
+  // not on the local curriculum ("Taught at ..."). null if no academy teaches it (a data bug the
+  // test suite forbids, handled gracefully here rather than crashing the panel).
+  function academyForTech(tech) {
+    var towns = academyTowns();
+    for (var i = 0; i < towns.length; i++) {
+      if (teachesTech(towns[i].id, tech)) return towns[i];
+    }
+    return null;
+  }
+
   // Chain gating (invented model, per homepage_2007.md news: "per-spell chains... gated by
   // governing skill level, learned at a trainer"): rank>1 requires the previous rank in the same
   // chain already known, AND the governing skill at or above tech.skillReq.
@@ -530,11 +569,20 @@ Game.World = (function () {
     return null;
   }
 
-  function canLearn(c, tech) {
+  // areaId defaults to where the player is standing; pass it explicitly to ask "could I learn this
+  // at town X?" (the Academy panel and the wiki both do).
+  function canLearn(c, tech, areaId) {
     var failures = [];
     if (c.techs.indexOf(tech.id) !== -1) {
       failures.push('Already known.');
       return { ok: false, failures: failures };
+    }
+    var where = areaId || (currentArea() && currentArea().id);
+    if (where && !teachesTech(where, tech)) {
+      var host = academyForTech(tech);
+      failures.push(host
+        ? 'Not taught at this Academy — ' + host.name + ' teaches it (level ' + host.minLevel + ').'
+        : 'Not taught at this Academy.');
     }
     if (tech.rank > 1) {
       var prevId = previousRankId(tech);
@@ -782,6 +830,10 @@ Game.World = (function () {
     learnableTechs: learnableTechs,
     canLearn: canLearn,
     learnTech: learnTech,
+    academyCap: academyCap,
+    academyTowns: academyTowns,
+    teachesTech: teachesTech,
+    academyForTech: academyForTech,
     buyBuff: buyBuff,
     uncurse: uncurse,
     cleanseHauntingFee: cleanseHauntingFee,

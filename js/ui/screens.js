@@ -1749,15 +1749,41 @@ Game.Screens = (function () {
       el('span', {}, [String(c.trainingPoints)])
     ]));
 
+    // v1.10 per-town curricula (js/balance.js ACADEMY_SKILLREQ_CAP): this Academy teaches only part
+    // of the roster. The rest is NOT hidden — a player must be able to see that a rank exists and
+    // where to go for it, or the tech would just silently vanish from the list it used to be in.
+    // Local techs render as before; the rest fall to an "Taught elsewhere" section below, each
+    // naming its town. `specialty` is flavour: home schools sort first within the local list.
+    var area = Game.World.currentArea();
+    var fac = Game.World.getFacility(area, 'academy') || {};
+    var specialty = fac.specialty || [];
+    if (fac.specialtyLabel) {
+      body.appendChild(el('div', { class: 'tinyfont mb4' }, [fac.specialtyLabel]));
+    }
+
     var allLearnable = Game.World.learnableTechs();
     body.appendChild(techCategoryTabs(academyTypeTab, function (cat) {
       academyTypeTab = cat;
       refreshTownScreen();
     }, allLearnable));
 
-    var shownLearnable = academyTypeTab === 'all'
+    var shownAll = academyTypeTab === 'all'
       ? allLearnable
       : allLearnable.filter(function (t) { return techCategory(t) === academyTypeTab; });
+
+    var shownLearnable = [];
+    var elsewhere = [];
+    shownAll.forEach(function (t) {
+      if (Game.World.teachesTech(area.id, t)) shownLearnable.push(t); else elsewhere.push(t);
+    });
+    // Home schools first (flavour only — everything within the cap is still taught here).
+    if (specialty.length) {
+      shownLearnable.sort(function (a, b) {
+        var ha = specialty.indexOf(a.skill) === -1 ? 1 : 0;
+        var hb = specialty.indexOf(b.skill) === -1 ? 1 : 0;
+        return ha - hb;
+      });
+    }
 
     shownLearnable.forEach(function (tech, idx) {
       var known = c.techs.indexOf(tech.id) !== -1;
@@ -1802,6 +1828,51 @@ Game.Screens = (function () {
         body.appendChild(el('div', { class: 'tinyfont mt2', style: 'padding-left:38px;' }, [summary]));
       }
     });
+
+    // ---- Taught elsewhere: the ranks this Academy does not carry, grouped by the town that does,
+    // nearest cap first, so the list doubles as a signpost for where to travel next. Techs the
+    // player already knows are skipped — they are already theirs, wherever they were bought. ----
+    var unknownElsewhere = elsewhere.filter(function (t) { return c.techs.indexOf(t.id) === -1; });
+    if (unknownElsewhere.length) {
+      var byTown = {};
+      var townOrder = [];
+      unknownElsewhere.forEach(function (t) {
+        var host = Game.World.academyForTech(t);
+        var key = host ? host.id : '_none';
+        if (!byTown[key]) { byTown[key] = { host: host, techs: [] }; townOrder.push(key); }
+        byTown[key].techs.push(t);
+      });
+      townOrder.sort(function (a, b) {
+        var ha = byTown[a].host, hb = byTown[b].host;
+        return ((ha && ha.cap) || Infinity) - ((hb && hb.cap) || Infinity);
+      });
+      body.appendChild(el('div', { class: 'tcat2 mt8' }, ['Taught elsewhere']));
+      townOrder.forEach(function (key) {
+        var group = byTown[key];
+        var host = group.host;
+        body.appendChild(el('div', { class: 'tinyfont mt4' }, [
+          el('b', {}, [host ? host.name : 'No Academy teaches these']),
+          host ? ' — level ' + host.minLevel + '+' : ''
+        ]));
+        group.techs.forEach(function (tech, idx) {
+          var row = el('div', { class: 'stat-row alt' + (idx % 2) + ' greyed' });
+          row.appendChild(Game.UI.icon(tech.id, 32));
+          row.appendChild(el('span', { class: 'stat-name', style: 'width:150px; flex:0 0 150px;' }, [
+            techDisplayName(tech) + (tech.chain ? ' (' + tech.chain + ' ' + tech.rank + ')' : '')
+          ]));
+          row.appendChild(el('span', {
+            class: 'info-btn',
+            title: 'About ' + techDisplayName(tech),
+            onclick: function (ev) {
+              if (ev && ev.stopPropagation) ev.stopPropagation();
+              Game.Infobox.openTech(tech, c);
+            }
+          }, ['ⓘ']));
+          row.appendChild(el('span', { class: 'tinyfont' }, [tech.trainingCost + ' TP']));
+          body.appendChild(row);
+        });
+      });
+    }
 
     // ---- Phase 6a: Class Abilities section (Classes.md: "Gaining Class Levels will allow you
     // to purchase additional skills and abilities for that class from the Academy"). One
