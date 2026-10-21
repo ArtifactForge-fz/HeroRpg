@@ -241,6 +241,25 @@ Game.World = (function () {
     }
   }
 
+  // docs/SPEC-SECONDARY-STATS.md §2.7: Luck's archived "lucky pick" forage role (reference/forum/
+  // t-449.md). Picks a base candidate (always one rng() call, same as before this spec); only when
+  // Luck is above 0 does it roll an extra chance (one more rng() call) to draw a SECOND candidate
+  // and keep whichever has the higher item `value` — NO extra rng() call at Luck 0, so existing
+  // forage tests' rng sequence is unaffected.
+  function pickForageItem(c, table) {
+    var candidate = table[Math.floor(rng() * table.length)];
+    var luck = (Game.Character && Game.Character.getSecondaryStat) ? Game.Character.getSecondaryStat(c, 'luck') : 0;
+    if (luck > 0 && rng() < luck * BALANCE.LUCK_FORAGE_PICK_PER_POINT) {
+      var candidate2 = table[Math.floor(rng() * table.length)];
+      var item1 = Game.Inventory.getItem(candidate);
+      var item2 = Game.Inventory.getItem(candidate2);
+      var v1 = (item1 && item1.value) || 0;
+      var v2 = (item2 && item2.value) || 0;
+      if (v2 > v1) candidate = candidate2;
+    }
+    return candidate;
+  }
+
   function forage() {
     var c = Game.state.character;
     if (!c) return { ok: false, message: 'No character.' };
@@ -256,11 +275,11 @@ Game.World = (function () {
     var overflowNames = [];
     if (rng() < BALANCE.FORAGE_SUCCESS) {
       if (table.length > 0) {
-        var firstId = table[Math.floor(rng() * table.length)];
+        var firstId = pickForageItem(c, table);
         addForageYield(c, firstId, yieldedNames, overflowNames);
       }
       if (rng() < BALANCE.FORAGE_SECOND_ITEM && table.length > 0) {
-        var secondId = table[Math.floor(rng() * table.length)];
+        var secondId = pickForageItem(c, table);
         addForageYield(c, secondId, yieldedNames, overflowNames);
       }
     }

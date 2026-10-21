@@ -21,6 +21,24 @@ Game.Infobox = (function () {
     if (item.damage) lines.push(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Damage']), e('span', {}, ['+' + item.damage])]));
     if (item.armor) lines.push(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Armor']), e('span', {}, ['+' + item.armor])]));
     if (item.magicArmor) lines.push(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Magic Armor']), e('span', {}, ['+' + item.magicArmor])]));
+    // docs/SPEC-SECONDARY-STATS.md §2.8/§2.11: an item's optional `bonuses` field (weapon-family
+    // signature secondary stats) shows as its own lines, e.g. "+4% Critical Strike Chance" /
+    // "+5 Spell Power" / "+10 Luck".
+    if (item.bonuses) {
+      var BONUS_LABEL = {
+        critChance: 'Critical Strike Chance', critDamage: 'Critical Strike Damage',
+        accuracy: 'Accuracy', armorPen: 'Armor Penetration', block: 'Block Chance',
+        spellPower: 'Spell Power', luck: 'Luck'
+      };
+      var FLAT_BONUS = { spellPower: true, luck: true };
+      for (var bKey in item.bonuses) {
+        if (!Object.prototype.hasOwnProperty.call(item.bonuses, bKey)) continue;
+        var bVal = item.bonuses[bKey];
+        var bLabel = BONUS_LABEL[bKey] || bKey;
+        var bDisplay = FLAT_BONUS[bKey] ? ('+' + bVal) : ('+' + Math.round(bVal * 1000) / 10 + '%');
+        lines.push(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, [bLabel]), e('span', {}, [bDisplay])]));
+      }
+    }
     if (item.heal) lines.push(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Heals']), e('span', {}, [String(item.heal)])]));
     if (item.energyRestore) lines.push(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Restores Energy']), e('span', {}, [String(item.energyRestore)])]));
     if (item.tags && item.tags.indexOf('tent') !== -1) lines.push(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Camp Heal']), e('span', {}, [Math.round(item.tentQuality * 100) + '%'])]));

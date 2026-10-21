@@ -666,6 +666,56 @@ var BALANCE = {
   // through the 5-down=certain-death contract; with it, every companion returns to ~0% there.
   COMPANION_FEAR_SUPPRESS_LEVELS: 5,
 
-  BURN_TURNS: 2
+  BURN_TURNS: 2,
+
+  // ==================== Secondary Stats (docs/SPEC-SECONDARY-STATS.md) ====================
+  // One aggregator, Game.Character.getSecondaryStat (§2.1): BASE + gear bonuses + class
+  // bonusEffects + shrine buffs, clamped to CAP (spellPower uncapped). All constants below are
+  // [invented], sim-gated and LOCKED by the lead's P0 sim (docs/SPEC-SECONDARY-STATS.md §3.1,
+  // 2026-10-21) incl. the D8 Fear rule.
+
+  // Critical Strike Chance/Damage (§2.2): no crit mechanic survived the archive; D1 locked a 5%
+  // base chance at x1.5 damage. Resolves on the SAME three-way roll as the existing glancing
+  // blow (U3) — glancing / crit / normal — never a second rng() call.
+  CRIT_BASE_CHANCE: 0.05, // invented (docs/SPEC-SECONDARY-STATS.md §2.1/D1, LOCKED by the P0 sim §3.1)
+  CRIT_CHANCE_CAP: 0.50, // invented (docs/SPEC-SECONDARY-STATS.md §2.1, LOCKED by the P0 sim §3.1)
+  CRIT_BASE_DAMAGE: 0.50, // invented (docs/SPEC-SECONDARY-STATS.md §2.1/D1, LOCKED by the P0 sim §3.1)
+  CRIT_DAMAGE_CAP: 2.00, // invented (docs/SPEC-SECONDARY-STATS.md §2.1, LOCKED by the P0 sim §3.1)
+
+  // Accuracy (§2.3): flat reduction of monsterDodgeChance on player weapon actions (basic attacks,
+  // offhand swing, weapon techs). Not spells (Int hit check unchanged, D2). Cap matches
+  // MONSTER_DODGE_CAP, since Accuracy above that does nothing.
+  ACCURACY_CAP: 0.15, // invented (docs/SPEC-SECONDARY-STATS.md §2.3, LOCKED by the P0 sim §3.1)
+
+  // Armor Penetration (§2.4): stacks additively with a weapon tech's own armorPierce field,
+  // capped in total. Never touches Magic Armor.
+  ARMOR_PEN_CAP: 0.30, // invented (docs/SPEC-SECONDARY-STATS.md §2.1/§2.4, LOCKED by the P0 sim §3.1)
+  ARMOR_PEN_TOTAL_CAP: 0.75, // invented (docs/SPEC-SECONDARY-STATS.md §2.4, LOCKED by the P0 sim §3.1)
+
+  // Block Chance (§2.5): gives the archived Shields skill (reference/manual/Shields.md) a role
+  // besides Armor. Requires a Shields-skill offhand item; scales with the Shields skill level on
+  // top of the aggregated `block` stat. On a block, final damage is halved (floor 1), after
+  // mitigation/DAMAGE_PENETRATION_FLOOR and before Defend halving. Grants Shields skill XP per
+  // proc, same use-based pattern as DODGE_SKILL_XP_PER_PROC.
+  BLOCK_CAP: 0.35, // invented (docs/SPEC-SECONDARY-STATS.md §2.1/§2.5, LOCKED by the P0 sim §3.1)
+  BLOCK_PER_SKILL_LEVEL: 0.0015, // invented (docs/SPEC-SECONDARY-STATS.md §2.5, LOCKED by the P0 sim §3.1)
+  BLOCK_REDUCTION: 0.5, // invented (docs/SPEC-SECONDARY-STATS.md §2.5, LOCKED by the P0 sim §3.1)
+  BLOCK_SKILL_XP_PER_PROC: 1, // invented (docs/SPEC-SECONDARY-STATS.md §2.5, LOCKED by the P0 sim §3.1)
+
+  // Luck (§2.7): archived as a 2004-era concept (reference/forum/t-449.md, Nerevar, 11-26-2004 —
+  // "what kind of items you can Forage for and how much experience you get from battles");
+  // mechanics below are [invented] within that archived intent.
+  LUCK_CAP: 50, // invented (docs/SPEC-SECONDARY-STATS.md §2.1/§2.7, LOCKED by the P0 sim §3.1)
+  LUCK_FORAGE_PICK_PER_POINT: 0.01, // invented (docs/SPEC-SECONDARY-STATS.md §2.7, LOCKED by the P0 sim §3.1)
+  LUCK_XP_PER_POINT: 0.002, // invented (docs/SPEC-SECONDARY-STATS.md §2.7, LOCKED by the P0 sim §3.1)
+
+  // Fear interaction (D8, §2.1/§3.1): new secondary stats scale with fearMultiplier at 1-4 levels
+  // below the enemy, same as every other archived stat (reference/manual/Fear.md — "lower your
+  // stats by 10% for each level you are under an enemy's level"). At this many levels below they
+  // are suppressed to 0 instead, matching the archived XP/loot cutoff (BALANCE.
+  // XP_LOOT_CUTOFF_LEVELS). The RULE (Fear scales stats) is [archived]; the "suppress entirely at
+  // 5+" threshold is [invented] (D8) — the P0 sim found new stats ignoring Fear widened the
+  // 5-levels-down win rate above shipped levels; full suppression at 5+ restored it exactly.
+  SECONDARY_FEAR_SUPPRESS_LEVELS: 5
 };
 

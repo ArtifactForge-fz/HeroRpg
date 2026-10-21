@@ -337,6 +337,51 @@ Game.Character = (function () {
     return Math.round(c.intelligence * BALANCE.INT_MAGIC_ARMOR_RATIO) + equipped + shrineBonus + classFlat;
   }
 
+  // ---------------- Secondary stats (docs/SPEC-SECONDARY-STATS.md §2.1) ----------------
+
+  var SECONDARY_BASE = { critChance: BALANCE.CRIT_BASE_CHANCE, critDamage: BALANCE.CRIT_BASE_DAMAGE, accuracy: 0, armorPen: 0, block: 0, spellPower: 0, luck: 0 };
+  var SECONDARY_CAP = { critChance: 'CRIT_CHANCE_CAP', critDamage: 'CRIT_DAMAGE_CAP', accuracy: 'ACCURACY_CAP', armorPen: 'ARMOR_PEN_CAP', block: 'BLOCK_CAP', luck: 'LUCK_CAP' }; // spellPower is uncapped
+  var SECONDARY_CLASS_EFFECT = {
+    critChance: 'crit_chance_flat', critDamage: 'crit_damage_flat', accuracy: 'accuracy_flat',
+    armorPen: 'armor_pen_flat', block: 'block_flat', spellPower: 'spell_power_flat', luck: 'luck_flat'
+  };
+
+  // One aggregator so every secondary stat reads the same way (§2.1): BASE[key] + every equipped
+  // item's bonuses[key] (all 6 EQUIP_SLOTS) + Game.Classes.classBonus (active Primary/Secondary) +
+  // Game.World.shrineBonus, clamped to CAP[key] (spellPower has no cap). This is the UNSCALED
+  // value — battle.js applies Fear scaling/suppression on top of this inside a battle (§2.1 Fear
+  // bullet, D8); outside battle (e.g. the Status screen) this unscaled value is shown directly.
+  function getSecondaryStat(c, key) {
+    var base = SECONDARY_BASE[key];
+    if (base === undefined) return 0;
+    var total = base;
+    if (Game.Inventory && Game.Inventory.EQUIP_SLOTS) {
+      var slots = Game.Inventory.EQUIP_SLOTS;
+      for (var i = 0; i < slots.length; i++) {
+        var itemId = c.equipment && c.equipment[slots[i]];
+        if (!itemId) continue;
+        var item = Game.Inventory.getItem(itemId);
+        if (item && item.bonuses && item.bonuses[key]) total += item.bonuses[key];
+      }
+    }
+    if (Game.Classes && Game.Classes.classBonus) total += Game.Classes.classBonus(c, SECONDARY_CLASS_EFFECT[key]);
+    if (Game.World && Game.World.shrineBonus) total += Game.World.shrineBonus(c, key);
+    var capName = SECONDARY_CAP[key];
+    if (capName && BALANCE[capName] !== undefined) total = Math.min(BALANCE[capName], total);
+    return total;
+  }
+
+  // Shield-gated block chance (§2.5): 0 unless the offhand item's skill is 'Shields'; otherwise
+  // the aggregated `block` stat plus the Shields skill level's own contribution, capped.
+  function getBlockChance(c) {
+    var offhandId = c.equipment && c.equipment.offhand;
+    var item = (offhandId && Game.Inventory && Game.Inventory.getItem) ? Game.Inventory.getItem(offhandId) : null;
+    if (!item || item.skill !== 'Shields') return 0;
+    var skillLevel = (c.skills && c.skills['Shields']) ? c.skills['Shields'].level : 0;
+    var value = getSecondaryStat(c, 'block') + skillLevel * BALANCE.BLOCK_PER_SKILL_LEVEL;
+    return Math.min(BALANCE.BLOCK_CAP, value);
+  }
+
   function goldTotalAsGold(c) {
     return c.platinum * BALANCE.GOLD_PER_PLATINUM + c.gold;
   }
@@ -446,6 +491,8 @@ Game.Character = (function () {
     spendStatPoint: spendStatPoint,
     skillCap: skillCap,
     addSkillXp: addSkillXp,
+    getSecondaryStat: getSecondaryStat,
+    getBlockChance: getBlockChance,
     goldTotalAsGold: goldTotalAsGold,
     hasAffliction: hasAffliction,
     addAffliction: addAffliction,

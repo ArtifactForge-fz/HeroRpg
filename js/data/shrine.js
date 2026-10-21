@@ -3,7 +3,13 @@
 // ("20+ temporary buffs for Anima Shards") and the uncurse fee mechanic are archived.
 //
 // Shape: { id, name, shardCost, effect, power, battles }
-//   effect: 'armor' | 'damage' | 'dodge' | 'magicArmor' | 'goldPct'
+//   effect: 'armor' | 'damage' | 'dodge' | 'magicArmor' | 'goldPct' |
+//           'critChance' | 'critDamage' | 'accuracy' | 'armorPen' | 'block' | 'spellPower' | 'luck'
+//     (docs/SPEC-SECONDARY-STATS.md §2.10 [invented]: the 7 new secondary-stat effect kinds —
+//     Game.Character.getSecondaryStat sums them via the existing effect-name-generic
+//     Game.World.shrineBonus, same as every effect above. 'block' does nothing without a shield
+//     equipped (§2.5); 'luck' applies between battles too, per shrineBonus reading c.shrineBuffs
+//     directly, so Wayfarer's Charm also improves forage picks while it lasts.)
 //   power: the flat bonus (or, for 'goldPct', a fractional multiplier bonus e.g. 0.10 = +10%)
 //   battles: how many battle-ENDS (win/loss/flee all count, per DESIGN.md/Phase 4 spec) the buff
 //            lasts once purchased — stored on character.shrineBuffs as { id, battlesLeft }.
@@ -203,6 +209,76 @@ Game.Data.shrine = [
     power: 0.25,
     battles: 8,
     desc: 'A shrine-blessing fit for royalty, adding +25% gold from your next 8 battle victories.'
+  },
+
+  // =====================================================================
+  // docs/SPEC-SECONDARY-STATS.md §2.10: 7 new buffs for the 7 new secondary stats (§2.1-§2.7).
+  // [invented], APPENDED after shrine_kings_ransom per the standing drop/stock-list convention
+  // (CLAUDE.md "Content conventions" — new entries never shift existing ones). Costs/durations sit
+  // in the 15-25 shard mid-tier band, matching Wind's Grace (20 shards, 5 battles).
+  // =====================================================================
+  {
+    id: 'shrine_hunters_eye',
+    name: "Hunter's Eye",
+    shardCost: 20,
+    effect: 'critChance',
+    power: 0.05,
+    battles: 5,
+    desc: 'Sharpens your eye for a weak point, adding +5% Critical Strike Chance for your next 5 battles.'
+  },
+  {
+    id: 'shrine_killing_edge',
+    name: 'Killing Edge',
+    shardCost: 25,
+    effect: 'critDamage',
+    power: 0.25,
+    battles: 5,
+    desc: 'Lends cruel weight to your finishing blows — critical strikes deal +25% more damage for your next 5 battles.'
+  },
+  {
+    id: 'shrine_true_aim',
+    name: 'True Aim',
+    shardCost: 15,
+    effect: 'accuracy',
+    power: 0.05,
+    battles: 5,
+    desc: 'Steadies your hand so foes find it harder to slip your swings — +5% Accuracy for your next 5 battles.'
+  },
+  {
+    id: 'shrine_sundering_rite',
+    name: 'Sundering Rite',
+    shardCost: 20,
+    effect: 'armorPen',
+    power: 0.08,
+    battles: 5,
+    desc: 'A rite of breaking that lets your blows bite past armor — ignore 8% of enemy Armor for your next 5 battles.'
+  },
+  {
+    id: 'shrine_shield_oath',
+    name: 'Shield Oath',
+    shardCost: 20,
+    effect: 'block',
+    power: 0.06,
+    battles: 5,
+    desc: 'An oath sworn on the shield arm — +6% chance to block for your next 5 battles. Only works with a shield equipped.'
+  },
+  {
+    id: 'shrine_anima_kindling',
+    name: 'Anima Kindling',
+    shardCost: 20,
+    effect: 'spellPower',
+    power: 6,
+    battles: 5,
+    desc: 'Kindles the Anima in your techniques, adding +6 Spell Power for your next 5 battles.'
+  },
+  {
+    id: 'shrine_wayfarers_charm',
+    name: "Wayfarer's Charm",
+    shardCost: 15,
+    effect: 'luck',
+    power: 10,
+    battles: 5,
+    desc: 'A small charm blessed for travellers, adding +10 Luck for your next 5 battles.'
   }
 ];
 

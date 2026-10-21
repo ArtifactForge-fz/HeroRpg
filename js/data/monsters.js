@@ -722,7 +722,8 @@ Game.Data.monsters = [
       { itemId: 'medium_legs_foothills_greaves', chance: 0.05 },
       { itemId: 'potion_greater_healing', chance: 0.1 }
     ],
-    desc: 'A shaggy, thick-horned ram that charges downslope from the mountain wall no Human or Arkan has ever crossed (Averast.md).'
+    // archived: reference/manual/Averast.md
+    desc: 'A shaggy, thick-horned ram that charges downslope from the mountain wall no Human or Arkan has ever crossed.'
   },
 
   // ---------- Level 14 ----------
@@ -897,7 +898,8 @@ Game.Data.monsters = [
       // Phase 9: unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
       { itemId: 'polearm_tidewalkers_harpoon', chance: 0.008 }
     ],
-    desc: 'A brine-slick predator that stalks the tideline of the isle\'s small human settlements (Averast.md), never straying far from the surf.'
+    // archived: reference/manual/Averast.md
+    desc: 'A brine-slick predator that stalks the tideline of the isle\'s small human settlements, never straying far from the surf.'
   },
 
   // ---------- Level 20 ----------

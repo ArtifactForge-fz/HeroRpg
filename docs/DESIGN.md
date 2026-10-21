@@ -407,6 +407,38 @@ purchases, deactivation wipe):
     ×`(1 + intelligence · INT_SKILL_XP_PER_POINT)` (0.01/point, floor 1); weapon and armor skill-XP
     are unaffected.
 
+- **Secondary stats** (`docs/SPEC-SECONDARY-STATS.md`, all [invented] unless noted): a layer of
+  combat stats on top of the five archived primary stats, sourced only from gear, class passives
+  and Spirit Shrine buffs — never level-up points. One aggregator,
+  `Game.Character.getSecondaryStat(c, key)` (`js/core/character.js`): BASE + every equipped item's
+  `bonuses[key]` + active-class `classBonus` + `shrineBonus`, clamped to a cap (Spell Power is
+  uncapped).
+  - **Critical Strike Chance / Damage [invented]:** a three-way roll replaces the old glancing-only
+    roll at every player weapon/tech hit site — glancing (unchanged 10%/×0.5) → crit (base 5%
+    chance, ×1.5 damage, both capped) → normal. Monsters never crit (U4); Limit Breaks never crit
+    (D4).
+  - **Accuracy [invented]:** flat reduction of monster dodge chance on basic attacks, offhand
+    swings and weapon techs — not spells (the archived Intelligence hit-check is untouched).
+  - **Armor Penetration [invented]:** ignores a fraction of a monster's Armor on physical hits,
+    additive with a weapon tech's own `armorPierce`; never touches Magic Armor.
+  - **Block Chance [invented mechanic; archived skill, `reference/manual/Shields.md`]:** requires a
+    Shields-skill offhand item; halves a physical (non-graded) monster hit, rolled after the
+    player's dodge check fails.
+  - **Spell Power [archived name: `reference/manual/Recent_Updates.md` 2007-04-06; invented
+    formula]:** flat power added to every damaging, draining and healing technique of every magic
+    school (including Conjurer servitor ticks, via the same pipeline as the Attunement buff).
+  - **Luck [archived 2004-era concept: `reference/forum/t-449.md`; invented mechanics]:** improves
+    forage picks (a chance to keep the higher-value of two candidates) and adds a small, separate
+    multiplier to battle XP, on top of Fury.
+  - **Fear interaction (D8, sim-locked):** inside a battle, every new stat except Luck is scaled by
+    `fearMultiplier` at 1-4 levels below the enemy (same archived 10%/level rule, `Fear.md`), and
+    suppressed to 0 entirely at 5+ levels below — the P0 sim found stats that ignored Fear widened
+    the "5-levels-down = certain death" contract past shipped levels; full suppression restored it.
+  - Eight existing class passives gained a second, smaller effect each (Rogue/Assassin/Ranger/
+    Dragoon/Warden/Wizard/Magus/Gambit — `js/data/classes.js`), and 7 new weapon families' items
+    carry a signature secondary stat (Swords→Accuracy, Knives→Crit Chance, Polearms→Armor Pen,
+    Hand to Hand→Crit Damage, Rods→Spell Power, Shields→Block). See the spec for the full table.
+
 ## 5. Techniques (Techs) — [archived structure] (`Techniques.md`, `Techs.md`)
 
 - Bought at the **Academy** with Training Points; organized in **chains** (learn predecessor first).

@@ -336,6 +336,14 @@ Game.Classes = (function () {
         if (ability && ability.kind === 'passive' && ability.effect === effect) {
           total += ability.power;
         }
+        // docs/SPEC-SECONDARY-STATS.md §2.9 (D3): a bought passive may ALSO carry bonusEffects, a
+        // second, smaller effect on top of its original one. Summed the same way as the main
+        // effect above — only for bought abilities of an ACTIVE class, same guard as above.
+        if (ability && ability.kind === 'passive' && ability.bonusEffects) {
+          for (var be = 0; be < ability.bonusEffects.length; be++) {
+            if (ability.bonusEffects[be].effect === effect) total += ability.bonusEffects[be].power;
+          }
+        }
       }
     }
     return total;

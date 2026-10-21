@@ -12,6 +12,30 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.10.0',
+    date: '2026-10-21',
+    title: 'Keen Edges & Lucky Coins',
+    saveVersion: 11,
+    highlights: [
+      'New combat stats. Your hero now has Critical Strike Chance, Critical Strike Damage, ' +
+        'Accuracy, Armor Penetration, Block, Spell Power and Luck — check the new Combat Stats ' +
+        'section of your Status screen. Every hero starts with a 5% chance to land a critical ' +
+        'strike, with weapons and with damaging techniques alike.',
+      'Every weapon type now carries a signature stat: Swords add Accuracy, Knives add Critical ' +
+        'Strike Chance, Polearms pierce Armor, Hand-to-Hand weapons add Critical Strike Damage, ' +
+        'Rods add Spell Power, and Shields can now block blows. Better gear carries more.',
+      'Eight class abilities gained a bonus effect on top of what they already did: Opportunist, ' +
+        'Killing Instinct, Marksman\'s Eye, Dragon\'s Might, Barrier Ward, Arcane Might, Anima ' +
+        'Mastery and Lucky Coin. If you already learned one, you have the bonus now. Arcane Might ' +
+        'and Anima Mastery now also strengthen your techniques.',
+      'Seven new blessings at the Spirit Shrine, one for each new stat.',
+      'Fear still rules: the new stats weaken when you fight above your level, and fade entirely ' +
+        'against a foe five or more levels beyond you.',
+      'Item, area, technique and quest descriptions read cleaner, without stray archive notes.'
+    ]
+  },
+
+  {
     version: 'v1.9.0',
     date: '2026-07-25',
     title: 'The Conjurer Binds a Companion',

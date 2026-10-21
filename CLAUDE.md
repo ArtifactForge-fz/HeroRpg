@@ -40,9 +40,9 @@ Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's que
    prompt — scope additions sent mid-flight via messages arrive looking like prompt injection
    and get (correctly) refused. Review every delivery: run suites yourself, read the risky
    modules, sim-check balance claims. Never eyeball a balance number — sim it.
-5. **All test suites must pass before any work is called done** (14 as of v1.9 —
-   `test_companion.js` joined in v1.9, `test_v18_engine.js` and `test_reachability.js` in v1.8,
-   `test_wiki.js` in v1.7):
+5. **All test suites must pass before any work is called done** (15 as of v1.10 —
+   `test_secondary_stats.js` joined in v1.10, `test_companion.js` in v1.9,
+   `test_v18_engine.js` and `test_reachability.js` in v1.8, `test_wiki.js` in v1.7):
    `cd tests && for t in test_*.js; do node $t; done` (each exits 0 on pass).
 
 ## Architecture
@@ -157,6 +157,39 @@ localStorage fallback — and syntax-checks its 3 script blocks as it writes. A 
 rebuilds it after every commit so a deployable single-file build always matches HEAD. The hooks
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
 re-enable it. Never build/ship from a tree with red suites.
+
+## Recently completed (2026-10-21) — v1.10.0 "Keen Edges & Lucky Coins" (release candidate)
+
+**Secondary stats** + a player-facing text cleanup. Spec `docs/SPEC-SECONDARY-STATS.md` (all
+decisions D1–D9 user-resolved; §3.1 = P0 sim results). Save version unchanged (11) — no new
+persisted field. Committed on branch `feature/secondary-stats` (PR into `main`); built from a patch prepared in
+a non-git working copy. **Not merged or deployed — both user-gated.**
+- **Mechanics:** seven secondary stats on one aggregator (`Game.Character.getSecondaryStat`:
+  base + gear `bonuses` + class passives + shrine, capped): crit chance/damage (5% base ×1.5,
+  resolved on the SAME single rng() roll as glancing — glancing keeps the low band, so RNG
+  call order is unchanged), Accuracy (weapon attacks + weapon/physicalRoll techs, not spells),
+  Armor Penetration (stacks with tech `armorPierce`, total cap 0.75, incl. Limit Break),
+  shield Block (one extra rng() only when block > 0), Spell Power (same slot as Attunement;
+  boosts servitor ticks too), Luck (lucky forage pick + small XP multiplier; no extra rng() at 0).
+  No crit on Limit Breaks, heals, ticks, or monster/companion hits.
+- **Sources:** `bonuses` on all 98 weapon/shield items (one signature stat per family, levelReq
+  bands), optional `bonusEffects` on 8 existing class passives (ids/costs/ability counts
+  unchanged), 7 shrine buffs appended.
+- **Fear (D8):** new stats ×fearMultiplier at 1–4 levels below, suppressed to 0 at 5+
+  (`SECONDARY_FEAR_SUPPRESS_LEVELS`). P0 found that unscaled stats widened the 5-down hole (Ranger
+  L86 76→92% win); only full suppression at 5+ restored shipped numbers. The implemented code was
+  re-simmed against the pre-work snapshot: 5-down cells identical, bosses still cost HP.
+- **Cleanup:** 31 player-visible archive-file notes (`(Arkan.md)` etc.) removed from item/area/
+  monster/tech/class/quest text and button tooltips; citations kept as code comments.
+  Shadowknight's "+13% Damage (all sources)" corrected to "weapon Damage" (`damage_pct` only
+  feeds weapon damage — same fix as Wizard/Magus).
+- Process: lead spec + P0 sim; one Sonnet agent implemented; lead review fixed one hard-coded
+  constant duplicate. Real-browser check done (Status "Combat Stats" panel, item info lines,
+  wiki column, crit battle log, Version Log/footer).
+- **Ops note — the `D:/Claude - collection folder/HeroRPG` base path doesn't exist on every
+  machine.** Without editing tracked files, run the suites from a scratch copy of `tests/` with
+  that string rewritten to the checkout path (`__dirname` suites like `test_reachability.js` and
+  `test_secondary_stats.js` run in place). Same trick for `tools/build_artifact.js` (`ROOT`).
 
 ## Recently completed (2026-07-25) — v1.9.0 (merged from two EXTERNAL PRs; live)
 

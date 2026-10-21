@@ -581,8 +581,9 @@ Game.Data.quests = [
     // G5 chain (v1.4 P1): next in Anje's line after foothills_matriarch_boss — see that quest's
     // own comment for why the whole line exists; its own completionText is what introduces Juneros.
     requiresQuest: 'foothills_matriarch_boss',
+    // archived: reference/manual/Averast.md (the isle of Juneros and its settlements)
     intro: 'Anje unrolls a salt-stained chart of the inland sea. "The isle of Juneros has held on with ' +
-      'a scatter of small human settlements since before anyone can remember (Averast.md, or so the ' +
+      'a scatter of small human settlements since before anyone can remember (or so the ' +
       'scholars tell me). Something\'s been dragging their dead into the tide instead of letting them ' +
       'rest. Bring me what the drowned settlers left behind, and we\'ll see what\'s owed them."',
     steps: [
@@ -784,9 +785,10 @@ Game.Data.quests = [
     // arkan_first_rite — both carry the SAME requiresRace: 'Arkan' gate, so the gate-compatibility
     // rule (a prerequisite may not be stricter than its dependent) is trivially satisfied.
     requiresQuest: 'arkan_first_rite',
+    // archived: reference/manual/Arkan.md (Arkan battlemages: white and black magic, runes)
     intro: 'Battlemage Instructor Renjiro traces a rune in the air, and for a moment it holds its ' +
       'own pale light. "White and black magic, drawn from the study of runes — that is how we ' +
-      'reinforce the front, hero (Arkan.md holds as much). But a battlemage is untested until ' +
+      'reinforce the front, hero, as the old Arkan records hold. But a battlemage is untested until ' +
       'they\'ve stood in the Forests of Kuraan itself, the home the Majiku took from us. Put down ' +
       'four of their forest scouts there, and I\'ll know your runes hold under real pressure."',
     steps: [
@@ -884,7 +886,8 @@ Game.Data.quests = [
     name: 'Reclaim the Fringe',
     giver: { areaId: 'kuraan_reclamation_camp', npc: 'Camp Marshal Serath' },
     levelMin: 41,
-    intro: 'Camp Marshal Serath doesn\'t look up from the trench-line map pinned to her table. "The Forests of Kuraan were Arkan ground before the Majiku ever set foot in them, hero — Arkan.md says as much, if you care to read the old surveys. I mean to have the fringe woods back under Crown patrol by season\'s end. Break their reclaimer knights, recover their warband sigils so I know how many banners are left standing, and get eyes on Deep Kuraan itself. That\'s where whoever\'s actually commanding this occupation is hiding."',
+    // archived: reference/manual/Arkan.md (the Arkan's lost Forests of Kuraan)
+    intro: 'Camp Marshal Serath doesn\'t look up from the trench-line map pinned to her table. "The Forests of Kuraan were Arkan ground before the Majiku ever set foot in them, hero — the old surveys say as much, if you care to read them. I mean to have the fringe woods back under Crown patrol by season\'s end. Break their reclaimer knights, recover their warband sigils so I know how many banners are left standing, and get eyes on Deep Kuraan itself. That\'s where whoever\'s actually commanding this occupation is hiding."',
     steps: [
       { kind: 'kill', monsterId: 'majiku_reclaimer_knight', count: 5 },
       { kind: 'collect', itemId: 'quest_majiku_warband_sigil', count: 3 },

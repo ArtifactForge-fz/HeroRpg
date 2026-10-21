@@ -1702,8 +1702,10 @@ Game.Battle.flee();
 Game.Battle.endBattle();
 
 // =================== Test 16: Shrine buffs grown to ~20 (v1.2 Phase 3 Content-B item 3) ===================
-console.log('\n=== Test 16: Spirit Shrine buff roster grown from 5 to 20; a new buff\'s shrineBonus applies via the unchanged Game.World.shrineBonus ===');
-assert(Game.Data.shrine.length === 20, '20 shrine buffs defined (5 original + 15 v1.2 Phase 3 additions), got ' + Game.Data.shrine.length);
+console.log('\n=== Test 16: Spirit Shrine buff roster grown from 5 to 27; a new buff\'s shrineBonus applies via the unchanged Game.World.shrineBonus ===');
+// docs/SPEC-SECONDARY-STATS.md §2.10: 7 new buffs APPENDED after shrine_kings_ransom (20 -> 27) —
+// stale count updated, same roster-growth precedent as the v1.2 Phase 3 bump this test documents.
+assert(Game.Data.shrine.length === 27, '27 shrine buffs defined (20 prior + 7 docs/SPEC-SECONDARY-STATS.md §2.10 additions), got ' + Game.Data.shrine.length);
 ['armor', 'damage', 'dodge', 'magicArmor', 'goldPct'].forEach(function (effect) {
   var count = Game.Data.shrine.filter(function (b) { return b.effect === effect; }).length;
   assert(count === 4, 'exactly 4 buffs use the existing effect "' + effect + '" (1 original + 3 new), got ' + count);

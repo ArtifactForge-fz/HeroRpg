@@ -8,6 +8,15 @@
 //   weapon damage  ~= 3 + 2 * levelReq
 //   armor piece    ~= 1 + levelReq
 //   weight: light armor ~2, medium ~5, heavy ~9; weapons 3-8; potions 1
+//
+// docs/SPEC-SECONDARY-STATS.md §2.8 [invented]: optional `bonuses: { <key>: number }` field, added
+// to every weapon/offhand item whose `skill` is Swords/Knives/Polearms/Hand to Hand/Rods/Shields —
+// keys from the secondary-stat aggregator (Game.Character.getSecondaryStat): Swords -> accuracy,
+// Knives -> critChance, Polearms -> armorPen, Hand to Hand -> critDamage, Rods -> spellPower,
+// Shields -> block. Formula: band = floor(levelReq/20); a 'unique'-tagged item uses band+1 (the
+// +15-25%-over-curve rule), an `ap_`-id item uses band as-is (never above non-unique gear) even if
+// also tagged 'unique'. Every item adds its values while equipped in ANY slot (offhand weapons
+// count too — twin knives stack crit).
 
 var Game = window.Game || {};
 
@@ -26,6 +35,7 @@ Game.Data.items = [
     levelReq: 1,
     value: 15,
     tags: [],
+    bonuses: { accuracy: 0.02 },
     desc: 'A pitted shortsword that has seen better days, but still holds an edge.'
   },
   {
@@ -39,6 +49,7 @@ Game.Data.items = [
     statReqs: { strength: 12 },
     value: 90,
     tags: [],
+    bonuses: { accuracy: 0.02 },
     desc: 'A well-balanced sword favored by the Eldor city guard.'
   },
   {
@@ -52,6 +63,7 @@ Game.Data.items = [
     statReqs: { strength: 20 },
     value: 260,
     tags: [],
+    bonuses: { accuracy: 0.02 },
     desc: 'A curved blade etched with faint runes from the forges of Saratus.'
   },
 
@@ -71,6 +83,7 @@ Game.Data.items = [
     levelReq: 1,
     value: 25,
     tags: [],
+    bonuses: { armorPen: 0.05 },
     desc: 'A simple hunting spear cut from ashwood and tipped with iron.'
   },
   {
@@ -84,6 +97,7 @@ Game.Data.items = [
     statReqs: { strength: 16 },
     value: 150,
     tags: [],
+    bonuses: { armorPen: 0.05 },
     desc: 'A heavy polearm issued to Eldor militia levies.'
   },
 
@@ -98,6 +112,7 @@ Game.Data.items = [
     levelReq: 1,
     value: 12,
     tags: [],
+    bonuses: { critChance: 0.02 },
     desc: 'A small dagger, favored for its speed rather than its power.'
   },
   {
@@ -111,6 +126,7 @@ Game.Data.items = [
     statReqs: { dexterity: 14 },
     value: 120,
     tags: [],
+    bonuses: { critChance: 0.02 },
     desc: 'A slender blade balanced for a quick, precise strike.'
   },
 
@@ -130,6 +146,7 @@ Game.Data.items = [
     levelReq: 1,
     value: 15,
     tags: [],
+    bonuses: { spellPower: 1 },
     desc: 'A plain wand carved from birch, given to new students of the arcane.'
   },
   {
@@ -143,6 +160,7 @@ Game.Data.items = [
     statReqs: { intelligence: 18 },
     value: 230,
     tags: [],
+    bonuses: { spellPower: 1 },
     desc: 'A slender rod inlaid with a channeling crystal from the Saratus workshops.'
   },
 
@@ -159,6 +177,7 @@ Game.Data.items = [
     levelReq: 1,
     value: 20,
     tags: [],
+    bonuses: { critDamage: 0.1 },
     desc: 'A set of banded iron knuckles worn over the fist.'
   },
   {
@@ -172,6 +191,7 @@ Game.Data.items = [
     statReqs: { strength: 17 },
     value: 180,
     tags: [],
+    bonuses: { critDamage: 0.1 },
     desc: 'Weighted cloth wraps used by wandering monks to harden their strikes.'
   },
 
@@ -186,6 +206,7 @@ Game.Data.items = [
     levelReq: 1,
     value: 18,
     tags: [],
+    bonuses: { block: 0.05 },
     desc: 'A small round shield of banded wood, better than nothing.'
   },
   {
@@ -199,6 +220,7 @@ Game.Data.items = [
     statReqs: { strength: 13 },
     value: 140,
     tags: [],
+    bonuses: { block: 0.05 },
     desc: 'A kite shield reinforced with iron banding along its face.'
   },
 
@@ -218,6 +240,7 @@ Game.Data.items = [
     levelReq: 1,
     value: 16,
     tags: [],
+    bonuses: { critChance: 0.02 },
     desc: 'A short, balanced dirk meant to be paired with a main-hand blade rather than carried alone.'
   },
   {
@@ -230,6 +253,7 @@ Game.Data.items = [
     levelReq: 1,
     value: 16,
     tags: [],
+    bonuses: { critDamage: 0.1 },
     desc: 'A weighted leather cestus worn on the off hand to double up a bare-knuckle fighter\'s strikes.'
   },
 
@@ -253,6 +277,7 @@ Game.Data.items = [
     levelReq: 10,
     value: 260,
     tags: [],
+    bonuses: { critChance: 0.02 },
     desc: 'A quicker, harder-tempered dirk for the offhand, meant to keep pace with a fighter who has outgrown the Twinfang.'
   },
   {
@@ -265,6 +290,7 @@ Game.Data.items = [
     levelReq: 10,
     value: 260,
     tags: [],
+    bonuses: { critDamage: 0.1 },
     desc: 'A reinforced iron guard worn over the off hand, adding real weight to a bare-knuckle fighter\'s second strike.'
   },
   {
@@ -278,6 +304,7 @@ Game.Data.items = [
     value: 900,
     statReqs: { dexterity: 34 },
     tags: [],
+    bonuses: { critChance: 0.03 },
     desc: 'A blackened dirk honed to a whisper-thin edge, carried in the off hand by killers who never let the main blade do all the work.'
   },
   {
@@ -291,6 +318,7 @@ Game.Data.items = [
     value: 900,
     statReqs: { strength: 34 },
     tags: [],
+    bonuses: { critDamage: 0.15 },
     desc: 'A storm-tempered cestus that cracks like thunder on the follow-up strike, matched to a fighter\'s hardest-won gauntlets.'
   },
   {
@@ -304,6 +332,7 @@ Game.Data.items = [
     value: 2200,
     statReqs: { dexterity: 44 },
     tags: [],
+    bonuses: { critChance: 0.03 },
     desc: 'A regal, needle-fine dirk fit for the offhand of a killer who no longer needs a main blade to prove anything.'
   },
   {
@@ -317,6 +346,7 @@ Game.Data.items = [
     value: 2200,
     statReqs: { strength: 44 },
     tags: [],
+    bonuses: { critDamage: 0.15 },
     desc: 'A titan-forged cestus, twin to the deadliest gauntlets on the market, that turns a follow-up strike into a second main hand.'
   },
 
@@ -500,6 +530,7 @@ Game.Data.items = [
     statReqs: { strength: 22 },
     value: 320,
     tags: [],
+    bonuses: { accuracy: 0.02 },
     desc: 'A broad, curved blade carried by the river-patrol militia that guards the Gares delta trade barges.'
   },
   {
@@ -513,6 +544,7 @@ Game.Data.items = [
     statReqs: { dexterity: 18 },
     value: 240,
     tags: [],
+    bonuses: { critChance: 0.02 },
     desc: 'A serrated blade fashioned from a River Stalker\'s tooth, still faintly cold to the touch.'
   },
   {
@@ -526,6 +558,7 @@ Game.Data.items = [
     statReqs: { intelligence: 20 },
     value: 300,
     tags: [],
+    bonuses: { spellPower: 1 },
     desc: 'A gnarled branch that glows faintly with residual Anima, plucked from a riverbank tree grown strange.'
   },
   {
@@ -708,7 +741,8 @@ Game.Data.items = [
     tags: [],
     combatUsable: true,
     energyRestore: 40,
-    desc: 'A faintly glowing shard of Anima that restores spent energy. Simplifies the archived tech-charge economy into a direct Energy restore (DESIGN.md §5).'
+    // DESIGN.md §5: simplifies the archived tech-charge economy into a direct Energy restore.
+    desc: 'A faintly glowing shard of Anima that restores spent energy.'
   },
 
   // ---------- Cursed item (classic trap: good stats, tag 'cursed') ----------
@@ -844,7 +878,9 @@ Game.Data.items = [
     statReqs: { strength: 26 },
     value: 380,
     tags: [],
-    desc: 'A rune-etched blade carried by Saratus battlemages, who reinforce the front line with white and black magic (Arkan.md).'
+    bonuses: { accuracy: 0.02 },
+    // archived: reference/manual/Arkan.md (Saratus battlemages, white and black magic)
+    desc: 'A rune-etched blade carried by Saratus battlemages, who reinforce the front line with white and black magic.'
   },
   {
     id: 'polearm_foothills_pike',
@@ -857,6 +893,7 @@ Game.Data.items = [
     statReqs: { strength: 26 },
     value: 380,
     tags: [],
+    bonuses: { armorPen: 0.05 },
     desc: 'A long, iron-shod pike favored by hunters who track game along the northern barrier\'s rocky slopes.'
   },
   {
@@ -870,6 +907,7 @@ Game.Data.items = [
     statReqs: { dexterity: 26 },
     value: 380,
     tags: [],
+    bonuses: { critChance: 0.02 },
     desc: 'A curved knife carved from a reef predator\'s tooth, salt-worn and still razor-sharp.'
   },
   {
@@ -883,6 +921,7 @@ Game.Data.items = [
     statReqs: { intelligence: 26 },
     value: 380,
     tags: [],
+    bonuses: { spellPower: 1 },
     desc: 'A channeling rod inscribed with the runic script Saratus battlemages study for a lifetime.'
   },
   {
@@ -896,6 +935,7 @@ Game.Data.items = [
     statReqs: { strength: 26 },
     value: 380,
     tags: [],
+    bonuses: { critDamage: 0.1 },
     desc: 'Weighted wraps humming faintly with Star-grade Anima, favored by monks who train in the foothills\' thin air.'
   },
 
@@ -914,7 +954,9 @@ Game.Data.items = [
     statReqs: { strength: 34 },
     value: 950,
     tags: [],
-    desc: 'A cutlass forged in the isle settlements of Juneros, its edge stained the grey-green of the inland sea (Averast.md).'
+    bonuses: { accuracy: 0.03 },
+    // archived: reference/manual/Averast.md (the isle of Juneros and its settlements)
+    desc: 'A cutlass forged in the isle settlements of Juneros, its edge stained the grey-green of the inland sea.'
   },
   {
     id: 'polearm_barrier_glaive',
@@ -927,7 +969,9 @@ Game.Data.items = [
     statReqs: { strength: 34 },
     value: 950,
     tags: [],
-    desc: 'A long glaive patterned after the watch-pikes of the northern mountain garrisons no Human or Arkan has ever crossed beyond (Averast.md).'
+    bonuses: { armorPen: 0.075 },
+    // archived: reference/manual/Averast.md (the uncrossed northern mountains)
+    desc: 'A long glaive patterned after the watch-pikes of the northern mountain garrisons no Human or Arkan has ever crossed beyond.'
   },
   {
     id: 'knife_leviathan_fang',
@@ -940,6 +984,7 @@ Game.Data.items = [
     statReqs: { dexterity: 34 },
     value: 950,
     tags: [],
+    bonuses: { critChance: 0.03 },
     desc: 'A curved dagger ground from a tooth of the Juneros leviathan, still cold to the touch.'
   },
   {
@@ -953,7 +998,9 @@ Game.Data.items = [
     statReqs: { intelligence: 34 },
     value: 950,
     tags: [],
-    desc: 'A rod of dark runewood salvaged from the lost Forests of Kuraan, humming with old Arkan rune-craft (Arkan.md).'
+    bonuses: { spellPower: 3 },
+    // archived: reference/manual/Arkan.md (the Arkan's lost Forests of Kuraan)
+    desc: 'A rod of dark runewood salvaged from the lost Forests of Kuraan, humming with old Arkan rune-craft.'
   },
   {
     id: 'hth_construct_gauntlets',
@@ -966,6 +1013,7 @@ Game.Data.items = [
     statReqs: { strength: 34 },
     value: 950,
     tags: [],
+    bonuses: { critDamage: 0.15 },
     desc: 'Stone-plated gauntlets pried from a fallen Estari construct, heavy as a wall and twice as hard.'
   },
 
@@ -981,6 +1029,7 @@ Game.Data.items = [
     statReqs: { strength: 44 },
     value: 1400,
     tags: [],
+    bonuses: { accuracy: 0.03 },
     desc: 'A blade recovered from the Society of Modern Magic\'s deepest vaults, its edge still holding a centuries-old charge.'
   },
   {
@@ -994,6 +1043,7 @@ Game.Data.items = [
     statReqs: { strength: 44 },
     value: 1400,
     tags: [],
+    bonuses: { armorPen: 0.075 },
     desc: 'A massive polearm salvaged from a Kastengard wardframe\'s broken halberd-arm, reforged for a human grip.'
   },
   {
@@ -1007,6 +1057,7 @@ Game.Data.items = [
     statReqs: { dexterity: 44 },
     value: 1400,
     tags: [],
+    bonuses: { critChance: 0.03 },
     desc: 'A precision blade drawn from the Custodian construct\'s own dismantled targeting spike.'
   },
   {
@@ -1020,6 +1071,7 @@ Game.Data.items = [
     statReqs: { intelligence: 44 },
     value: 1400,
     tags: [],
+    bonuses: { spellPower: 3 },
     desc: 'A wand grown from crystallized Anima runoff deep in the Kastengard vaults, said to still resonate faintly with the red moon.'
   },
   {
@@ -1033,6 +1085,7 @@ Game.Data.items = [
     statReqs: { strength: 44 },
     value: 1400,
     tags: [],
+    bonuses: { critDamage: 0.15 },
     desc: 'Gauntlets forged in the Society\'s deepest workshop, their knuckles set with inert but still-warm Anima studs.'
   },
 
@@ -1049,6 +1102,7 @@ Game.Data.items = [
     statReqs: { strength: 24 },
     value: 400,
     tags: [],
+    bonuses: { block: 0.05 },
     desc: 'A Saratus-forged shield warded against both blade and Anima alike.'
   },
 
@@ -1182,7 +1236,8 @@ Game.Data.items = [
     tags: [],
     combatUsable: true,
     energyRestore: 90,
-    desc: 'A larger, unrefined shard of Anima drawn straight from a deep seam — restores far more spent Energy than a common shard (DESIGN.md §5).'
+    // DESIGN.md §5: Energy-restore consumable.
+    desc: 'A larger, unrefined shard of Anima drawn straight from a deep seam — restores far more spent Energy than a common shard.'
   },
 
   // =====================================================================
@@ -1331,6 +1386,7 @@ Game.Data.items = [
     statReqs: { dexterity: 16 }, // hybrid: unusually heavy statReq for a level-3 knife
     value: 90,
     tags: ['unique'],
+    bonuses: { critChance: 0.03 },
     desc: "A needle-fine blade pried from something that once led the Averast plains' vermin swarms — too well-balanced to have been gnawed into shape by anything with paws."
   },
   {
@@ -1359,6 +1415,7 @@ Game.Data.items = [
     statReqs: { strength: 24 }, // heavier than sword_arkan_runeblade's 20
     value: 300,
     tags: ['unique'],
+    bonuses: { accuracy: 0.03 },
     desc: 'A river-raider\'s prized blade, its edge notched from Gares delta skirmishes and never once dulled past a whetstone\'s reach.'
   },
   {
@@ -1373,6 +1430,7 @@ Game.Data.items = [
     statReqs: { intelligence: 22 },
     value: 340,
     tags: ['unique'],
+    bonuses: { spellPower: 3 },
     desc: 'A rod of fused river-glass, channeling the Gares current\'s own Water-grade Anima back around its caster like a second skin.'
   },
   {
@@ -1403,6 +1461,7 @@ Game.Data.items = [
     statReqs: { strength: 30 },
     value: 650,
     tags: ['unique'],
+    bonuses: { armorPen: 0.075 },
     desc: 'A barbed harpoon salvaged from the isle\'s own tideline predators, its haft still faintly slick with brine that never quite dries.'
   },
   {
@@ -1418,6 +1477,7 @@ Game.Data.items = [
     statReqs: { strength: 30 },
     value: 700,
     tags: ['unique'],
+    bonuses: { block: 0.09 },
     desc: "A merfolk adept's coral shrine-shield, its spiked rim as good for a riposte as for turning aside a blade."
   },
   {
@@ -1432,6 +1492,7 @@ Game.Data.items = [
     statReqs: { strength: 46 },
     value: 1050,
     tags: ['unique'],
+    bonuses: { critDamage: 0.2 },
     desc: "Segmented knuckle-plate stripped from the heaviest of Kastengard's sentry-constructs, still cold with the Society's old craft."
   },
 
@@ -1449,6 +1510,7 @@ Game.Data.items = [
     value: 320,
     tags: ['unique'],
     // boss signature: estari_ruin_warden (js/data/monsters.js), level 10 band
+    bonuses: { spellPower: 3 },
     desc: "A fist-sized core pried from the Ruin Warden's stone chest, still humming with the same restless Anima that kept it standing watch for centuries."
   },
   {
@@ -1467,6 +1529,7 @@ Game.Data.items = [
     // "one unique may carry 'cursed' if flavorful" allowance — the pack-mother's fangs bind
     // ferally to the wearer's knuckles and will not come off without a Spirit Shrine visit
     // (js/core/inventory.js unequip / js/core/world.js uncurse already handle 'cursed' generically).
+    bonuses: { critDamage: 0.15 },
     desc: "Wrapped fangs torn from the Matriarch of the High Camp herself, still hungry. They bite into the wearer's grip and do not want to let go — a Spirit Shrine can lift the curse."
   },
   {
@@ -1498,6 +1561,7 @@ Game.Data.items = [
     tags: ['unique'],
     // boss signature: eidas_echo (js/data/monsters.js), the 32-40 band's final boss — the true
     // capstone of the roster, closing out the story alongside lore_eidas_final_journal above.
+    bonuses: { accuracy: 0.04 },
     desc: "A blade that fell burning from the Skyspire's old ground anchor when Eidas' Echo was finally laid to rest, its edge still warm with red-moon ember-light."
   },
 
@@ -1784,6 +1848,7 @@ Game.Data.items = [
     statReqs: { strength: 54 },
     value: 2625,
     tags: [],
+    bonuses: { accuracy: 0.04 },
     desc: 'A reforged blade carried by the first heroes to push back into the Forests of Kuraan, its edge marked with a reclamation-band sigil.'
   },
   {
@@ -1797,6 +1862,7 @@ Game.Data.items = [
     statReqs: { strength: 54 },
     value: 2625,
     tags: [],
+    bonuses: { armorPen: 0.1 },
     desc: 'A long Arkan lance carried at the front of the reclamation column, its runework updated for the fight to take Kuraan back.'
   },
   {
@@ -1810,6 +1876,7 @@ Game.Data.items = [
     statReqs: { dexterity: 54 },
     value: 2625,
     tags: [],
+    bonuses: { critChance: 0.04 },
     desc: "A curved knife shaped from Kuraan fringewood and a Majiku scout's own fang, favored by scouts retaking the border."
   },
   {
@@ -1823,6 +1890,7 @@ Game.Data.items = [
     statReqs: { intelligence: 54 },
     value: 2625,
     tags: [],
+    bonuses: { spellPower: 5 },
     desc: "A captured Majiku ward-rod, its bindings unpicked and reforged by Arkan battlemages into a conduit that turns the enemy's own wards against them."
   },
   {
@@ -1836,6 +1904,7 @@ Game.Data.items = [
     statReqs: { strength: 54 },
     value: 2625,
     tags: [],
+    bonuses: { critDamage: 0.2 },
     desc: "Banded gauntlets issued to the reclamation camp's front-line brawlers, heavy enough to break a Majiku shield-wall."
   },
 
@@ -1860,6 +1929,7 @@ Game.Data.items = [
     statReqs: { strength: 54 },
     value: 2760,
     tags: [],
+    bonuses: { block: 0.09 },
     desc: 'A broad shield banded with reclaimed Arkan wardplate, warded against both Majiku steel and Majiku hexcraft alike.'
   },
 
@@ -2102,6 +2172,7 @@ Game.Data.items = [
     statReqs: { intelligence: 60 },
     value: 2500,
     tags: ['unique'],
+    bonuses: { spellPower: 7 },
     desc: "A rod grown from the Hollow Wraith's own ash-brand core, warding its wielder even as it channels the same Anima that hollowed the wraith out."
   },
   {
@@ -2117,6 +2188,7 @@ Game.Data.items = [
     value: 2600,
     tags: ['unique'],
     // boss signature: majiku_warlord (js/data/monsters.js), the Band A lair boss.
+    bonuses: { accuracy: 0.05 },
     desc: "The Majiku Warlord's own blade, snapped from its haft and reforged whole — the oath it was sworn on broken along with its wielder."
   },
 
@@ -2148,6 +2220,7 @@ Game.Data.items = [
     statReqs: { strength: 64 },
     value: 3285,
     tags: [],
+    bonuses: { accuracy: 0.04 },
     desc: 'A heavy reforged blade carried by the column pushing north into the Majiku\'s own border steppe, meant to break the host one lancer at a time.'
   },
   {
@@ -2161,6 +2234,7 @@ Game.Data.items = [
     statReqs: { strength: 64 },
     value: 3285,
     tags: [],
+    bonuses: { armorPen: 0.1 },
     desc: 'A long Arkan-forged pike updated for the ridgeline fighting north of Kuraan, its head weighted to punch through Majiku hostguard plate.'
   },
   {
@@ -2174,6 +2248,7 @@ Game.Data.items = [
     statReqs: { dexterity: 64 },
     value: 3285,
     tags: [],
+    bonuses: { critChance: 0.04 },
     desc: 'A curved knife shaped from a Ridgehawk\'s own talon, favored by scouts ranging the open border steppe.'
   },
   {
@@ -2187,6 +2262,7 @@ Game.Data.items = [
     statReqs: { intelligence: 64 },
     value: 3285,
     tags: [],
+    bonuses: { spellPower: 5 },
     desc: "A captured hostcaller shaman's own binding-rod, unpicked and reforged by Arkan battlemages into a conduit that turns the host's own ritual-craft back on it."
   },
   {
@@ -2200,6 +2276,7 @@ Game.Data.items = [
     statReqs: { strength: 64 },
     value: 3285,
     tags: [],
+    bonuses: { critDamage: 0.2 },
     desc: 'Banded knuckles issued to the column\'s front-line brawlers, heavy enough to break a hostguard shield-wall on the ridgeline.'
   },
 
@@ -2220,6 +2297,7 @@ Game.Data.items = [
     statReqs: { strength: 64 },
     value: 3450,
     tags: [],
+    bonuses: { block: 0.09 },
     desc: 'A broad shield banded with reclaimed Arkan wardplate, warded against both Majiku steel and hostcaller hexcraft alike.'
   },
 
@@ -2459,6 +2537,7 @@ Game.Data.items = [
     statReqs: { intelligence: 70 },
     value: 3130,
     tags: ['unique'],
+    bonuses: { spellPower: 7 },
     desc: "A rod grown from the Hollow Stormwraith's own crackling core, warding its wielder even as it channels the same storm-anima that hollowed the wraith out."
   },
   {
@@ -2474,6 +2553,7 @@ Game.Data.items = [
     value: 3250,
     tags: ['unique'],
     // boss signature: majiku_ridge_chieftain (js/data/monsters.js), the Band B lair boss.
+    bonuses: { armorPen: 0.125 },
     desc: "The Majiku Ridge-Chieftain's own warpike, wrenched from the ridgeline camp's standard-pole — proof the host's own commander could not hold this ground."
   },
 
@@ -2505,6 +2585,7 @@ Game.Data.items = [
     statReqs: { strength: 74 },
     value: 3945,
     tags: [],
+    bonuses: { accuracy: 0.05 },
     desc: 'A heavy blade forged for the waystation garrison holding the last Crown ground before the ice-fields give way to the Ukai\'s own undercaverns.'
   },
   {
@@ -2518,6 +2599,7 @@ Game.Data.items = [
     statReqs: { strength: 74 },
     value: 3945,
     tags: [],
+    bonuses: { armorPen: 0.125 },
     desc: 'A long pike updated for fighting on open ice, its head weighted to punch through a frost-exile\'s banded plate.'
   },
   {
@@ -2531,6 +2613,7 @@ Game.Data.items = [
     statReqs: { dexterity: 74 },
     value: 3945,
     tags: [],
+    bonuses: { critChance: 0.05 },
     desc: 'A curved knife shaped from a glacial stalker\'s own frozen talon, favored by scouts ranging the open ice-fields.'
   },
   {
@@ -2544,6 +2627,7 @@ Game.Data.items = [
     statReqs: { intelligence: 74 },
     value: 3945,
     tags: [],
+    bonuses: { spellPower: 7 },
     desc: "A captured Ukai cave warden's own ward-stone, unpicked and reforged by Arkan battlemages into a conduit that turns the cavern-dwellers' pride back on them."
   },
   {
@@ -2557,6 +2641,7 @@ Game.Data.items = [
     statReqs: { strength: 74 },
     value: 3945,
     tags: [],
+    bonuses: { critDamage: 0.25 },
     desc: 'Banded knuckles issued to the waystation\'s front-line brawlers, heavy enough to crack a frost-exile\'s shield-wall on the ice.'
   },
 
@@ -2573,6 +2658,7 @@ Game.Data.items = [
     statReqs: { strength: 74 },
     value: 4140,
     tags: [],
+    bonuses: { block: 0.11 },
     desc: 'A broad shield banded with reforged Majiku ridgeplate, warded against both frost-exile steel and Ukai ward-craft alike.'
   },
 
@@ -2808,6 +2894,7 @@ Game.Data.items = [
     statReqs: { intelligence: 80 },
     value: 3760,
     tags: ['unique'],
+    bonuses: { spellPower: 9 },
     desc: "A rod grown from the Hollow Deepling's own frozen core, warding its wielder even as it channels the same deep-cavern Anima that hollowed the deepling out."
   },
   {
@@ -2823,6 +2910,7 @@ Game.Data.items = [
     value: 3900,
     tags: ['unique'],
     // boss signature: ukai_deep_dweller (js/data/monsters.js), the Band C lair boss.
+    bonuses: { critDamage: 0.3 },
     desc: "A claw wrenched whole from the Deep-Dweller itself, still cold enough to numb the hand that wields it — proof even the Ukai's own proudest guardian could not hold its hollow."
   },
 
@@ -2853,6 +2941,7 @@ Game.Data.items = [
     statReqs: { strength: 84 },
     value: 4605,
     tags: [],
+    bonuses: { accuracy: 0.05 },
     desc: "A heavy blade forged from a fallen sublevel warden's own ward-plating, tuned by Frosthold's smiths to strike where Estari construct-hide runs thinnest."
   },
   {
@@ -2866,6 +2955,7 @@ Game.Data.items = [
     statReqs: { strength: 84 },
     value: 4605,
     tags: [],
+    bonuses: { armorPen: 0.125 },
     desc: "A long pike weighted to punch clean through a ruin vanguard's reforged plating, its haft warded against the Wellspring's own stray discharge."
   },
   {
@@ -2879,6 +2969,7 @@ Game.Data.items = [
     statReqs: { dexterity: 84 },
     value: 4605,
     tags: [],
+    bonuses: { critChance: 0.05 },
     desc: "A curved blade shaped from a shattered anima conduit's own crystal casing, favored by scouts working the Estari sublevels' tighter corridors."
   },
   {
@@ -2892,6 +2983,7 @@ Game.Data.items = [
     statReqs: { intelligence: 84 },
     value: 4605,
     tags: [],
+    bonuses: { spellPower: 7 },
     desc: "A captured wellspring warden's own ward-core, unpicked and reforged by Arkan battlemages into a conduit that draws on the taboo seam without breaking the Council of Three's ban outright."
   },
   {
@@ -2905,6 +2997,7 @@ Game.Data.items = [
     statReqs: { strength: 84 },
     value: 4605,
     tags: [],
+    bonuses: { critDamage: 0.25 },
     desc: "Banded gauntlets cast from a sublevel warden's own broken fists, heavy enough to crack a ruin vanguard's plating in a single blow."
   },
 
@@ -2921,6 +3014,7 @@ Game.Data.items = [
     statReqs: { strength: 84 },
     value: 4830,
     tags: [],
+    bonuses: { block: 0.11 },
     desc: "A broad shield banded with reforged construct plating, warded against both the sublevels' crushing blows and the Wellspring's own stray Anima discharge."
   },
 
@@ -3157,6 +3251,7 @@ Game.Data.items = [
     statReqs: { intelligence: 88 },
     value: 4060,
     tags: ['unique'],
+    bonuses: { spellPower: 9 },
     desc: "A rod grown whole from the raw Anima-Horror's own core, warding its wielder even as it channels the same unmined Anima the Council of Three's ban was written to keep sealed."
   },
   {
@@ -3172,6 +3267,7 @@ Game.Data.items = [
     value: 4200,
     tags: ['unique'],
     // boss signature: estari_warden_prime (js/data/monsters.js), the Band D lair boss.
+    bonuses: { accuracy: 0.06 },
     desc: "A blade struck whole from the Warden-Prime's own core-plating, still humming with the same ancient enforcement-ward that has guarded the Anima Wellspring since before the Council of Three's ban was ever needed."
   },
 
@@ -3202,6 +3298,7 @@ Game.Data.items = [
     statReqs: { strength: 94 },
     value: 5310,
     tags: [],
+    bonuses: { accuracy: 0.06 },
     desc: "A heavy blade forged from a fallen Skyspire warden's own ward-plating, tuned by Frosthold's smiths to strike where a Society remnant's own hexwork runs thinnest."
   },
   {
@@ -3215,6 +3312,7 @@ Game.Data.items = [
     statReqs: { strength: 94 },
     value: 5310,
     tags: [],
+    bonuses: { armorPen: 0.15 },
     desc: "A long halberd weighted to punch clean through a sentinel's reforged plating, its haft warded against the sanctum's own stray discharge."
   },
   {
@@ -3228,6 +3326,7 @@ Game.Data.items = [
     statReqs: { dexterity: 94 },
     value: 5310,
     tags: [],
+    bonuses: { critChance: 0.06 },
     desc: "A curved blade taken off a battlemage who never followed Eidas to the red moon, favored by scouts working the Skyspire's tighter spans."
   },
   {
@@ -3241,6 +3340,7 @@ Game.Data.items = [
     statReqs: { intelligence: 94 },
     value: 5310,
     tags: [],
+    bonuses: { spellPower: 9 },
     desc: "A captured arcanist's own ward-core, unpicked and reforged by Arkan battlemages into a conduit that draws on the Skyspire's stray Anima without repeating the Society's own mistakes."
   },
   {
@@ -3254,6 +3354,7 @@ Game.Data.items = [
     statReqs: { strength: 94 },
     value: 5310,
     tags: [],
+    bonuses: { critDamage: 0.3 },
     desc: "Banded gauntlets cast from a lower warden's own broken fists, heavy enough to crack a sentinel's plating in a single blow."
   },
 
@@ -3270,6 +3371,7 @@ Game.Data.items = [
     statReqs: { strength: 94 },
     value: 5550,
     tags: [],
+    bonuses: { block: 0.13 },
     desc: "A broad shield banded with reforged construct plating, warded against both the spans' crushing blows and the sanctum's own stray Anima discharge."
   },
 
@@ -3507,6 +3609,7 @@ Game.Data.items = [
     value: 4340,
     tags: ['unique'],
     // boss-adjacent drop: anima_horror_ravager (js/data/monsters.js).
+    bonuses: { spellPower: 11 },
     desc: "A rod grown whole from the ravager's own core, warding its wielder even as it channels the same unleashed Anima the Society of Modern Magic could never fully leash."
   },
   {
@@ -3522,6 +3625,7 @@ Game.Data.items = [
     value: 4480,
     tags: ['unique'],
     // boss signature: society_anima_horror (js/data/monsters.js), the Band E lair boss.
+    bonuses: { accuracy: 0.07 },
     desc: "A blade struck whole from the Anima-Horror's own hide, still humming with the same raw, uncategorized Anima that the Society of Modern Magic spent itself trying and failing to control."
   },
 
@@ -3552,6 +3656,7 @@ Game.Data.items = [
     statReqs: { strength: 104 },
     value: 6060,
     tags: [],
+    bonuses: { accuracy: 0.06 },
     desc: "A heavy blade re-forged at Frosthold from a moon-bridge sentinel's own ward-plating, its edge tuned to bite where Eidas's divine-race servitors run thinnest."
   },
   {
@@ -3565,6 +3670,7 @@ Game.Data.items = [
     statReqs: { strength: 104 },
     value: 6060,
     tags: [],
+    bonuses: { armorPen: 0.15 },
     desc: "A long halberd weighted for the crossing itself, its haft warded against whatever the red moon's own light does to ordinary steel."
   },
   {
@@ -3578,6 +3684,7 @@ Game.Data.items = [
     statReqs: { dexterity: 104 },
     value: 6060,
     tags: [],
+    bonuses: { critChance: 0.06 },
     desc: "A curved blade taken off a divine-race initiate, favored by scouts working the sanctum's tighter passages."
   },
   {
@@ -3591,6 +3698,7 @@ Game.Data.items = [
     statReqs: { intelligence: 104 },
     value: 6060,
     tags: [],
+    bonuses: { spellPower: 9 },
     desc: "A captured exemplar's own ward-core, unpicked and reforged by Arkan battlemages into a conduit that draws on the red moon's own light without repeating Eidas's mistake."
   },
   {
@@ -3604,6 +3712,7 @@ Game.Data.items = [
     statReqs: { strength: 104 },
     value: 6060,
     tags: [],
+    bonuses: { critDamage: 0.3 },
     desc: "Banded gauntlets cast from a ward-colossus's own broken fists, heavy enough to crack a sentinel's plating in a single blow."
   },
 
@@ -3620,6 +3729,7 @@ Game.Data.items = [
     statReqs: { strength: 104 },
     value: 6300,
     tags: [],
+    bonuses: { block: 0.13 },
     desc: "A broad shield banded with reforged construct plating, warded against both the bridge's crushing blows and the sanctum's own stray Anima discharge."
   },
 
@@ -3856,6 +3966,7 @@ Game.Data.items = [
     value: 4620,
     tags: ['unique'],
     // boss-adjacent drop: moon_anima_devourer (js/data/monsters.js).
+    bonuses: { spellPower: 11 },
     desc: "A rod grown whole from the devourer's own core, warding its wielder even as it channels the same red-moon-warped Anima that Eidas's divine race could never fully digest."
   },
   {
@@ -3872,6 +3983,7 @@ Game.Data.items = [
     tags: ['unique'],
     // boss signature: eidas_ascendant (js/data/monsters.js), the Band F lair boss and the arc's
     // FINAL final boss — the capstone drop of the entire 41-100 level arc.
+    bonuses: { accuracy: 0.07 },
     desc: "A blade struck whole from Eidas's own broken rune-plating, still humming with the same red-moon Anima he meant to remake himself with. Whatever divine race he founded out there, it never made a weapon as honest as the one that finally cut him down."
   },
 
@@ -3966,6 +4078,7 @@ Game.Data.items = [
     levelReq: 45,
     value: 40,
     tags: [],
+    bonuses: { accuracy: 0.04 },
     desc: "A well-worn blade sold to veterans of the reclamation campaigns — not the sharpest edge on the market, but never far from one."
   },
   {
