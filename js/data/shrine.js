@@ -42,9 +42,9 @@ Game.Data.shrine = [
     name: "Wind's Grace",
     shardCost: 20,
     effect: 'dodge',
-    power: 0.05,
+    power: 0.125, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was flat 0.05)
     battles: 5,
-    desc: 'Lightens your step, adding +5% Dodge chance for your next 5 battles.'
+    desc: 'Lightens your step, making your dodge 12.5% more effective for your next 5 battles.'
   },
   {
     id: 'shrine_spirit_ward',
@@ -134,27 +134,27 @@ Game.Data.shrine = [
     name: 'Light Footing',
     shardCost: 12,
     effect: 'dodge',
-    power: 0.03,
+    power: 0.075, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was flat 0.03)
     battles: 5,
-    desc: 'Steadies your footwork, adding +3% Dodge chance for your next 5 battles.'
+    desc: 'Steadies your footwork, making your dodge 7.5% more effective for your next 5 battles.'
   },
   {
     id: 'shrine_shadowstep_grace',
     name: 'Shadowstep Grace',
     shardCost: 35,
     effect: 'dodge',
-    power: 0.08,
+    power: 0.20, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was flat 0.08)
     battles: 6,
-    desc: 'Lends a hunted grace to your step, adding +8% Dodge chance for your next 6 battles.'
+    desc: 'Lends a hunted grace to your step, making your dodge 20% more effective for your next 6 battles.'
   },
   {
     id: 'shrine_phantom_step',
     name: 'Phantom Step',
     shardCost: 55,
     effect: 'dodge',
-    power: 0.12,
+    power: 0.30, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was flat 0.12)
     battles: 8,
-    desc: 'Blurs your footing to the edge of the unseen, adding +12% Dodge chance for your next 8 battles.'
+    desc: 'Blurs your footing to the edge of the unseen, making your dodge 30% more effective for your next 8 battles.'
   },
   {
     id: 'shrine_anima_veil',

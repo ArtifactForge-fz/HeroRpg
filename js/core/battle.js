@@ -90,20 +90,42 @@ Game.Battle = (function () {
 
   // ---------------- Dodge / glancing / double attack (invented scalings, DESIGN.md §4) ----------------
 
+  // docs/SPEC-ROGUE-BOSS-COST.md §2.1 [invented]: Dexterity gives a diminishing-returns dodge curve
+  // (never above DEX_DODGE_MAX, so Dex ALONE cannot reach DODGE_CAP); the Dodge skill multiplies that
+  // Dex term (x(1 + DODGE_PER_SKILL_LEVEL per level)); class passives ('dodge_pct'), shrine 'dodge'
+  // blessings and typed 'dodge' buffs (Fleetstep/Sidestep) are a further multiplier on the result;
+  // DODGE_BASE is added flat last, then the hard DODGE_CAP. Called both in-battle (monsterAct) and
+  // out-of-battle (screens.js character-sheet display), so the typed buff is read from
+  // Game.state.battle directly (see playerStatKindBuff) — outside battle it safely reads 0.
   function playerDodgeChance(c) {
     var dodgeSkill = (c.skills['Dodge'] && c.skills['Dodge'].level) || 0;
-    var chance = BALANCE.DODGE_BASE + c.dexterity * BALANCE.DODGE_PER_DEX + dodgeSkill * BALANCE.DODGE_PER_SKILL_LEVEL;
-    // Phase 4: Spirit Shrine "Wind's Grace" buff adds a flat dodge-chance bonus (js/data/shrine.js).
-    if (Game.World && Game.World.shrineBonus) chance += Game.World.shrineBonus(c, 'dodge');
-    // Phase 6a: active-class "dodge_flat" passives (js/core/classes.js classBonus).
-    if (Game.Classes && Game.Classes.classBonus) chance += Game.Classes.classBonus(c, 'dodge_flat');
-    // v1.8 P1 (SPEC-TECH-POLARITY.md §2.0 item 1, Fleetstep/Sidestep): a typed 'dodge' buff adds
-    // flat chance AFTER every other bonus above, BEFORE the hard DODGE_CAP ceiling below — this
-    // function is called both in-battle (monsterAct) and out-of-battle (screens.js character-sheet
-    // display), so the bonus is read from Game.state.battle directly (see playerStatKindBuff),
-    // never a passed battle param — outside battle it safely reads 0.
-    chance += playerStatKindBuff('dodge');
-    return Math.min(BALANCE.DODGE_CAP, chance);
+    var dexDodge = BALANCE.DEX_DODGE_MAX * c.dexterity / (c.dexterity + BALANCE.DEX_DODGE_HALF);
+    var baseDodge = dexDodge * (1 + BALANCE.DODGE_PER_SKILL_LEVEL * dodgeSkill);
+    var bonus = 0;
+    if (Game.World && Game.World.shrineBonus) bonus += Game.World.shrineBonus(c, 'dodge');
+    if (Game.Classes && Game.Classes.classBonus) bonus += Game.Classes.classBonus(c, 'dodge_pct');
+    bonus += playerStatKindBuff('dodge');
+    return Math.min(BALANCE.DODGE_CAP, BALANCE.DODGE_BASE + baseDodge * (1 + bonus));
+  }
+
+  // docs/SPEC-NONDEX-DEFENSE.md §2.1 [invented]: Bracing — Heavy/Medium Armor you know how to wear
+  // (head/body/legs/feet pieces only, per piece /4) softens every monster hit that lands, applied in
+  // monsterAct after the penetration floor and before Block/Defend. Endurance multiplies the armor-
+  // skill brace; BRACE_CAP; Fear-scaled like every other defensive stat. Light Armor and shields
+  // contribute nothing. Exported for the Status skill line and tests.
+  function playerBraceFraction(battle) {
+    var c = battle.player;
+    var slots = ['head', 'body', 'legs', 'feet'];
+    var skillBrace = 0;
+    for (var i = 0; i < slots.length; i++) {
+      var itemId = c.equipment && c.equipment[slots[i]];
+      var item = itemId ? Game.Inventory.getItem(itemId) : null;
+      if (!item || (item.skill !== 'Heavy Armor' && item.skill !== 'Medium Armor')) continue;
+      var lvl = (c.skills[item.skill] && c.skills[item.skill].level) || 0;
+      skillBrace += BALANCE.BRACE_PER_ARMOR_SKILL_LEVEL * lvl / 4;
+    }
+    var brace = Math.min(BALANCE.BRACE_CAP, skillBrace * (1 + BALANCE.BRACE_PER_ENDURANCE * c.endurance));
+    return brace * fearMultiplier(battle);
   }
 
   // invented: monsters have no Dexterity stat in the Phase 3 data shape — their dodge scales
@@ -747,6 +769,9 @@ Game.Battle = (function () {
     // max(1, raw-mitigation) form) — see balance.js DAMAGE_PENETRATION_FLOOR comment for why this
     // is one-directional.
     var dmg = Math.max(1, Math.round(raw * BALANCE.DAMAGE_PENETRATION_FLOOR), Math.round(raw - mitigation));
+    // docs/SPEC-NONDEX-DEFENSE.md §2.1: Bracing (Heavy/Medium Armor skill x Endurance) — after the
+    // floor, before Block/Defend. Monster hits on the player only (never status ticks/companion hits).
+    dmg = Math.max(1, Math.round(dmg * (1 - playerBraceFraction(battle))));
     // docs/SPEC-SECONDARY-STATS.md §2.5: Block Chance — only against physical hits (a graded tech
     // is Magic Armor's job, cannot be blocked), only rolled when the shield-gated block chance is
     // above 0 (one extra rng() call, never spent otherwise). Applied after the penetration floor
@@ -1134,7 +1159,7 @@ Game.Battle = (function () {
       return battle;
     }
     // Phase 6a: a classOnly tech (js/data/techs.js) may only be cast while its owning class is
-    // currently active (Primary or Secondary) — single guarded check point, see
+    // currently active (lineage or Legendary slot) — single guarded check point, see
     // Game.Classes.isClassTechUsable's comment for why it lives here rather than inside
     // isTechEquipped.
     if (Game.Classes && !Game.Classes.isClassTechUsable(battle.player, tech)) {
@@ -1240,7 +1265,9 @@ Game.Battle = (function () {
       // untyped buffs keep the shipped "Damage +N" wording verbatim (ratchet).
       var statLabel = STAT_KIND_LABEL[tech.statKind];
       var buffDesc;
-      if (statLabel && (tech.statKind === 'dodge' || tech.statKind === 'double_attack')) {
+      if (tech.statKind === 'dodge') {
+        buffDesc = '+' + Math.round(tech.power * 1000) / 10 + '% Dodge effectiveness for ' + buffDuration + ' turns.'; // SPEC-ROGUE-BOSS-COST §2.2: dodge buffs are multipliers now
+      } else if (statLabel && tech.statKind === 'double_attack') {
         buffDesc = statLabel + ' +' + Math.round(tech.power * 100) + '% for ' + buffDuration + ' turns.';
       } else if (statLabel) {
         buffDesc = statLabel + ' +' + tech.power + ' for ' + buffDuration + ' turns.';
@@ -1870,9 +1897,15 @@ Game.Battle = (function () {
     Game.Character.addXp(c, xpGain);
 
     // Phase 6a: Class XP, AFTER the cutoff check above (cutoff wins grant no class XP either —
-    // phase brief). Primary gains the same amount as main combat XP; Secondary gains half
-    // (Classes.md, DESIGN.md §3); a class with no slot assigned gains nothing.
-    if (Game.Classes) Game.Classes.addClassXp(c, xpGain);
+    // phase brief). [revised] v1.11: one shared pool split over active, un-maxed classes
+    // (SPEC-CLASS-LINEAGE R8); an unslotted Legendary gains nothing. Newly maxed classes are logged.
+    if (Game.Classes) {
+      var masteredIds = Game.Classes.addClassXp(c, xpGain) || [];
+      masteredIds.forEach(function (mid) {
+        var mdef = Game.Classes.getClass(mid);
+        log(battle, 'You have mastered the ' + (mdef ? mdef.name : mid) + ' class. Its experience now flows to your other callings.');
+      });
+    }
 
     // Gold in [goldMin, goldMax]. Phase 4: Spirit Shrine "Fortune's Favor" buff adds a
     // percentage bonus to gold from battle victories (js/data/shrine.js).
@@ -2246,6 +2279,7 @@ Game.Battle = (function () {
     fearLevels: fearLevels,
     fearMultiplier: fearMultiplier,
     playerDodgeChance: playerDodgeChance,
+    playerBraceFraction: playerBraceFraction,
     playerDoubleAttackChance: playerDoubleAttackChance,
     playerCurseActive: playerCurseActive,
     playerCurseMultiplier: playerCurseMultiplier,

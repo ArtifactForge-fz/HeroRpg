@@ -593,7 +593,7 @@ assert(loaded.character.fury === 0, 'migration adds fury=0');
 Game.state = loaded;
 Game.persist();
 var resaved = JSON.parse(localStorageStore['herorpg_save']);
-assert(resaved.version === 11, 'resave stamps current version 11 (v1.9 companion migration on top), got ' + resaved.version);
+assert(resaved.version === 12, 'resave stamps current version 12 (v1.9 companion migration on top), got ' + resaved.version);
 
 
 // v1 chain still works end-to-end (v1 -> v2 -> v3 -> v4)
@@ -642,7 +642,7 @@ assert(loadedV9.character.equipment.offhand === null, 'v8->v9 migration backfill
 Game.state = loadedV9;
 Game.persist();
 var resavedV9 = JSON.parse(localStorageStore['herorpg_save']);
-assert(resavedV9.version === 11, 'resave stamps CURRENT_VERSION 11, got ' + resavedV9.version);
+assert(resavedV9.version === 12, 'resave stamps CURRENT_VERSION 12, got ' + resavedV9.version);
 
 
 // v1 -> v9 full chain also ends up with equipment.offhand present (SPEC-V1.2.md Phase 1 #5).
@@ -1113,7 +1113,8 @@ assert(Game.Inventory.equippedMagicArmorTotal(c20) === expectedMagicArmor20,
 // =================== Test 21: Dodge/Double Attack skill XP at proc site, capped at 2L+1 ===================
 console.log('\n=== Test 21: Dodge/Double Attack skill XP granted at proc site, capped at 2L+1 (v1.2 Phase 1 #3) ===');
 var c21 = makeCharacter({ name: 'DodgeDoubleAttackXpTest' });
-c21.dexterity = 200; // saturates both Dodge and Double Attack chances to their caps
+c21.dexterity = 200; // Double Attack saturates at its cap; Dodge is 0.22 here (Dex alone can no longer reach DODGE_CAP, SPEC-ROGUE-BOSS-COST §2.1) — still far above the stubbed 0.01 roll
+assert(Game.Battle.playerDodgeChance(c21) > 0.01 && Game.Battle.playerDodgeChance(c21) < BALANCE.DODGE_CAP, 'sanity: Dex 200 gives a real but sub-cap dodge chance, got ' + Game.Battle.playerDodgeChance(c21));
 setRng(fixedRng(0.01)); // well under both capped chances -> both procs fire
 var b21 = Game.Battle.start('plains_field_rat');
 Game.Battle.attack();
@@ -1324,7 +1325,7 @@ Game.Battle.endBattle();
 console.log('\n=== Test 25: non-elemental (grade:null) tech damage ignores Magic Armor; graded techs still mitigated (v1.2 Phase 1 #7) ===');
 
 var c25 = makeCharacter({ name: 'NonElementalTest' });
-c25.primaryClass = 'warrior'; // minimal setup: isClassTechUsable only checks primaryClass/secondaryClass
+c25.lineage.tier1 = 'warrior'; // minimal setup: isClassTechUsable reads activeClassIds (v1.11 lineage)
 c25.techs.push('tech_crushing_blow');
 c25.techSets[0][1] = 'tech_crushing_blow'; // slot 0 already holds the Swords starter tech (Cleave I)
 setRng(fixedRng(0.99));
@@ -2828,7 +2829,7 @@ Game.Battle.endBattle();
 // =================== Test 51: v1.4 P3 (G2) — Frenzied champion affix ===================
 console.log('\n=== Test 51: Frenzied champion affix — damage escalates +5%/action, caps at +40% ===');
 var cFz = makeCharacter({ name: 'FrenziedTest' });
-cFz.dexterity = 60; // playerFirst vs a level-50 boss (used only for its large, rounding-friendly damage stat)
+cFz.dexterity = 999; // playerFirst vs a level-50 boss (boss dex is 5L+10 = 260 since SPEC-ROGUE-BOSS-COST §2.3; stale pin 60 -> 999) (used only for its large, rounding-friendly damage stat)
 Game.Character.recalcDerived(cFz);
 cFz.hitPoints = cFz.hitPointsMax = 1000000;
 cFz.energy = cFz.energyMax = 1000000;
@@ -2926,7 +2927,7 @@ Game.Battle.endBattle();
 // =================== Test 55: v1.4 P3 (G2) — boss script fires exactly once at its threshold ===================
 console.log('\n=== Test 55: boss script (kastengard_custodian, fortify @ 50%) fires exactly once when HP first crosses its threshold ===');
 var cScript = makeCharacter({ name: 'BossScriptTest' });
-cScript.dexterity = 60; // playerFirst vs a level-32 boss
+cScript.dexterity = 999; // playerFirst vs a level-32 boss (boss dex 170 since SPEC-ROGUE-BOSS-COST §2.3; stale pin 60 -> 999)
 cScript.level = 32; // avoid Fear complicating the player's own hit (irrelevant to what's asserted, but keeps it simple)
 cScript.strength = 100;
 Game.Character.recalcDerived(cScript);
@@ -3759,7 +3760,7 @@ Game.Battle.endBattle();
 // =================== Test 78: v1.5 P3 — boss script + behavior coexist ===================
 console.log('\n=== Test 78: v1.5 P3 boss integration — a boss with BOTH a `script` (HP-threshold) and a `behavior` (per-turn telegraph) still fires its script at the threshold AND exhibits its behavior ===');
 var c78 = makeCharacter({ name: 'BossCoexistTest' });
-c78.dexterity = 60; // playerFirst vs a level-32 boss
+c78.dexterity = 999; // playerFirst vs a level-32 boss (boss dex 170 since SPEC-ROGUE-BOSS-COST §2.3; stale pin 60 -> 999)
 c78.level = 32; // avoid Fear complicating the player's own hit (same fixture shape as Test 55)
 c78.strength = 100;
 Game.Character.recalcDerived(c78);
@@ -4140,6 +4141,131 @@ console.log('\n=== Test 87: EI-2 armor ladder is non-decreasing by levelReq, per
     assert(violations.length === 0, 'v1.6 P3 EI-2: ' + key + ' is non-decreasing by levelReq (armor and magicArmor)' + (violations.length ? ': ' + violations.join('; ') : ''));
   });
   assert(groupCount >= 8, 'sanity: checked at least 8 class/slot groups (got ' + groupCount + ')');
+})();
+
+// =================== Test 100: SPEC-ROGUE-BOSS-COST §2.1 — diminishing-returns Dexterity dodge ===================
+console.log('\n=== Test 100: dodge model (SPEC-ROGUE-BOSS-COST §2.1) — Dex curve, skill/passive multipliers, boss Dexterity ===');
+(function () {
+  var c = makeCharacter({ name: 'DexDodgeTest' });
+  c.dexterity = 10000; // absurd Dexterity ALONE: approaches DEX_DODGE_MAX but can never reach DODGE_CAP
+  var dexOnly = Game.Battle.playerDodgeChance(c);
+  assert(dexOnly < 0.33, 'Dex 10,000 alone stays under DEX_DODGE_MAX + DODGE_BASE (< 0.33), got ' + dexOnly);
+  assert(dexOnly < BALANCE.DODGE_CAP, 'Dex alone never reaches DODGE_CAP');
+
+  var c2 = makeCharacter({ name: 'LowDexSkillTest' });
+  c2.dexterity = 5;
+  c2.skills['Dodge'].level = 100; // the skill multiplies the tiny Dex term, it adds nothing of its own
+  assert(Game.Battle.playerDodgeChance(c2) < 0.06, 'a Dex-5 hero with Dodge skill 100 stays under 0.06, got ' + Game.Battle.playerDodgeChance(c2));
+  c2.shrineBuffs = [{ id: 'shrine_phantom_step', battlesLeft: 8 }]; // +30% effectiveness of ~2.9%: still tiny
+  assert(Game.Battle.playerDodgeChance(c2) < 0.06, 'passives/shrine scale the Dex term too: Dex-5 + skill 100 + Phantom Step still < 0.06, got ' + Game.Battle.playerDodgeChance(c2));
+
+  // Hand-computed: Dex 100 -> 0.30*100/200 = 0.15; Dodge 50 -> x1.5 = 0.225; Shadowstep Grace +0.20 -> x1.2 = 0.27; + DODGE_BASE 0.02 = 0.29.
+  var c3 = makeCharacter({ name: 'DodgeFormulaTest' });
+  c3.dexterity = 100;
+  c3.skills['Dodge'].level = 50;
+  c3.shrineBuffs = [{ id: 'shrine_shadowstep_grace', battlesLeft: 6 }];
+  assert(Math.abs(Game.Battle.playerDodgeChance(c3) - 0.29) < 1e-9, 'exact formula: 0.02 + 0.15 x 1.5 x 1.2 = 0.29, got ' + Game.Battle.playerDodgeChance(c3));
+  // A class passive stacks into the SAME multiplier: Rogue's Quickstep (+0.20) + shrine (+0.20) -> x1.4.
+  Game.Classes.obtainClass(c3, 'thief');
+  Game.Classes.obtainClass(c3, 'rogue');
+  c3.classes['rogue'].abilities.push('rogue_quickstep');
+  assert(Math.abs(Game.Battle.playerDodgeChance(c3) - (0.02 + 0.15 * 1.5 * 1.4)) < 1e-9, 'passive + shrine bonuses sum inside one multiplier: expected ' + (0.02 + 0.15 * 1.5 * 1.4) + ', got ' + Game.Battle.playerDodgeChance(c3));
+
+  // Boss Dexterity (§2.3): all 11 bosses carry BOSS_DEXTERITY(level); an all-Dex hero of the boss's level goes second,
+  // one two levels above goes first (ties go to the player).
+  var bossList = Game.Data.monsters.filter(function (m) { return m.boss; });
+  bossList.forEach(function (m) {
+    assert(m.dexterity === 5 * m.level + 10 && m.dexterity === BALANCE.BOSS_DEXTERITY(m.level), m.id + ' dexterity is 5*level+10, got ' + m.dexterity);
+  });
+  var cb = makeCharacter({ name: 'BossOrderTest' });
+  cb.level = 40;
+  cb.dexterity = 5 * 40; // every stat point ever earned, spent on Dexterity
+  setRng(fixedRng(0.5));
+  var bb = Game.Battle.start('eidas_echo');
+  assert(bb.playerFirst === false, 'an all-Dex hero at the L40 boss level (Dex 200 < 210) does NOT strike first');
+  Game.Battle.endBattle();
+  var cb2 = makeCharacter({ name: 'BossOrderTest2' });
+  cb2.level = 42;
+  cb2.dexterity = 5 * 42;
+  var bb2 = Game.Battle.start('eidas_echo');
+  assert(bb2.playerFirst === true, 'an all-Dex hero two levels above the boss (Dex 210 >= 210) strikes first (tie goes to the player)');
+  Game.Battle.endBattle();
+})();
+
+// =================== Test 101: SPEC-NONDEX-DEFENSE §2.1 — Bracing ===================
+console.log('\n=== Test 101: Bracing (SPEC-NONDEX-DEFENSE §2.1) — Heavy/Medium Armor skill x Endurance, after the floor, before Block/Defend ===');
+(function () {
+  var HEAVY = ['heavy_head_great_helm', 'heavy_body_stoneback_warplate', 'heavy_legs_warplate_legguards', 'heavy_feet_ironclad_sabatons'];
+  var LIGHT = ['light_head_hood_of_wayfaring', 'light_body_traveler_tunic', 'light_legs_supple_leggings', 'light_feet_soft_boots'];
+  var MEDIUM = ['medium_head_riveted_cap', 'medium_body_studded_jerkin', 'medium_legs_banded_greaves', 'medium_feet_reinforced_boots'];
+  var SLOTS = ['head', 'body', 'legs', 'feet'];
+  var RAW = 1000;                    // monster.damage forced high so the floor, not Armor, decides the hit...
+  var FLOORED = Math.round(RAW * BALANCE.DAMAGE_PENETRATION_FLOOR); // ...300 (neutral variance at rng 0.5)
+
+  // Fresh hero wearing `items`, armor skill `skillLvl`, `end` Endurance, `lvlDown` levels under the monster;
+  // a huge Armor buff pins every hit to the penetration floor. Returns the HP lost to the monster's reply.
+  function brace(items, armorSkill, skillLvl, end, lvlDown, how) {
+    var c = makeCharacter({ name: 'BraceTest' });
+    c.dexterity = 999; // player first: the monster's only action is the reply to ours
+    c.level = 20 - lvlDown; // juneros_riptide_hunter is level 20
+    c.endurance = end;
+    c.skills[armorSkill].level = skillLvl;
+    for (var i = 0; i < 4; i++) c.equipment[SLOTS[i]] = items[i];
+    Game.Character.recalcDerived(c);
+    c.hitPoints = c.hitPointsMax = 1000000;
+    c.energy = c.energyMax = 1000000;
+    setRng(fixedRng(0.5)); // no dodge / glancing / crit / tech pick, neutral variance
+    var b = Game.Battle.start('juneros_riptide_hunter');
+    b.monster.damage = RAW;
+    b.monster.hp = b.monster.hpMax = 1000000;
+    b.playerStatuses.push({ type: 'buff', name: 'TestWall', statKind: 'armor', power: 100000000, turnsLeft: 99 });
+    var frac = Game.Battle.playerBraceFraction(b);
+    var realBlock = Game.Character.getBlockChance;
+    if (how === 'block' || how === 'both') Game.Character.getBlockChance = function () { return 1; }; // rng 0.5 < 1 -> blocked
+    var before = c.hitPoints;
+    if (how === 'defend' || how === 'both') Game.Battle.defend(); else Game.Battle.attack();
+    Game.Character.getBlockChance = realBlock;
+    var lost = before - c.hitPoints;
+    Game.Battle.endBattle();
+    return { lost: lost, frac: frac };
+  }
+
+  var r1 = brace(HEAVY, 'Heavy Armor', 20, 0, 0);
+  assert(Math.abs(r1.frac - 0.2) < 1e-9, 'full Heavy set at skill 20, Endurance 0 -> brace 0.20, got ' + r1.frac);
+  assert(r1.lost === Math.round(FLOORED * 0.8), 'full Heavy set at skill 20 takes exactly round(floored x 0.8) = ' + Math.round(FLOORED * 0.8) + ', got ' + r1.lost);
+
+  var r2 = brace(HEAVY, 'Heavy Armor', 20, 100, 0);
+  assert(Math.abs(r2.frac - 0.2 * 1.2) < 1e-9, 'Endurance 100 multiplies the brace by 1.2 -> 0.24, got ' + r2.frac);
+  assert(r2.lost === Math.round(FLOORED * (1 - 0.24)), 'Endurance 100 -> hit is round(floored x 0.76) = ' + Math.round(FLOORED * 0.76) + ', got ' + r2.lost);
+
+  var r3 = brace(LIGHT, 'Light Armor', 50, 100, 0);
+  assert(r3.frac === 0 && r3.lost === FLOORED, 'a full Light Armor set gives no Bracing: frac ' + r3.frac + ', hit ' + r3.lost + ' (floored ' + FLOORED + ')');
+
+  var rm = brace(MEDIUM, 'Medium Armor', 20, 0, 0);
+  assert(Math.abs(rm.frac - 0.2) < 1e-9, 'Medium Armor braces at the same rate as Heavy, got ' + rm.frac);
+
+  var rp = brace([HEAVY[0], LIGHT[1], LIGHT[2], LIGHT[3]], 'Heavy Armor', 20, 0, 0);
+  assert(Math.abs(rp.frac - 0.05) < 1e-9, 'one Heavy piece = a quarter of the Heavy rate (0.05), got ' + rp.frac);
+
+  var r4 = brace(HEAVY, 'Heavy Armor', 200, 100, 0);
+  assert(r4.frac === BALANCE.BRACE_CAP, 'BRACE_CAP holds at skill 200 + Endurance 100, got ' + r4.frac);
+  assert(r4.lost === Math.round(FLOORED * (1 - BALANCE.BRACE_CAP)), 'capped brace takes round(floored x 0.5), got ' + r4.lost);
+
+  var r5 = brace(HEAVY, 'Heavy Armor', 20, 0, 2);
+  assert(Math.abs(r5.frac - 0.2 * 0.8) < 1e-9, 'Fear 2 levels under scales the brace by 0.8 -> 0.16, got ' + r5.frac);
+  assert(r5.lost === Math.round(FLOORED * (1 - 0.16)), 'Fear-scaled brace: hit is round(floored x 0.84) = ' + Math.round(FLOORED * 0.84) + ', got ' + r5.lost);
+
+  var braced = Math.round(FLOORED * 0.8);
+  var r6 = brace(HEAVY, 'Heavy Armor', 20, 0, 0, 'defend');
+  assert(r6.lost === Math.round(braced * BALANCE.DEFEND_DAMAGE_MULT), 'Defend still halves the braced hit: expected ' + Math.round(braced * BALANCE.DEFEND_DAMAGE_MULT) + ', got ' + r6.lost);
+  var r7 = brace(HEAVY, 'Heavy Armor', 20, 0, 0, 'block');
+  assert(r7.lost === Math.round(braced * (1 - BALANCE.BLOCK_REDUCTION)), 'Block still halves the braced hit: expected ' + Math.round(braced * (1 - BALANCE.BLOCK_REDUCTION)) + ', got ' + r7.lost);
+  var r8 = brace(HEAVY, 'Heavy Armor', 20, 0, 0, 'both');
+  var afterBlock = Math.round(braced * (1 - BALANCE.BLOCK_REDUCTION));
+  assert(r8.lost === Math.round(afterBlock * BALANCE.DEFEND_DAMAGE_MULT), 'Block + Defend + Bracing stack in order: expected ' + Math.round(afterBlock * BALANCE.DEFEND_DAMAGE_MULT) + ', got ' + r8.lost);
+
+  // Estari Ruin Warden's basic damage trim (SPEC-NONDEX-DEFENSE §2.2): 33 -> 28.
+  assert(Game.Data.monsters.filter(function (m) { return m.id === 'estari_ruin_warden'; })[0].damage === 28, 'Estari Ruin Warden damage is 28');
 })();
 
 // =================== Summary ===================

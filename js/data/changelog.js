@@ -12,6 +12,32 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.11.0',
+    date: '2026-10-23',
+    title: 'The Hero Tree',
+    saveVersion: 12,
+    highlights: [
+      'Your classes now grow together. The callings you choose at levels 5, 30 and 60 are ' +
+        'permanent and always active: no more Primary and Secondary slots, and no more losing a ' +
+        'class by deactivating it. Your Status screen shows them as your Hero Tree.',
+      'Class experience is shared between the classes still learning; once a class is mastered, ' +
+        'its share goes to the others.',
+      'Legendary classes get a slot of their own on top, and you can swap between the ones you\'ve ' +
+        'unlocked at any Academy without losing their progress. Existing heroes keep every class ' +
+        'level and ability they\'ve earned.',
+      'Footwork rewritten. Dodging now comes from Dexterity, with less gained from each point the ' +
+        'more you have, so even the nimblest hero can\'t slip every blow. Your Dodge skill, dodge ' +
+        'abilities, shrine blessings and footwork techniques now make that chance bigger instead of ' +
+        'adding a fixed amount. Thieves, Rogues, Gambits and Assassins finally get full use from ' +
+        'their dodge abilities. Bosses are also quicker: most will strike first unless you clearly ' +
+        'outclass them.',
+      'Armor that holds. Heavy and medium armor now pay off when a blow lands: the better you know ' +
+        'your armor, and the more Endurance behind it, the less each hit hurts. Light armor stays ' +
+        'the armor of quick feet.'
+    ]
+  },
+
+  {
     version: 'v1.10.0',
     date: '2026-10-21',
     title: 'Keen Edges & Lucky Coins',

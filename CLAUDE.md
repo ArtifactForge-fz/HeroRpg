@@ -64,7 +64,7 @@ Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's que
   `{ambush:true}` (camp-only, monster strikes first).
 - Guarded-hook pattern for cross-module bonuses: `if (Game.World && Game.World.shrineBonus)…`,
   same for `Game.Classes.classBonus(c, effect)` (effects: damage_pct, armor_flat,
-  magic_armor_flat, dodge_flat, energy_max_flat, hp_max_flat, gold_pct, double_attack_flat).
+  magic_armor_flat, dodge_pct, energy_max_flat, hp_max_flat, gold_pct, double_attack_flat).
 
 ## Established balance formulas (do not re-derive)
 
@@ -157,6 +157,43 @@ localStorage fallback — and syntax-checks its 3 script blocks as it writes. A 
 rebuilds it after every commit so a deployable single-file build always matches HEAD. The hooks
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
 re-enable it. Never build/ship from a tree with red suites.
+
+## Recently completed (2026-10-23) — v1.11.0 "The Hero Tree" (release candidate)
+
+Three user-directed specs in one release, stacked on v1.10.0. Built in the `HeroRpg-playable`
+working copy (not a git checkout), then **committed on branch `v1.11-hero-tree`** in a fresh clone
+(`HeroRpg-git`, branched from `main` `e06c63d`): one commit for v1.10.0, one for v1.11.0.
+**Not pushed, merged, or deployed — all user-gated.** **Save version 11 → 12.**
+- **Working-copy drift (found while committing):** `HeroRpg-playable` predated part of `main` —
+  PR #1's six tech chains (42 ranks), the Conjurer techs' `skill: 'Conjuration'` link, and its
+  `test_companion.js` Test 12 + changelog lines. The commits keep `main`'s content; Test 12 was
+  moved to the Hero Tree setup. The v1.10/v1.11 sims ran without those 42 ranks (their caster
+  fixture uses Firebolt only). Develop in the git clone from now on, not the plain-file copy.
+- **Hero Tree** (`docs/SPEC-CLASS-LINEAGE.md`, [revised] Classes.md slots/activation/wipe): the
+  tier 1/2/3 class picks are permanent and always active (`c.lineage`), plus one Legendary slot
+  (`c.legendaryClass`, change only at an Academy, progress kept, its techs unslotted on swap-out).
+  No deactivation. Class XP = one pool `CLASS_XP_POOL_FRACTION` 0.5 split evenly over active,
+  un-maxed classes (a class is "Mastered" once its earned levels cover every ability).
+  `activate`/`deactivate` are gone; `activeClassIds`/`lineageOf`/`setLegendary`/`isClassMaxed`
+  are new. Migration v11→v12 per spec §2.4.
+- **Rogue boss cost** (`docs/SPEC-ROGUE-BOSS-COST.md`): Dex dodge with diminishing returns
+  (`DEX_DODGE_MAX` 0.30, `DEX_DODGE_HALF` 100); Dodge skill, `dodge_pct` passives (renamed from
+  `dodge_flat`, powers ×2.5), shrine and dodge buffs all multiply it; all 11 bosses get
+  `dexterity = BOSS_DEXTERITY(level)` = 5·level+10.
+- **Bracing** (`docs/SPEC-NONDEX-DEFENSE.md`): Heavy/Medium Armor pieces cut landed monster hits
+  after the penetration floor (1%/armor-skill level per full set, ×(1 + 0.002·Endurance), cap
+  0.50, ×Fear); Estari Ruin Warden damage 33 → 28.
+- **Review re-sim** (lineage spec §3.2): Heavy/Medium lineages win the L100 boss 99–100% (was
+  88–96%); Gambit/Assassin now pay at every boss (≤ 78% HP left); casters slip as accepted (L10
+  boss 86.3%, L90–100 95.7–98.3%). **Open follow-ups:** caster compensation spec; boss tech power
+  scaling spec.
+- **Sim-harness gotcha:** `Game.Classes.activate` (v1.10 and earlier) took `(c, classId, slot)`.
+  The v1.10 P0 script passed `(c, slot, classId)`, so its fixtures never had a class active and
+  `docs/SPEC-SECONDARY-STATS.md` §3.1 was measured without class bonuses.
+- Process: lead spec + sims; two Sonnet agents in sequence (lineage, then dodge + Bracing; they
+  share `classes.js`/`balance.js`/`screens.js`/tests); lead review re-ran all 15 suites, read the
+  migration/balance/battle diffs, re-simmed the shipped code and checked the Hero Tree UI in a
+  real browser (served over http — the browser pane renders `file://` pages as static snapshots).
 
 ## Recently completed (2026-10-21) — v1.10.0 "Keen Edges & Lucky Coins" (release candidate)
 

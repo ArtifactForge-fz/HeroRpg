@@ -5,7 +5,7 @@ var Game = window.Game || {};
 Game.Save = (function () {
 
   var STORAGE_KEY = 'herorpg_save';
-  var CURRENT_VERSION = 11;
+  var CURRENT_VERSION = 12;
 
 
   // Transient fields are never persisted: `battle` (Phase 3) holds a live reference to the
@@ -230,6 +230,62 @@ Game.Save = (function () {
         state.character.companion = null;
       }
       version = 11;
+    }
+
+    // v11 -> v12: v1.11 "Hero Tree" (docs/SPEC-CLASS-LINEAGE.md section 2.4) replaced the
+    // Primary/Secondary slots with c.lineage = { tier1, tier2, tier3 } + c.legendaryClass.
+    // M1: each tier 1/2/3 is filled by the obtained class of that tier. M2: if several of one tier
+    // are obtained (debug helpers only), prefer the one in Primary, then Secondary, then highest
+    // classLevelsEarned, then js/data/classes.js order; the others stay in c.classes but are never
+    // active. M3: legendaryClass = Primary if legendary, else Secondary if legendary, else the
+    // first obtained Legendary in data order, else null. M4: primaryClass/secondaryClass deleted;
+    // no c.classes entry is touched (nothing lost or refunded). M5: old-convergence combos migrate
+    // as-is. M6: a once-deactivated class is a zeroed entry and simply re-enters at Class Level 1.
+    if (version === 11) {
+      if (state && state.character) {
+        var c12 = state.character;
+        var classes12 = (c12.classes && typeof c12.classes === 'object') ? c12.classes : {};
+        var defs12 = (Game.Data && Game.Data.classes) || [];
+        var tierOf = {}, legendary12 = {}, order12 = [];
+        for (var d = 0; d < defs12.length; d++) {
+          tierOf[defs12[d].id] = defs12[d].tier;
+          if (defs12[d].legendary) legendary12[defs12[d].id] = true;
+          order12.push(defs12[d].id);
+        }
+        var prim = c12.primaryClass || null, sec = c12.secondaryClass || null;
+        var lin = { tier1: null, tier2: null, tier3: null };
+        [1, 2, 3].forEach(function (t) {
+          var cands = order12.filter(function (id) {
+            return tierOf[id] === t && Object.prototype.hasOwnProperty.call(classes12, id);
+          });
+          if (!cands.length) return;
+          var best = null;
+          if (cands.indexOf(prim) !== -1) best = prim;
+          else if (cands.indexOf(sec) !== -1) best = sec;
+          else {
+            best = cands[0];
+            for (var k = 1; k < cands.length; k++) {
+              var a = (classes12[cands[k]] || {}).classLevelsEarned || 0;
+              var b = (classes12[best] || {}).classLevelsEarned || 0;
+              if (a > b) best = cands[k]; // strict: ties keep the earlier data-order class
+            }
+          }
+          lin['tier' + t] = best;
+        });
+        var leg = null;
+        if (prim && legendary12[prim] && Object.prototype.hasOwnProperty.call(classes12, prim)) leg = prim;
+        else if (sec && legendary12[sec] && Object.prototype.hasOwnProperty.call(classes12, sec)) leg = sec;
+        else {
+          for (var o = 0; o < order12.length; o++) {
+            if (legendary12[order12[o]] && Object.prototype.hasOwnProperty.call(classes12, order12[o])) { leg = order12[o]; break; }
+          }
+        }
+        c12.lineage = lin;
+        c12.legendaryClass = leg;
+        delete c12.primaryClass;
+        delete c12.secondaryClass;
+      }
+      version = 12;
     }
 
     if (version === CURRENT_VERSION) return state;

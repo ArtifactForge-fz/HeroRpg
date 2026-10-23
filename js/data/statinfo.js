@@ -45,7 +45,10 @@ Game.Data.statInfo = {
     name: 'Dexterity',
     summary: 'Speed and finesse.',
     effects: [
-      'Increases Dodge and Double Attack chance.',
+      // invented: docs/SPEC-ROGUE-BOSS-COST.md §2.1/§2.4 (diminishing-returns dodge curve; the Dodge
+      // skill, dodge abilities, shrine blessings and techniques multiply it).
+      'Gives you a chance to dodge, with less gained from each point the more you have. Your Dodge skill makes that chance bigger, and so do dodge abilities, shrine blessings and techniques.',
+      'Increases Double Attack chance.',
       'Decides who strikes first in battle.',
       'Increases Damage for Knife weapons.',
       'Speeds Knives, Dodge, Thievery, Dual Wield, Double Attack & Hand-to-Hand skills.'
@@ -78,9 +81,12 @@ Game.Data.statInfo = {
     summary: 'Resilience under blows.',
     effects: [
       'Increases your Armor (physical damage reduction).',
+      // invented: docs/SPEC-NONDEX-DEFENSE.md §2.3 (Bracing) — Heavy/Medium Armor you know how to wear
+      // turns the worst of a blow even when it lands; Endurance strengthens that.
+      'Armor you know how to wear turns the worst of a blow even when it lands: each level of Heavy or Medium Armor softens the hits you take while wearing it, and Endurance makes that stronger.',
       'Speeds Light, Medium & Heavy Armor skills.'
     ],
-    cite: 'archived: reference/manual/Endurance.md'
+    cite: 'archived: reference/manual/Endurance.md; invented: docs/SPEC-NONDEX-DEFENSE.md §2.1'
   },
 
   // archived: reference/manual/Hit_Points.md ("Hit Points are equal to the life of your

@@ -433,15 +433,16 @@ Game.Data.monsters = [
     name: 'Ruin Warden of the Estari',
     level: 10,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(10), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): data-driven, one interpreter in
     // js/core/battle.js (runBossScript) — no per-boss code. MODEST per the §7 guardrail: fortify
-    // amount 2 is ~6% of this boss's own damage stat (33), well under the ~15% ceiling.
+    // amount 2 is ~7% of this boss's own damage stat (28), well under the ~15% ceiling.
     script: [
       { atHpFrac: 0.5, effect: 'fortify', amount: 2, log: "The Ruin Warden's stone core flares — its hide hardens like fresh-poured rock!" }
     ],
     hp: 20 + 12 * 10 + 120, // invented: boss gets a flat HP premium over the regular-monster ballpark
     energy: 140, // invented: 40 + 10*level (retuned at Phase 3 milestone gate; see BALANCE.MONSTER_ATTACK_ENERGY_COST)
-    damage: 3 + 2 * 10 + 10, // invented: boss gets a flat damage premium
+    damage: 3 + 2 * 10 + 5, // invented: boss gets a flat damage premium — +5 (was +10, 33 -> 28): docs/SPEC-NONDEX-DEFENSE.md §2.2 (keeps the L10 caster boss cell over 85% under the new dodge model)
     armor: 12,
     magicArmor: 12,
     element: 'Dark',
@@ -842,6 +843,7 @@ Game.Data.monsters = [
     name: 'Matriarch of the High Camp',
     level: 18,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(18), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): telegraph archetype — a pack
     // matriarch winding up a heavy blow is an apt thematic fit for the first real "watch the
     // wind-up" boss lesson. `behavior` (per-turn action choice) is independent of `script` below
@@ -1028,6 +1030,7 @@ Game.Data.monsters = [
     name: 'The Juneros Leviathan',
     level: 25,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(25), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): enrage archetype — a brutish
     // beast boss (boss-lite death-throes escalation) fits a Leviathan better than a magic-flavored
     // caster. `behavior` and `script` are independent and both fire (see foothills_matriarch's
@@ -1197,6 +1200,7 @@ Game.Data.monsters = [
     name: 'The Kastengard Custodian',
     level: 32,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(32), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): telegraph archetype — a sentry
     // construct visibly powering up before it strikes, same thematic fit as the regular Kastengard
     // Wardframe (js/data/monsters.js L26) sharing this flavor. `behavior` and `script` are
@@ -1348,6 +1352,7 @@ Game.Data.monsters = [
     name: "Eidas' Echo",
     level: 40,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(40), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
     // empirically reverted. An earlier pass assigned 'enrage' here, but a real-RNG re-sim
     // (tests/test_p6b_content.js Part 4, "eidas_echo simulated beats-check") showed a charged
@@ -1612,6 +1617,7 @@ Game.Data.monsters = [
     name: 'The Majiku Warlord',
     level: 50,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(50), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
     // empirically reverted. An earlier pass assigned 'telegraph' here, but the real-RNG re-sim
     // (tests/test_p3_battle.js Test 32) collapsed from 87% win rate to 14-20% (floor is >=60%): a
@@ -1833,6 +1839,7 @@ Game.Data.monsters = [
     name: 'The Majiku Ridge-Chieftain',
     level: 60,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(60), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
     // empirically reverted (same real-RNG win-rate-floor collapse documented on majiku_warlord's
     // and eidas_echo's entries in this file, tests/test_p3_battle.js Test 35); left without a P3
@@ -2051,6 +2058,7 @@ Game.Data.monsters = [
     name: 'The Ukai Deep-Dweller',
     level: 70,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(70), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
     // empirically reverted (same real-RNG win-rate-floor collapse documented on majiku_warlord's
     // and eidas_echo's entries in this file, tests/test_p3_battle.js Test 38); left without a P3
@@ -2278,6 +2286,7 @@ Game.Data.monsters = [
     name: 'Estari Warden-Prime',
     level: 80,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(80), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
     // empirically reverted (same real-RNG win-rate-floor collapse documented on majiku_warlord's
     // and eidas_echo's entries in this file, tests/test_p3_battle.js Test 41); left without a P3
@@ -2511,6 +2520,7 @@ Game.Data.monsters = [
     name: 'Society Anima-Horror',
     level: 90,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(90), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
     // empirically reverted (same real-RNG win-rate-floor collapse documented on majiku_warlord's
     // and eidas_echo's entries in this file, tests/test_p3_battle.js Test 44); left without a P3
@@ -2763,6 +2773,7 @@ Game.Data.monsters = [
     name: 'Eidas Ascendant',
     level: 100,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(100), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
     // empirically reverted. This fight is ALREADY the game's costliest by design (header comment
     // above) with the least win-rate headroom of any boss; the same real-RNG collapse documented

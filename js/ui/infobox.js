@@ -243,7 +243,10 @@ Game.Infobox = (function () {
       // other two, matching battle.js's own STAT_KIND_LABEL wording (js/core/battle.js useTech).
       var statLabels = { armor: 'Armor', dodge: 'Dodge', double_attack: 'Double Attack', spellpower: 'Spell Power' };
       var statLabel = statLabels[tech.statKind] || tech.statKind;
-      var statText = (tech.statKind === 'dodge' || tech.statKind === 'double_attack')
+      // SPEC-ROGUE-BOSS-COST §2.2: a dodge buff is a multiplier now -> "+N% Dodge effectiveness".
+      var statText = tech.statKind === 'dodge'
+        ? ('+' + Math.round(tech.power * 1000) / 10 + '% Dodge effectiveness')
+        : (tech.statKind === 'double_attack')
         ? ('+' + Math.round(tech.power * 100) + '% ' + statLabel)
         : ('+' + tech.power + ' ' + statLabel);
       body.appendChild(e('div', { class: 'stat-row' }, [e('span', { class: 'stat-name' }, ['Effect']), e('span', {}, [statText])]));

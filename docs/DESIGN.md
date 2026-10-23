@@ -122,10 +122,15 @@ delivery model as the original ("text-based, web 2.0", AJAX-era) and as the Avat
   capacity (encumbrance), feeds XP of Swords/Polearms skills.
 - **Vitality** — HP.
 - **Dexterity** — dodge & double-attack chance, battle turn order, feeds Knives/Dodge/Thievery/
-  Dual Wield/Double Attack/Hand-to-Hand skill XP.
+  Dual Wield/Double Attack/Hand-to-Hand skill XP. **[invented] (`docs/SPEC-ROGUE-BOSS-COST.md`
+  §2.1/§2.4):** *Dexterity gives you a chance to dodge, with less gained from each point the more you
+  have. Your Dodge skill makes that chance bigger, and so do dodge abilities, shrine blessings and
+  techniques.* Formula: `dodge = min(DODGE_CAP, DODGE_BASE + 0.30·Dex/(Dex+100) × (1 + 1%·Dodge skill)
+  × (1 + Σ dodge abilities/shrine/technique %))` — Dex alone can never reach the cap.
 - **Intelligence** — spell damage factor & spell hit/miss, "Magic Armor" (caster defense), feeds
   the five magic-school skill XPs.
-- **Endurance** — armor damage reduction, feeds armor-skill XP.
+- **Endurance** — armor damage reduction, feeds armor-skill XP. **[invented] (`docs/SPEC-NONDEX-DEFENSE.md`
+  §2.1):** also multiplies Bracing (below) — +0.2% per point — so Heavy/Medium armor softens blows more.
 - Derived: **Damage** (weapon + Str/Dex/Int depending on weapon class: Swords/Blunt/Polearms←Str,
   Knives←Dex, Rods←Int), **Armor** (equipment + Endurance), **Magic Armor** (Int).
 - Counters: Monster Kills, Player Kills (unimplemented in original — omit), Deaths.
@@ -188,6 +193,13 @@ Archived balance rules (`Recent_Updates.md`):
   enables an offhand weapon (shares the shield slot) for a skill-scaled extra Attack swing. Caps
   live in `js/balance.js` (tuned down after a difficulty-contract sim). This closes the review gap
   where weapon/armor/Thievery/Dual-Wield/Dodge/Double-Attack skills were cosmetic.
+- **v1.11 — Dodge skill as a multiplier [invented] (`docs/SPEC-ROGUE-BOSS-COST.md` §2.1):** the Dodge
+  skill no longer adds a flat +1%/level; it multiplies the Dexterity dodge term (×(1 + 1% per level)).
+  Archived: "Increases the possibility to Dodge" (`reference/manual/Dexterity.md`), Dodge a skill
+  (`reference/manual/Skills.md`); the formula is invented.
+- **v1.11 — Heavy/Medium Armor skills also brace [invented] (`docs/SPEC-NONDEX-DEFENSE.md` §2.1/§2.3):**
+  archived "Affects the efficiency of your heavy/medium armor" (`reference/manual/Heavy_Armor.md`,
+  `Medium_Armor.md`); see Bracing in §4.
 
 ### Classes — [archived design] (`Classes.md`), revised to three tiers (v1.1 → v1.2)
 
@@ -228,7 +240,7 @@ Archived balance rules (`Recent_Updates.md`):
     abilities in a few combats" per the playtest. `classXpForLevel` steepened round(30·(n-1)^1.6)
     → round(120·(n-1)^1.9), AND the Primary/Secondary award itself is now further scaled down
     (`CLASS_XP_FRACTION_PRIMARY` 0.5 / `CLASS_XP_FRACTION_SECONDARY` 0.25, `js/core/classes.js
-    addClassXp`) instead of the shipped full/half combat-XP rate. Net (P0 calc): tier-3 full-unlock
+    addClassXp`; **superseded by v1.11:** `CLASS_XP_POOL_FRACTION` 0.5, one shared pool — see §3 Classes) instead of the shipped full/half combat-XP rate. Net (P0 calc): tier-3 full-unlock
     ~2-3 → ~37 kills, tier-2 → ~86, tier-1 → ~192 — a class now grows across a meaningful slice of
     play. Legacy-safe: `classLevelsEarned`/`classLevelsSpent` are banked per-character and only
     ever increment forward from new class-XP grants, never recomputed retroactively from
@@ -240,8 +252,30 @@ Archived balance rules (`Recent_Updates.md`):
 - The v2.1-era rule that the first classes arrive at level 30 (`Classes.md`) is intentionally
   overridden (base tier at L5) — marked **[revised]** rather than [archived].
 
-Original v2.1 archived design below (still governs XP rates, Primary/Secondary, Academy
-purchases, deactivation wipe):
+**[revised] v1.11 — the Hero Tree** (`docs/SPEC-CLASS-LINEAGE.md`, decisions D0-D7 user-resolved
+2026-10-22; save v11 → v12). Overrides three archived v2.1 rules (Primary + Secondary slots,
+manual activation, the deactivation wipe — all `[archived: reference/manual/Classes.md]`). The
+rules now in force:
+- **Lineage:** the tier 1/2/3 classes chosen through the class quests are written into
+  `c.lineage = { tier1, tier2, tier3 }` on obtain (`Game.Classes.obtainClass`) and are active
+  immediately and permanently — no activation step, no deactivation, no swap, no wipe (R1/R2).
+  Quest choice dialogs warn "This choice is permanent. *Name* will join your Hero Tree for good."
+- **One Legendary slot** (`c.legendaryClass`), **[invented]** beyond the archived "Hero Tree" naming
+  (`reference/site/homepage_2006.md`): the first Legendary obtained auto-fills an empty slot
+  (wherever obtained); it is changed or emptied only at an Academy and never in battle, free, keeping
+  its progress (`setLegendary`, R4/R5). A swapped-out Legendary keeps its techs in `c.techs` but they
+  are unslotted from every tech set (R6). An unslotted Legendary earns no class XP and buys no
+  abilities (R7). Up to 4 classes are active at once (3 lineage + 1 Legendary).
+- **Class XP = one shared pool:** `floor(battleXp × CLASS_XP_POOL_FRACTION)` (0.5), split evenly over
+  the active classes that are not yet maxed; maxed = class levels *earned* ≥ the summed
+  `classLevelCost` of all its abilities (unspent levels count); a maxed class drops out and its share
+  goes to the others; all maxed → nothing awarded (R8/R8a, D2). `classXpForLevel` and every ability
+  number are unchanged (R9). Sim gate: SPEC-CLASS-LINEAGE §3.1 (rogue-line boss cost accepted, D7).
+- Academy purchases and class-tech usability apply to any active class (lineage + slotted Legendary).
+
+Original v2.1 archived design below, kept as history (its Primary/Secondary, activation and
+deactivation-wipe bullets are superseded by the Hero Tree above; Academy purchases and the
+class-levels-buy-abilities idea carry over):
 - Unlock at **level 30**; first choice: **Warrior, Magician, or Rogue** (via quest).
 - Later classes via multi-step quests, Relic creation, or specific monster kills; some **Legendary**
   (one per server — reinterpret single-player as "one per save, permanent choice").
@@ -255,6 +289,15 @@ purchases, deactivation wipe):
 ## 4. Combat — [archived flow] (`New_Player_Guide.md`, `Fear.md`, `Energy.md`, `Recent_Updates.md`)
 
 - 1v1, turn-based; player action → enemy counters. First strike decided by higher Dexterity.
+  - **[invented] v1.11 boss turn order (`docs/SPEC-ROGUE-BOSS-COST.md` §2.3):** every boss's Dexterity is
+    `5 × level + 10` (`BALANCE.BOSS_DEXTERITY`), so a hero strikes first only by clearly outclassing
+    it (about two levels above). Ties still go to the player. Regular monsters are unchanged.
+  - **[invented] v1.11 Bracing (`docs/SPEC-NONDEX-DEFENSE.md` §2.1):** every monster hit that lands is
+    softened after the penetration floor and before Block/Defend: `brace = min(0.50, Σ over worn
+    head/body/legs/feet Heavy- or Medium-Armor pieces of 1%·skill/4 × (1 + 0.2%·Endurance)) × Fear
+    multiplier`; `dmg = max(1, round(dmg × (1 − brace)))`. Light Armor and shields give none; not applied
+    to poison/bleed ticks or companion hits. The Estari Ruin Warden's basic damage is 28 (was 33,
+    §2.2 of the same spec).
   - **[revised] v1.9 override (D0, `docs/SPEC-COMPANION-SYSTEM.md`):** a bound companion (§3
     Classes, the Conjurer) is now a genuine second combatant — its own HP, an automatic action
     each player round, and it can be targeted by the enemy. This deliberately overrides the

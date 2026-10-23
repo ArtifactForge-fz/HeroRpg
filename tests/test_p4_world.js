@@ -1412,7 +1412,7 @@ assert(Array.isArray(loaded11.character.afflictions) && loaded11.character.affli
 Game.state = loaded11;
 Game.persist();
 var resaved11 = JSON.parse(localStorageStore['herorpg_save']);
-assert(resaved11.version === 11, 'resave stamps version 11 (v1.9 companion migration on top), got ' + resaved11.version);
+assert(resaved11.version === 12, 'resave stamps version 12 (v1.9 companion migration on top), got ' + resaved11.version);
 
 
 // v1 -> v4 chain (continues on through v8; the historical "v4" name in the label below refers to
@@ -1446,7 +1446,7 @@ assert(Array.isArray(loaded11b.character.afflictions) && loaded11b.character.aff
 assert(loaded11b.character.name === 'V3Timer', 'v7->v8 migration: identity intact');
 Game.state = loaded11b;
 Game.persist();
-assert(JSON.parse(localStorageStore['herorpg_save']).version === 11, 'v7->v11 resave stamps version 11');
+assert(JSON.parse(localStorageStore['herorpg_save']).version === 12, 'v7->v11 resave stamps version 12');
 
 
 // A v7 save that (hypothetically) already carried an afflictions array is left untouched (no
@@ -1720,7 +1720,8 @@ var res16 = Game.World.buyBuff('shrine_shadowstep_grace');
 assert(res16.ok === true, 'buyBuff succeeds for a new v1.2 buff: ' + res16.message);
 assert(c16.animaShards === 100 - 35, 'shardCost (35) deducted for Shadowstep Grace');
 var dodgeAfter16 = Game.Battle.playerDodgeChance(c16);
-assert(Math.abs(dodgeAfter16 - dodgeBefore16 - 0.08) < 1e-9, 'Shadowstep Grace adds +8% Dodge via the existing shrineBonus hook: before ' + dodgeBefore16 + ', after ' + dodgeAfter16);
+// SPEC-ROGUE-BOSS-COST §2.2: the buff is now a multiplier (+20% on the Dexterity dodge term; DODGE_BASE stays flat), not a flat +8%.
+assert(Math.abs((dodgeAfter16 - BALANCE.DODGE_BASE) - (dodgeBefore16 - BALANCE.DODGE_BASE) * 1.20) < 1e-9, 'Shadowstep Grace makes dodge 20% more effective via the existing shrineBonus hook: before ' + dodgeBefore16 + ', after ' + dodgeAfter16);
 
 // A new goldPct buff also stacks additively with the original Fortune's Favor via the same hook.
 var c16b = makeCharacter({ name: 'StackedGoldBuffTest' });

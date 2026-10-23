@@ -2,9 +2,9 @@
 // Archived (Classes.md, v2.1 era): unlock at level 30; first choice is Warrior, Magician, or
 // Rogue via quest; later classes obtained via quests/Relics/monster kills; some classes are
 // Legendary — "may only be obtained by one player" (single-player reinterpretation: one-per-save,
-// permanent latch, DESIGN.md §3 / phase brief). Primary+Secondary slots, Class XP accrues on
-// battle win at the main-XP rate (Primary) or half rate (Secondary); Class Levels buy abilities
-// at the Academy.
+// permanent latch, DESIGN.md §3 / phase brief). [revised] v1.11: the Primary/Secondary
+// slots are replaced by the Hero Tree (one class per tier + a Legendary slot, shared class-XP pool;
+// docs/SPEC-CLASS-LINEAGE.md); Class Levels buy abilities at the Academy.
 //
 // v1.1 REVISION (user-directed, DESIGN.md §3): the archived single-tier-at-30 model is replaced
 // by a two-tier structure using the ARCHIVED 2005-06 tier-era class names
@@ -62,7 +62,7 @@
 //          abilities: [ { id, name, kind: 'passive', effect, power, classLevelCost, desc,
 //                         bonusEffects?: [{ effect, power }] }
 //                     | { id, name, kind: 'tech', techId, classLevelCost, desc } ] }
-//   passive effect: 'damage_pct' | 'armor_flat' | 'magic_armor_flat' | 'dodge_flat' |
+//   passive effect: 'damage_pct' | 'armor_flat' | 'magic_armor_flat' | 'dodge_pct' |
 //                    'energy_max_flat' | 'hp_max_flat' | 'gold_pct' | 'double_attack_flat' |
 //                    'crit_chance_flat' | 'crit_damage_flat' | 'accuracy_flat' |
 //                    'armor_pen_flat' | 'block_flat' | 'spell_power_flat' | 'luck_flat'
@@ -184,10 +184,10 @@ Game.Data.classes = [
         id: 'thief_light_fingers',
         name: 'Light Fingers',
         kind: 'passive',
-        effect: 'dodge_flat',
-        power: 0.04,
+        effect: 'dodge_pct',
+        power: 0.10, // invented: SPEC-ROGUE-BOSS-COST §2.2 (multiplier on Dexterity dodge; 2.5x the old flat value)
         classLevelCost: 2,
-        desc: 'Light feet and a wary eye — flat +4% chance to dodge any attack.'
+        desc: 'Light feet and a wary eye — your Dexterity turns aside 10% more blows.'
       },
       {
         id: 'thief_silver_tongue',
@@ -434,10 +434,10 @@ Game.Data.classes = [
         id: 'rogue_quickstep',
         name: 'Quickstep',
         kind: 'passive',
-        effect: 'dodge_flat',
-        power: 0.08,
+        effect: 'dodge_pct',
+        power: 0.20, // invented: SPEC-ROGUE-BOSS-COST §2.2 (multiplier on Dexterity dodge; 2.5x the old flat value)
         classLevelCost: 2,
-        desc: 'Light feet and a wary eye, sharpened further than any first calling — flat +8% chance to dodge any attack.'
+        desc: 'Light feet and a wary eye, sharpened further than any first calling — your dodge is 20% more effective.'
       },
       {
         id: 'rogue_opportunist',
@@ -538,7 +538,7 @@ Game.Data.classes = [
   //   Mercenary (versatile) -> Ranger (skirmisher)                  / Dragoon     (heavy hybrid)
   // 3 abilities each (2 passive + 1 signature classOnly tech), tuned ~+20% over the stronger
   // tier-2 sibling per effect (existing band: damage_pct 0.13-0.19, magic_armor_flat 12,
-  // energy_max_flat 36, gold_pct 0.12, dodge_flat 0.10). classLevelCost pattern 3/3/5 throughout.
+  // energy_max_flat 36, gold_pct 0.12, dodge_flat 0.10, since renamed dodge_pct and rescaled: SPEC-ROGUE-BOSS-COST §2.2). classLevelCost pattern 3/3/5 throughout.
   // Legacy note (§5, no save-version change): a save that obtained e.g. Shadowknight as a
   // Crusader under the OLD convergence rule keeps it fully functional — obtaining is permanent
   // and classBonus/activation never read baseClass; only the *offer* logic (thirdTierOptionsFor)
@@ -663,10 +663,10 @@ Game.Data.classes = [
         id: 'gambit_gamblers_nerve',
         name: "Gambler's Nerve",
         kind: 'passive',
-        effect: 'dodge_flat',
-        power: 0.10, // invented: +25% over Rogue's Quickstep (0.08) — exactly at the tier discipline's cap
+        effect: 'dodge_pct',
+        power: 0.25, // invented: SPEC-ROGUE-BOSS-COST §2.2 (multiplier on Dexterity dodge; 2.5x the old flat value)
         classLevelCost: 3,
-        desc: 'Nothing rattles a Gambit mid-wager — flat +10% chance to dodge any attack.'
+        desc: 'Nothing rattles a Gambit mid-wager — your dodge is 25% more effective.'
       },
       {
         id: 'gambit_dice_throw',
@@ -948,10 +948,10 @@ Game.Data.classes = [
         id: 'seer_foresight',
         name: 'Foresight',
         kind: 'passive',
-        effect: 'dodge_flat',
-        power: 0.10, // invented: new stat line — Sage's own tier-2 kit has no dodge_flat — set at the established Tier-3 dodge_flat ceiling (matches Gambit's Gambler's Nerve, also 0.10). Provisional (Part B), pending lead's P5 sim.
+        effect: 'dodge_pct',
+        power: 0.25, // invented: SPEC-ROGUE-BOSS-COST §2.2 (multiplier on Dexterity dodge; 2.5x the old flat value)
         classLevelCost: 3,
-        desc: 'A half-second\'s warning before a blow lands is all a Seer needs — flat +10% chance to dodge any attack.'
+        desc: "A half-second's warning before a blow lands is all a Seer needs — your dodge is 25% more effective."
       },
       {
         id: 'seer_clairvoyant_reserves',
@@ -1045,10 +1045,10 @@ Game.Data.classes = [
         id: 'ranger_woodland_step',
         name: 'Woodland Step',
         kind: 'passive',
-        effect: 'dodge_flat',
-        power: 0.08, // invented: new stat line — Mercenary's own tier-2 kit has no dodge_flat — matches Rogue's tier-2 Quickstep (0.08) exactly. Provisional (Part B), pending lead's P5 sim.
+        effect: 'dodge_pct',
+        power: 0.20, // invented: SPEC-ROGUE-BOSS-COST §2.2 (multiplier on Dexterity dodge; 2.5x the old flat value)
         classLevelCost: 3,
-        desc: 'Light, practiced footwork honed for a skirmisher who never plans to stand still — flat +8% chance to dodge any attack.'
+        desc: 'Light, practiced footwork honed for a skirmisher who never plans to stand still — your dodge is 20% more effective.'
       },
       {
         id: 'ranger_volley',
@@ -1259,10 +1259,10 @@ Game.Data.classes = [
         id: 'heir_echo_step',
         name: "Echo's Step",
         kind: 'passive',
-        effect: 'dodge_flat',
-        power: 0.11, // invented: a touch above Gambit's Gambler's Nerve (0.10)
+        effect: 'dodge_pct',
+        power: 0.275, // invented: SPEC-ROGUE-BOSS-COST §2.2 (multiplier on Dexterity dodge; 2.5x the old flat value)
         classLevelCost: 3,
-        desc: 'A half-step out of phase with the world, the way an Echo always was — flat +11% chance to dodge any attack.'
+        desc: 'A half-step out of phase with the world, the way an Echo always was — your dodge is 27.5% more effective.'
       },
       {
         id: 'heir_echoing_judgment',

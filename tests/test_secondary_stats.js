@@ -363,15 +363,14 @@ console.log('\n=== Test 7: Fear scales new secondary stats at 1-4 levels below, 
 })();
 
 // =================== Test 8: classBonus sums bonusEffects only for bought + active classes ===================
-console.log('\n=== Test 8: classBonus sums a passive\'s bonusEffects only when bought AND the class is active ===');
+console.log('\n=== Test 8: classBonus sums a passive\'s bonusEffects only when bought AND the class is active (lineage or Legendary slot) ===');
 (function () {
   var c = makeCharacter({ skills: { 'Knives': 5 }, name: 'ClassBonusTest' });
   Game.Classes.obtainClass(c, 'thief');
   Game.Classes.obtainClass(c, 'rogue');
-  // Not yet active: bonusEffects contribute nothing.
-  assert(Game.Classes.classBonus(c, 'crit_chance_flat') === 0, 'an obtained-but-inactive class contributes no bonusEffects');
-  Game.Classes.activate(c, 'rogue', 'primary');
-  // Active but ability not bought: still nothing.
+  // v1.11: Rogue (tier 2) joined the lineage on obtain, so it is already active. Ability not
+  // bought: nothing.
+  assert(Game.Classes.activeClassIds(c).indexOf('rogue') !== -1, 'Rogue is active in the lineage as soon as it is obtained');
   assert(Game.Classes.classBonus(c, 'crit_chance_flat') === 0, 'an active class with the ability not yet bought contributes nothing');
   c.classes['rogue'].classLevelsEarned = 10;
   c.classes['rogue'].classLevelsSpent = 0;
@@ -385,9 +384,11 @@ console.log('\n=== Test 8: classBonus sums a passive\'s bonusEffects only when b
   assert(Math.abs(Game.Classes.classBonus(c, 'crit_chance_flat') - 0.06) < 1e-9, 'bought + active Rogue grants Opportunist\'s bonusEffects crit_chance_flat 0.06, got ' + Game.Classes.classBonus(c, 'crit_chance_flat'));
   // The main effect (damage_pct) is still summed alongside the bonus effect, unchanged.
   assert(Math.abs(Game.Classes.classBonus(c, 'damage_pct') - 0.12) < 1e-9, 'the main effect (damage_pct 0.12) is unaffected by bonusEffects being added');
-  // Deactivating wipes both.
-  Game.Classes.deactivate(c, 'primary');
-  assert(Game.Classes.classBonus(c, 'crit_chance_flat') === 0, 'deactivating the class zeroes out its bonusEffects contribution too');
+  // v1.11: lineage classes can't be deactivated; a class that is NOT in activeClassIds (simulated
+  // by emptying the tier-2 slot directly) contributes neither effect.
+  c.lineage.tier2 = null;
+  assert(Game.Classes.classBonus(c, 'crit_chance_flat') === 0, 'a class outside activeClassIds contributes no bonusEffects');
+  assert(Game.Classes.classBonus(c, 'damage_pct') === 0, 'a class outside activeClassIds contributes no main effect either');
 })();
 
 // =================== Test 9: aggregator caps ===================
@@ -402,7 +403,6 @@ console.log('\n=== Test 9: Game.Character.getSecondaryStat clamps every capped k
   for (var sb = 0; sb < 8; sb++) c.shrineBuffs.push({ id: 'shrine_hunters_eye', battlesLeft: 5 });
   Game.Classes.obtainClass(c, 'thief');
   Game.Classes.obtainClass(c, 'rogue');
-  Game.Classes.activate(c, 'rogue', 'primary');
   c.classes['rogue'].abilities.push('rogue_opportunist');
   var knives = Game.Data.items.filter(function (it) { return it.slot === 'weapon' && it.skill === 'Knives'; }).sort(function (a, b) { return b.levelReq - a.levelReq; });
   c.level = 100;

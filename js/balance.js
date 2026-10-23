@@ -88,9 +88,26 @@ var BALANCE = {
   // "Increases the possibility to Dodge"); numbers chosen so a naked level-1 has a small
   // baseline chance and a dedicated Dodge build can meaningfully avoid hits.
   DODGE_BASE: 0.02,
-  DODGE_PER_DEX: 0.004,
-  DODGE_PER_SKILL_LEVEL: 0.01,
+  // invented: docs/SPEC-ROGUE-BOSS-COST.md §2.1 — Dexterity dodge is a diminishing-returns curve,
+  // DEX_DODGE_MAX * Dex / (Dex + DEX_DODGE_HALF) (Dex 100 = half of the max), so Dex alone can never
+  // reach DODGE_CAP. Replaces the old linear DODGE_PER_DEX. [archived: Dexterity.md "Increases the
+  // possibility to Dodge" — still true, along a curve]
+  DEX_DODGE_MAX: 0.30, // invented: SPEC-ROGUE-BOSS-COST §2.1 (D5, sim-locked)
+  DEX_DODGE_HALF: 100, // invented: SPEC-ROGUE-BOSS-COST §2.1 (D5, sim-locked)
+  DODGE_PER_SKILL_LEVEL: 0.01, // invented: SPEC-ROGUE-BOSS-COST §2.1 — per-level MULTIPLIER on the Dexterity dodge term (x(1 + 0.01 * skill)); no longer a flat +1%/level
   DODGE_CAP: 0.5,
+  // invented: SPEC-ROGUE-BOSS-COST §2.3 — every boss's Dexterity (turn order), 5 * level + 10: a hero
+  // earns 5 stat points per level, so even an all-Dex hero of the boss's level can't out-speed it; ~2
+  // levels above can. Ties still go to the player. Used as `dexterity:` in js/data/monsters.js.
+  BOSS_DEXTERITY: function (level) { return 5 * level + 10; },
+  // invented: docs/SPEC-NONDEX-DEFENSE.md §2.1 — Bracing: Heavy/Medium Armor skill (per worn
+  // head/body/legs/feet piece, /4) x (1 + BRACE_PER_ENDURANCE * Endurance), capped, softens every
+  // monster hit that lands (after the penetration floor). [archived intent: reference/manual/
+  // Heavy_Armor.md "Affects the efficiency of your heavy armor"; reference/manual/Endurance.md
+  // "Increases the damage reduction ability of your armor" — the archive gives no formula]
+  BRACE_PER_ARMOR_SKILL_LEVEL: 0.01, // invented: SPEC-NONDEX-DEFENSE §2.1 (D1) — the same 1%/level the Dodge skill used to give everyone
+  BRACE_PER_ENDURANCE: 0.002, // invented: SPEC-NONDEX-DEFENSE §2.1 (D5, variant E1) — +20% brace at 100 Endurance
+  BRACE_CAP: 0.50, // invented: SPEC-NONDEX-DEFENSE §2.1 — same ceiling as DODGE_CAP
   // invented (Phase 7 balance pass): monsters use their own gentler dodge scaling. The Phase 3
   // stand-in (level x DODGE_PER_SKILL_LEVEL) reached 33-40% at endgame levels and stalled fights;
   // monsters now dodge like a modestly dexterous player, capped well below the player cap.
@@ -592,13 +609,15 @@ var BALANCE = {
   // LOCKED calc.
   SKILL_XP_PER_MON_LEVEL: 0.6,
 
-  // PG-2: class-XP award fractions (js/core/classes.js addClassXp) — primary and secondary no
-  // longer receive the FULL / HALF combat-XP amount outright; both are scaled down further so a
-  // class spans a meaningful slice of its tier band instead of unlocking in a handful of kills
-  // (the shipped curve let a tier-3 class fully unlock in ~2-3 kills — REVIEW-2026-07-16.md PG-2).
-  // Paired with the steepened classXpForLevel curve (js/core/classes.js). [revised], LOCKED calc.
-  CLASS_XP_FRACTION_PRIMARY: 0.5,
-  CLASS_XP_FRACTION_SECONDARY: 0.25,
+  // PG-2: class-XP award (js/core/classes.js addClassXp) — scaled down from the archived full/half
+  // combat-XP amounts so a class spans a meaningful slice of its tier band instead of unlocking in
+  // a handful of kills (the shipped curve let a tier-3 class fully unlock in ~2-3 kills —
+  // REVIEW-2026-07-16.md PG-2). Paired with the steepened classXpForLevel curve. [revised], LOCKED calc.
+  // [revised] v1.11 (docs/SPEC-CLASS-LINEAGE.md R8/D2): the old CLASS_XP_FRACTION_PRIMARY (0.5,
+  // value kept) is renamed CLASS_XP_POOL_FRACTION and becomes ONE shared pool per battle,
+  // floor(battleXp x 0.5), split evenly over the active classes not yet maxed;
+  // CLASS_XP_FRACTION_SECONDARY (0.25) is retired along with the Secondary slot.
+  CLASS_XP_POOL_FRACTION: 0.5,
 
   // ==================== v1.6 P3: Economy & Items (docs/SPEC-V1.6-REBALANCE.md §3/§6, EI-1..EI-7) ====================
   // Playtest triage: docs/REVIEW-2026-07-16.md.

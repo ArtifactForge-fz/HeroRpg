@@ -1,15 +1,21 @@
 // HeroRPG remake — class system (DESIGN.md §3 Classes; reference/manual/Classes.md).
 // Pure state-mutation module (no DOM access), mirroring js/core/world.js and js/core/quests.js.
 //
-// Character class state (js/core/character.js, save v6): c.classes = { [classId]: entry }
+// Character class state (js/core/character.js, save v12): c.classes = { [classId]: entry }
 //   entry = { classXp: 0, classLevelsEarned: 0, classLevelsSpent: 0, abilities: [abilityId] }
-// c.primaryClass / c.secondaryClass hold a classId or null. c.legendaryUnlocked is a "you have
-// obtained at least one Legendary class" flag (Classes.md: "may only be obtained by one player" —
-// single-player reinterpretation, DESIGN.md §3); it is NOT a cross-Legendary exclusivity gate —
-// v1.2 Phase 2 clarifies (roster grew from 1 to 3 Legendaries) that each Legendary class latches
-// independently via isObtained(c, classId): obtaining one does not block obtaining another. See
-// js/core/battle.js onWin (boss_kill route) and checkRelicUnlock below (relic route); the third
-// Legendary route (boss-combination kill) is a hidden quest and needs no core-code latch at all.
+// [revised] v1.11 "Hero Tree" (docs/SPEC-CLASS-LINEAGE.md): the archived Primary/Secondary slots,
+// manual activation and the deactivation wipe (reference/manual/Classes.md) are REPLACED by a fixed
+// lineage. c.lineage = { tier1, tier2, tier3 } (classId|null) is filled once by obtainClass and is
+// auto-active forever (no deactivate, no swap); c.legendaryClass (classId|null) is ONE optional
+// slot for an obtained Legendary (tier 4), changeable only at an Academy and never in battle
+// (setLegendary). activeClassIds(c) is the single source of "which classes count" for classBonus,
+// isClassTechUsable, buyAbility and addClassXp. Class XP is one shared pool split evenly over
+// active classes that are not yet maxed (R8/R8a). c.legendaryUnlocked is a "you have obtained at
+// least one Legendary class" back-compat flag (Classes.md: "may only be obtained by one player" --
+// single-player reinterpretation, DESIGN.md section 3); it is NOT a cross-Legendary exclusivity
+// gate: each Legendary latches independently via isObtained(c, classId). See js/core/battle.js
+// onWin (boss_kill route) and checkRelicUnlock below (relic route); the third Legendary route
+// (boss-combination kill) is a hidden quest and needs no core-code latch at all.
 
 var Game = window.Game || {};
 
@@ -41,8 +47,7 @@ Game.Classes = (function () {
 
   // ---------------- Tier helpers (v1.1 revision, DESIGN.md §3) ----------------
 
-  // Ids of every tier-1 (base) class the character has OBTAINED (regardless of active/inactive
-  // slot). Used by the "Trials of Ascension" quest's acceptance gate (requiresBaseClass,
+  // Ids of every tier-1 (base) class the character has OBTAINED (regardless of lineage). Used by the "Trials of Ascension" quest's acceptance gate (requiresBaseClass,
   // js/core/quests.js accept()) and by advancedOptionsFor below.
   function baseClassIdsObtained(c) {
     if (!c || !c.classes) return [];
@@ -111,9 +116,9 @@ Game.Classes = (function () {
 
   // Adds classId to c.classes if not already obtained. Used by the class-choice quest reward
   // (js/core/quests.js turnIn) and by the Legendary boss-kill unlock (js/core/battle.js onWin).
-  // Obtaining a class does NOT activate it — the player must still assign it to a slot
-  // (archived: "Before a class can be applied to your character, it must be activated" —
-  // Classes.md).
+  // [revised] v1.11 (SPEC-CLASS-LINEAGE R1/R4): a tier 1/2/3 class is written into its empty
+  // c.lineage.tierN slot and is active immediately (permanent); the FIRST Legendary obtained
+  // auto-fills an empty Legendary slot, wherever it is obtained; later ones wait unslotted.
   function obtainClass(c, classId) {
     if (!c) return { ok: false, message: 'No character.' };
     var classDef = getClass(classId);
@@ -121,7 +126,19 @@ Game.Classes = (function () {
     if (!c.classes) c.classes = {};
     if (c.classes[classId]) return { ok: false, message: 'You have already obtained ' + classDef.name + '.' };
     c.classes[classId] = freshEntry();
-    return { ok: true, message: 'You have obtained the ' + classDef.name + ' class!' };
+    var msg = 'You have obtained the ' + classDef.name + ' class!';
+    if (classDef.tier === 1 || classDef.tier === 2 || classDef.tier === 3) {
+      if (!c.lineage || typeof c.lineage !== 'object') c.lineage = { tier1: null, tier2: null, tier3: null };
+      var key = 'tier' + classDef.tier;
+      if (!c.lineage[key]) {
+        c.lineage[key] = classId;
+        msg = classDef.name + ' joins your Hero Tree.';
+      }
+    } else if (classDef.legendary && !c.legendaryClass) {
+      c.legendaryClass = classId;
+      msg = classDef.name + ' now walks beside you as your Legendary calling.';
+    }
+    return { ok: true, message: msg };
   }
 
   // ---------------- Legendary "relic" unlock (v1.2 Phase 2; docs/SPEC-V1.2.md Phase 2) ----------
@@ -147,75 +164,90 @@ Game.Classes = (function () {
     }
   }
 
-  // ---------------- Activate / Deactivate ----------------
+  // ---------------- Lineage / active classes (SPEC-CLASS-LINEAGE R3/R5/R6) ----------------
 
-  // archived: "Drag this icon to the box labeled 'Primary.'" — our UI substitutes click-to-
-  // assign for drag-and-drop (phase brief). A class cannot occupy both slots simultaneously.
-  function activate(c, classId, slot) {
-    if (!c) return { ok: false, message: 'No character.' };
-    if (slot !== 'primary' && slot !== 'secondary') return { ok: false, message: 'Unknown slot.' };
-    if (!isObtained(c, classId)) return { ok: false, message: 'You have not obtained that class.' };
-    var otherSlot = slot === 'primary' ? 'secondary' : 'primary';
-    var otherKey = otherSlot === 'primary' ? 'primaryClass' : 'secondaryClass';
-    if (c[otherKey] === classId) {
-      return { ok: false, message: 'That class is already active as your ' + otherSlot + ' class.' };
-    }
-    var key = slot === 'primary' ? 'primaryClass' : 'secondaryClass';
-    c[key] = classId;
-    if (Game.Character) Game.Character.recalcDerived(c);
-    return { ok: true, message: getClass(classId).name + ' is now your ' + slot + ' class.' };
+  // Non-null of [tier1, tier2, tier3, legendaryClass]. Every consumer that used to read
+  // [primaryClass, secondaryClass] goes through this.
+  function activeClassIds(c) {
+    if (!c) return [];
+    var l = c.lineage || {};
+    return [l.tier1, l.tier2, l.tier3, c.legendaryClass].filter(function (id) { return !!id; });
   }
 
-  // archived WARNING (Classes.md): deactivating "PERMANENTLY" wipes that class's XP, levels,
-  // and abilities, returning it to "inactive" (still obtained — rebuildable from zero). Also
-  // strips any of that class's tech ids from c.techs and every c.techSets slot, since a
-  // deactivated class's tech can no longer be cast (js/core/battle.js useTech class-active
-  // gate) and leaving it slotted/known would be a dead, un-castable entry.
-  function deactivate(c, slot) {
+  // [{ tier: 1|2|3, classId|null }] for the Hero Tree UI.
+  function lineageOf(c) {
+    var l = (c && c.lineage) || {};
+    return [
+      { tier: 1, classId: l.tier1 || null },
+      { tier: 2, classId: l.tier2 || null },
+      { tier: 3, classId: l.tier3 || null }
+    ];
+  }
+
+  // R5: set (or, with null, empty) the Legendary slot. Only at an Academy (same facility check as
+  // buyAbility), never during battle. Rejects non-obtained / non-legendary ids. No cost. R6: the
+  // outgoing Legendary keeps XP/levels/abilities and its techs stay in c.techs, but its techs are
+  // unslotted from every c.techSets entry so no dead slot is left behind.
+  function setLegendary(c, classId) {
     if (!c) return { ok: false, message: 'No character.' };
-    if (slot !== 'primary' && slot !== 'secondary') return { ok: false, message: 'Unknown slot.' };
-    var key = slot === 'primary' ? 'primaryClass' : 'secondaryClass';
-    var classId = c[key];
-    if (!classId) return { ok: false, message: 'No class is active in that slot.' };
-    var classDef = getClass(classId);
-
-    // Strip class techs from known techs + every equipped set.
-    var entry = c.classes[classId];
-    if (entry) {
-      for (var i = 0; i < entry.abilities.length; i++) {
-        var ability = getAbility(classDef, entry.abilities[i]);
-        if (ability && ability.kind === 'tech') {
-          if (ability.techId) removeTech(c, ability.techId);
-          // v1.9 (SPEC-COMPANION-SYSTEM.md §2.5): strip every tech in `techIds` too (Conjurer
-          // Pacts), same back-compatible extension as buyAbility above.
-          if (Array.isArray(ability.techIds)) {
-            ability.techIds.forEach(function (tid) { removeTech(c, tid); });
-          }
-        }
-      }
+    if (Game.state && Game.state.battle) {
+      return { ok: false, message: 'You cannot change your Legendary calling in battle.' };
     }
-
-
-    c.classes[classId] = freshEntry(); // permanent wipe: xp/levels/abilities all reset to zero
-    c[key] = null;
+    var area = Game.World ? Game.World.currentArea() : null;
+    if (!Game.World || !Game.World.getFacility(area, 'academy')) {
+      return { ok: false, message: 'Visit an Academy to change your Legendary.' };
+    }
+    var newDef = null;
+    if (classId !== null && classId !== undefined) {
+      newDef = getClass(classId);
+      if (!newDef || !newDef.legendary) return { ok: false, message: 'That is not a Legendary class.' };
+      if (!isObtained(c, classId)) return { ok: false, message: 'You have not obtained that class.' };
+      if (c.legendaryClass === classId) return { ok: false, message: newDef.name + ' is already your Legendary calling.' };
+    } else if (!c.legendaryClass) {
+      return { ok: false, message: 'No Legendary is slotted.' };
+    }
+    var oldId = c.legendaryClass || null;
+    var oldDef = oldId ? getClass(oldId) : null;
+    if (oldId) unslotClassTechs(c, oldId);
+    c.legendaryClass = newDef ? classId : null;
     if (Game.Character) Game.Character.recalcDerived(c);
+    if (newDef) return { ok: true, message: newDef.name + ' now walks beside you as your Legendary calling.' };
     return {
       ok: true,
-      message: (classDef ? classDef.name : classId) + ' has been deactivated. All of its Class ' +
-        'Experience, Class Levels, and abilities are permanently lost; it remains in your ' +
-        'Inactive Classes and can be rebuilt from zero.'
+      message: (oldDef ? oldDef.name : oldId) + ' rests. Its techniques have been unslotted, but nothing it taught you is forgotten.'
     };
   }
 
-  function removeTech(c, techId) {
-    var idx = c.techs.indexOf(techId);
-    if (idx !== -1) c.techs.splice(idx, 1);
-    for (var s = 0; s < c.techSets.length; s++) {
-      var set = c.techSets[s];
-      for (var slotIdx = 0; slotIdx < set.length; slotIdx++) {
-        if (set[slotIdx] === techId) set[slotIdx] = null;
+  // Remove (only) the tech SLOTTING of every tech the class's bought abilities taught; c.techs
+  // keeps them so swapping back needs no re-buy.
+  function unslotClassTechs(c, classId) {
+    var classDef = getClass(classId);
+    var entry = c.classes && c.classes[classId];
+    if (!classDef || !entry || !c.techSets) return;
+    function unslot(techId) {
+      for (var s = 0; s < c.techSets.length; s++) {
+        var set = c.techSets[s];
+        for (var k = 0; k < set.length; k++) if (set[k] === techId) set[k] = null;
       }
     }
+    for (var i = 0; i < entry.abilities.length; i++) {
+      var ability = getAbility(classDef, entry.abilities[i]);
+      if (ability && ability.kind === 'tech') {
+        if (ability.techId) unslot(ability.techId);
+        if (Array.isArray(ability.techIds)) ability.techIds.forEach(unslot);
+      }
+    }
+  }
+
+  // R8/R8a: maxed once classLevelsEarned >= sum of classLevelCost over ALL the class's abilities
+  // (earned, not bought -- unspent levels still count).
+  function isClassMaxed(c, classId) {
+    var entry = c && c.classes && c.classes[classId];
+    var classDef = getClass(classId);
+    if (!entry || !classDef) return false;
+    var total = 0;
+    for (var i = 0; i < classDef.abilities.length; i++) total += classDef.abilities[i].classLevelCost || 0;
+    return entry.classLevelsEarned >= total;
   }
 
   // ---------------- Class XP / Class Levels ----------------
@@ -238,18 +270,23 @@ Game.Classes = (function () {
   }
 
   // Called from js/core/battle.js onWin AFTER the XP/loot cutoff check (cutoff kills grant no
-  // class XP either, matching main XP — phase brief). Primary gained the full battle-XP amount
-  // (archived: "progresses at a rate equal to that of your main experience bar"); Secondary
-  // gained half (archived: "the Secondary class will only progress at half the rate") — [revised]
-  // v1.6 P2 (SPEC-V1.6-REBALANCE.md §6.2, PG-2): both are now further scaled down by
-  // BALANCE.CLASS_XP_FRACTION_PRIMARY (0.5) / _SECONDARY (0.25) so a class spans a meaningful
-  // slice of its tier band instead of unlocking in a handful of kills. LOCKED by the P0
-  // progression calc, paired with the steepened curve above. A class with no slot assigned gains
-  // nothing, even if obtained.
+  // class XP either, matching main XP). [revised] v1.11 (SPEC-CLASS-LINEAGE R8/D2): ONE shared
+  // pool, floor(amount * BALANCE.CLASS_XP_POOL_FRACTION), split evenly (floor(pool / n)) over the
+  // active classes that are not yet maxed. A maxed class drops out and its share goes to the rest;
+  // all maxed -> nothing awarded. An unslotted Legendary earns nothing (R7). Returns the ids of
+  // classes that just became maxed (callers may toast them) -- ignoring it is fine.
   function addClassXp(c, amount) {
-    if (!c || !amount) return;
-    if (c.primaryClass) grantClassXp(c, c.primaryClass, Math.floor(amount * BALANCE.CLASS_XP_FRACTION_PRIMARY));
-    if (c.secondaryClass) grantClassXp(c, c.secondaryClass, Math.floor(amount * BALANCE.CLASS_XP_FRACTION_SECONDARY));
+    var newlyMaxed = [];
+    if (!c || !amount) return newlyMaxed;
+    var earning = activeClassIds(c).filter(function (id) { return !isClassMaxed(c, id); });
+    if (!earning.length) return newlyMaxed;
+    var pool = Math.floor(amount * BALANCE.CLASS_XP_POOL_FRACTION);
+    var share = Math.floor(pool / earning.length);
+    for (var i = 0; i < earning.length; i++) {
+      grantClassXp(c, earning[i], share);
+      if (isClassMaxed(c, earning[i])) newlyMaxed.push(earning[i]);
+    }
+    return newlyMaxed;
   }
 
   function grantClassXp(c, classId, amount) {
@@ -285,8 +322,8 @@ Game.Classes = (function () {
       return { ok: false, message: 'There is no Academy here.' };
     }
     if (!isObtained(c, classId)) return { ok: false, message: 'You have not obtained that class.' };
-    if (c.primaryClass !== classId && c.secondaryClass !== classId) {
-      return { ok: false, message: 'That class must be active (Primary or Secondary) to buy abilities for it.' };
+    if (activeClassIds(c).indexOf(classId) === -1) {
+      return { ok: false, message: 'That class must be active (in your Hero Tree or Legendary slot) to buy abilities for it.' };
     }
     var classDef = getClass(classId);
     var ability = getAbility(classDef, abilityId);
@@ -318,13 +355,13 @@ Game.Classes = (function () {
 
   // ---------------- Passive effect hook (guarded-hook style, matches Game.World.shrineBonus) ----------------
 
-  // Sums bought passives of the given effect kind across ACTIVE classes only (Primary +
-  // Secondary — an obtained-but-inactive class contributes nothing, matching the archived rule
+  // Sums bought passives of the given effect kind across ACTIVE classes only (lineage + slotted
+  // Legendary, R3 — an obtained-but-unslotted Legendary contributes nothing, matching the archived rule
   // that benefits only apply "once a class is activated").
   function classBonus(c, effect) {
     if (!c || !c.classes) return 0;
     var total = 0;
-    var slots = [c.primaryClass, c.secondaryClass];
+    var slots = activeClassIds(c);
     for (var s = 0; s < slots.length; s++) {
       var classId = slots[s];
       if (!classId) continue;
@@ -352,13 +389,13 @@ Game.Classes = (function () {
   // ---------------- Class-tech usability gate ----------------
 
   // A classOnly tech (js/data/techs.js: classOnly + classId) may only be cast while its owning
-  // class is active (Primary or Secondary) — even if it is still known in c.techs from a
-  // previous activation. Single guarded check point, called from js/core/battle.js useTech()
+  // class is active (lineage or the Legendary slot) — even if it is still known in c.techs from a
+  // swapped-out Legendary. Single guarded check point, called from js/core/battle.js useTech()
   // right after the existing isTechEquipped() check, so both the "must be slotted" and "class
   // must be active" gates live in the same short-circuit chain.
   function isClassTechUsable(c, tech) {
     if (!tech || !tech.classOnly) return true; // non-class techs are unaffected by this gate
-    return c.primaryClass === tech.classId || c.secondaryClass === tech.classId;
+    return activeClassIds(c).indexOf(tech.classId) !== -1;
   }
 
   return {
@@ -371,8 +408,10 @@ Game.Classes = (function () {
     thirdTierOptionsFor: thirdTierOptionsFor,
     obtainClass: obtainClass,
     checkRelicUnlock: checkRelicUnlock,
-    activate: activate,
-    deactivate: deactivate,
+    activeClassIds: activeClassIds,
+    lineageOf: lineageOf,
+    setLegendary: setLegendary,
+    isClassMaxed: isClassMaxed,
     classXpForLevel: classXpForLevel,
     addClassXp: addClassXp,
     unspentClassLevels: unspentClassLevels,

@@ -100,12 +100,15 @@ Game.Character = (function () {
 
       // Phase 6a: class system (DESIGN.md §3; reference/manual/Classes.md). classes maps
       // classId -> per-class progress for every OBTAINED class (obtained != active — a class
-      // must additionally be slotted into primaryClass/secondaryClass to earn XP or use its
+      // must additionally be in the lineage or the Legendary slot to earn XP or use its
       // abilities). legendaryUnlocked is a one-per-save latch (archived: Legendary classes "may
       // only be obtained by one player" — single-player reinterpretation, DESIGN.md §3).
       classes: {}, // classId -> { classXp: 0, classLevelsEarned: 0, classLevelsSpent: 0, abilities: [] }
-      primaryClass: null,
-      secondaryClass: null,
+      // [revised] v1.11 Hero Tree (docs/SPEC-CLASS-LINEAGE.md section 2.1, save v12): replaces the
+      // old primaryClass/secondaryClass slots. lineage = the permanent tier 1/2/3 classes (set by
+      // Game.Classes.obtainClass, never cleared); legendaryClass = the one optional Legendary slot.
+      lineage: { tier1: null, tier2: null, tier3: null },
+      legendaryClass: null,
       legendaryUnlocked: false,
 
       // Feature B (user-directed): persistent status conditions, save v7->v8 (js/core/save.js).
@@ -257,9 +260,9 @@ Game.Character = (function () {
     // 2007-05-25); see BALANCE.ENERGY_PER_LEVEL for the Phase 7 balance-pass rationale.
     c.energyMax = BALANCE.START_ENERGY + (c.level - 1) * BALANCE.ENERGY_PER_LEVEL + classEnergyBonus;
     // v1.3.1 fix 6: recalcDerived only ever adjusted the maxes, never clamped current hitPoints/
-    // energy down to match — deactivating a class (or swapping a slot) that carried an
+    // energy down to match — swapping out a Legendary that carried an
     // hp_max_flat/energy_max_flat passive could leave current HP/Energy ABOVE the new, lower max
-    // (e.g. full HP at the bonus, then deactivate -> hitPointsMax drops but hitPoints does not).
+    // (e.g. full HP at the bonus, then swap it out -> hitPointsMax drops but hitPoints does not).
     // Callers that intentionally set current to the (old, higher) max right after calling this
     // (create(), spendStatPoint's vitality branch) are unaffected: they either raise the max first
     // or already re-clamp their own way.
@@ -347,7 +350,7 @@ Game.Character = (function () {
   };
 
   // One aggregator so every secondary stat reads the same way (§2.1): BASE[key] + every equipped
-  // item's bonuses[key] (all 6 EQUIP_SLOTS) + Game.Classes.classBonus (active Primary/Secondary) +
+  // item's bonuses[key] (all 6 EQUIP_SLOTS) + Game.Classes.classBonus (active lineage + Legendary) +
   // Game.World.shrineBonus, clamped to CAP[key] (spellPower has no cap). This is the UNSCALED
   // value — battle.js applies Fear scaling/suppression on top of this inside a battle (§2.1 Fear
   // bullet, D8); outside battle (e.g. the Status screen) this unscaled value is shown directly.

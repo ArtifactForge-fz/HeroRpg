@@ -2739,7 +2739,7 @@ Game.Data.techs = [
     skill: 'Light Armor',
     grade: null,
     energyCost: 10,
-    power: 0.04,
+    power: 0.10, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.04)
     statKind: 'dodge',
     buffDuration: 5, // P0-locked retune 3->5 (§0 finding 1)
     requiresArmorClass: 'light',
@@ -2756,7 +2756,7 @@ Game.Data.techs = [
     skill: 'Light Armor',
     grade: null,
     energyCost: 15,
-    power: 0.06,
+    power: 0.15, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.06)
     statKind: 'dodge',
     buffDuration: 5,
     requiresArmorClass: 'light',
@@ -2773,7 +2773,7 @@ Game.Data.techs = [
     skill: 'Light Armor',
     grade: null,
     energyCost: 20,
-    power: 0.09,
+    power: 0.225, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.09)
     statKind: 'dodge',
     buffDuration: 5,
     requiresArmorClass: 'light',
@@ -2790,7 +2790,7 @@ Game.Data.techs = [
     skill: 'Light Armor',
     grade: null,
     energyCost: 26,
-    power: 0.12,
+    power: 0.30, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.12)
     statKind: 'dodge',
     buffDuration: 5,
     requiresArmorClass: 'light',
@@ -3077,7 +3077,7 @@ Game.Data.techs = [
     skill: 'Dodge',
     grade: null,
     energyCost: 10,
-    power: 0.05,
+    power: 0.125, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.05)
     statKind: 'dodge',
     buffDuration: 5, // P0-locked retune 3->5 (§0 finding 1)
     effect: 'buff',
@@ -3093,7 +3093,7 @@ Game.Data.techs = [
     skill: 'Dodge',
     grade: null,
     energyCost: 15,
-    power: 0.08,
+    power: 0.20, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.08)
     statKind: 'dodge',
     buffDuration: 5,
     effect: 'buff',
@@ -3109,7 +3109,7 @@ Game.Data.techs = [
     skill: 'Dodge',
     grade: null,
     energyCost: 21,
-    power: 0.12,
+    power: 0.30, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.12)
     statKind: 'dodge',
     buffDuration: 5,
     effect: 'buff',
@@ -3125,7 +3125,7 @@ Game.Data.techs = [
     skill: 'Dodge',
     grade: null,
     energyCost: 27,
-    power: 0.16,
+    power: 0.40, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.16)
     statKind: 'dodge',
     buffDuration: 5,
     effect: 'buff',

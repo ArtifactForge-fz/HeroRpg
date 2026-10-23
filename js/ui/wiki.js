@@ -488,7 +488,9 @@ Game.Wiki = (function () {
     if (tech.effect === 'buff' && tech.statKind) {
       var buffLabel = WIKI_STAT_KIND_LABEL[tech.statKind] || tech.statKind;
       var buffDuration = tech.buffDuration || 3;
-      parts.push((tech.statKind === 'dodge' || tech.statKind === 'double_attack')
+      parts.push(tech.statKind === 'dodge'
+        ? ('+' + Math.round(tech.power * 1000) / 10 + '% Dodge effectiveness (' + buffDuration + ' turns)') // SPEC-ROGUE-BOSS-COST §2.2
+        : tech.statKind === 'double_attack'
         ? ('+' + Math.round(tech.power * 100) + '% ' + buffLabel + ' (' + buffDuration + ' turns)')
         : ('+' + tech.power + ' ' + buffLabel + ' (' + buffDuration + ' turns)'));
     }

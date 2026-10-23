@@ -163,9 +163,12 @@ console.log('\n=== Test 2: a Bind tech (js/core/battle.js useTech summon branch)
 (function () {
   var c = makeCharacter({ name: 'BindTechTest' });
   setLevel(c, 60);
+  // v1.11 Hero Tree: Conjurer joins the lineage (Wizard -> Conjurer, auto-active). The shared XP
+  // pool splits across Wizard + Conjurer, so grant twice the amount to give the Conjurer the same
+  // class-level-20 share the old Primary-slot setup produced.
+  Game.Classes.obtainClass(c, 'wizard');
   Game.Classes.obtainClass(c, 'conjurer');
-  Game.Classes.activate(c, 'conjurer', 'primary');
-  Game.Classes.addClassXp(c, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
+  Game.Classes.addClassXp(c, 2 * Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_POOL_FRACTION);
   var buy = Game.Classes.buyAbility(c, 'conjurer', 'conjurer_pact_water');
   assert(buy.ok === true, 'Pact of Tides purchased: ' + buy.message);
   assert(c.techs.indexOf('tech_summon_water') !== -1 && c.techs.indexOf('tech_cmd_renewing_tide') !== -1,
@@ -307,9 +310,12 @@ console.log('\n=== Test 8: a companion driven to 0 HP mid-battle is dispersed â€
 (function () {
   var c = makeCharacter({ name: 'DeathTest' });
   setLevel(c, 60);
+  // v1.11 Hero Tree: Conjurer joins the lineage (Wizard -> Conjurer, auto-active). The shared XP
+  // pool splits across Wizard + Conjurer, so grant twice the amount to give the Conjurer the same
+  // class-level-20 share the old Primary-slot setup produced.
+  Game.Classes.obtainClass(c, 'wizard');
   Game.Classes.obtainClass(c, 'conjurer');
-  Game.Classes.activate(c, 'conjurer', 'primary');
-  Game.Classes.addClassXp(c, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
+  Game.Classes.addClassXp(c, 2 * Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_POOL_FRACTION);
   Game.Classes.buyAbility(c, 'conjurer', 'conjurer_pact_fire');
   c.techSets[0][0] = 'tech_summon_fire';
   c.techSets[0][1] = 'tech_cmd_conflagration';
@@ -421,9 +427,9 @@ console.log('\n=== Test 12: the eight Conjurer companion techs are linked to the
   // (b) casting a Bind tech flags Conjuration on the battle so onWin awards Conjuration skill XP.
   var c = makeCharacter({ name: 'ConjXpTest' });
   setLevel(c, 60);
+  Game.Classes.obtainClass(c, 'wizard');
   Game.Classes.obtainClass(c, 'conjurer');
-  Game.Classes.activate(c, 'conjurer', 'primary');
-  Game.Classes.addClassXp(c, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
+  Game.Classes.addClassXp(c, 2 * Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_POOL_FRACTION);
   Game.Classes.buyAbility(c, 'conjurer', 'conjurer_pact_fire');
   c.techSets[0][0] = 'tech_summon_fire';
   c.hitPoints = c.hitPointsMax; c.energy = c.energyMax;
