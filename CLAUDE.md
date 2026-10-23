@@ -77,9 +77,15 @@ Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's que
 - Weapon tiers at levelReq 1 / 5–15 / 25 / 35, damage ≈ 3+2×levelReq. Uniques (tag 'unique'):
   monster-drop-only, +15–25% or hybrid stats, never in shops/recipes.
 - Any balance claim gets a scratchpad simulation using the real game code loaded in `node vm`
-  (see `tools/`-adjacent pattern in tests; prior sims measured win %, rounds, HP-left, and
-  damage-per-energy). Difficulty contract for bosses: prepared players win reliably but pay
-  (HP or consumables); at-level regulars ≥85–100% win; 5-level-down = certain death via Fear.
+  (see `tests/boss_fixture.js` and `/balance-sim`; sims measure win %, rounds, HP spent per win,
+  consumables and damage-per-energy). Difficulty contract: at-level regulars ≥85–100% win;
+  5-level-down = certain death via Fear; **bosses** (`docs/SPEC-BOSS-COST-BAND.md` §2, amended by
+  `docs/SPEC-BOSS-COST-RETUNE.md`), judged on the prepared fixture (best gear in every slot,
+  half-level skills, every passive, 6 heals + 6 Crystals): every lineage's weakest class option
+  wins ≥ 85% (finale ≥ 75%); its cheapest option spends ≥ 35% of the HP bar per win, heals
+  included, or ≥ 3 consumables (finale: ≥ 45% HP spent); no build spends > 50% of its stock.
+  Under-geared heroes are expected to lose boss fights. "HP left on win" is NOT a cost metric:
+  the heal-at-40% policy resets it, so it doesn't move with boss strength.
 
 ## Content conventions
 
@@ -157,6 +163,24 @@ localStorage fallback — and syntax-checks its 3 script blocks as it writes. A 
 rebuilds it after every commit so a deployable single-file build always matches HEAD. The hooks
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
 re-enable it. Never build/ship from a tree with red suites.
+
+## Recently completed (2026-10-23) — boss cost retune (unreleased, on `v1.11-hero-tree`)
+
+Specs `docs/SPEC-BOSS-COST-BAND.md` (the measurable boss contract) and
+`docs/SPEC-BOSS-COST-RETUNE.md` (all decisions user-resolved; §3.3 = sim gate). Commit `73a6c36`.
+**No save change.** No changelog entry yet (draft in the retune report); ships with the next release.
+- Boss contract: see "Established balance formulas" above. Metric = **HP spent per win** (HP lost
+  + HP healed, over max HP), because HP left on win doesn't respond to boss strength (sweep proof
+  in the retune spec §1.2/§3.1).
+- Boss defs in `js/data/monsters.js` wrap the old base + premium in a multiplier: L40–L90 ×1.25 HP /
+  ×1.3 damage; L18 ×1.25/×1.1, L25 ×1.5/×1.3, L32 ×1.75/×1.3, L100 ×1.25/×1.1; L10 unchanged.
+  User-directed exception to the ratchet rule (boss constants only).
+- `tests/boss_fixture.js` is the one prepared-warrior boss fixture (Warrior → Crusader → Paladin);
+  all 7 boss sims use it. It uses a Crystal before Energy runs out — `useItem` is refused at
+  0 Energy, so "Crystal once `!canAct`" never fires (the old sims' bug).
+- Accepted trade-offs: under-geared heroes lose most boss fights (28–52% for the old fixtures);
+  the uniform buff makes warrior/caster lines pay most of the increase (a boss-accuracy-vs-dodge
+  spec could target the rogue line instead). Boss Dexterity only decides initiative, not dodge.
 
 ## Recently completed (2026-10-23) — v1.12.0 "The Whole Arsenal" (release candidate)
 

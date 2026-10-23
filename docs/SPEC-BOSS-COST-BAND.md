@@ -66,7 +66,7 @@ Wins only are used for the cost metrics.
   spent, skills at half level, every passive bought, **6 healing + 6 Energy consumables** at tier
   (raised from 3 + 3 so the ≥ 3 / ≥ 4 floors fit under the B3 ceiling, D7).
   Policy: heal below 40% HP, use an Energy consumable at 0 Energy, else best affordable tech or
-  attack. (Same as `simulateOneBattle()` in `tests/test_p6b_content.js`.)
+  attack. (Implemented as `fightOnce()` in `tests/boss_fixture.js`.)
 - **Shrine buffs off.** Fully stacked shrine buffs are an accepted edge case
   (`docs/SPEC-SECONDARY-STATS.md` D9: rogue at the L32 boss 81–85% HP left). The contract is
   judged without them.
