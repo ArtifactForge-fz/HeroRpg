@@ -445,6 +445,37 @@ Game.Screens = (function () {
     derivedPanel.appendChild(derivedBlock);
     leftCol.appendChild(derivedPanel);
 
+    // docs/SPEC-SECONDARY-STATS.md §2.11: "Combat Stats" block — critChance/critDamage always
+    // show (base 5%/50% even on a fresh character); every other secondary stat only shows once it
+    // has a nonzero (gear/class/shrine) source, so a new character doesn't see a wall of zeros.
+    // Shown value is the UNSCALED aggregator (no Fear scaling outside battle, per §2.1).
+    leftCol.appendChild(el('div', { class: 'tcat mt8' }, ['Combat Stats']));
+    var combatPanel = el('div', { class: 'panel' });
+    var combatBlock = el('div', { class: 'mt4' });
+    var SECONDARY_STAT_ROWS = [
+      ['critChance', 'Critical Strike Chance', 'pct'],
+      ['critDamage', 'Critical Strike Damage', 'pct'],
+      ['accuracy', 'Accuracy', 'pct'],
+      ['armorPen', 'Armor Penetration', 'pct'],
+      ['block', 'Block Chance', 'blockpct'],
+      ['spellPower', 'Spell Power', 'flat'],
+      ['luck', 'Luck', 'flat']
+    ];
+    SECONDARY_STAT_ROWS.forEach(function (row) {
+      var key = row[0], label = row[1], fmt = row[2];
+      var value = (fmt === 'blockpct') ? Game.Character.getBlockChance(c) : Game.Character.getSecondaryStat(c, key);
+      var alwaysShow = (key === 'critChance' || key === 'critDamage');
+      if (!alwaysShow && !value) return;
+      var display = (fmt === 'flat') ? String(value) : (Math.round(value * 1000) / 10) + '%';
+      combatBlock.appendChild(el('div', { class: 'stat-row' }, [
+        el('span', { class: 'stat-name' }, [label]),
+        el('span', { class: 'stat-value' }, [display]),
+        statInfoGlyph(key, label)
+      ]));
+    });
+    combatPanel.appendChild(combatBlock);
+    leftCol.appendChild(combatPanel);
+
     // Skills table
     rightCol.appendChild(el('div', { class: 'tcat mt8' }, ['Skills']));
     var skillsPanel = el('div', { class: 'panel' });
@@ -1191,7 +1222,8 @@ Game.Screens = (function () {
       actions.appendChild(el('div', { class: 'mt8' }, [
         el('button', {
           class: 'button',
-          title: '95% chance to find a monster (archived: forum t-755.md)',
+          // archived: reference/forum/t-755.md (95% hunt chance)
+          title: '95% chance to find a monster',
           onclick: performHunt
         }, ['Hunt'])
       ]));
@@ -1255,7 +1287,8 @@ Game.Screens = (function () {
         el('b', {}, ['Camp']), ' ',
         el('button', {
           class: 'button',
-          title: 'Free, but risky — thieves or an ambush may find you in the night (archived: forum t-756.md).',
+          // archived: reference/forum/t-756.md (camp robbery / ambush risk)
+          title: 'Free, but risky — thieves or an ambush may find you in the night.',
           onclick: function () {
             var res = Game.World.camp();
             if (!res.ok) { notify(res.message); return; }
@@ -1287,7 +1320,8 @@ Game.Screens = (function () {
         el('b', {}, ['Forage']), ' ',
         el('button', {
           class: 'button',
-          title: 'Search the area for materials and provisions — free, but shares Camp\'s risk of robbery or ambush (archived: forum t-756.md).',
+          // archived: reference/forum/t-756.md (camp robbery / ambush risk)
+          title: 'Search the area for materials and provisions — free, but shares Camp\'s risk of robbery or ambush.',
           onclick: function () {
             var res = Game.World.forage();
             if (!res.ok) { notify(res.message); return; }

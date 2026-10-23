@@ -231,7 +231,8 @@ Game.Data.areas = [
       // js/data/quests.js professor_flad).
       { type: 'tavern' }
     ],
-    desc: 'A riverside waypoint along the Gares delta trade route (Recent_Updates.md 2007-08-02). Traders favor it for goods too fine for Ju`Mak\'s frontier market and too far upriver for an Eldor merchant to bother hauling. Professor Flad keeps rooms above the tavern, cataloguing whatever the ruins upstream shed into the current.'
+    // archived: reference/manual/Recent_Updates.md 2007-08-02
+    desc: 'A riverside waypoint along the Gares delta trade route. Traders favor it for goods too fine for Ju`Mak\'s frontier market and too far upriver for an Eldor merchant to bother hauling. Professor Flad keeps rooms above the tavern, cataloguing whatever the ruins upstream shed into the current.'
   },
 
   // ---------- Gares Riverbanks: level 9-12 hunting (repurposed archived area name) ----------
@@ -309,7 +310,8 @@ Game.Data.areas = [
       { type: 'shrine' },
       { type: 'tavern' }
     ],
-    desc: 'The grand circular Arkan capital, a city devoted to the study of magic and technology (Arkan.md). Runic blades and battlemage traditions are traded openly in its high-level markets.'
+    // archived: reference/manual/Arkan.md
+    desc: 'The grand circular Arkan capital, a city devoted to the study of magic and technology. Runic blades and battlemage traditions are traded openly in its high-level markets.'
   },
 
   // =====================================================================
@@ -348,7 +350,8 @@ Game.Data.areas = [
     // v1.7 Phase R (A2): appended quest_wardframe_rune_shard, the new Arkan-flavored forage token
     // (js/data/items.js) — still within the 2-4 forage-table-size contract (test_p4_world.js).
     forage: ['provision_trail_rations', 'provision_foragers_bundle', 'quest_wardframe_rune_shard'],
-    desc: 'The same windswept plains that shelter Eldor stretch east all the way to Saratus\'s gates (Averast.md) — rats, kestrels, and boar are as common a nuisance on the Arkan side of the region as on the Human one. Closer to the city walls, the battlemage academy runs its trainees against ward-plated constructs of its own make.'
+    // archived: reference/manual/Averast.md
+    desc: 'The same windswept plains that shelter Eldor stretch east all the way to Saratus\'s gates — rats, kestrels, and boar are as common a nuisance on the Arkan side of the region as on the Human one. Closer to the city walls, the battlemage academy runs its trainees against ward-plated constructs of its own make.'
   },
 
   // ---------- Northern Barrier Foothills: level 13-18 hunting + gate-boss ----------
@@ -370,7 +373,8 @@ Game.Data.areas = [
     // boss. STANDING RULE: materials that gate boss-tier gear/content are boss-drop-only -- never
     // also placed in a location forage table.
     forage: ['provision_spice_tea', 'quest_frostram_hide'],
-    desc: 'Rocky slopes climbing toward the mountain wall no Human or Arkan has ever crossed (Averast.md). Something with teeth guards the high passes.'
+    // archived: reference/manual/Averast.md
+    desc: 'Rocky slopes climbing toward the mountain wall no Human or Arkan has ever crossed. Something with teeth guards the high passes.'
   },
 
   // ---------- Isle of Juneros: level 19-24 hunting + gate-boss ----------
@@ -392,7 +396,8 @@ Game.Data.areas = [
     // had leaked into this area's FORAGE table too. STANDING RULE: materials that gate boss-tier
     // gear/content are boss-drop-only -- never also placed in a location forage table.
     forage: ['crystal_bclass_1', 'sphere_bclass_1', 'quest_settler_locket'],
-    desc: 'A wind-scoured isle in the inland sea west of Averast, home to a scatter of small human settlements clinging to its shores (Averast.md). The deep shoal beyond them holds something far older than any settler.'
+    // archived: reference/manual/Averast.md
+    desc: 'A wind-scoured isle in the inland sea west of Averast, home to a scatter of small human settlements clinging to its shores. The deep shoal beyond them holds something far older than any settler.'
   },
 
   // ---------- Ruins of Kastengard: level 26-31 hunting + gate-boss ----------
@@ -414,7 +419,8 @@ Game.Data.areas = [
     // gate-boss) had leaked into this area's FORAGE table too. STANDING RULE: materials that gate
     // boss-tier gear/content are boss-drop-only -- never also placed in a location forage table.
     forage: ['crystal_bclass_2', 'sphere_bclass_2', 'quest_society_ledger_page'],
-    desc: 'Far to the northeast, the abandoned base the Society of Modern Magic called Kastengard (Chapter_I.md). Its outer halls stir with old wardframes and Anima long left untended.'
+    // archived: reference/manual/Chapter_I.md
+    desc: 'Far to the northeast, the abandoned base the Society of Modern Magic called Kastengard. Its outer halls stir with old wardframes and Anima long left untended.'
   },
 
   // =====================================================================
@@ -677,7 +683,8 @@ Game.Data.areas = [
     // v1.4 P4 (G4): Forage table — the Frosthold Energy Stone and Ukai Deep-Rune already dropped
     // together by this pool's own level-69 monster (js/data/monsters.js).
     forage: ['stone_energy_frosthold', 'quest_ukai_deep_rune'],
-    desc: 'The Ukai\'s own cavern-halls, warded and guarded exactly as proudly as the old lore said they would be (Prelude.md). Something the cavern-dwellers call the Deep-Dweller keeps its own hollow at the undercaverns\' heart — and until it answers for the column at the gate, no Ukai elder will so much as discuss passage north.'
+    // archived: reference/manual/Prelude.md
+    desc: 'The Ukai\'s own cavern-halls, warded and guarded exactly as proudly as the old lore said they would be. Something the cavern-dwellers call the Deep-Dweller keeps its own hollow at the undercaverns\' heart — and until it answers for the column at the gate, no Ukai elder will so much as discuss passage north.'
   },
 
   // ---------- Frosthold Waystation: level 65 settlement ----------
@@ -808,7 +815,8 @@ Game.Data.areas = [
     // v1.4 P4 (G4): Forage table — the Wellspring Energy Stone and Anima Taint Sample already
     // dropped together by this pool's own level-79 monster (js/data/monsters.js).
     forage: ['stone_energy_wellspring', 'quest_anima_taint_sample'],
-    desc: "The taboo itself: a raw seam of Anima the Estari sealed away rather than mine to exhaustion, exactly as the Council of Three's ban demanded (Prelude.md). Somebody — or something — has cracked that seal again, and the Estari Warden-Prime that answers to the wellspring's own old wards has started treating anything that moves, hero included, as the trespass the ban was written to prevent."
+    // archived: reference/manual/Prelude.md
+    desc: "The taboo itself: a raw seam of Anima the Estari sealed away rather than mine to exhaustion, exactly as the Council of Three's ban demanded. Somebody — or something — has cracked that seal again, and the Estari Warden-Prime that answers to the wellspring's own old wards has started treating anything that moves, hero included, as the trespass the ban was written to prevent."
   },
 
   // =====================================================================

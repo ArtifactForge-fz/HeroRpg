@@ -202,7 +202,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 2,
     skillReq: 0,
-    desc: 'Knits shallow wounds closed with a wash of Light-grade Anima. Unaffected by Fear (Fear.md: "affects spell damage, not healing").'
+    // archived: reference/manual/Fear.md "affects spell damage, not healing"
+    desc: 'Knits shallow wounds closed with a wash of Light-grade Anima. Unaffected by Fear.'
   },
 
   // ---------- Alteration: buff (+damage a few turns), per Recent_Updates.md 2007-04-06 "Alteration is now affected by Spell Powers" ----------
@@ -491,7 +492,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 5,
     skillReq: 12,
-    desc: 'A profound working of Light-grade Anima that can pull a hero back from the brink. Requires Mend Wounds II and Abjuration 12. Unaffected by Fear (Fear.md).'
+    // archived: reference/manual/Fear.md
+    desc: 'A profound working of Light-grade Anima that can pull a hero back from the brink. Requires Mend Wounds II and Abjuration 12. Unaffected by Fear.'
   },
   {
     id: 'tech_shadowlash_3',
@@ -1694,7 +1696,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 6,
     skillReq: 20,
-    desc: 'A Kuraan-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds III and Abjuration 20. Unaffected by Fear (Fear.md).'
+    // archived: reference/manual/Fear.md
+    desc: 'A Kuraan-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds III and Abjuration 20. Unaffected by Fear.'
   },
   {
     id: 'tech_cleave_4',
@@ -1763,7 +1766,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 8,
     skillReq: 30,
-    desc: 'A Majiku-Highlands-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds IV and Abjuration 30. Unaffected by Fear (Fear.md).'
+    // archived: reference/manual/Fear.md
+    desc: 'A Majiku-Highlands-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds IV and Abjuration 30. Unaffected by Fear.'
   },
   {
     id: 'tech_cleave_5',
@@ -1832,7 +1836,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 10,
     skillReq: 40,
-    desc: 'A Frozen-Reaches-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds V and Abjuration 40. Unaffected by Fear (Fear.md).'
+    // archived: reference/manual/Fear.md
+    desc: 'A Frozen-Reaches-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds V and Abjuration 40. Unaffected by Fear.'
   },
   {
     id: 'tech_cleave_6',
@@ -1901,7 +1906,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 12,
     skillReq: 50,
-    desc: 'An Estari-Wellspring-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds VI and Abjuration 50. Unaffected by Fear (Fear.md).'
+    // archived: reference/manual/Fear.md
+    desc: 'An Estari-Wellspring-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds VI and Abjuration 50. Unaffected by Fear.'
   },
   {
     id: 'tech_cleave_7',
@@ -1970,7 +1976,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 14,
     skillReq: 60,
-    desc: 'A Skyspire-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds VII and Abjuration 60. Unaffected by Fear (Fear.md).'
+    // archived: reference/manual/Fear.md
+    desc: 'A Skyspire-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds VII and Abjuration 60. Unaffected by Fear.'
   },
   {
     id: 'tech_cleave_8',
@@ -2040,7 +2047,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 16,
     skillReq: 70,
-    desc: 'A Red-Moon-era working of Light-grade Anima, the highest rank ever taught, mending wounds no earlier rank could close. Requires Mend Wounds VIII and Abjuration 70. Unaffected by Fear (Fear.md).'
+    // archived: reference/manual/Fear.md
+    desc: 'A Red-Moon-era working of Light-grade Anima, the highest rank ever taught, mending wounds no earlier rank could close. Requires Mend Wounds VIII and Abjuration 70. Unaffected by Fear.'
   },
   {
     id: 'tech_cleave_9',

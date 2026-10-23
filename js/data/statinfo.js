@@ -107,6 +107,94 @@ Game.Data.statInfo = {
       'Grows a little each level; restored by resting and Energy items.'
     ],
     cite: 'archived: reference/manual/Energy.md; reference/site/homepage_2007.md'
+  },
+
+  // docs/SPEC-SECONDARY-STATS.md §2.1/§2.2/§2.11: no crit mechanic survived the archive at all —
+  // fully [invented], within the intent the remake's own class data already promises (Rogue
+  // "crits/dodge", Assassin "burst crit" — js/data/classes.js).
+  critChance: {
+    name: 'Critical Strike Chance',
+    summary: 'Your odds of landing a critical strike.',
+    effects: [
+      'A 5% base chance on every weapon attack and damaging technique, before gear/class/shrine bonuses.',
+      'A critical strike deals extra damage (see Critical Strike Damage) before armor is applied.',
+      'Fades the further below the enemy\'s level you are (Fear), and is suppressed entirely 5+ levels down.'
+    ],
+    cite: 'invented: docs/SPEC-SECONDARY-STATS.md §2.2; Fear interaction archived: reference/manual/Fear.md'
+  },
+
+  critDamage: {
+    name: 'Critical Strike Damage',
+    summary: 'How much harder your critical strikes hit.',
+    effects: [
+      'A critical strike deals +50% damage before gear/class/shrine bonuses (a critical hit for x1.5).',
+      'Stacks with gear, class passives and Spirit Shrine buffs, up to a cap.',
+      'Fades the further below the enemy\'s level you are (Fear), and is suppressed entirely 5+ levels down.'
+    ],
+    cite: 'invented: docs/SPEC-SECONDARY-STATS.md §2.1/§2.2; Fear interaction archived: reference/manual/Fear.md'
+  },
+
+  accuracy: {
+    name: 'Accuracy',
+    summary: 'Makes your weapon strikes harder to dodge.',
+    effects: [
+      'Reduces an enemy\'s chance to dodge your basic attacks and weapon techniques (not spells).',
+      'Never pushes the enemy\'s dodge chance below zero.',
+      'Fades the further below the enemy\'s level you are (Fear), and is suppressed entirely 5+ levels down.'
+    ],
+    cite: 'invented: docs/SPEC-SECONDARY-STATS.md §2.3; Fear interaction archived: reference/manual/Fear.md'
+  },
+
+  armorPen: {
+    name: 'Armor Penetration',
+    summary: 'Lets your physical strikes bite through armor.',
+    effects: [
+      'Ignores a fraction of an enemy\'s Armor on basic attacks, weapon techniques and Limit Breaks.',
+      'Stacks with a technique\'s own built-in Armor Pierce, up to a combined cap.',
+      'Never affects Magic Armor or graded (elemental) techniques.',
+      'Fades the further below the enemy\'s level you are (Fear), and is suppressed entirely 5+ levels down.'
+    ],
+    cite: 'invented: docs/SPEC-SECONDARY-STATS.md §2.4; Fear interaction archived: reference/manual/Fear.md'
+  },
+
+  block: {
+    name: 'Block Chance',
+    summary: 'Your chance to catch a blow on your shield.',
+    effects: [
+      'Requires a Shields-skill item equipped in your offhand — does nothing without a shield.',
+      'Scales with your Shields skill level on top of gear/class/shrine bonuses.',
+      'A successful block halves the damage of a physical hit (not graded/elemental techniques).',
+      'Fades the further below the enemy\'s level you are (Fear), and is suppressed entirely 5+ levels down.'
+    ],
+    cite: 'invented mechanic: docs/SPEC-SECONDARY-STATS.md §2.5; Shields skill archived: reference/manual/Shields.md'
+  },
+
+  // archived name: reference/manual/Recent_Updates.md 2007-04-06 ("Alteration is now affected by
+  // Spell Powers") — the name and the fact that it scales techs are archived; the exact formula
+  // (§2.6) is [invented], since no formula survived.
+  spellPower: {
+    name: 'Spell Power',
+    summary: 'Strengthens your damaging and healing techniques.',
+    effects: [
+      'Adds flat power to every damaging, draining and healing technique, of every magic school.',
+      'Has no cap, and is not reduced by Fear at 1-4 levels below the enemy (technique damage is already Fear-scaled), but is suppressed entirely 5+ levels down.',
+      'Does not affect weapon techniques, buffs or debuffs.'
+    ],
+    cite: 'archived name: reference/manual/Recent_Updates.md 2007-04-06; formula invented: docs/SPEC-SECONDARY-STATS.md §2.6'
+  },
+
+  // archived 2004-era concept: reference/forum/t-449.md (Nerevar, 11-26-2004) — "Luck ... will
+  // determine what kind of items you can Forage for and how much experience you get from battles."
+  // Both archived roles are kept; the mechanics implementing them (§2.7) are [invented].
+  luck: {
+    name: 'Luck',
+    summary: 'Fortune favors you in the field and in battle.',
+    effects: [
+      'Improves your odds of foraging the better of two item candidates.',
+      'Grants a small bonus to the Experience you earn from battle wins, on top of Fury.',
+      'Never grants anything on a battle too far below your level to reward XP or loot.'
+    ],
+    cite: 'archived concept: reference/forum/t-449.md (Nerevar, 11-26-2004); mechanics invented: docs/SPEC-SECONDARY-STATS.md §2.7'
   }
 };
 

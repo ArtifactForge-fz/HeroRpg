@@ -59,14 +59,21 @@
 //          obtain?: { kind: 'boss_kill', monsterId, minLevel }
 //                  | { kind: 'boss_combo_quest', questId }   // documentation only; see quests.js
 //                  | { kind: 'relic', itemId, minLevel },
-//          abilities: [ { id, name, kind: 'passive', effect, power, classLevelCost, desc }
+//          abilities: [ { id, name, kind: 'passive', effect, power, classLevelCost, desc,
+//                         bonusEffects?: [{ effect, power }] }
 //                     | { id, name, kind: 'tech', techId, classLevelCost, desc } ] }
 //   passive effect: 'damage_pct' | 'armor_flat' | 'magic_armor_flat' | 'dodge_flat' |
-//                    'energy_max_flat' | 'hp_max_flat' | 'gold_pct' | 'double_attack_flat'
+//                    'energy_max_flat' | 'hp_max_flat' | 'gold_pct' | 'double_attack_flat' |
+//                    'crit_chance_flat' | 'crit_damage_flat' | 'accuracy_flat' |
+//                    'armor_pen_flat' | 'block_flat' | 'spell_power_flat' | 'luck_flat'
 //     ('gold_pct' and 'double_attack_flat' are new in the v1.1 revision — js/core/classes.js
 //     classBonus() is effect-name-generic so no core changes were needed beyond adding the two
 //     guarded hook points that read them: js/core/battle.js onWin() for gold_pct, and
 //     playerDoubleAttackChance() for double_attack_flat.)
+//   docs/SPEC-SECONDARY-STATS.md §2.9 (D3) [invented]: optional `bonusEffects` on a passive
+//     ability — a SECOND, smaller effect summed by classBonus() alongside the main effect/power,
+//     for 8 existing passives that keep their original effect and gain one of the 7 new
+//     secondary-stat effect kinds above. Abilities without the field behave exactly as before.
 //   Concrete roster/abilities beyond the archived tier NAMES: invented (DESIGN.md §3 "Actual
 //   class rosters... [invented]"). Every tech-kind ability's techId is defined in
 //   js/data/techs.js with classOnly: true (not offered at the Academy's general tech list).
@@ -303,9 +310,9 @@ Game.Data.classes = [
         kind: 'tech',
         techId: 'tech_radiant_smite',
         classLevelCost: 4,
-        desc: 'The Crusader calls on Light-grade Anima to mend their own wounds mid-battle — the ' +
-          'same grade the archived design ties to healing spells (Recent_Updates.md: "Healing ' +
-          'spells use the Light grade").'
+        // archived: reference/manual/Recent_Updates.md ("Healing spells use the Light grade")
+        desc: 'The Crusader calls on Light-grade Anima, the grade of every healing spell, to mend ' +
+          'their own wounds mid-battle.'
       }
     ]
   },
@@ -326,8 +333,12 @@ Game.Data.classes = [
         kind: 'passive',
         effect: 'damage_pct',
         power: 0.16,
+        // docs/SPEC-SECONDARY-STATS.md §2.9 [invented]: a second, smaller bonusEffects add-on (D3)
+        // — gives this passive a real effect on casting, fixing the shipped "+X% Damage (all
+        // sources)" wording that damage_pct never actually read for spells (§1 mismatch).
+        bonusEffects: [{ effect: 'spell_power_flat', power: 4 }],
         classLevelCost: 2,
-        desc: 'Anima answers a Wizard with unusual force — +16% Damage (all sources).'
+        desc: 'Anima answers a Wizard with unusual force — +16% weapon Damage and +4 Spell Power to every damaging or healing technique.'
       },
       {
         id: 'wizard_overcharged_reserves',
@@ -434,8 +445,10 @@ Game.Data.classes = [
         kind: 'passive',
         effect: 'damage_pct',
         power: 0.12,
+        // docs/SPEC-SECONDARY-STATS.md §2.9 [invented]: bonusEffects add-on (D3).
+        bonusEffects: [{ effect: 'crit_chance_flat', power: 0.06 }],
         classLevelCost: 3,
-        desc: 'A Rogue always finds the gap in an opponent\'s guard for a precise, telling strike — +12% Damage.'
+        desc: 'A Rogue always finds the gap in an opponent\'s guard — +12% Damage and +6% chance to land a critical strike.'
       },
       {
         id: 'rogue_light_frame',
@@ -551,8 +564,8 @@ Game.Data.classes = [
         effect: 'damage_pct',
         power: 0.13, // invented: +18% over Gladiator's Savage Strikes (0.11), within the ≤+25% discipline
         classLevelCost: 3,
-        desc: 'A smoldering resolve that never quite goes out, archived as one of the Shadowknight\'s ' +
-          'two active skills (homepage_2006.md) — +13% Damage (all sources).'
+        // [archived name: reference/site/homepage_2006.md — one of the Shadowknight's two active skills]
+        desc: 'A smoldering resolve that never quite goes out — +13% weapon Damage.'
       },
       {
         id: 'shadowknight_dragons_fire',
@@ -594,8 +607,11 @@ Game.Data.classes = [
         kind: 'passive',
         effect: 'damage_pct',
         power: 0.19, // invented: +19% over Wizard's Arcane Might (0.16)
+        // docs/SPEC-SECONDARY-STATS.md §2.9 [invented]: bonusEffects add-on (D3) — 5 is exactly
+        // +25% over Wizard's 4, the tier discipline's cap.
+        bonusEffects: [{ effect: 'spell_power_flat', power: 5 }],
         classLevelCost: 3,
-        desc: 'Full command over uncategorized Anima, beyond even a Wizard\'s reach — +19% Damage (all sources).'
+        desc: 'Full command over raw Anima, beyond even a Wizard\'s reach — +19% weapon Damage and +5 Spell Power to every damaging or healing technique.'
       },
       {
         id: 'magus_overflowing_wellspring',
@@ -635,9 +651,13 @@ Game.Data.classes = [
         kind: 'passive',
         effect: 'gold_pct',
         power: 0.12, // invented: +20% over Mercenary's Quick Pockets (0.10)
+        // docs/SPEC-SECONDARY-STATS.md §2.9 (D3/D6) [invented]: bonusEffects add-on. The citation
+        // for the archived name moves here (out of player-facing desc, see below).
+        bonusEffects: [{ effect: 'luck_flat', power: 10 }],
         classLevelCost: 3,
-        desc: 'Archived as one of the Gambit\'s two active skills (homepage_2006.md) — a coin that ' +
-          'always seems to land the Gambit\'s way — +12% Gold from battle wins.'
+        // [archived name: reference/site/homepage_2006.md — one of the Gambit's two active skills]
+        desc: 'A coin that ' +
+          'always seems to land the Gambit\'s way — +12% Gold from battle wins and +10 Luck.'
       },
       {
         id: 'gambit_gamblers_nerve',
@@ -766,8 +786,11 @@ Game.Data.classes = [
         kind: 'passive',
         effect: 'magic_armor_flat',
         power: 12, // invented, RETUNED v1.5 P5 (was provisional 16 = +60% over Crusader's Wardskin 10, outside the tier's ≤+25% per-effect discipline): 12 = +20%, the established Tier-3 magic_armor_flat ceiling (matches Shadowknight's Dragon's Fire). Warden's wall identity comes from the ceiling-level ward + the roster's top Tier-3 HP passive below + its barrier tech, not from breaking the band.
+        // docs/SPEC-SECONDARY-STATS.md §2.9 [invented]: bonusEffects add-on (D3). Block does
+        // nothing without a shield equipped (§2.5) — the desc says so.
+        bonusEffects: [{ effect: 'block_flat', power: 0.05 }],
         classLevelCost: 3,
-        desc: 'A standing barrier of protective Anima, thicker than any common Crusader\'s ward — flat +12 Magic Armor.'
+        desc: 'A standing barrier of protective Anima — flat +12 Magic Armor, and +5% chance to block while a shield is equipped.'
       },
       {
         id: 'warden_stalwart_frame',
@@ -969,8 +992,10 @@ Game.Data.classes = [
         kind: 'passive',
         effect: 'damage_pct',
         power: 0.15, // invented: +25% over Rogue's Opportunist (0.12) — exactly at the tier discipline's cap, same precedent as Gambit's Gambler's Nerve
+        // docs/SPEC-SECONDARY-STATS.md §2.9 [invented]: bonusEffects add-on (D3).
+        bonusEffects: [{ effect: 'crit_damage_flat', power: 0.25 }],
         classLevelCost: 3,
-        desc: 'Every strike aimed at the single fastest way to end the fight — +15% Damage.'
+        desc: 'Every strike aimed at the fastest way to end the fight — +15% Damage, and critical strikes deal +25% more.'
       },
       {
         id: 'assassin_predators_speed',
@@ -1011,8 +1036,10 @@ Game.Data.classes = [
         kind: 'passive',
         effect: 'damage_pct',
         power: 0.12, // invented: +20% over Mercenary's Hired Muscle (0.10)
+        // docs/SPEC-SECONDARY-STATS.md §2.9 [invented]: bonusEffects add-on (D3).
+        bonusEffects: [{ effect: 'accuracy_flat', power: 0.05 }],
         classLevelCost: 3,
-        desc: 'A trained eye finds the opening a plain Mercenary\'s swing would miss — +12% Damage.'
+        desc: 'A trained eye finds the opening a plain Mercenary\'s swing would miss — +12% Damage, and enemies are 5% less likely to dodge your weapon strikes.'
       },
       {
         id: 'ranger_woodland_step',
@@ -1053,8 +1080,10 @@ Game.Data.classes = [
         kind: 'passive',
         effect: 'damage_pct',
         power: 0.12, // invented: +20% over Mercenary's Hired Muscle (0.10)
+        // docs/SPEC-SECONDARY-STATS.md §2.9 [invented]: bonusEffects add-on (D3).
+        bonusEffects: [{ effect: 'armor_pen_flat', power: 0.08 }],
         classLevelCost: 3,
-        desc: 'Old dragon-sworn discipline behind every swing — +12% Damage.'
+        desc: 'Old dragon-sworn discipline behind every swing — +12% Damage, and your blows ignore 8% of an enemy\'s Armor.'
       },
       {
         id: 'dragoon_scaled_plating',

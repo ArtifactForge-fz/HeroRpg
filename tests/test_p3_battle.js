@@ -3898,7 +3898,12 @@ Game.Inventory.addItem(c82, 'rod_apprentice_wand');
 var eqRod82 = Game.Inventory.equip(c82, 'rod_apprentice_wand');
 assert(eqRod82.ok, 'rod equips: ' + eqRod82.failures.join(';'));
 var powerWithRod82 = Game.Battle.techEffectivePower(c82, techFirebolt82);
-var expectedPowerWithRod82 = Math.round(techFirebolt82.power * (1 + c82.intelligence * 0.02) * (1 + BALANCE.ROD_SPELL_MULT));
+// docs/SPEC-SECONDARY-STATS.md §2.8: rod_apprentice_wand now carries bonuses.spellPower (band 0
+// Rod -> +1), added in the same slot as the Attunement buff, inside the Int/magic-skill/Rod
+// multiplier — read via the aggregator (Game.Character.getSecondaryStat) rather than hardcoded so
+// this test tracks the item's own data instead of re-deriving the band formula.
+var rodSpellPower82 = Game.Character.getSecondaryStat(c82, 'spellPower');
+var expectedPowerWithRod82 = Math.round((techFirebolt82.power + rodSpellPower82) * (1 + c82.intelligence * 0.02) * (1 + BALANCE.ROD_SPELL_MULT));
 assert(powerWithRod82 === expectedPowerWithRod82,
   'Rod equipped raises Firebolt I power by ROD_SPELL_MULT, expected ' + expectedPowerWithRod82 + ', got ' + powerWithRod82);
 assert(powerWithRod82 > powerNoRod82, 'Rod equipped strictly raises offensive-tech damage');
@@ -3912,8 +3917,12 @@ var healTech82 = Game.Battle.getTech('tech_mend_wounds_1');
 var healCostWithRod82 = Game.Battle.effectiveTechEnergyCost(c82, healTech82);
 assert(healCostWithRod82 === healTech82.energyCost, 'heal techs keep full Energy cost even with a Rod equipped');
 var healPowerWithRod82 = Game.Battle.techEffectivePower(c82, healTech82);
-var expectedHealPowerWithRod82 = Math.round(healTech82.power * (1 + c82.intelligence * 0.01));
-assert(healPowerWithRod82 === expectedHealPowerWithRod82, 'heal techs keep their unmodified power even with a Rod equipped');
+// docs/SPEC-SECONDARY-STATS.md §2.6: Spell Power (from the equipped Rod's own bonuses.spellPower,
+// same aggregator as above) now adds to heals too, in the same slot as the tech's own power — this
+// is a secondary-stat effect, not the Rod-specific bonus this test is otherwise checking (ROD_SPELL_MULT/
+// ROD_TECH_ENERGY_DISCOUNT, both still correctly unapplied to heals above).
+var expectedHealPowerWithRod82 = Math.round((healTech82.power + rodSpellPower82) * (1 + c82.intelligence * 0.01));
+assert(healPowerWithRod82 === expectedHealPowerWithRod82, 'heal techs keep their unmodified ROD power even with a Rod equipped (Spell Power from gear still applies)');
 
 // =================== Test 83: v1.6 P1 (CB-2) — INT speeds magic-school/Rod skill-XP, not weapon skill-XP ===================
 console.log('\n=== Test 83: v1.6 P1 INT-scaled skill-XP for magic schools + Rods, weapon skills unaffected (CB-2) ===');

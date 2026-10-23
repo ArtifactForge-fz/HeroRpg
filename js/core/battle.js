@@ -58,6 +58,36 @@ Game.Battle = (function () {
     return mult < 0 ? 0 : mult; // invented floor: Fear cannot push a stat below zero
   }
 
+  // ---------------- Secondary stats (docs/SPEC-SECONDARY-STATS.md §2.1, Fear interaction D8) ----------------
+
+  // Battle-scoped wrapper around Game.Character.getSecondaryStat that applies the Fear rule (D8,
+  // sim-locked §3.1): at SECONDARY_FEAR_SUPPRESS_LEVELS (5) or more levels below the enemy, every
+  // new stat is 0 — including spellPower. Below that (1-4 levels down), every stat except Luck and
+  // Spell Power is scaled by fearMultiplier (Spell Power needs no extra factor there because tech
+  // damage is already Fear-multiplied downstream; Luck is never Fear-scaled, §2.1). Reads
+  // Game.state.battle directly (same discipline as playerStatKindBuff) so techEffectivePower, which
+  // has no battle param and also runs OUTSIDE battle (Techs screen preview), can share this helper
+  // — outside battle (no active battle) the plain unscaled aggregator value is returned.
+  function secondaryStat(c, key) {
+    var raw = Game.Character.getSecondaryStat(c, key);
+    var battle = Game.state && Game.state.battle;
+    if (!battle) return raw;
+    if (fearLevels(battle) >= BALANCE.SECONDARY_FEAR_SUPPRESS_LEVELS) return 0;
+    if (key === 'luck' || key === 'spellPower') return raw;
+    return raw * fearMultiplier(battle);
+  }
+
+  // Block (§2.5) is already-capped by Game.Character.getBlockChance (it includes the Shields
+  // skill-level term on top of the aggregated `block` stat), so it is Fear-scaled the same way as
+  // every other new stat (§2.1: "multiply the already-capped value by fearMultiplier"), via this
+  // battle-scoped wrapper rather than routing it through secondaryStat (which reads the
+  // UNCAPPED/un-skill-adjusted aggregator value only).
+  function blockChanceInBattle(battle) {
+    var raw = Game.Character.getBlockChance(battle.player);
+    if (fearLevels(battle) >= BALANCE.SECONDARY_FEAR_SUPPRESS_LEVELS) return 0;
+    return raw * fearMultiplier(battle);
+  }
+
   // ---------------- Dodge / glancing / double attack (invented scalings, DESIGN.md §4) ----------------
 
   function playerDodgeChance(c) {
@@ -120,6 +150,27 @@ Game.Battle = (function () {
   function rollVariance(base) {
     var v = BALANCE.DAMAGE_VARIANCE;
     return base * (1 + (rng() * 2 - 1) * v); // uniform in [1-v, 1+v]
+  }
+
+  // docs/SPEC-SECONDARY-STATS.md §2.2 (U3): the three-way roll. The SAME single rng() call that
+  // used to decide glancing-or-not now also decides a crit, in the SAME position (before
+  // rollVariance's own internal rng() call) — RNG call count/order unchanged from before this
+  // spec. Used at every player hit site that could crit (§2.2 table): attack() main hit(s) and
+  // offhand swing, useTech() weapon-tech per-hit rolls, damage/drain spell techs, and the
+  // offhandFollowup swing. NOT limitBreak() (D4: no crit) and NOT damageCompanion/monsterAct
+  // (U4: monsters never crit).
+  function rollHitVariance(c, base) {
+    var r = rng();
+    var glancing = r < BALANCE.GLANCING_CHANCE;
+    var raw = rollVariance(base);
+    var crit = false;
+    if (glancing) {
+      raw *= BALANCE.GLANCING_MULT;
+    } else if (r < BALANCE.GLANCING_CHANCE + secondaryStat(c, 'critChance')) {
+      crit = true;
+      raw *= (1 + secondaryStat(c, 'critDamage'));
+    }
+    return { raw: raw, glancing: glancing, crit: crit };
   }
 
   // Monster resistances are stored as "multiplier taken by damage of that grade" (spec shape):
@@ -696,11 +747,28 @@ Game.Battle = (function () {
     // max(1, raw-mitigation) form) — see balance.js DAMAGE_PENETRATION_FLOOR comment for why this
     // is one-directional.
     var dmg = Math.max(1, Math.round(raw * BALANCE.DAMAGE_PENETRATION_FLOOR), Math.round(raw - mitigation));
+    // docs/SPEC-SECONDARY-STATS.md §2.5: Block Chance — only against physical hits (a graded tech
+    // is Magic Armor's job, cannot be blocked), only rolled when the shield-gated block chance is
+    // above 0 (one extra rng() call, never spent otherwise). Applied after the penetration floor
+    // above, before Defend halving below, so Block + Defend leaves 25% of the hit.
+    var blocked = false;
+    if (!(usedTech && usedTech.grade)) {
+      var blockChance = blockChanceInBattle(battle);
+      if (blockChance > 0 && rng() < blockChance) {
+        blocked = true;
+        dmg = Math.max(1, Math.round(dmg * (1 - BALANCE.BLOCK_REDUCTION)));
+        Game.Character.addSkillXp(battle.player, 'Shields', BALANCE.BLOCK_SKILL_XP_PER_PROC);
+      }
+    }
     if (defending) dmg = Math.max(1, Math.round(dmg * BALANCE.DEFEND_DAMAGE_MULT));
 
     battle.player.hitPoints = Math.max(0, battle.player.hitPoints - dmg);
-    log(battle, (releasing ? 'The ' + monster.name + ' unleashes its charged blow' : monster.name + (usedTech ? ' uses ' + usedTech.name : ' attacks')) +
-      (glancing ? ' — a glancing blow —' : '') + ' for ' + dmg + ' damage.');
+    if (blocked) {
+      log(battle, 'You catch the ' + monster.name + "'s attack on your shield! You take " + dmg + ' damage.');
+    } else {
+      log(battle, (releasing ? 'The ' + monster.name + ' unleashes its charged blow' : monster.name + (usedTech ? ' uses ' + usedTech.name : ' attacks')) +
+        (glancing ? ' — a glancing blow —' : '') + ' for ' + dmg + ' damage.');
+    }
 
     // v1.4 P3 (G2) Vampiric champion affix: heals the monster for 25% of the damage it just dealt
     // (post-mitigation), capped at its own hpMax. LOCKED by the P0 sim (docs/SPEC-V1.4-GAMEPLAY.md
@@ -882,20 +950,24 @@ Game.Battle = (function () {
     var totalDmgDealt = 0;
     for (var i = 0; i < hits; i++) {
       if (battle.monster.hp <= 0) break;
-      if (rng() < monsterDodgeChance(battle.monster)) {
+      // docs/SPEC-SECONDARY-STATS.md §2.3: Accuracy reduces the monster's dodge chance on weapon
+      // actions, floored at 0.
+      if (rng() < Math.max(0, monsterDodgeChance(battle.monster) - secondaryStat(battle.player, 'accuracy'))) {
         log(battle, 'The ' + battle.monster.name + ' dodges your attack!');
         continue;
       }
-      var glancing = rng() < BALANCE.GLANCING_CHANCE;
-      var raw = rollVariance(baseDamage);
-      if (glancing) raw *= BALANCE.GLANCING_MULT;
-      var dmg = Math.max(1, Math.round(raw - battle.monster.armor));
+      var hv = rollHitVariance(battle.player, baseDamage);
+      var raw = hv.raw, glancing = hv.glancing;
+      // docs/SPEC-SECONDARY-STATS.md §2.4: Armor Penetration (no tech armorPierce on a basic
+      // attack, so pierce is purely the player's own armorPen stat).
+      var pierce = Math.min(BALANCE.ARMOR_PEN_TOTAL_CAP, secondaryStat(battle.player, 'armorPen'));
+      var dmg = Math.max(1, Math.round(raw - battle.monster.armor * (1 - pierce)));
       // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): a pending guard halves THIS action's
       // final damage-to-monster, floored at 1 — mirrors the player's own Defend halving exactly.
       if (guarding) dmg = Math.max(1, Math.round(dmg * (1 - BALANCE.GUARDIAN_REDUCTION)));
       battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
       totalDmgDealt += dmg;
-      log(battle, 'You strike the ' + battle.monster.name + (glancing ? ' with a glancing blow' : '') + ' for ' + dmg + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
+      log(battle, (hv.crit ? 'Critical strike! You strike the ' : 'You strike the ') + battle.monster.name + (glancing ? ' with a glancing blow' : '') + ' for ' + dmg + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
     }
 
     // v1.2 Phase 1 item 5 (Dual Wield): when BOTH the weapon and offhand slots hold a weapon
@@ -914,19 +986,19 @@ Game.Battle = (function () {
           BALANCE.DUAL_WIELD_OFFHAND_MULT_CAP
         );
         var offhandBase = (Game.Character.getOffhandDamage(battle.player) + playerBuffDamageBonus(battle)) * fear * curseMult * dwMult;
-        if (rng() < monsterDodgeChance(battle.monster)) {
+        if (rng() < Math.max(0, monsterDodgeChance(battle.monster) - secondaryStat(battle.player, 'accuracy'))) {
           log(battle, 'The ' + battle.monster.name + ' dodges your offhand strike!');
         } else {
-          var glancingOff = rng() < BALANCE.GLANCING_CHANCE;
-          var rawOff = rollVariance(offhandBase);
-          if (glancingOff) rawOff *= BALANCE.GLANCING_MULT;
-          var dmgOff = Math.max(1, Math.round(rawOff - battle.monster.armor));
+          var hvOff = rollHitVariance(battle.player, offhandBase);
+          var rawOff = hvOff.raw, glancingOff = hvOff.glancing;
+          var pierceOff = Math.min(BALANCE.ARMOR_PEN_TOTAL_CAP, secondaryStat(battle.player, 'armorPen'));
+          var dmgOff = Math.max(1, Math.round(rawOff - battle.monster.armor * (1 - pierceOff)));
           // v1.5 P3 ('guardian'): the offhand swing is part of the SAME player action, so it is
           // reduced by the same pending guard as the main hit(s) above.
           if (guarding) dmgOff = Math.max(1, Math.round(dmgOff * (1 - BALANCE.GUARDIAN_REDUCTION)));
           battle.monster.hp = Math.max(0, battle.monster.hp - dmgOff);
           totalDmgDealt += dmgOff;
-          log(battle, 'Your offhand strikes the ' + battle.monster.name + (glancingOff ? ' with a glancing blow' : '') + ' for ' + dmgOff + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
+          log(battle, (hvOff.crit ? 'Critical strike! Your offhand strikes the ' : 'Your offhand strikes the ') + battle.monster.name + (glancingOff ? ' with a glancing blow' : '') + ' for ' + dmgOff + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
         }
         Game.Character.addSkillXp(battle.player, 'Dual Wield', 1);
       }
@@ -1010,10 +1082,12 @@ Game.Battle = (function () {
   // intelligence").
   function techEffectivePower(c, tech) {
     if (tech.effect === 'heal') {
-      return Math.round(tech.power * (1 + c.intelligence * 0.01)); // invented: mild Int scaling for healing
+      // docs/SPEC-SECONDARY-STATS.md §2.6: Spell Power adds flat power to heals too, same slot as
+      // the tech's own power, before the Int scaling term.
+      return Math.round((tech.power + secondaryStat(c, 'spellPower')) * (1 + c.intelligence * 0.01)); // invented: mild Int scaling for healing
     }
     if (tech.effect === 'buff') {
-      return tech.power; // flat +damage
+      return tech.power; // flat +damage; buff/debuff techs are unchanged by Spell Power (§2.6)
     }
     // v1.6 P1 (CB-2/CB-4, SPEC-V1.6-REBALANCE.md §6): offensive (damage/drain) spell power also
     // scales with the tech's governing magic-school skill level (parallels the weapon-skill damage
@@ -1029,7 +1103,11 @@ Game.Battle = (function () {
     // boosts servitor ticks — no special case, single pipeline (see SPEC-TECH-POLARITY.md §0
     // finding d; test_v18_engine.js documents this explicitly).
     var spellpowerBuff = playerStatKindBuff('spellpower');
-    return Math.round((tech.power + spellpowerBuff) * (1 + c.intelligence * 0.02) * magicSkillMult * rodMult); // invented: Int spell-damage factor
+    // docs/SPEC-SECONDARY-STATS.md §2.6: Spell Power adds flat power in the same slot as the
+    // Attunement typed buff above (both BEFORE the Int/magic-skill/Rod multipliers) — this is the
+    // SAME pipeline the Conjurer servitor tick calls (tickMonsterStatuses), so Spell Power boosts
+    // servitor ticks too (D7), with no special case.
+    return Math.round((tech.power + spellpowerBuff + secondaryStat(c, 'spellPower')) * (1 + c.intelligence * 0.02) * magicSkillMult * rodMult); // invented: Int spell-damage factor
   }
 
   function useTech(techId) {
@@ -1287,7 +1365,9 @@ Game.Battle = (function () {
       // cast INSTEAD of the Int spell-hit roll below; the Int roll is skipped entirely, exactly
       // like weaponTech (guard: `!tech.weaponTech && !tech.physicalRoll`).
       if (tech.physicalRoll) {
-        if (rng() < monsterDodgeChance(battle.monster)) {
+        // docs/SPEC-SECONDARY-STATS.md §2.3 (D2): Accuracy applies to the pre-cast roll of
+        // physicalRoll techs too, same as weaponTech's per-hit roll below.
+        if (rng() < Math.max(0, monsterDodgeChance(battle.monster) - secondaryStat(battle.player, 'accuracy'))) {
           log(battle, 'The ' + battle.monster.name + ' dodges your ' + tech.name + '!');
           if (checkEnd(battle)) return battle;
           finishRound(battle);
@@ -1318,12 +1398,17 @@ Game.Battle = (function () {
           // (regular) Armor mitigates, with armorPierce reducing the armor term first.
           // v1.2 Phase 1 item 6: weapon techs roll the monster's dodge per hit (like a basic
           // attack) rather than the Int hit/miss check above.
-          if (rng() < monsterDodgeChance(battle.monster)) {
+          // docs/SPEC-SECONDARY-STATS.md §2.3 (D2): Accuracy applies to the per-hit roll of
+          // weapon techs.
+          if (rng() < Math.max(0, monsterDodgeChance(battle.monster) - secondaryStat(battle.player, 'accuracy'))) {
             log(battle, 'The ' + battle.monster.name + ' dodges your ' + tech.name + '!');
             continue;
           }
           base = Game.Character.getDamage(battle.player) * (tech.powerMult || 1) * fear * curseMult;
-          mitigation = battle.monster.armor * (1 - (tech.armorPierce || 0));
+          // docs/SPEC-SECONDARY-STATS.md §2.4: Armor Penetration stacks additively with the tech's
+          // own armorPierce, capped in total. Never touches Magic Armor.
+          var techPierce = Math.min(BALANCE.ARMOR_PEN_TOTAL_CAP, (tech.armorPierce || 0) + secondaryStat(battle.player, 'armorPen'));
+          mitigation = battle.monster.armor * (1 - techPierce);
         } else {
           base = techEffectivePower(battle.player, tech) * fear * curseMult;
           // v1.2 Phase 1 item 7: non-elemental damage ignores defense — RULE [archived] (DESIGN.md
@@ -1331,9 +1416,10 @@ Game.Battle = (function () {
           // monster's Magic Armor; a graded (elemental) tech is still mitigated by it.
           mitigation = tech.grade ? battle.monster.magicArmor : 0;
         }
-        var glancing = rng() < BALANCE.GLANCING_CHANCE;
-        var raw = rollVariance(base);
-        if (glancing) raw *= BALANCE.GLANCING_MULT;
+        // docs/SPEC-SECONDARY-STATS.md §2.2 (U2): the same three-way roll, for both weapon techs
+        // and damage/drain spell techs (U2 — one shared crit stat applies to both).
+        var hvTech = rollHitVariance(battle.player, base);
+        var raw = hvTech.raw, glancing = hvTech.glancing;
         raw = applyResistance(battle.monster, tech.grade, raw);
         var dmg = Math.max(1, Math.round(raw - mitigation));
         // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): a pending guard halves THIS
@@ -1341,7 +1427,7 @@ Game.Battle = (function () {
         if (guarding) dmg = Math.max(1, Math.round(dmg * (1 - BALANCE.GUARDIAN_REDUCTION)));
         battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
         totalDmgDealt += dmg;
-        log(battle, (tech.weaponTech ? 'You strike with ' : 'You cast ') + tech.name + (glancing ? ' (glancing)' : '') + ' for ' + dmg + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
+        log(battle, (tech.weaponTech ? 'You strike with ' : 'You cast ') + tech.name + (hvTech.crit ? ' (critical)' : (glancing ? ' (glancing)' : '')) + ' for ' + dmg + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
 
         if (tech.effect === 'drain') {
           var drained = Math.round(dmg * 0.5); // invented: Absorption drains return half the damage as HP
@@ -1410,17 +1496,17 @@ Game.Battle = (function () {
             BALANCE.DUAL_WIELD_OFFHAND_MULT_CAP
           );
           var fuOffhandBase = (Game.Character.getOffhandDamage(battle.player) + playerBuffDamageBonus(battle)) * fear * curseMult * fuDwMult;
-          if (rng() < monsterDodgeChance(battle.monster)) {
+          if (rng() < Math.max(0, monsterDodgeChance(battle.monster) - secondaryStat(battle.player, 'accuracy'))) {
             log(battle, 'The ' + battle.monster.name + ' dodges your offhand strike!');
           } else {
-            var fuGlancing = rng() < BALANCE.GLANCING_CHANCE;
-            var fuRaw = rollVariance(fuOffhandBase);
-            if (fuGlancing) fuRaw *= BALANCE.GLANCING_MULT;
-            var fuDmg = Math.max(1, Math.round(fuRaw - battle.monster.armor));
+            var hvFu = rollHitVariance(battle.player, fuOffhandBase);
+            var fuRaw = hvFu.raw, fuGlancing = hvFu.glancing;
+            var fuPierce = Math.min(BALANCE.ARMOR_PEN_TOTAL_CAP, secondaryStat(battle.player, 'armorPen'));
+            var fuDmg = Math.max(1, Math.round(fuRaw - battle.monster.armor * (1 - fuPierce)));
             if (guarding) fuDmg = Math.max(1, Math.round(fuDmg * (1 - BALANCE.GUARDIAN_REDUCTION)));
             battle.monster.hp = Math.max(0, battle.monster.hp - fuDmg);
             totalDmgDealt += fuDmg;
-            log(battle, 'Your offhand strikes the ' + battle.monster.name + (fuGlancing ? ' with a glancing blow' : '') + ' for ' + fuDmg + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
+            log(battle, (hvFu.crit ? 'Critical strike! Your offhand strikes the ' : 'Your offhand strikes the ') + battle.monster.name + (fuGlancing ? ' with a glancing blow' : '') + ' for ' + fuDmg + ' damage.' + (guarding ? ' (blunted by the guard)' : ''));
           }
           Game.Character.addSkillXp(battle.player, 'Dual Wield', 1);
         }
@@ -1624,11 +1710,14 @@ Game.Battle = (function () {
     if (!bypassDodge && rng() < monsterDodgeChance(battle.monster)) {
       log(battle, 'The ' + battle.monster.name + ' dodges your ' + lbDef.name + '!');
     } else {
+      // D4 (docs/SPEC-SECONDARY-STATS.md §2.2): Limit Break keeps its plain glancing roll — no
+      // crit — but Armor Penetration (§2.4) still applies to its physical damage.
       var glancing = rng() < BALANCE.GLANCING_CHANCE;
       var raw = rollVariance(baseDamage);
       if (glancing) raw *= BALANCE.GLANCING_MULT;
       raw *= BALANCE.LB_DAMAGE_MULT;
-      var dmg = Math.max(1, Math.round(raw - battle.monster.armor));
+      var lbPierce = Math.min(BALANCE.ARMOR_PEN_TOTAL_CAP, secondaryStat(battle.player, 'armorPen'));
+      var dmg = Math.max(1, Math.round(raw - battle.monster.armor * (1 - lbPierce)));
       // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): a pending guard halves this Limit
       // Break's final damage-to-monster too, floored at 1 — "the whole next player action".
       if (guarding) dmg = Math.max(1, Math.round(dmg * (1 - BALANCE.GUARDIAN_REDUCTION)));
@@ -1771,7 +1860,13 @@ Game.Battle = (function () {
     // Enemy-variety pass: Champion encounters double XP/gold, guarantee the Anima Shard, and
     // double every drop chance (capped 0.95) — see balance.js CHAMPION_* comment.
     var championMult = monster.champion ? BALANCE.CHAMPION_REWARD_MULT : 1;
-    var xpGain = Math.round(monster.xp * furyBonus * championMult);
+    // docs/SPEC-SECONDARY-STATS.md §2.7: Luck's archived "battle XP" role (reference/forum/
+    // t-449.md) — multiplicative with Fury/champion, a separate smaller multiplier that does NOT
+    // count toward FURY_XP_CAP. Luck uses the UNSCALED aggregator value (no Fear scaling — Luck is
+    // explicitly excluded from Fear, §2.1); the cutoff check above already zeroes XP on a cutoff
+    // win, so this never grants XP there.
+    var luckXpMult = 1 + Game.Character.getSecondaryStat(c, 'luck') * BALANCE.LUCK_XP_PER_POINT;
+    var xpGain = Math.round(monster.xp * furyBonus * championMult * luckXpMult);
     Game.Character.addXp(c, xpGain);
 
     // Phase 6a: Class XP, AFTER the cutoff check above (cutoff wins grant no class XP either —

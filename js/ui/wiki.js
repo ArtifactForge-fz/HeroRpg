@@ -343,6 +343,21 @@ Game.Wiki = (function () {
       if (item.damage) stats.push('Dmg ' + item.damage);
       if (item.armor) stats.push('Armor ' + item.armor);
       if (item.magicArmor) stats.push('MArmor ' + item.magicArmor);
+      // docs/SPEC-SECONDARY-STATS.md §2.8/§2.11: show a weapon family's signature secondary-stat
+      // bonus in the same Stats column as Dmg/Armor/MArmor above.
+      if (item.bonuses) {
+        var WIKI_BONUS_LABEL = {
+          critChance: 'Crit Chance', critDamage: 'Crit Damage', accuracy: 'Accuracy',
+          armorPen: 'Armor Pen', block: 'Block', spellPower: 'Spell Power', luck: 'Luck'
+        };
+        var WIKI_FLAT_BONUS = { spellPower: true, luck: true };
+        for (var wbKey in item.bonuses) {
+          if (!Object.prototype.hasOwnProperty.call(item.bonuses, wbKey)) continue;
+          var wbVal = item.bonuses[wbKey];
+          var wbLabel = WIKI_BONUS_LABEL[wbKey] || wbKey;
+          stats.push(wbLabel + ' +' + (WIKI_FLAT_BONUS[wbKey] ? wbVal : (Math.round(wbVal * 1000) / 10 + '%')));
+        }
+      }
       var reqText = statReqText(item.statReqs);
       if (reqText) stats.push('Req: ' + reqText);
 
