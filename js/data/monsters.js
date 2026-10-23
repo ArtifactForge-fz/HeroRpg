@@ -854,9 +854,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.4, effect: 'enrage', amount: 1.12, log: 'The Matriarch throws back her head and howls — the whole pack answers, and she strikes harder!' }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 18 + 12 * 18, // invented: boss flat HP premium, ~12*level pattern
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 18 + 12 * 18)), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 565. Base premium: invented: boss flat HP premium, ~12*level pattern
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 18,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 18 + 12, // invented: boss flat damage premium
+    damage: Math.round(1.1 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 18 + 12)), // invented: x1.1 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 56. Base premium: invented: boss flat damage premium
     armor: 16,
     magicArmor: 10,
     element: 'Wind',
@@ -1041,9 +1041,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.5, effect: 'heal', amount: 0.10, log: 'The Leviathan dives beneath the shoal — the deep water knits its wounds!' }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 25 + 12 * 25,
+    hp: Math.round(1.5 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 25 + 12 * 25)), // invented: x1.5 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 930.
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 25,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 25 + 14,
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 25 + 14)), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 87.
     armor: 22,
     magicArmor: 16,
     element: 'Water',
@@ -1212,9 +1212,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.5, effect: 'fortify', amount: 6, log: "The Custodian's runic wardplate reroutes power to its outer shell!" }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 32 + 12 * 32,
+    hp: Math.round(1.75 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 32 + 12 * 32)), // invented: x1.75 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 1379.
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 32,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 32 + 16,
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 32 + 16)), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 108.
     armor: 30,
     magicArmor: 24,
     element: 'Star',
@@ -1371,9 +1371,9 @@ Game.Data.monsters = [
       { atHpFrac: 0.6, effect: 'heal', amount: 0.10, log: 'The projection flickers and steadies — anima knits its edges whole again.' },
       { atHpFrac: 0.25, effect: 'enrage', amount: 1.15, log: "Faced with its own unmaking, the echo's light burns cold and furious." }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 40 + 12 * 40, // invented: boss flat HP premium, ~12*level pattern (matches estari_ruin_warden's +120 at level 10)
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 40 + 12 * 40)), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 1225. Base premium: invented: boss flat HP premium, ~12*level pattern (matches estari_ruin_warden's +120 at level 10)
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 40,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 40 + 45, // invented: boss flat damage premium — raised at the Phase 7 balance pass (was +20): after the monster-dodge and weapon-tier fixes, a rested level-40 warrior won 100% barely scratched; the final boss must land meaningful hits through ~90 endgame Armor
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 40 + 45)), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 166. Base premium: invented: boss flat damage premium — raised at the Phase 7 balance pass (was +20): after the monster-dodge and weapon-tier fixes, a rested level-40 warrior won 100% barely scratched; the final boss must land meaningful hits through ~90 endgame Armor
     armor: 34,
     magicArmor: 34,
     element: 'Dark',
@@ -1632,9 +1632,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.5, effect: 'enrage', amount: 1.15, log: 'The Warlord roars for a killing blow, and his war-camp answers with him!' }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 50 + 12 * 50, // 620 + 600 = 1220
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 50 + 12 * 50)), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 1525. Base premium: 620 + 600 = 1220
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 50,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 50 + Math.round(1.5 * 50 + 10), // 103 + 85 = 188
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 50 + Math.round(1.5 * 50 + 10))), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 244. Base premium: 103 + 85 = 188
     armor: 46,
     magicArmor: 44,
     element: 'Dark',
@@ -1851,9 +1851,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.5, effect: 'fortify', amount: 16, log: "The Chieftain plants his standard — the host's shieldwall closes around him!" }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 60 + 12 * 60, // 740 + 720 = 1460
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 60 + 12 * 60)), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 1825. Base premium: 740 + 720 = 1460
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 60,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 60 + Math.round(1.5 * 60 + 10), // 123 + 100 = 223
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 60 + Math.round(1.5 * 60 + 10))), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 290. Base premium: 123 + 100 = 223
     armor: 52,
     magicArmor: 50,
     element: 'Dark',
@@ -2070,9 +2070,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.5, effect: 'heal', amount: 0.10, log: 'The Deep-Dweller presses flat against the cavern wall, and the old stone feeds it strength.' }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 70 + 12 * 70, // 860 + 840 = 1700
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 70 + 12 * 70)), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 2125. Base premium: 860 + 840 = 1700
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 70,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 70 + Math.round(1.5 * 70 + 10), // 143 + 115 = 258
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 70 + Math.round(1.5 * 70 + 10))), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 335. Base premium: 143 + 115 = 258
     armor: 58,
     magicArmor: 56,
     element: 'Dark',
@@ -2298,9 +2298,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.5, effect: 'fortify', amount: 21, log: 'The Warden-Prime channels the Wellspring itself through its wardframe!' }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 80 + 12 * 80, // 980 + 960 = 1940
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 80 + 12 * 80)), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 2425. Base premium: 980 + 960 = 1940
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 80,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 80 + Math.round(1.5 * 80 + 10), // 163 + 130 = 293
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 80 + Math.round(1.5 * 80 + 10))), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 381. Base premium: 163 + 130 = 293
     armor: 60,
     magicArmor: 58,
     element: 'Dark',
@@ -2532,9 +2532,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.4, effect: 'enrage', amount: 1.12, log: "The Horror's hunger sharpens to a single point — it lashes out harder!" }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 90 + 12 * 90, // 1100 + 1080 = 2180
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 90 + 12 * 90)), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 2725. Base premium: 1100 + 1080 = 2180
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 90,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 90 + Math.round(1.5 * 90 + 10), // 183 + 145 = 328
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 90 + Math.round(1.5 * 90 + 10))), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 426. Base premium: 183 + 145 = 328
     armor: 62,
     magicArmor: 60,
     element: 'Dark',
@@ -2790,9 +2790,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.5, effect: 'curse', amount: 0, log: 'Ascendant Eidas turns his gaze upon you, and the unfinished weight of a divine race settles over your soul.' }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 100 + Math.round(12 * 100 * 1.4), // 1220 + 1680 = 2900
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 100 + Math.round(12 * 100 * 1.4))), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 3625. Base premium: 1220 + 1680 = 2900
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 100,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 100 + Math.round(1.5 * 100 + 10), // 203 + 160 = 363
+    damage: Math.round(1.1 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 100 + Math.round(1.5 * 100 + 10))), // invented: x1.1 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 399. Base premium: 203 + 160 = 363
     armor: 64,
     magicArmor: 62,
     element: 'Star',

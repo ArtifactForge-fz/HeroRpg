@@ -361,6 +361,11 @@ var BALANCE = {
   //    their HP, scaling from ~29% at L40 to ~56% at L100 -- "winnable but costly", per the archived
   //    difficulty contract, CLAUDE.md). F3 should tune each REAL 41-100 boss individually the same
   //    way the 1-40 bosses were (this is a starting ballpark, not a hard rule).
+  //    Boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2, invented, user-directed): the
+  //    premiums above are now the BASE each boss def multiplies. L40-L90 bosses: hp x1.25, damage
+  //    x1.3 on top of base + premium; L18 x1.25/x1.1, L25 x1.5/x1.3, L32 x1.75/x1.3, L100
+  //    x1.25/x1.1, L10 unchanged. Locked by a 300-trial sim so every lineage's cheapest class
+  //    option spends >= 35% of its HP bar per boss win (finale >= 45%), docs/SPEC-BOSS-COST-BAND.md.
   //
   // No new runtime constants are added for either note above: F1 authors no content, so there is
   // nothing yet to wire a real BALANCE.* formula into. F3 should re-derive/re-cite these when real

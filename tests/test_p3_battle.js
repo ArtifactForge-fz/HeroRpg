@@ -5,6 +5,7 @@ var vm = require('vm');
 var fs = require('fs');
 var path = require('path');
 var FakeDom = require('./fakedom.js');
+var BossFixture = require('./boss_fixture.js'); // shared prepared-warrior boss sim (docs/SPEC-BOSS-COST-RETUNE.md §4)
 
 var base = "D:/Claude - collection folder/HeroRPG/js";
 
@@ -1590,8 +1591,8 @@ assert(!!warlord && warlord.boss === true, 'majiku_warlord exists and is a boss'
 assert(warlord.level === 50, 'majiku_warlord is level 50');
 var wlBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 50;
 var wlBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 50;
-assert(warlord.hp === wlBaseHp + 12 * 50, 'majiku_warlord hp carries the +12*level boss premium (' + wlBaseHp + ' + 600 = ' + (wlBaseHp + 600) + '), got ' + warlord.hp);
-assert(warlord.damage === wlBaseDmg + Math.round(1.5 * 50 + 10), 'majiku_warlord damage carries the F1 round(1.5*level+10) boss premium (' + wlBaseDmg + ' + 85 = ' + (wlBaseDmg + 85) + '), got ' + warlord.damage);
+assert(warlord.hp === Math.round(1.25 * (wlBaseHp + 12 * 50)), 'majiku_warlord hp = x1.25 (docs/SPEC-BOSS-COST-RETUNE.md) on the +12*level boss premium: round(1.25 x (' + wlBaseHp + ' + 600)) = ' + Math.round(1.25 * (wlBaseHp + 12 * 50)) + ', got ' + warlord.hp);
+assert(warlord.damage === Math.round(1.3 * (wlBaseDmg + Math.round(1.5 * 50 + 10))), 'majiku_warlord damage = x1.3 (docs/SPEC-BOSS-COST-RETUNE.md) on the F1 round(1.5*level+10) boss premium: round(1.3 x (' + wlBaseDmg + ' + 85)) = ' + Math.round(1.3 * (wlBaseDmg + Math.round(1.5 * 50 + 10))) + ', got ' + warlord.damage);
 assert(warlord.xp === BALANCE.MONSTER_XP(50) * 3, 'majiku_warlord xp carries the x3 boss premium');
 
 // =================== Test 31: Level-Arc Band A weapon damage is TAPERED, not literal ===================
@@ -1656,109 +1657,16 @@ Object.keys(eiArmorExpected45).forEach(function (id) {
   assert(it.armor !== literalArmor45, id + ' armor is NOT the literal-formula value ' + literalArmor45);
 });
 
-// =================== Test 32: majiku_warlord lair fight — winnable but costly (real RNG sim) ===================
-console.log('\n=== Test 32: majiku_warlord (Band A lair boss) is winnable-but-costly for a geared level-50 warrior ===');
-function buildLevel50KuraanWarrior() {
-  var skillPoints = {};
-  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
-  skillPoints['Swords'] = 3;
-  skillPoints['Heavy Armor'] = 2;
-  var c = Game.Character.create({
-    race: 'Human',
-    name: 'WarlordTester',
-    gender: 'Male',
-    skillPoints: skillPoints
-  });
-  c.level = 50;
-  c.xp = BALANCE.XP_TO_LEVEL(50);
-  // 49 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
-  // (same split style as the eidas_echo debug-warrior build, test_p6b_content.js).
-  c.statPoints = 49 * BALANCE.LEVELUP_STAT_POINTS;
-  var totalPoints = c.statPoints;
-  for (var i = 0; i < totalPoints; i++) {
-    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
-    Game.Character.spendStatPoint(c, stat);
-  }
-  var gearIds = ['sword_kuraan_reclaimers_blade', 'heavy_body_kuraan_bulwark_plate', 'shield_kuraan_wardbulwark'];
-  gearIds.forEach(function (id) {
-    Game.Inventory.addItem(c, id);
-    var res = Game.Inventory.equip(c, id);
-    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
-  });
-  for (i = 0; i < 6; i++) {
-    Game.Inventory.addItem(c, 'sphere_cclass_1');
-    Game.Inventory.addItem(c, 'crystal_cclass_1');
-  }
-  Game.Character.recalcDerived(c);
-  c.hitPoints = c.hitPointsMax;
-  c.energy = c.energyMax;
-  return c;
-}
-
-function countBandAConsumables(c) {
-  var n = 0;
-  for (var i = 0; i < c.inventory.length; i++) {
-    if (c.inventory[i] === 'sphere_cclass_1' || c.inventory[i] === 'crystal_cclass_1') n++;
-  }
-  return n;
-}
-
-function simulateWarlordBattle() {
-  var c = buildLevel50KuraanWarrior();
-  Game.state.character = c;
-  Game.state.battle = null;
-  Game.Battle._rng = Math.random; // real RNG for this sim
-
-  var consumablesBefore = countBandAConsumables(c);
-  var battle = Game.Battle.start('majiku_warlord');
-  var rounds = 0;
-  var MAX_ROUNDS = 500;
-  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
-    rounds++;
-    if (!Game.Battle.canAct(battle)) {
-      var crystalIdx = c.inventory.indexOf('crystal_cclass_1');
-      if (crystalIdx !== -1) {
-        Game.Battle.useItem('crystal_cclass_1');
-        continue;
-      }
-    }
-    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_cclass_1') !== -1) {
-      Game.Battle.useItem('sphere_cclass_1');
-      continue;
-    }
-    Game.Battle.attack();
-  }
-  var consumablesAfter = countBandAConsumables(c);
-  return {
-    phase: battle.phase,
-    hpLeftFrac: c.hitPoints / c.hitPointsMax,
-    consumablesConsumed: consumablesBefore - consumablesAfter
-  };
-}
-
-var WARLORD_SIM_COUNT = 30;
-var wlWins = 0;
-var wlOutcomes = {};
-var wlHpLeftSum = 0;
-var wlConsumedSum = 0;
-for (var wlRun = 0; wlRun < WARLORD_SIM_COUNT; wlRun++) {
-  var wlResult = simulateWarlordBattle();
-  wlOutcomes[wlResult.phase] = (wlOutcomes[wlResult.phase] || 0) + 1;
-  if (wlResult.phase === 'won') {
-    wlWins++;
-    wlHpLeftSum += wlResult.hpLeftFrac;
-    wlConsumedSum += wlResult.consumablesConsumed;
-  }
-}
-var wlWinRate = wlWins / WARLORD_SIM_COUNT;
-var wlAvgHpLeft = wlWins ? wlHpLeftSum / wlWins : 0;
-var wlAvgConsumed = wlWins ? wlConsumedSum / wlWins : 0;
-console.log('majiku_warlord sim results over ' + WARLORD_SIM_COUNT + ' battles: ' + JSON.stringify(wlOutcomes) +
-  ' — win rate ' + (wlWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (wlAvgHpLeft * 100).toFixed(0) +
-  '%, avg consumables spent ' + wlAvgConsumed.toFixed(1));
-// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
-assert(wlWinRate >= 0.6, 'majiku_warlord is reliably beatable by a geared level-50 warrior (win rate ' + (wlWinRate * 100).toFixed(1) + '%, want >= 60%)');
-assert(wlAvgHpLeft <= 0.85 || wlAvgConsumed >= 1, 'majiku_warlord extracts a real cost on wins (avg HP left ' + (wlAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + wlAvgConsumed.toFixed(1) + ')');
+// =================== Test 32: majiku_warlord lair fight — a prepared hero wins but pays (real RNG sim) ===================
+console.log('\n=== Test 32: majiku_warlord (Band A lair boss) is winnable-but-costly for a prepared level-50 warrior ===');
+// Boss contract (docs/SPEC-BOSS-COST-BAND.md §2, as amended by docs/SPEC-BOSS-COST-RETUNE.md D0/D6),
+// judged on the shared PREPARED warrior (tests/boss_fixture.js, SPEC-BOSS-COST-RETUNE D5).
+// These are regression floors; the 300-trial lineage grid in SPEC-BOSS-COST-RETUNE §3.3 is the gate.
+var wlSim = BossFixture.simulate(Game, 'majiku_warlord', 50, 30);
+console.log(BossFixture.describe('majiku_warlord', wlSim));
+assert(wlSim.winRate >= 0.85, 'majiku_warlord is reliably beatable by a prepared level-50 warrior (win rate ' + (wlSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(wlSim.avgHpSpent >= 0.35 || wlSim.avgConsumed >= 3, 'majiku_warlord extracts a real cost on wins (avg HP spent ' + (wlSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables; spent ' + wlSim.avgConsumed.toFixed(1) + ')');
+assert(wlSim.avgConsumed <= 0.5 * wlSim.stock, 'majiku_warlord is not ruinous: at most half the stock per win (avg ' + wlSim.avgConsumed.toFixed(1) + ' of ' + wlSim.stock + ')');
 
 // =================== Test 33: Level-Arc Band B (Majiku Highlands) monster formulas + boss premiums ===================
 console.log('\n=== Test 33: Band B regulars match the header formulas; majiku_ridge_chieftain carries the F1 boss premiums ===');
@@ -1787,8 +1695,8 @@ assert(!!chieftain && chieftain.boss === true, 'majiku_ridge_chieftain exists an
 assert(chieftain.level === 60, 'majiku_ridge_chieftain is level 60');
 var mrcBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 60;
 var mrcBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 60;
-assert(chieftain.hp === mrcBaseHp + 12 * 60, 'majiku_ridge_chieftain hp carries the +12*level boss premium (' + mrcBaseHp + ' + 720 = ' + (mrcBaseHp + 720) + '), got ' + chieftain.hp);
-assert(chieftain.damage === mrcBaseDmg + Math.round(1.5 * 60 + 10), 'majiku_ridge_chieftain damage carries the F1 round(1.5*level+10) boss premium (' + mrcBaseDmg + ' + 100 = ' + (mrcBaseDmg + 100) + '), got ' + chieftain.damage);
+assert(chieftain.hp === Math.round(1.25 * (mrcBaseHp + 12 * 60)), 'majiku_ridge_chieftain hp = x1.25 (docs/SPEC-BOSS-COST-RETUNE.md) on the +12*level boss premium: round(1.25 x (' + mrcBaseHp + ' + 720)) = ' + Math.round(1.25 * (mrcBaseHp + 12 * 60)) + ', got ' + chieftain.hp);
+assert(chieftain.damage === Math.round(1.3 * (mrcBaseDmg + Math.round(1.5 * 60 + 10))), 'majiku_ridge_chieftain damage = x1.3 (docs/SPEC-BOSS-COST-RETUNE.md) on the F1 round(1.5*level+10) boss premium: round(1.3 x (' + mrcBaseDmg + ' + 100)) = ' + Math.round(1.3 * (mrcBaseDmg + Math.round(1.5 * 60 + 10))) + ', got ' + chieftain.damage);
 assert(chieftain.xp === BALANCE.MONSTER_XP(60) * 3, 'majiku_ridge_chieftain xp carries the x3 boss premium');
 
 // =================== Test 34: Level-Arc Band B weapon damage is TAPERED, not literal ===================
@@ -1850,109 +1758,16 @@ var taperedArmor58 = correctedArmor(58); // 52 / 2 = 26
   assert(it.armor !== taperedArmor55, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor55 + ' (taper is re-derived per levelReq)');
 });
 
-// =================== Test 35: majiku_ridge_chieftain lair fight — winnable but costly (real RNG sim) ===================
-console.log('\n=== Test 35: majiku_ridge_chieftain (Band B lair boss) is winnable-but-costly for a geared level-60 warrior ===');
-function buildLevel60MajikuWarrior() {
-  var skillPoints = {};
-  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
-  skillPoints['Swords'] = 3;
-  skillPoints['Heavy Armor'] = 2;
-  var c = Game.Character.create({
-    race: 'Human',
-    name: 'ChieftainTester',
-    gender: 'Male',
-    skillPoints: skillPoints
-  });
-  c.level = 60;
-  c.xp = BALANCE.XP_TO_LEVEL(60);
-  // 59 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
-  // (same split style as buildLevel50KuraanWarrior above / the eidas_echo debug-warrior build).
-  c.statPoints = 59 * BALANCE.LEVELUP_STAT_POINTS;
-  var totalPoints60 = c.statPoints;
-  for (var i = 0; i < totalPoints60; i++) {
-    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
-    Game.Character.spendStatPoint(c, stat);
-  }
-  var gearIds60 = ['sword_majiku_hostbreaker', 'heavy_body_ridgeplate_cuirass', 'shield_highland_bulwark'];
-  gearIds60.forEach(function (id) {
-    Game.Inventory.addItem(c, id);
-    var res = Game.Inventory.equip(c, id);
-    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
-  });
-  for (i = 0; i < 6; i++) {
-    Game.Inventory.addItem(c, 'sphere_dclass_1');
-    Game.Inventory.addItem(c, 'crystal_dclass_1');
-  }
-  Game.Character.recalcDerived(c);
-  c.hitPoints = c.hitPointsMax;
-  c.energy = c.energyMax;
-  return c;
-}
-
-function countBandBConsumables(c) {
-  var n = 0;
-  for (var i = 0; i < c.inventory.length; i++) {
-    if (c.inventory[i] === 'sphere_dclass_1' || c.inventory[i] === 'crystal_dclass_1') n++;
-  }
-  return n;
-}
-
-function simulateChieftainBattle() {
-  var c = buildLevel60MajikuWarrior();
-  Game.state.character = c;
-  Game.state.battle = null;
-  Game.Battle._rng = Math.random; // real RNG for this sim
-
-  var consumablesBefore = countBandBConsumables(c);
-  var battle = Game.Battle.start('majiku_ridge_chieftain');
-  var rounds = 0;
-  var MAX_ROUNDS = 500;
-  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
-    rounds++;
-    if (!Game.Battle.canAct(battle)) {
-      var crystalIdx = c.inventory.indexOf('crystal_dclass_1');
-      if (crystalIdx !== -1) {
-        Game.Battle.useItem('crystal_dclass_1');
-        continue;
-      }
-    }
-    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_dclass_1') !== -1) {
-      Game.Battle.useItem('sphere_dclass_1');
-      continue;
-    }
-    Game.Battle.attack();
-  }
-  var consumablesAfter = countBandBConsumables(c);
-  return {
-    phase: battle.phase,
-    hpLeftFrac: c.hitPoints / c.hitPointsMax,
-    consumablesConsumed: consumablesBefore - consumablesAfter
-  };
-}
-
-var CHIEFTAIN_SIM_COUNT = 30;
-var mrcWins = 0;
-var mrcOutcomes = {};
-var mrcHpLeftSum = 0;
-var mrcConsumedSum = 0;
-for (var mrcRun = 0; mrcRun < CHIEFTAIN_SIM_COUNT; mrcRun++) {
-  var mrcResult = simulateChieftainBattle();
-  mrcOutcomes[mrcResult.phase] = (mrcOutcomes[mrcResult.phase] || 0) + 1;
-  if (mrcResult.phase === 'won') {
-    mrcWins++;
-    mrcHpLeftSum += mrcResult.hpLeftFrac;
-    mrcConsumedSum += mrcResult.consumablesConsumed;
-  }
-}
-var mrcWinRate = mrcWins / CHIEFTAIN_SIM_COUNT;
-var mrcAvgHpLeft = mrcWins ? mrcHpLeftSum / mrcWins : 0;
-var mrcAvgConsumed = mrcWins ? mrcConsumedSum / mrcWins : 0;
-console.log('majiku_ridge_chieftain sim results over ' + CHIEFTAIN_SIM_COUNT + ' battles: ' + JSON.stringify(mrcOutcomes) +
-  ' — win rate ' + (mrcWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (mrcAvgHpLeft * 100).toFixed(0) +
-  '%, avg consumables spent ' + mrcAvgConsumed.toFixed(1));
-// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
-assert(mrcWinRate >= 0.6, 'majiku_ridge_chieftain is reliably beatable by a geared level-60 warrior (win rate ' + (mrcWinRate * 100).toFixed(1) + '%, want >= 60%)');
-assert(mrcAvgHpLeft <= 0.85 || mrcAvgConsumed >= 1, 'majiku_ridge_chieftain extracts a real cost on wins (avg HP left ' + (mrcAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + mrcAvgConsumed.toFixed(1) + ')');
+// =================== Test 35: majiku_ridge_chieftain lair fight — a prepared hero wins but pays (real RNG sim) ===================
+console.log('\n=== Test 35: majiku_ridge_chieftain (Band B lair boss) is winnable-but-costly for a prepared level-60 warrior ===');
+// Boss contract (docs/SPEC-BOSS-COST-BAND.md §2, as amended by docs/SPEC-BOSS-COST-RETUNE.md D0/D6),
+// judged on the shared PREPARED warrior (tests/boss_fixture.js, SPEC-BOSS-COST-RETUNE D5).
+// These are regression floors; the 300-trial lineage grid in SPEC-BOSS-COST-RETUNE §3.3 is the gate.
+var mrcSim = BossFixture.simulate(Game, 'majiku_ridge_chieftain', 60, 30);
+console.log(BossFixture.describe('majiku_ridge_chieftain', mrcSim));
+assert(mrcSim.winRate >= 0.85, 'majiku_ridge_chieftain is reliably beatable by a prepared level-60 warrior (win rate ' + (mrcSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(mrcSim.avgHpSpent >= 0.35 || mrcSim.avgConsumed >= 3, 'majiku_ridge_chieftain extracts a real cost on wins (avg HP spent ' + (mrcSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables; spent ' + mrcSim.avgConsumed.toFixed(1) + ')');
+assert(mrcSim.avgConsumed <= 0.5 * mrcSim.stock, 'majiku_ridge_chieftain is not ruinous: at most half the stock per win (avg ' + mrcSim.avgConsumed.toFixed(1) + ' of ' + mrcSim.stock + ')');
 
 // =================== Test 36: Level-Arc Band C (The Frozen Reaches / Ukai approach) monster formulas + boss premiums ===================
 console.log('\n=== Test 36: Band C regulars match the header formulas; ukai_deep_dweller carries the F1 boss premiums ===');
@@ -1981,8 +1796,8 @@ assert(!!deepDweller && deepDweller.boss === true, 'ukai_deep_dweller exists and
 assert(deepDweller.level === 70, 'ukai_deep_dweller is level 70');
 var uddBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 70;
 var uddBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 70;
-assert(deepDweller.hp === uddBaseHp + 12 * 70, 'ukai_deep_dweller hp carries the +12*level boss premium (' + uddBaseHp + ' + 840 = ' + (uddBaseHp + 840) + '), got ' + deepDweller.hp);
-assert(deepDweller.damage === uddBaseDmg + Math.round(1.5 * 70 + 10), 'ukai_deep_dweller damage carries the F1 round(1.5*level+10) boss premium (' + uddBaseDmg + ' + 115 = ' + (uddBaseDmg + 115) + '), got ' + deepDweller.damage);
+assert(deepDweller.hp === Math.round(1.25 * (uddBaseHp + 12 * 70)), 'ukai_deep_dweller hp = x1.25 (docs/SPEC-BOSS-COST-RETUNE.md) on the +12*level boss premium: round(1.25 x (' + uddBaseHp + ' + 840)) = ' + Math.round(1.25 * (uddBaseHp + 12 * 70)) + ', got ' + deepDweller.hp);
+assert(deepDweller.damage === Math.round(1.3 * (uddBaseDmg + Math.round(1.5 * 70 + 10))), 'ukai_deep_dweller damage = x1.3 (docs/SPEC-BOSS-COST-RETUNE.md) on the F1 round(1.5*level+10) boss premium: round(1.3 x (' + uddBaseDmg + ' + 115)) = ' + Math.round(1.3 * (uddBaseDmg + Math.round(1.5 * 70 + 10))) + ', got ' + deepDweller.damage);
 assert(deepDweller.xp === BALANCE.MONSTER_XP(70) * 3, 'ukai_deep_dweller xp carries the x3 boss premium');
 
 // =================== Test 37: Level-Arc Band C weapon damage is TAPERED, not literal ===================
@@ -2044,109 +1859,16 @@ var taperedArmor68 = correctedArmor(68); // 59 / 2 = 30
   assert(it.armor !== taperedArmor65, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor65 + ' (taper is re-derived per levelReq)');
 });
 
-// =================== Test 38: ukai_deep_dweller lair fight — winnable but costly (real RNG sim) ===================
-console.log('\n=== Test 38: ukai_deep_dweller (Band C lair boss) is winnable-but-costly for a geared level-70 warrior ===');
-function buildLevel70FrostholdWarrior() {
-  var skillPoints = {};
-  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
-  skillPoints['Swords'] = 3;
-  skillPoints['Heavy Armor'] = 2;
-  var c = Game.Character.create({
-    race: 'Human',
-    name: 'DeepDwellerTester',
-    gender: 'Male',
-    skillPoints: skillPoints
-  });
-  c.level = 70;
-  c.xp = BALANCE.XP_TO_LEVEL(70);
-  // 69 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
-  // (same split style as buildLevel60MajikuWarrior above / the eidas_echo debug-warrior build).
-  c.statPoints = 69 * BALANCE.LEVELUP_STAT_POINTS;
-  var totalPoints70 = c.statPoints;
-  for (var i = 0; i < totalPoints70; i++) {
-    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
-    Game.Character.spendStatPoint(c, stat);
-  }
-  var gearIds70 = ['sword_frosthold_vanguard_blade', 'heavy_body_glacial_bulwark_plate', 'shield_frosthold_bulwark'];
-  gearIds70.forEach(function (id) {
-    Game.Inventory.addItem(c, id);
-    var res = Game.Inventory.equip(c, id);
-    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
-  });
-  for (i = 0; i < 6; i++) {
-    Game.Inventory.addItem(c, 'sphere_eclass_1');
-    Game.Inventory.addItem(c, 'crystal_eclass_1');
-  }
-  Game.Character.recalcDerived(c);
-  c.hitPoints = c.hitPointsMax;
-  c.energy = c.energyMax;
-  return c;
-}
-
-function countBandCConsumables(c) {
-  var n = 0;
-  for (var i = 0; i < c.inventory.length; i++) {
-    if (c.inventory[i] === 'sphere_eclass_1' || c.inventory[i] === 'crystal_eclass_1') n++;
-  }
-  return n;
-}
-
-function simulateDeepDwellerBattle() {
-  var c = buildLevel70FrostholdWarrior();
-  Game.state.character = c;
-  Game.state.battle = null;
-  Game.Battle._rng = Math.random; // real RNG for this sim
-
-  var consumablesBefore = countBandCConsumables(c);
-  var battle = Game.Battle.start('ukai_deep_dweller');
-  var rounds = 0;
-  var MAX_ROUNDS = 500;
-  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
-    rounds++;
-    if (!Game.Battle.canAct(battle)) {
-      var crystalIdx = c.inventory.indexOf('crystal_eclass_1');
-      if (crystalIdx !== -1) {
-        Game.Battle.useItem('crystal_eclass_1');
-        continue;
-      }
-    }
-    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_eclass_1') !== -1) {
-      Game.Battle.useItem('sphere_eclass_1');
-      continue;
-    }
-    Game.Battle.attack();
-  }
-  var consumablesAfter = countBandCConsumables(c);
-  return {
-    phase: battle.phase,
-    hpLeftFrac: c.hitPoints / c.hitPointsMax,
-    consumablesConsumed: consumablesBefore - consumablesAfter
-  };
-}
-
-var DEEP_DWELLER_SIM_COUNT = 30;
-var uddWins = 0;
-var uddOutcomes = {};
-var uddHpLeftSum = 0;
-var uddConsumedSum = 0;
-for (var uddRun = 0; uddRun < DEEP_DWELLER_SIM_COUNT; uddRun++) {
-  var uddResult = simulateDeepDwellerBattle();
-  uddOutcomes[uddResult.phase] = (uddOutcomes[uddResult.phase] || 0) + 1;
-  if (uddResult.phase === 'won') {
-    uddWins++;
-    uddHpLeftSum += uddResult.hpLeftFrac;
-    uddConsumedSum += uddResult.consumablesConsumed;
-  }
-}
-var uddWinRate = uddWins / DEEP_DWELLER_SIM_COUNT;
-var uddAvgHpLeft = uddWins ? uddHpLeftSum / uddWins : 0;
-var uddAvgConsumed = uddWins ? uddConsumedSum / uddWins : 0;
-console.log('ukai_deep_dweller sim results over ' + DEEP_DWELLER_SIM_COUNT + ' battles: ' + JSON.stringify(uddOutcomes) +
-  ' — win rate ' + (uddWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (uddAvgHpLeft * 100).toFixed(0) +
-  '%, avg consumables spent ' + uddAvgConsumed.toFixed(1));
-// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
-assert(uddWinRate >= 0.6, 'ukai_deep_dweller is reliably beatable by a geared level-70 warrior (win rate ' + (uddWinRate * 100).toFixed(1) + '%, want >= 60%)');
-assert(uddAvgHpLeft <= 0.85 || uddAvgConsumed >= 1, 'ukai_deep_dweller extracts a real cost on wins (avg HP left ' + (uddAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + uddAvgConsumed.toFixed(1) + ')');
+// =================== Test 38: ukai_deep_dweller lair fight — a prepared hero wins but pays (real RNG sim) ===================
+console.log('\n=== Test 38: ukai_deep_dweller (Band C lair boss) is winnable-but-costly for a prepared level-70 warrior ===');
+// Boss contract (docs/SPEC-BOSS-COST-BAND.md §2, as amended by docs/SPEC-BOSS-COST-RETUNE.md D0/D6),
+// judged on the shared PREPARED warrior (tests/boss_fixture.js, SPEC-BOSS-COST-RETUNE D5).
+// These are regression floors; the 300-trial lineage grid in SPEC-BOSS-COST-RETUNE §3.3 is the gate.
+var uddSim = BossFixture.simulate(Game, 'ukai_deep_dweller', 70, 30);
+console.log(BossFixture.describe('ukai_deep_dweller', uddSim));
+assert(uddSim.winRate >= 0.85, 'ukai_deep_dweller is reliably beatable by a prepared level-70 warrior (win rate ' + (uddSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(uddSim.avgHpSpent >= 0.35 || uddSim.avgConsumed >= 3, 'ukai_deep_dweller extracts a real cost on wins (avg HP spent ' + (uddSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables; spent ' + uddSim.avgConsumed.toFixed(1) + ')');
+assert(uddSim.avgConsumed <= 0.5 * uddSim.stock, 'ukai_deep_dweller is not ruinous: at most half the stock per win (avg ' + uddSim.avgConsumed.toFixed(1) + ' of ' + uddSim.stock + ')');
 
 // =================== Test 39: Level-Arc Band D (Estari Ruins Deep) monster formulas + boss premiums ===================
 console.log('\n=== Test 39: Band D regulars match the header formulas; estari_warden_prime carries the F1 boss premiums ===');
@@ -2175,8 +1897,8 @@ assert(!!wardenPrime && wardenPrime.boss === true, 'estari_warden_prime exists a
 assert(wardenPrime.level === 80, 'estari_warden_prime is level 80');
 var ewpBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 80;
 var ewpBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 80;
-assert(wardenPrime.hp === ewpBaseHp + 12 * 80, 'estari_warden_prime hp carries the +12*level boss premium (' + ewpBaseHp + ' + 960 = ' + (ewpBaseHp + 960) + '), got ' + wardenPrime.hp);
-assert(wardenPrime.damage === ewpBaseDmg + Math.round(1.5 * 80 + 10), 'estari_warden_prime damage carries the F1 round(1.5*level+10) boss premium (' + ewpBaseDmg + ' + 130 = ' + (ewpBaseDmg + 130) + '), got ' + wardenPrime.damage);
+assert(wardenPrime.hp === Math.round(1.25 * (ewpBaseHp + 12 * 80)), 'estari_warden_prime hp = x1.25 (docs/SPEC-BOSS-COST-RETUNE.md) on the +12*level boss premium: round(1.25 x (' + ewpBaseHp + ' + 960)) = ' + Math.round(1.25 * (ewpBaseHp + 12 * 80)) + ', got ' + wardenPrime.hp);
+assert(wardenPrime.damage === Math.round(1.3 * (ewpBaseDmg + Math.round(1.5 * 80 + 10))), 'estari_warden_prime damage = x1.3 (docs/SPEC-BOSS-COST-RETUNE.md) on the F1 round(1.5*level+10) boss premium: round(1.3 x (' + ewpBaseDmg + ' + 130)) = ' + Math.round(1.3 * (ewpBaseDmg + Math.round(1.5 * 80 + 10))) + ', got ' + wardenPrime.damage);
 assert(wardenPrime.xp === BALANCE.MONSTER_XP(80) * 3, 'estari_warden_prime xp carries the x3 boss premium');
 
 // =================== Test 40: Level-Arc Band D weapon damage is TAPERED, not literal ===================
@@ -2242,109 +1964,16 @@ var taperedArmor78 = correctedArmor(78); // 66 / 2 = 33
   assert(it.armor !== taperedArmor75, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor75 + ' (taper is re-derived per levelReq)');
 });
 
-// =================== Test 41: estari_warden_prime lair fight — winnable but costly (real RNG sim) ===================
-console.log('\n=== Test 41: estari_warden_prime (Band D lair boss) is winnable-but-costly for a geared level-80 warrior ===');
-function buildLevel80WellspringWarrior() {
-  var skillPoints = {};
-  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
-  skillPoints['Swords'] = 3;
-  skillPoints['Heavy Armor'] = 2;
-  var c = Game.Character.create({
-    race: 'Human',
-    name: 'WardenPrimeTester',
-    gender: 'Male',
-    skillPoints: skillPoints
-  });
-  c.level = 80;
-  c.xp = BALANCE.XP_TO_LEVEL(80);
-  // 79 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
-  // (same split style as buildLevel70FrostholdWarrior above).
-  c.statPoints = 79 * BALANCE.LEVELUP_STAT_POINTS;
-  var totalPoints80 = c.statPoints;
-  for (var i = 0; i < totalPoints80; i++) {
-    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
-    Game.Character.spendStatPoint(c, stat);
-  }
-  var gearIds80 = ['sword_estari_wardblade', 'heavy_body_warden_plate', 'shield_estari_bulwark'];
-  gearIds80.forEach(function (id) {
-    Game.Inventory.addItem(c, id);
-    var res = Game.Inventory.equip(c, id);
-    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
-  });
-  for (i = 0; i < 6; i++) {
-    Game.Inventory.addItem(c, 'sphere_fclass_1');
-    Game.Inventory.addItem(c, 'crystal_fclass_1');
-  }
-  Game.Character.recalcDerived(c);
-  c.hitPoints = c.hitPointsMax;
-  c.energy = c.energyMax;
-  return c;
-}
-
-function countBandDConsumables(c) {
-  var n = 0;
-  for (var i = 0; i < c.inventory.length; i++) {
-    if (c.inventory[i] === 'sphere_fclass_1' || c.inventory[i] === 'crystal_fclass_1') n++;
-  }
-  return n;
-}
-
-function simulateWardenPrimeBattle() {
-  var c = buildLevel80WellspringWarrior();
-  Game.state.character = c;
-  Game.state.battle = null;
-  Game.Battle._rng = Math.random; // real RNG for this sim
-
-  var consumablesBefore = countBandDConsumables(c);
-  var battle = Game.Battle.start('estari_warden_prime');
-  var rounds = 0;
-  var MAX_ROUNDS = 500;
-  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
-    rounds++;
-    if (!Game.Battle.canAct(battle)) {
-      var crystalIdx = c.inventory.indexOf('crystal_fclass_1');
-      if (crystalIdx !== -1) {
-        Game.Battle.useItem('crystal_fclass_1');
-        continue;
-      }
-    }
-    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_fclass_1') !== -1) {
-      Game.Battle.useItem('sphere_fclass_1');
-      continue;
-    }
-    Game.Battle.attack();
-  }
-  var consumablesAfter = countBandDConsumables(c);
-  return {
-    phase: battle.phase,
-    hpLeftFrac: c.hitPoints / c.hitPointsMax,
-    consumablesConsumed: consumablesBefore - consumablesAfter
-  };
-}
-
-var WARDEN_PRIME_SIM_COUNT = 30;
-var ewpWins = 0;
-var ewpOutcomes = {};
-var ewpHpLeftSum = 0;
-var ewpConsumedSum = 0;
-for (var ewpRun = 0; ewpRun < WARDEN_PRIME_SIM_COUNT; ewpRun++) {
-  var ewpResult = simulateWardenPrimeBattle();
-  ewpOutcomes[ewpResult.phase] = (ewpOutcomes[ewpResult.phase] || 0) + 1;
-  if (ewpResult.phase === 'won') {
-    ewpWins++;
-    ewpHpLeftSum += ewpResult.hpLeftFrac;
-    ewpConsumedSum += ewpResult.consumablesConsumed;
-  }
-}
-var ewpWinRate = ewpWins / WARDEN_PRIME_SIM_COUNT;
-var ewpAvgHpLeft = ewpWins ? ewpHpLeftSum / ewpWins : 0;
-var ewpAvgConsumed = ewpWins ? ewpConsumedSum / ewpWins : 0;
-console.log('estari_warden_prime sim results over ' + WARDEN_PRIME_SIM_COUNT + ' battles: ' + JSON.stringify(ewpOutcomes) +
-  ' — win rate ' + (ewpWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (ewpAvgHpLeft * 100).toFixed(0) +
-  '%, avg consumables spent ' + ewpAvgConsumed.toFixed(1));
-// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
-assert(ewpWinRate >= 0.6, 'estari_warden_prime is reliably beatable by a geared level-80 warrior (win rate ' + (ewpWinRate * 100).toFixed(1) + '%, want >= 60%)');
-assert(ewpAvgHpLeft <= 0.85 || ewpAvgConsumed >= 1, 'estari_warden_prime extracts a real cost on wins (avg HP left ' + (ewpAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + ewpAvgConsumed.toFixed(1) + ')');
+// =================== Test 41: estari_warden_prime lair fight — a prepared hero wins but pays (real RNG sim) ===================
+console.log('\n=== Test 41: estari_warden_prime (Band D lair boss) is winnable-but-costly for a prepared level-80 warrior ===');
+// Boss contract (docs/SPEC-BOSS-COST-BAND.md §2, as amended by docs/SPEC-BOSS-COST-RETUNE.md D0/D6),
+// judged on the shared PREPARED warrior (tests/boss_fixture.js, SPEC-BOSS-COST-RETUNE D5).
+// These are regression floors; the 300-trial lineage grid in SPEC-BOSS-COST-RETUNE §3.3 is the gate.
+var ewpSim = BossFixture.simulate(Game, 'estari_warden_prime', 80, 30);
+console.log(BossFixture.describe('estari_warden_prime', ewpSim));
+assert(ewpSim.winRate >= 0.85, 'estari_warden_prime is reliably beatable by a prepared level-80 warrior (win rate ' + (ewpSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(ewpSim.avgHpSpent >= 0.35 || ewpSim.avgConsumed >= 3, 'estari_warden_prime extracts a real cost on wins (avg HP spent ' + (ewpSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables; spent ' + ewpSim.avgConsumed.toFixed(1) + ')');
+assert(ewpSim.avgConsumed <= 0.5 * ewpSim.stock, 'estari_warden_prime is not ruinous: at most half the stock per win (avg ' + ewpSim.avgConsumed.toFixed(1) + ' of ' + ewpSim.stock + ')');
 
 // =================== Test 42: Level-Arc Band E (Ascent to the Skyspire) monster formulas + boss premiums ===================
 console.log('\n=== Test 42: Band E regulars match the header formulas; society_anima_horror carries the F1 boss premiums ===');
@@ -2373,8 +2002,8 @@ assert(!!animaHorror && animaHorror.boss === true, 'society_anima_horror exists 
 assert(animaHorror.level === 90, 'society_anima_horror is level 90');
 var sahBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 90;
 var sahBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 90;
-assert(animaHorror.hp === sahBaseHp + 12 * 90, 'society_anima_horror hp carries the +12*level boss premium (' + sahBaseHp + ' + 1080 = ' + (sahBaseHp + 1080) + '), got ' + animaHorror.hp);
-assert(animaHorror.damage === sahBaseDmg + Math.round(1.5 * 90 + 10), 'society_anima_horror damage carries the F1 round(1.5*level+10) boss premium (' + sahBaseDmg + ' + 145 = ' + (sahBaseDmg + 145) + '), got ' + animaHorror.damage);
+assert(animaHorror.hp === Math.round(1.25 * (sahBaseHp + 12 * 90)), 'society_anima_horror hp = x1.25 (docs/SPEC-BOSS-COST-RETUNE.md) on the +12*level boss premium: round(1.25 x (' + sahBaseHp + ' + 1080)) = ' + Math.round(1.25 * (sahBaseHp + 12 * 90)) + ', got ' + animaHorror.hp);
+assert(animaHorror.damage === Math.round(1.3 * (sahBaseDmg + Math.round(1.5 * 90 + 10))), 'society_anima_horror damage = x1.3 (docs/SPEC-BOSS-COST-RETUNE.md) on the F1 round(1.5*level+10) boss premium: round(1.3 x (' + sahBaseDmg + ' + 145)) = ' + Math.round(1.3 * (sahBaseDmg + Math.round(1.5 * 90 + 10))) + ', got ' + animaHorror.damage);
 assert(animaHorror.xp === BALANCE.MONSTER_XP(90) * 3, 'society_anima_horror xp carries the x3 boss premium');
 
 // =================== Test 43: Level-Arc Band E weapon damage is TAPERED, not literal ===================
@@ -2438,109 +2067,16 @@ var taperedArmor88 = correctedArmor(88); // 73 / 2 = 37
   assert(it.armor !== taperedArmor85, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor85 + ' (taper is re-derived per levelReq)');
 });
 
-// =================== Test 44: society_anima_horror lair fight — winnable but costly (real RNG sim) ===================
-console.log('\n=== Test 44: society_anima_horror (Band E lair boss) is winnable-but-costly for a geared level-90 warrior ===');
-function buildLevel90SkyspireWarrior() {
-  var skillPoints = {};
-  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
-  skillPoints['Swords'] = 3;
-  skillPoints['Heavy Armor'] = 2;
-  var c = Game.Character.create({
-    race: 'Human',
-    name: 'AnimaHorrorTester',
-    gender: 'Male',
-    skillPoints: skillPoints
-  });
-  c.level = 90;
-  c.xp = BALANCE.XP_TO_LEVEL(90);
-  // 89 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
-  // (same split style as buildLevel80WellspringWarrior above).
-  c.statPoints = 89 * BALANCE.LEVELUP_STAT_POINTS;
-  var totalPoints90 = c.statPoints;
-  for (var i = 0; i < totalPoints90; i++) {
-    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
-    Game.Character.spendStatPoint(c, stat);
-  }
-  var gearIds90 = ['sword_spireward_blade', 'heavy_body_spireward_plate', 'shield_spireward_aegis'];
-  gearIds90.forEach(function (id) {
-    Game.Inventory.addItem(c, id);
-    var res = Game.Inventory.equip(c, id);
-    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
-  });
-  for (i = 0; i < 6; i++) {
-    Game.Inventory.addItem(c, 'sphere_gclass_1');
-    Game.Inventory.addItem(c, 'crystal_gclass_1');
-  }
-  Game.Character.recalcDerived(c);
-  c.hitPoints = c.hitPointsMax;
-  c.energy = c.energyMax;
-  return c;
-}
-
-function countBandEConsumables(c) {
-  var n = 0;
-  for (var i = 0; i < c.inventory.length; i++) {
-    if (c.inventory[i] === 'sphere_gclass_1' || c.inventory[i] === 'crystal_gclass_1') n++;
-  }
-  return n;
-}
-
-function simulateAnimaHorrorBattle() {
-  var c = buildLevel90SkyspireWarrior();
-  Game.state.character = c;
-  Game.state.battle = null;
-  Game.Battle._rng = Math.random; // real RNG for this sim
-
-  var consumablesBefore = countBandEConsumables(c);
-  var battle = Game.Battle.start('society_anima_horror');
-  var rounds = 0;
-  var MAX_ROUNDS = 500;
-  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
-    rounds++;
-    if (!Game.Battle.canAct(battle)) {
-      var crystalIdx = c.inventory.indexOf('crystal_gclass_1');
-      if (crystalIdx !== -1) {
-        Game.Battle.useItem('crystal_gclass_1');
-        continue;
-      }
-    }
-    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_gclass_1') !== -1) {
-      Game.Battle.useItem('sphere_gclass_1');
-      continue;
-    }
-    Game.Battle.attack();
-  }
-  var consumablesAfter = countBandEConsumables(c);
-  return {
-    phase: battle.phase,
-    hpLeftFrac: c.hitPoints / c.hitPointsMax,
-    consumablesConsumed: consumablesBefore - consumablesAfter
-  };
-}
-
-var ANIMA_HORROR_SIM_COUNT = 30;
-var sahWins = 0;
-var sahOutcomes = {};
-var sahHpLeftSum = 0;
-var sahConsumedSum = 0;
-for (var sahRun = 0; sahRun < ANIMA_HORROR_SIM_COUNT; sahRun++) {
-  var sahResult = simulateAnimaHorrorBattle();
-  sahOutcomes[sahResult.phase] = (sahOutcomes[sahResult.phase] || 0) + 1;
-  if (sahResult.phase === 'won') {
-    sahWins++;
-    sahHpLeftSum += sahResult.hpLeftFrac;
-    sahConsumedSum += sahResult.consumablesConsumed;
-  }
-}
-var sahWinRate = sahWins / ANIMA_HORROR_SIM_COUNT;
-var sahAvgHpLeft = sahWins ? sahHpLeftSum / sahWins : 0;
-var sahAvgConsumed = sahWins ? sahConsumedSum / sahWins : 0;
-console.log('society_anima_horror sim results over ' + ANIMA_HORROR_SIM_COUNT + ' battles: ' + JSON.stringify(sahOutcomes) +
-  ' — win rate ' + (sahWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (sahAvgHpLeft * 100).toFixed(0) +
-  '%, avg consumables spent ' + sahAvgConsumed.toFixed(1));
-// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
-assert(sahWinRate >= 0.6, 'society_anima_horror is reliably beatable by a geared level-90 warrior (win rate ' + (sahWinRate * 100).toFixed(1) + '%, want >= 60%)');
-assert(sahAvgHpLeft <= 0.85 || sahAvgConsumed >= 1, 'society_anima_horror extracts a real cost on wins (avg HP left ' + (sahAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + sahAvgConsumed.toFixed(1) + ')');
+// =================== Test 44: society_anima_horror lair fight — a prepared hero wins but pays (real RNG sim) ===================
+console.log('\n=== Test 44: society_anima_horror (Band E lair boss) is winnable-but-costly for a prepared level-90 warrior ===');
+// Boss contract (docs/SPEC-BOSS-COST-BAND.md §2, as amended by docs/SPEC-BOSS-COST-RETUNE.md D0/D6),
+// judged on the shared PREPARED warrior (tests/boss_fixture.js, SPEC-BOSS-COST-RETUNE D5).
+// These are regression floors; the 300-trial lineage grid in SPEC-BOSS-COST-RETUNE §3.3 is the gate.
+var sahSim = BossFixture.simulate(Game, 'society_anima_horror', 90, 30);
+console.log(BossFixture.describe('society_anima_horror', sahSim));
+assert(sahSim.winRate >= 0.85, 'society_anima_horror is reliably beatable by a prepared level-90 warrior (win rate ' + (sahSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(sahSim.avgHpSpent >= 0.35 || sahSim.avgConsumed >= 3, 'society_anima_horror extracts a real cost on wins (avg HP spent ' + (sahSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables; spent ' + sahSim.avgConsumed.toFixed(1) + ')');
+assert(sahSim.avgConsumed <= 0.5 * sahSim.stock, 'society_anima_horror is not ruinous: at most half the stock per win (avg ' + sahSim.avgConsumed.toFixed(1) + ' of ' + sahSim.stock + ')');
 
 // =================== Test 45: Level-Arc Band F (The Red Moon / Eidas's Sanctum) monster formulas + boss premiums ===================
 console.log('\n=== Test 45: Band F regulars match the header formulas; eidas_ascendant carries the amplified FINALE boss premiums ===');
@@ -2571,9 +2107,9 @@ var eaBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 100;
 var eaBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 100;
 var eaStandardHpPremium = 12 * 100; // the F1 CONVENTION NOTES starting ballpark every other Level-Arc boss uses
 var eaAmplifiedHpPremium = Math.round(12 * 100 * 1.4); // Band F's deliberate FINALE amplification
-assert(eidasAscendant.hp === eaBaseHp + eaAmplifiedHpPremium, 'eidas_ascendant hp carries the amplified 1.4x hp premium (' + eaBaseHp + ' + ' + eaAmplifiedHpPremium + ' = ' + (eaBaseHp + eaAmplifiedHpPremium) + '), got ' + eidasAscendant.hp);
-assert(eidasAscendant.hp > eaBaseHp + eaStandardHpPremium, 'eidas_ascendant hp premium (' + eaAmplifiedHpPremium + ') exceeds the standard +12*level premium (' + eaStandardHpPremium + ') other Level-Arc bosses use -- the FINALE is deliberately tougher');
-assert(eidasAscendant.damage === eaBaseDmg + Math.round(1.5 * 100 + 10), 'eidas_ascendant damage carries the F1 round(1.5*level+10) boss premium (' + eaBaseDmg + ' + 160 = ' + (eaBaseDmg + 160) + '), got ' + eidasAscendant.damage);
+assert(eidasAscendant.hp === Math.round(1.25 * (eaBaseHp + eaAmplifiedHpPremium)), 'eidas_ascendant hp = x1.25 (docs/SPEC-BOSS-COST-RETUNE.md) on the amplified 1.4x hp premium: round(1.25 x (' + eaBaseHp + ' + ' + eaAmplifiedHpPremium + ')) = ' + Math.round(1.25 * (eaBaseHp + eaAmplifiedHpPremium)) + ', got ' + eidasAscendant.hp);
+assert(eidasAscendant.hp > Math.round(1.25 * (eaBaseHp + eaStandardHpPremium)), 'eidas_ascendant hp (' + eidasAscendant.hp + ') exceeds what the standard +12*level premium would give under the same x1.25 retune (' + Math.round(1.25 * (eaBaseHp + eaStandardHpPremium)) + ') -- the FINALE is deliberately tougher');
+assert(eidasAscendant.damage === Math.round(1.1 * (eaBaseDmg + Math.round(1.5 * 100 + 10))), 'eidas_ascendant damage = x1.1 (docs/SPEC-BOSS-COST-RETUNE.md) on the F1 round(1.5*level+10) boss premium: round(1.1 x (' + eaBaseDmg + ' + 160)) = ' + Math.round(1.1 * (eaBaseDmg + Math.round(1.5 * 100 + 10))) + ', got ' + eidasAscendant.damage);
 assert(eidasAscendant.xp === BALANCE.MONSTER_XP(100) * 3, 'eidas_ascendant xp carries the x3 boss premium');
 assert(eidasAscendant.curseChance === BALANCE.CURSE_APPLY_CHANCE, 'eidas_ascendant carries curseChance BALANCE.CURSE_APPLY_CHANCE, matching his moon-anima-horror creations');
 // The signature tech (mon_red_moons_judgment) is unique to this boss: no other monster in the
@@ -2649,110 +2185,16 @@ var taperedArmor98 = correctedArmor(98); // 80 / 2 = 40
   assert(it.armor !== taperedArmor95, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor95 + ' (taper is re-derived per levelReq)');
 });
 
-// =================== Test 47: eidas_ascendant lair fight — THE ARC FINALE, winnable but the costliest fight in the game (real RNG sim) ===================
-console.log('\n=== Test 47: eidas_ascendant (Band F FINAL lair boss) is winnable but the costliest fight in the game for a geared level-100 warrior ===');
-function buildLevel100RedMoonWarrior() {
-  var skillPoints = {};
-  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
-  skillPoints['Swords'] = 3;
-  skillPoints['Heavy Armor'] = 2;
-  var c = Game.Character.create({
-    race: 'Human',
-    name: 'EidasAscendantTester',
-    gender: 'Male',
-    skillPoints: skillPoints
-  });
-  c.level = 100;
-  c.xp = BALANCE.XP_TO_LEVEL(100);
-  // 99 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
-  // (same split style as buildLevel90SkyspireWarrior above).
-  c.statPoints = 99 * BALANCE.LEVELUP_STAT_POINTS;
-  var totalPoints100 = c.statPoints;
-  for (var i = 0; i < totalPoints100; i++) {
-    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
-    Game.Character.spendStatPoint(c, stat);
-  }
-  var gearIds100 = ['sword_redmoon_blade', 'heavy_body_redmoon_plate', 'shield_redmoon_aegis'];
-  gearIds100.forEach(function (id) {
-    Game.Inventory.addItem(c, id);
-    var res = Game.Inventory.equip(c, id);
-    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
-  });
-  for (i = 0; i < 8; i++) {
-    Game.Inventory.addItem(c, 'sphere_hclass_1');
-    Game.Inventory.addItem(c, 'crystal_hclass_1');
-  }
-  Game.Character.recalcDerived(c);
-  c.hitPoints = c.hitPointsMax;
-  c.energy = c.energyMax;
-  return c;
-}
-
-function countBandFConsumables(c) {
-  var n = 0;
-  for (var i = 0; i < c.inventory.length; i++) {
-    if (c.inventory[i] === 'sphere_hclass_1' || c.inventory[i] === 'crystal_hclass_1') n++;
-  }
-  return n;
-}
-
-function simulateEidasAscendantBattle() {
-  var c = buildLevel100RedMoonWarrior();
-  Game.state.character = c;
-  Game.state.battle = null;
-  Game.Battle._rng = Math.random; // real RNG for this sim
-
-  var consumablesBefore = countBandFConsumables(c);
-  var battle = Game.Battle.start('eidas_ascendant');
-  var rounds = 0;
-  var MAX_ROUNDS = 800;
-  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
-    rounds++;
-    if (!Game.Battle.canAct(battle)) {
-      var crystalIdx = c.inventory.indexOf('crystal_hclass_1');
-      if (crystalIdx !== -1) {
-        Game.Battle.useItem('crystal_hclass_1');
-        continue;
-      }
-    }
-    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_hclass_1') !== -1) {
-      Game.Battle.useItem('sphere_hclass_1');
-      continue;
-    }
-    Game.Battle.attack();
-  }
-  var consumablesAfter = countBandFConsumables(c);
-  return {
-    phase: battle.phase,
-    hpLeftFrac: c.hitPoints / c.hitPointsMax,
-    consumablesConsumed: consumablesBefore - consumablesAfter
-  };
-}
-
-var EIDAS_ASCENDANT_SIM_COUNT = 60;
-var eaWins = 0;
-var eaOutcomes = {};
-var eaHpLeftSum = 0;
-var eaConsumedSum = 0;
-for (var eaRun = 0; eaRun < EIDAS_ASCENDANT_SIM_COUNT; eaRun++) {
-  var eaResult = simulateEidasAscendantBattle();
-  eaOutcomes[eaResult.phase] = (eaOutcomes[eaResult.phase] || 0) + 1;
-  if (eaResult.phase === 'won') {
-    eaWins++;
-    eaHpLeftSum += eaResult.hpLeftFrac;
-    eaConsumedSum += eaResult.consumablesConsumed;
-  }
-}
-var eaWinRate = eaWins / EIDAS_ASCENDANT_SIM_COUNT;
-var eaAvgHpLeft = eaWins ? eaHpLeftSum / eaWins : 0;
-var eaAvgConsumed = eaWins ? eaConsumedSum / eaWins : 0;
-console.log('eidas_ascendant sim results over ' + EIDAS_ASCENDANT_SIM_COUNT + ' battles: ' + JSON.stringify(eaOutcomes) +
-  ' — win rate ' + (eaWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (eaAvgHpLeft * 100).toFixed(0) +
-  '%, avg consumables spent ' + eaAvgConsumed.toFixed(1));
-// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables --
-// but as the FINALE, eidas_ascendant should be the COSTLIEST fight in the game (not unwinnable).
-assert(eaWinRate >= 0.6, 'eidas_ascendant is winnable by a geared level-100 warrior (win rate ' + (eaWinRate * 100).toFixed(1) + '%, want >= 60%, per the difficulty contract\'s "not unwinnable" floor)');
-assert(eaAvgConsumed >= 2, 'eidas_ascendant extracts a heavier cost than a normal band boss (avg consumables spent ' + eaAvgConsumed.toFixed(1) + ', want >= 2 -- society_anima_horror\'s Band E sim spent ~1.4)');
+// =================== Test 47: eidas_ascendant lair fight — a prepared hero wins but pays (real RNG sim) ===================
+console.log('\n=== Test 47: eidas_ascendant (Band F FINAL lair boss) is winnable but the costliest fight in the game for a prepared level-100 warrior ===');
+// Boss contract (docs/SPEC-BOSS-COST-BAND.md §2, as amended by docs/SPEC-BOSS-COST-RETUNE.md D0/D6),
+// judged on the shared PREPARED warrior (tests/boss_fixture.js, SPEC-BOSS-COST-RETUNE D5).
+// These are regression floors; the 300-trial lineage grid in SPEC-BOSS-COST-RETUNE §3.3 is the gate.
+var eaSim = BossFixture.simulate(Game, 'eidas_ascendant', 100, 60);
+console.log(BossFixture.describe('eidas_ascendant', eaSim));
+assert(eaSim.winRate >= 0.75, 'eidas_ascendant is reliably beatable by a prepared level-100 warrior (win rate ' + (eaSim.winRate * 100).toFixed(1) + '%, want >= 75%)');
+assert(eaSim.avgHpSpent >= 0.45, 'eidas_ascendant is the costliest fight: a prepared hero spends >= 45% of the HP bar per win (avg ' + (eaSim.avgHpSpent * 100).toFixed(0) + '%; band bosses need 35%)');
+assert(eaSim.avgConsumed <= 0.5 * eaSim.stock, 'eidas_ascendant is not ruinous: at most half the stock per win (avg ' + eaSim.avgConsumed.toFixed(1) + ' of ' + eaSim.stock + ')');
 
 // =================== Test 48: v1.4 P2 (G1) — AP boss multiplier (BALANCE.AP_BOSS_MULT) ===================
 console.log('\n=== Test 48: AP boss win grants BALANCE.AP_PER_WIN(monster level) x BALANCE.AP_BOSS_MULT ===');
@@ -4330,31 +3772,31 @@ console.log('\n=== Test 102: monster tech power + boss basic cut + half Armor/Br
 
   // --- boss L90
   var horror = monDef('society_anima_horror');
-  assert(horror.boss && horror.damage === 328, 'fixture: society_anima_horror is a boss with damage 328');
-  assert(Game.Battle.monsterTechPower(horror, LANCE) === 230, 'boss L90 tech power = round(0.7 x 328) = 230');
-  assert(Game.Battle.monsterBasicPower(horror) === 180, 'boss L90 basic attack = round(0.55 x 328) = 180');
+  assert(horror.boss && horror.damage === 426, 'fixture: society_anima_horror is a boss with damage 426 (boss cost retune, docs/SPEC-BOSS-COST-RETUNE.md)');
+  assert(Game.Battle.monsterTechPower(horror, LANCE) === 298, 'boss L90 tech power = round(0.7 x 426) = 298');
+  assert(Game.Battle.monsterBasicPower(horror) === 234, 'boss L90 basic attack = round(0.55 x 426) = 234');
   var r2 = reply('society_anima_horror', { techId: 'mon_anima_lance' });
-  assert(r2.lost === 230, 'boss L90 tech lands for 230, got ' + r2.lost);
+  assert(r2.lost === 298, 'boss L90 tech lands for 298, got ' + r2.lost);
   var r2b = reply('society_anima_horror', {});
-  assert(r2b.lost === 180, 'boss L90 basic attack lands for 180, got ' + r2b.lost);
+  assert(r2b.lost === 234, 'boss L90 basic attack lands for 234, got ' + r2b.lost);
 
   // --- Red Moon's Judgment (signature) at L100
   var asc = monDef('eidas_ascendant');
-  assert(asc.boss && asc.damage === 363, 'fixture: eidas_ascendant boss, damage 363');
+  assert(asc.boss && asc.damage === 399, 'fixture: eidas_ascendant boss, damage 399 (boss cost retune)');
   assert(Game.Battle.getTech('mon_red_moons_judgment').signature === true, 'mon_red_moons_judgment carries signature: true');
   var sigCount = Game.Data.techs.filter(function (t) { return t.signature; }).length;
   assert(sigCount === 1, 'exactly one signature tech exists, got ' + sigCount);
   var rj = reply('eidas_ascendant', { techId: 'mon_red_moons_judgment' });
-  assert(rj.lost === Math.round(1.3 * 0.7 * 363) && rj.lost === 330, 'Red Moon\'s Judgment at L100 lands for round(1.3 x 0.7 x 363) = 330, got ' + rj.lost);
+  assert(rj.lost === Math.round(1.3 * 0.7 * 399) && rj.lost === 363, 'Red Moon\'s Judgment at L100 lands for round(1.3 x 0.7 x 399) = 363, got ' + rj.lost);
   var ro = reply('eidas_ascendant', { techId: 'mon_radiant_smite' });
-  assert(ro.lost === 254, 'Ascendant\'s other techs land for round(0.7 x 363) = 254, got ' + ro.lost);
+  assert(ro.lost === 279, 'Ascendant\'s other techs land for round(0.7 x 399) = 279, got ' + ro.lost);
 
   // --- a tech whose own power is above the scaled value keeps it
   var weak = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', mutate: function (m) { m.damage = 5; } });
   assert(weak.lost === LANCE.power, 'a tech whose own power (' + LANCE.power + ') exceeds F x damage keeps it, got ' + weak.lost);
 
   // --- enrage (real script, fires on the player's action) raises both basic attack and tech power
-  var enraged = Math.round(328 * 1.12);
+  var enraged = Math.round(426 * 1.12);
   var re = reply('society_anima_horror', { techId: 'mon_anima_lance', keepScript: true, hpFrac: 0.39 });
   assert(re.damage === enraged, 'enrage script fired: monster damage ' + re.damage + ' (expected ' + enraged + ')');
   assert(re.lost === Math.round(0.7 * enraged), 'enraged boss tech = round(0.7 x ' + enraged + ') = ' + Math.round(0.7 * enraged) + ', got ' + re.lost);
@@ -4377,7 +3819,7 @@ console.log('\n=== Test 102: monster tech power + boss basic cut + half Armor/Br
     Game.Battle.attack();
     Game.Character.getArmor = realArmor;
     var lost = before - c.hitPoints;
-    assert(lost === Math.round(180 * BALANCE.AFFIX_CHARGED_MULT), 'charged release = round(180 x charge mult) = ' + Math.round(180 * BALANCE.AFFIX_CHARGED_MULT) + ', got ' + lost);
+    assert(lost === Math.round(234 * BALANCE.AFFIX_CHARGED_MULT), 'charged release = round(234 x charge mult) = ' + Math.round(234 * BALANCE.AFFIX_CHARGED_MULT) + ', got ' + lost);
     Game.Battle.endBattle();
   })();
 

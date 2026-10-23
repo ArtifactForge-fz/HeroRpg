@@ -13,6 +13,7 @@ var vm = require('vm');
 var fs = require('fs');
 var path = require('path');
 var FakeDom = require('./fakedom.js');
+var BossFixture = require('./boss_fixture.js'); // shared prepared-warrior boss sim (docs/SPEC-BOSS-COST-RETUNE.md §4)
 
 var base = "D:/Claude - collection folder/HeroRPG/js";
 
@@ -581,131 +582,16 @@ function setLevel(c, n) {
 });
 
 // =====================================================================
-// Part 4: eidas_echo beats-check — debug level-40 warrior with lvl-35 gear, 50 sim battles,
-// real RNG. Assert win rate between 20% and 90% (beatable but not trivial, per phase brief).
+// Part 4: eidas_echo beats-check — a PREPARED level-40 warrior (tests/boss_fixture.js), 50 sim battles,
+// real RNG. Boss contract: docs/SPEC-BOSS-COST-BAND.md §2 as amended by docs/SPEC-BOSS-COST-RETUNE.md.
 // =====================================================================
-console.log('\n=== Part 4: eidas_echo simulated beats-check (50 battles, real RNG) ===');
+console.log('\n=== Part 4: eidas_echo simulated beats-check (50 battles, real RNG, prepared warrior) ===');
 
-function countConsumables(c) {
-  var n = 0;
-  for (var i = 0; i < c.inventory.length; i++) {
-    if (c.inventory[i] === 'potion_greater_healing' || c.inventory[i] === 'crystal_pure_anima') n++;
-  }
-  return n;
-}
-
-function buildLevel40Warrior() {
-  var skillPoints = {};
-  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
-  skillPoints['Swords'] = 3;
-  skillPoints['Heavy Armor'] = 2;
-  var c = Game.Character.create({
-    race: 'Human',
-    name: 'FinalBossTester',
-    gender: 'Male',
-    skillPoints: skillPoints
-  });
-
-  setLevel(c, 40);
-  // Level 40 grants 5 stat points/level from level 2 on (39 levels * 5 = 195), spend them all
-  // into Strength/Vitality/Endurance for a melee-focused build (a "debug-level-40 warrior").
-  c.statPoints += 39 * BALANCE.LEVELUP_STAT_POINTS - c.statPoints; // normalize to exactly 39 levels' worth, in case create() granted any
-  var totalPoints = c.statPoints;
-  var i;
-  for (i = 0; i < totalPoints; i++) {
-    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
-    Game.Character.spendStatPoint(c, stat);
-  }
-
-  // Gear: lvl-35 weapon + armor (Phase 6b tier-2 gear), all requirements should be met at Lv 40
-  // with the stat spend above (statReqs strength 44 for the tier-2 weapons/heavy armor).
-  var gearIds = [
-    'sword_kastengard_relic_blade', // weapon, str req 44
-    'heavy_body_vault_bulwark', // body armor, str req 40
-    'shield_arkan_wardplate' // offhand shield
-  ];
-  gearIds.forEach(function (id) {
-    Game.Inventory.addItem(c, id);
-    var res = Game.Inventory.equip(c, id);
-    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
-  });
-
-  // A stack of healing potions/energy crystals so the sim isn't gated purely by consumables
-  // (we want the boss's own difficulty curve, not an inventory-management puzzle).
-  for (i = 0; i < 5; i++) {
-    Game.Inventory.addItem(c, 'potion_greater_healing');
-    Game.Inventory.addItem(c, 'crystal_pure_anima');
-  }
-
-  Game.Character.recalcDerived(c);
-  c.hitPoints = c.hitPointsMax;
-  c.energy = c.energyMax;
-  return c;
-}
-
-function simulateOneBattle() {
-  var c = buildLevel40Warrior();
-  Game.state.character = c;
-  Game.state.battle = null;
-  Game.Battle._rng = Math.random; // real RNG for this sim (phase brief)
-
-  var consumablesBefore = countConsumables(c);
-  var battle = Game.Battle.start('eidas_echo');
-  var rounds = 0;
-  var MAX_ROUNDS = 500; // safety valve against infinite loops
-  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
-    rounds++;
-    if (!Game.Battle.canAct(battle)) {
-      // Out of Energy: try an energy crystal, else forced to keep "acting" (attack) until the
-      // battle resolves via monster action / status ticks, matching the archived "flee or die"
-      // rule loosely — for sim purposes, use a crystal if carried, else attack (which will just
-      // log the no-Energy message and let the round continue via monster pressure).
-      var crystalIdx = c.inventory.indexOf('crystal_pure_anima');
-      if (crystalIdx !== -1) {
-        Game.Battle.useItem('crystal_pure_anima');
-        continue;
-      }
-    }
-    // Heal below 40% HP if a potion is carried.
-    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('potion_greater_healing') !== -1) {
-      Game.Battle.useItem('potion_greater_healing');
-      continue;
-    }
-    Game.Battle.attack();
-  }
-  var consumablesAfter = countConsumables(c);
-  return {
-    phase: battle.phase, // 'won' | 'lost' | 'fled' | 'monsterFled' | 'active' (timed out)
-    hpLeftFrac: c.hitPoints / c.hitPointsMax,
-    consumablesConsumed: consumablesBefore - consumablesAfter
-  };
-}
-
-var SIM_COUNT = 50;
-var wins = 0;
-var outcomes = {};
-var hpLeftSum = 0;
-var consumedSum = 0;
-for (var run = 0; run < SIM_COUNT; run++) {
-  var result = simulateOneBattle();
-  outcomes[result.phase] = (outcomes[result.phase] || 0) + 1;
-  if (result.phase === 'won') {
-    wins++;
-    hpLeftSum += result.hpLeftFrac;
-    consumedSum += result.consumablesConsumed;
-  }
-}
-var winRate = wins / SIM_COUNT;
-var avgHpLeft = wins ? hpLeftSum / wins : 0;
-var avgConsumed = wins ? consumedSum / wins : 0;
-console.log('eidas_echo sim results over ' + SIM_COUNT + ' battles: ' + JSON.stringify(outcomes) +
-  ' — win rate ' + (winRate * 100).toFixed(1) + '%, avg HP left on win ' + (avgHpLeft * 100).toFixed(0) +
-  '%, avg consumables spent ' + avgConsumed.toFixed(1));
-// Phase 7 balance-pass contract (replaces the pre-retune 20-90% band): a PREPARED max-level
-// character (best gear, rested, potions+crystals stocked) should win reliably, but the final
-// boss must extract a real cost — either meaningful HP loss or consumed resources.
-assert(winRate >= 0.6, 'eidas_echo is reliably beatable by a prepared level-40 warrior (win rate ' + (winRate * 100).toFixed(1) + '%, want >= 60%)');
-assert(avgHpLeft <= 0.8 || avgConsumed >= 1, 'eidas_echo extracts a real cost on wins (avg HP left ' + (avgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + avgConsumed.toFixed(1) + ')');
+var echoSim = BossFixture.simulate(Game, 'eidas_echo', 40, 50);
+console.log(BossFixture.describe('eidas_echo', echoSim));
+assert(echoSim.winRate >= 0.85, 'eidas_echo is reliably beatable by a prepared level-40 warrior (win rate ' + (echoSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(echoSim.avgHpSpent >= 0.35 || echoSim.avgConsumed >= 3, 'eidas_echo extracts a real cost on wins (avg HP spent ' + (echoSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables; spent ' + echoSim.avgConsumed.toFixed(1) + ')');
+assert(echoSim.avgConsumed <= 0.5 * echoSim.stock, 'eidas_echo is not ruinous: at most half the stock per win (avg ' + echoSim.avgConsumed.toFixed(1) + ' of ' + echoSim.stock + ')');
 
 // =====================================================================
 // Part 5 (v1.3.1 fix 3): eidas_echo's reordered drop table (js/data/monsters.js). Before the fix,
