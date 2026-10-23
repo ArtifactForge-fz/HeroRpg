@@ -1,5 +1,7 @@
 # SPEC — Monster tech power (techs carry the fight; armor counts against them at half)
 
+**Implemented 2026-10-23 on branch `v1.11-hero-tree` as v1.12.0.**
+
 **Status:** READY FOR IMPLEMENTATION — all decisions resolved by the user 2026-10-23 (§5: D0–D4 set the
 direction, D5–D7 accepted as recommended). Sim run 2026-10-23 (§3.1). Authored 2026-10-23 (user-directed: "#2", the follow-up promised
 by `docs/SPEC-ROGUE-BOSS-COST.md` D7; widened by the user from bosses to every monster).
@@ -163,6 +165,14 @@ using ≥ 1 consumable counts as paying / tech share):
 | G2 | Eidas Ascendant battle log | Judgment hits for its scaled 330 base; the other techs for 254 |
 | G3 | Regular 5-down cells | Identical to v1.11 within noise |
 | G4 | Shipped boss floors (`tests/test_p6b_content.js` Part 4, `tests/test_p3_battle.js` boss tests) | Still pass unchanged; if not, stop and report |
+
+**Gate results (lead review, 2026-10-23):** G1 ✅ — the implemented code, unpatched, reproduces the
+chosen column **exactly** on every cell (same seeds, 300 trials, all 12 lineages): bosses 87.7%
+worst (L10), L100 91.3% with the ×1.3 Judgment, tech share 48–65%, regulars 100% / 52–72%.
+G2 ✅ — pinned by `tests/test_p3_battle.js` Test 102 (Judgment 330, other Ascendant techs 254).
+G3 ✅ — every 5-levels-down cell identical to v1.11. G4 ✅ — all 15 suites pass with the boss
+floors untouched. Real-browser check of the wiki found that a browser holding a cached pre-v1.12
+`battle.js` crashed the monster table; `js/ui/wiki.js` now falls back to the raw damage.
 
 ---
 

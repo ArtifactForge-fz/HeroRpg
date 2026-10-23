@@ -482,6 +482,20 @@ class-levels-buy-abilities idea carry over):
     carry a signature secondary stat (Swords→Accuracy, Knives→Crit Chance, Polearms→Armor Pen,
     Hand to Hand→Crit Damage, Rods→Spell Power, Shields→Block). See the spec for the full table.
 
+- **Monster techs scale with the monster [invented]** (`docs/SPEC-MONSTER-TECH-POWER.md` §2.1,
+  sim-locked §3.1; direction only from `reference/site/homepage_2006.md`): a tech's power is
+  `max(tech.power, round(F × monster.damage))`, F = 1.00 for regular monsters and 0.70 for bosses
+  (`MONSTER_TECH_DAMAGE_FRACTION` / `BOSS_TECH_DAMAGE_FRACTION`), read after any enrage script. A tech
+  marked `signature: true` (Red Moon's Judgment only) takes a further ×1.3 (`SIGNATURE_TECH_MULT`).
+- **Boss basic attacks are cut [invented]** (SPEC-MONSTER-TECH-POWER §2.2): a boss's basic attack is
+  `round(0.55 × damage)` (`BOSS_BASIC_ATTACK_MULT`), so techs carry most of a boss's damage. Bosses
+  only; the charged release and a companion hit by a basic attack scale with it.
+- **Half physical defense against graded techs [invented]** (SPEC-MONSTER-TECH-POWER §2.3,
+  `TECH_PHYSICAL_DEFENSE_SHARE` 0.5): a graded tech hitting the player is mitigated by Magic Armor
+  plus half the (Rage-buffed) Armor, Fear-scaled; Bracing is halved and Block can apply at half
+  chance. Ungraded techs and basic attacks keep full Armor / Bracing / Block; Defend, the
+  penetration floor and Fear are unchanged.
+
 ## 5. Techniques (Techs) — [archived structure] (`Techniques.md`, `Techs.md`)
 
 - Bought at the **Academy** with Training Points; organized in **chains** (learn predecessor first).

@@ -61,6 +61,8 @@ the caster follow-up (D3).
 
 ### 2.1 Bracing
 
+> **Note (v1.12.0):** since `docs/SPEC-MONSTER-TECH-POWER.md` §2.3, Bracing is halved (`× TECH_PHYSICAL_DEFENSE_SHARE` 0.5) against graded monster techs; it is unchanged against basic attacks and ungraded techs.
+
 On every monster hit that lands on the player (`js/core/battle.js` monsterAct, right after the `dmg`
 line that applies the penetration floor, before Block and Defend):
 

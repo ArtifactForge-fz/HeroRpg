@@ -574,6 +574,23 @@ Game.Battle = (function () {
 
   // ---------------- Monster action (counter after each player action) ----------------
 
+  // docs/SPEC-MONSTER-TECH-POWER.md §2.1 [invented]: a monster tech's power is max(tech.power,
+  // round(F x monster.damage)), F = MONSTER_TECH_DAMAGE_FRACTION (regular) or BOSS_TECH_DAMAGE_FRACTION
+  // (monster.boss); a tech marked `signature: true` also takes SIGNATURE_TECH_MULT. Reads monster.damage
+  // as it stands (after any enrage script). Exported for tests and the wiki.
+  function monsterTechPower(monster, tech) {
+    var f = monster.boss ? BALANCE.BOSS_TECH_DAMAGE_FRACTION : BALANCE.MONSTER_TECH_DAMAGE_FRACTION;
+    var mult = tech.signature ? BALANCE.SIGNATURE_TECH_MULT : 1;
+    return Math.max(tech.power, Math.round(mult * f * monster.damage));
+  }
+
+  // docs/SPEC-MONSTER-TECH-POWER.md §2.2 [invented]: bosses only swing for BOSS_BASIC_ATTACK_MULT of
+  // their damage; regular monsters' basic attack is unchanged. Feeds actionBase, so the charged
+  // release and a companion hit by a basic attack scale with it.
+  function monsterBasicPower(monster) {
+    return monster.boss ? Math.round(BALANCE.BOSS_BASIC_ATTACK_MULT * monster.damage) : monster.damage;
+  }
+
   function monsterAct(battle) {
 
     if (isOver(battle)) return;
@@ -711,7 +728,9 @@ Game.Battle = (function () {
     // Base power/charge/frenzied computed ONCE — shared by every target this action hits; each
     // target is still rolled/mitigated INDEPENDENTLY below (spec: "each rolled/mitigated
     // independently"), so a 'both' cleave doesn't let one glancing roll cover two victims.
-    var actionBase = usedTech ? usedTech.power : monster.damage;
+    // docs/SPEC-MONSTER-TECH-POWER.md §2.1-2.2: a tech scales with the monster (floored at its own
+    // power); a boss's basic attack is cut. Read from monster.damage NOW, after any enrage script.
+    var actionBase = usedTech ? monsterTechPower(monster, usedTech) : monsterBasicPower(monster);
     // v1.5 P1: a charged release = normal basic-attack damage x AFFIX_CHARGED_MULT, applied to
     // `actionBase` BEFORE the rest of this pipeline (variance/glancing/mitigation/Fear/defending)
     // below — reuses it verbatim, same as every other action.
@@ -759,9 +778,13 @@ Game.Battle = (function () {
     // character's own Armor stat, same as every other physical-mitigation term here — Fear reduces
     // it identically (Fear.md: "lower your stats by 10% for each level"), it never touches Magic
     // Armor mitigation (Rage grants Armor, not Magic Armor).
-    var mitigation = (usedTech && usedTech.grade)
-      ? Game.Character.getMagicArmor(battle.player) * fear
-      : (Game.Character.getArmor(battle.player) + playerBuffArmorBonus(battle)) * fear;
+    // docs/SPEC-MONSTER-TECH-POWER.md §2.3: a GRADED tech is Magic Armor's job but now also counts
+    // TECH_PHYSICAL_DEFENSE_SHARE (half) of Armor (+ Rage buff); Fear scales the sum.
+    var gradedHit = !!(usedTech && usedTech.grade);
+    var physicalArmor = Game.Character.getArmor(battle.player) + playerBuffArmorBonus(battle);
+    var mitigation = gradedHit
+      ? (Game.Character.getMagicArmor(battle.player) + BALANCE.TECH_PHYSICAL_DEFENSE_SHARE * physicalArmor) * fear
+      : physicalArmor * fear;
     // [invented] v1.6 P1 (CB-1, SPEC-V1.6-REBALANCE.md §6): penetration floor, DEFENSIVE-ONLY (this
     // is the monster->player hit site) — a hit always deals at least round(raw*FLOOR) regardless of
     // armor, applied BEFORE Defend halving. LOCKED by the P0 sim gate; deliberately NOT applied to
@@ -771,19 +794,20 @@ Game.Battle = (function () {
     var dmg = Math.max(1, Math.round(raw * BALANCE.DAMAGE_PENETRATION_FLOOR), Math.round(raw - mitigation));
     // docs/SPEC-NONDEX-DEFENSE.md §2.1: Bracing (Heavy/Medium Armor skill x Endurance) — after the
     // floor, before Block/Defend. Monster hits on the player only (never status ticks/companion hits).
-    dmg = Math.max(1, Math.round(dmg * (1 - playerBraceFraction(battle))));
+    // SPEC-MONSTER-TECH-POWER §2.3: Bracing is halved against graded techs.
+    dmg = Math.max(1, Math.round(dmg * (1 - playerBraceFraction(battle) * (gradedHit ? BALANCE.TECH_PHYSICAL_DEFENSE_SHARE : 1))));
     // docs/SPEC-SECONDARY-STATS.md §2.5: Block Chance — only against physical hits (a graded tech
     // is Magic Armor's job, cannot be blocked), only rolled when the shield-gated block chance is
     // above 0 (one extra rng() call, never spent otherwise). Applied after the penetration floor
     // above, before Defend halving below, so Block + Defend leaves 25% of the hit.
+    // SPEC-MONSTER-TECH-POWER §2.3: a graded tech can now be blocked, at TECH_PHYSICAL_DEFENSE_SHARE
+    // (half) of the chance; the roll still happens only when that chance is above 0.
     var blocked = false;
-    if (!(usedTech && usedTech.grade)) {
-      var blockChance = blockChanceInBattle(battle);
-      if (blockChance > 0 && rng() < blockChance) {
-        blocked = true;
-        dmg = Math.max(1, Math.round(dmg * (1 - BALANCE.BLOCK_REDUCTION)));
-        Game.Character.addSkillXp(battle.player, 'Shields', BALANCE.BLOCK_SKILL_XP_PER_PROC);
-      }
+    var blockChance = blockChanceInBattle(battle) * (gradedHit ? BALANCE.TECH_PHYSICAL_DEFENSE_SHARE : 1);
+    if (blockChance > 0 && rng() < blockChance) {
+      blocked = true;
+      dmg = Math.max(1, Math.round(dmg * (1 - BALANCE.BLOCK_REDUCTION)));
+      Game.Character.addSkillXp(battle.player, 'Shields', BALANCE.BLOCK_SKILL_XP_PER_PROC);
     }
     if (defending) dmg = Math.max(1, Math.round(dmg * BALANCE.DEFEND_DAMAGE_MULT));
 
@@ -2280,6 +2304,8 @@ Game.Battle = (function () {
     fearMultiplier: fearMultiplier,
     playerDodgeChance: playerDodgeChance,
     playerBraceFraction: playerBraceFraction,
+    monsterTechPower: monsterTechPower, // SPEC-MONSTER-TECH-POWER: exported for tests and the wiki
+    monsterBasicPower: monsterBasicPower,
     playerDoubleAttackChance: playerDoubleAttackChance,
     playerCurseActive: playerCurseActive,
     playerCurseMultiplier: playerCurseMultiplier,

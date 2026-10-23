@@ -12,6 +12,20 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.12.0',
+    date: '2026-10-23',
+    title: 'The Whole Arsenal',
+    saveVersion: 12,
+    highlights: [
+      'Monsters fight with their whole arsenal. Every monster\'s special attacks now grow with the ' +
+        'monster, so the spells of the far north hurt like the far north. Bosses lean on their ' +
+        'techniques more and swing less, and the red moon\'s judgment is the most terrible blow in ' +
+        'the game.',
+      'Armor, shields and braced stances now also blunt magical attacks, at half strength.'
+    ]
+  },
+
+  {
     version: 'v1.11.0',
     date: '2026-10-23',
     title: 'The Hero Tree',

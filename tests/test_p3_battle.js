@@ -2840,7 +2840,7 @@ bFz.monster.script = []; // isolate from majiku_warlord's own boss script (cover
 bFz.monster.affix = 'frenzied';
 bFz.monster.hp = bFz.monster.hpMax = 10000000;
 bFz.monster.energy = bFz.monster.energyMax = 10000000;
-var baseDamageFz = bFz.monster.damage;
+var baseDamageFz = Game.Battle.monsterBasicPower(bFz.monster); // boss basic attack is cut to 0.55 x damage since SPEC-MONSTER-TECH-POWER §2.2 (stale pin: monster.damage)
 var dmgHistoryFz = [];
 for (var roundFz = 1; roundFz <= 12; roundFz++) {
   Game.Battle.attack();
@@ -4266,6 +4266,155 @@ console.log('\n=== Test 101: Bracing (SPEC-NONDEX-DEFENSE §2.1) — Heavy/Mediu
 
   // Estari Ruin Warden's basic damage trim (SPEC-NONDEX-DEFENSE §2.2): 33 -> 28.
   assert(Game.Data.monsters.filter(function (m) { return m.id === 'estari_ruin_warden'; })[0].damage === 28, 'Estari Ruin Warden damage is 28');
+})();
+
+// =================== Test 102: SPEC-MONSTER-TECH-POWER — tech scaling, boss basic cut, half physical defense vs graded techs ===================
+console.log('\n=== Test 102: monster tech power + boss basic cut + half Armor/Bracing/Block vs graded techs (SPEC-MONSTER-TECH-POWER §2) ===');
+(function () {
+  var HEAVY = ['heavy_head_great_helm', 'heavy_body_stoneback_warplate', 'heavy_legs_warplate_legguards', 'heavy_feet_ironclad_sabatons'];
+  var SLOTS = ['head', 'body', 'legs', 'feet'];
+
+  // One monster reply under a constant 0.5 rng: 'caster' behavior (tech chance 0.75, wind-up 0.15) makes
+  // the 0.5 roll pick the single listed tech; no techs + 'simple' makes it a basic attack. Neutral
+  // variance, no glancing, no dodge. Armor / Magic Armor / Block chance are stubbed per call.
+  function reply(monsterId, opts) {
+    var c = makeCharacter({ name: 'TechPowerTest' });
+    c.dexterity = 999;
+    var m0 = Game.Data.monsters.filter(function (m) { return m.id === monsterId; })[0];
+    c.level = opts.level || m0.level;
+    if (opts.brace) {
+      c.skills['Heavy Armor'].level = 20;
+      for (var i = 0; i < 4; i++) c.equipment[SLOTS[i]] = HEAVY[i];
+    }
+    Game.Character.recalcDerived(c);
+    c.hitPoints = c.hitPointsMax = 1000000;
+    c.energy = c.energyMax = 1000000;
+    var calls = 0;
+    setRng(function () { calls++; return 0.5; });
+    var b = Game.Battle.start(monsterId);
+    b.monster.hp = b.monster.hpMax = 1000000;
+    if (opts.hpFrac) b.monster.hp = Math.round(b.monster.hpMax * opts.hpFrac);
+    b.monster.energy = b.monster.energyMax = 1000000;
+    if (!opts.keepScript) b.monster.script = [];
+    if (opts.techId) { b.monster.techs = [opts.techId]; b.monster.behavior = 'caster'; }
+    else { b.monster.techs = []; b.monster.behavior = 'simple'; }
+    if (opts.mutate) opts.mutate(b.monster);
+    var realArmor = Game.Character.getArmor, realMA = Game.Character.getMagicArmor, realBlock = Game.Character.getBlockChance;
+    Game.Character.getArmor = function () { return opts.armor || 0; };
+    Game.Character.getMagicArmor = function () { return opts.magicArmor || 0; };
+    Game.Character.getBlockChance = function () { return opts.block || 0; };
+    var before = c.hitPoints;
+    var callsBefore = calls;
+    Game.Battle.attack();
+    Game.Character.getArmor = realArmor; Game.Character.getMagicArmor = realMA; Game.Character.getBlockChance = realBlock;
+    var res = { lost: before - c.hitPoints, calls: calls - callsBefore, damage: b.monster.damage };
+    Game.Battle.endBattle();
+    return res;
+  }
+  function monDef(id) { return Game.Data.monsters.filter(function (m) { return m.id === id; })[0]; }
+  var LANCE = Game.Battle.getTech('mon_anima_lance'); // Dark-graded, own power 22
+
+  // --- helpers on the data
+  var archivist = monDef('vault_forsaken_archivist');
+  assert(archivist.damage === 73 && !archivist.boss, 'fixture: vault_forsaken_archivist is a regular L35 monster, damage 73');
+  assert(Game.Battle.monsterTechPower(archivist, LANCE) === 73, 'monsterTechPower: regular L35 tech = round(1.0 x 73) = 73 (Anima Lance own power 22)');
+  assert(Game.Battle.monsterBasicPower(archivist) === 73, 'monsterBasicPower: a regular monster\'s basic attack is unchanged (73)');
+  assert(Game.Battle.monsterTechPower({ damage: 5, boss: true }, { power: 22 }) === 22, 'monsterTechPower floors at tech.power (boss)');
+  assert(Game.Battle.monsterTechPower({ damage: 100 }, { power: 22, signature: true }) === 130, 'signature multiplies the scaled value: round(1.3 x 1.0 x 100) = 130');
+
+  // --- landed regular tech / basic (zero defenses -> hit equals base power)
+  var r1 = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance' });
+  assert(r1.lost === 73, 'regular L35 tech lands for round(1.0 x 73) = 73, got ' + r1.lost);
+  var r1b = reply('vault_forsaken_archivist', {});
+  assert(r1b.lost === 73, 'regular monster basic attack still lands for 73, got ' + r1b.lost);
+
+  // --- boss L90
+  var horror = monDef('society_anima_horror');
+  assert(horror.boss && horror.damage === 328, 'fixture: society_anima_horror is a boss with damage 328');
+  assert(Game.Battle.monsterTechPower(horror, LANCE) === 230, 'boss L90 tech power = round(0.7 x 328) = 230');
+  assert(Game.Battle.monsterBasicPower(horror) === 180, 'boss L90 basic attack = round(0.55 x 328) = 180');
+  var r2 = reply('society_anima_horror', { techId: 'mon_anima_lance' });
+  assert(r2.lost === 230, 'boss L90 tech lands for 230, got ' + r2.lost);
+  var r2b = reply('society_anima_horror', {});
+  assert(r2b.lost === 180, 'boss L90 basic attack lands for 180, got ' + r2b.lost);
+
+  // --- Red Moon's Judgment (signature) at L100
+  var asc = monDef('eidas_ascendant');
+  assert(asc.boss && asc.damage === 363, 'fixture: eidas_ascendant boss, damage 363');
+  assert(Game.Battle.getTech('mon_red_moons_judgment').signature === true, 'mon_red_moons_judgment carries signature: true');
+  var sigCount = Game.Data.techs.filter(function (t) { return t.signature; }).length;
+  assert(sigCount === 1, 'exactly one signature tech exists, got ' + sigCount);
+  var rj = reply('eidas_ascendant', { techId: 'mon_red_moons_judgment' });
+  assert(rj.lost === Math.round(1.3 * 0.7 * 363) && rj.lost === 330, 'Red Moon\'s Judgment at L100 lands for round(1.3 x 0.7 x 363) = 330, got ' + rj.lost);
+  var ro = reply('eidas_ascendant', { techId: 'mon_radiant_smite' });
+  assert(ro.lost === 254, 'Ascendant\'s other techs land for round(0.7 x 363) = 254, got ' + ro.lost);
+
+  // --- a tech whose own power is above the scaled value keeps it
+  var weak = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', mutate: function (m) { m.damage = 5; } });
+  assert(weak.lost === LANCE.power, 'a tech whose own power (' + LANCE.power + ') exceeds F x damage keeps it, got ' + weak.lost);
+
+  // --- enrage (real script, fires on the player's action) raises both basic attack and tech power
+  var enraged = Math.round(328 * 1.12);
+  var re = reply('society_anima_horror', { techId: 'mon_anima_lance', keepScript: true, hpFrac: 0.39 });
+  assert(re.damage === enraged, 'enrage script fired: monster damage ' + re.damage + ' (expected ' + enraged + ')');
+  assert(re.lost === Math.round(0.7 * enraged), 'enraged boss tech = round(0.7 x ' + enraged + ') = ' + Math.round(0.7 * enraged) + ', got ' + re.lost);
+  var reb = reply('society_anima_horror', { keepScript: true, hpFrac: 0.39 });
+  assert(reb.lost === Math.round(0.55 * enraged), 'enraged boss basic = round(0.55 x ' + enraged + ') = ' + Math.round(0.55 * enraged) + ', got ' + reb.lost);
+
+  // --- the charged release is built on the cut basic attack
+  (function () {
+    var c = makeCharacter({ name: 'ChargeCut' });
+    c.dexterity = 999; c.level = 90;
+    Game.Character.recalcDerived(c);
+    c.hitPoints = c.hitPointsMax = 1000000; c.energy = c.energyMax = 1000000;
+    setRng(fixedRng(0.5));
+    var b = Game.Battle.start('society_anima_horror');
+    b.monster.hp = b.monster.hpMax = 1000000; b.monster.energy = 1000000; b.monster.script = [];
+    b.monster.techs = []; b.monster.behavior = 'simple';
+    b.charge = { mult: BALANCE.AFFIX_CHARGED_MULT };
+    var realArmor = Game.Character.getArmor; Game.Character.getArmor = function () { return 0; };
+    var before = c.hitPoints;
+    Game.Battle.attack();
+    Game.Character.getArmor = realArmor;
+    var lost = before - c.hitPoints;
+    assert(lost === Math.round(180 * BALANCE.AFFIX_CHARGED_MULT), 'charged release = round(180 x charge mult) = ' + Math.round(180 * BALANCE.AFFIX_CHARGED_MULT) + ', got ' + lost);
+    Game.Battle.endBattle();
+  })();
+
+  // --- graded mitigation = Magic Armor + 0.5 x Armor (x Fear); ungraded / basic keep full Armor
+  var g = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', armor: 40, magicArmor: 10 });
+  assert(g.lost === 73 - (10 + 0.5 * 40), 'graded tech vs MA 10 + Armor 40: mitigation 30 -> 43, got ' + g.lost);
+  var gf = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', armor: 40, magicArmor: 10, level: 33 });
+  assert(gf.lost === Math.round(73 - 30 * 0.8), 'Fear (2 levels under, x0.8) scales the whole graded sum: ' + Math.round(73 - 30 * 0.8) + ', got ' + gf.lost);
+  var ungraded = Game.Data.techs.filter(function (t) { return t.monsterOnly && !t.grade && t.effect === 'damage'; })[0];
+  assert(!!ungraded, 'an ungraded monster damage tech exists for the ungraded checks (' + (ungraded && ungraded.id) + ')');
+  var up = reply('vault_forsaken_archivist', { techId: ungraded.id, armor: 40, magicArmor: 10 });
+  assert(up.lost === 73 - 40, 'an ungraded tech keeps full Armor (40) and ignores Magic Armor: 33, got ' + up.lost);
+  var bs = reply('vault_forsaken_archivist', { armor: 40, magicArmor: 10 });
+  assert(bs.lost === 73 - 40, 'a basic attack keeps full Armor: 33, got ' + bs.lost);
+
+  // --- Bracing halved vs graded, full vs basic / ungraded (full Heavy set, skill 20 -> brace 0.20)
+  var gb = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', brace: true });
+  assert(gb.lost === Math.round(73 * (1 - 0.2 * 0.5)), 'graded tech: Bracing halved -> round(73 x 0.9) = 66, got ' + gb.lost);
+  var bb = reply('vault_forsaken_archivist', { brace: true });
+  assert(bb.lost === Math.round(73 * 0.8), 'basic attack: full Bracing -> round(73 x 0.8) = 58, got ' + bb.lost);
+  var ub = reply('vault_forsaken_archivist', { techId: ungraded.id, brace: true });
+  assert(ub.lost === Math.round(73 * 0.8), 'ungraded tech: full Bracing -> 58, got ' + ub.lost);
+
+  // --- Block: the 0.5 roll blocks iff chance > 0.5. Chance 0.8: graded halves to 0.4 (no block), others keep 0.8 (block)
+  var blocked73 = Math.round(73 * (1 - BALANCE.BLOCK_REDUCTION));
+  var gk = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', block: 0.8 });
+  assert(gk.lost === 73, 'graded tech: Block chance 0.8 halves to 0.4 -> the 0.5 roll does not block, got ' + gk.lost);
+  var gk2 = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', block: 1.2 });
+  assert(gk2.lost === blocked73, 'graded tech: Block chance 1.2 halves to 0.6 -> the 0.5 roll blocks (a graded tech can now be blocked), got ' + gk2.lost);
+  var bk = reply('vault_forsaken_archivist', { block: 0.8 });
+  assert(bk.lost === blocked73, 'basic attack: full Block chance 0.8 -> blocked, got ' + bk.lost);
+  var uk = reply('vault_forsaken_archivist', { techId: ungraded.id, block: 0.8 });
+  assert(uk.lost === blocked73, 'ungraded tech: full Block chance 0.8 -> blocked, got ' + uk.lost);
+  // exactly one rng() for the Block roll when the (halved) chance is above 0, none at 0
+  var k0 = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', block: 0 });
+  var k1 = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', block: 0.0002 });
+  assert(k1.calls - k0.calls === 1, 'Block rolls one rng() when the halved chance is above 0 and none at 0 (calls ' + k0.calls + ' vs ' + k1.calls + ')');
 })();
 
 // =================== Summary ===================

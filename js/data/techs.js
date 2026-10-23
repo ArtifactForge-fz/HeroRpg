@@ -2116,6 +2116,7 @@ Game.Data.techs = [
     grade: 'Star',
     energyCost: 70,
     power: 240,
+    signature: true, // invented: docs/SPEC-MONSTER-TECH-POWER.md §2.1 (D6) — scales as SIGNATURE_TECH_MULT x the boss tech fraction x monster.damage (330 at L100), not the plain floor
     effect: 'damage',
     monsterOnly: true,
     desc: "Eidas's own working, a devastating lance of Star-grade Anima drawn straight from the red moon itself — used by nothing else in Exos."

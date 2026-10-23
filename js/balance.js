@@ -108,6 +108,15 @@ var BALANCE = {
   BRACE_PER_ARMOR_SKILL_LEVEL: 0.01, // invented: SPEC-NONDEX-DEFENSE §2.1 (D1) — the same 1%/level the Dodge skill used to give everyone
   BRACE_PER_ENDURANCE: 0.002, // invented: SPEC-NONDEX-DEFENSE §2.1 (D5, variant E1) — +20% brace at 100 Endurance
   BRACE_CAP: 0.50, // invented: SPEC-NONDEX-DEFENSE §2.1 — same ceiling as DODGE_CAP
+  // invented: docs/SPEC-MONSTER-TECH-POWER.md §2 — monster techs scale with the monster
+  // (techPower = max(tech.power, round(F x monster.damage))), sim-locked in §3.1; 'signature' techs
+  // get SIGNATURE_TECH_MULT on top, boss basic attacks are cut, and graded techs count physical
+  // defenses at half.
+  MONSTER_TECH_DAMAGE_FRACTION: 1.00, // invented: SPEC-MONSTER-TECH-POWER §2.1 — F for regular monsters
+  BOSS_TECH_DAMAGE_FRACTION: 0.70, // invented: SPEC-MONSTER-TECH-POWER §2.1 — F for bosses (monster.boss)
+  BOSS_BASIC_ATTACK_MULT: 0.55, // invented: SPEC-MONSTER-TECH-POWER §2.2 — boss basic attack = round(0.55 x damage); bosses only
+  SIGNATURE_TECH_MULT: 1.3, // invented: SPEC-MONSTER-TECH-POWER §2.1 (D6) — extra multiplier for a tech marked signature: true (Red Moon's Judgment)
+  TECH_PHYSICAL_DEFENSE_SHARE: 0.5, // invented: SPEC-MONSTER-TECH-POWER §2.3 — vs graded techs: + share x Armor on Magic Armor, Bracing x share, Block chance x share
   // invented (Phase 7 balance pass): monsters use their own gentler dodge scaling. The Phase 3
   // stand-in (level x DODGE_PER_SKILL_LEVEL) reached 33-40% at endgame levels and stalled fights;
   // monsters now dodge like a modestly dexterous player, capped well below the player cap.

@@ -158,6 +158,18 @@ rebuilds it after every commit so a deployable single-file build always matches 
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
 re-enable it. Never build/ship from a tree with red suites.
 
+## Recently completed (2026-10-23) — v1.12.0 "The Whole Arsenal" (release candidate)
+
+`docs/SPEC-MONSTER-TECH-POWER.md` (sim-locked, §3.1), on branch `v1.11-hero-tree` as its own release
+after v1.11.0. **No save change** (save version stays 12). **Not pushed, merged, or deployed.**
+- Monster tech power = `max(tech.power, round(F × monster.damage))`, F 1.00 regular / 0.70 boss;
+  `signature: true` (Red Moon's Judgment only) ×1.3. Boss basic attacks = `round(0.55 × damage)`.
+- Graded techs hitting the player: Magic Armor + 0.5 × Armor (× Fear), Bracing × 0.5, Block at half
+  chance (still no `rng()` roll at chance 0). Ungraded techs / basic attacks unchanged.
+- Constants in `js/balance.js`: `MONSTER_TECH_DAMAGE_FRACTION`, `BOSS_TECH_DAMAGE_FRACTION`,
+  `BOSS_BASIC_ATTACK_MULT`, `SIGNATURE_TECH_MULT`, `TECH_PHYSICAL_DEFENSE_SHARE`. Helpers
+  `Game.Battle.monsterTechPower` / `monsterBasicPower` (wiki.html now loads battle.js for the latter).
+
 ## Recently completed (2026-10-23) — v1.11.0 "The Hero Tree" (release candidate)
 
 Three user-directed specs in one release, stacked on v1.10.0. Built in the `HeroRpg-playable`
