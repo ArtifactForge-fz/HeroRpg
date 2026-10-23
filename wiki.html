@@ -51,6 +51,9 @@
      hand-out") and Used-for ("quest collect target") cross-references can read Game.Data.quests
      — the wiki previously never loaded it at all. Pure data file, no other script dependency. -->
 <script src="js/data/quests.js"></script>
+<!-- v1.12 (SPEC-MONSTER-TECH-POWER): battle.js added only for Game.Battle.monsterBasicPower (the
+     monster table shows a boss's cut basic attack); it touches nothing else at load time. -->
+<script src="js/core/battle.js"></script>
 <script src="js/ui/wiki.js"></script>
 <script>
 (function () {

@@ -270,10 +270,12 @@ Game.Screens = (function () {
   }
 
   function classLabel(c) {
-    var primary = c.primaryClass ? (Game.Classes.getClass(c.primaryClass) || {}).name : null;
-    if (!primary) return 'None';
-    var secondary = c.secondaryClass ? (Game.Classes.getClass(c.secondaryClass) || {}).name : null;
-    return primary + (secondary ? ' (' + secondary + ')' : '');
+    if (!Game.Classes) return 'None';
+    // v1.11 Hero Tree: every active class (lineage tiers 1-3, then the Legendary slot), in order.
+    var names = Game.Classes.activeClassIds(c).map(function (id) {
+      return (Game.Classes.getClass(id) || {}).name || id;
+    });
+    return names.length ? names.join(' / ') : 'None';
   }
 
   function renderStatus(root) {
@@ -445,6 +447,37 @@ Game.Screens = (function () {
     derivedPanel.appendChild(derivedBlock);
     leftCol.appendChild(derivedPanel);
 
+    // docs/SPEC-SECONDARY-STATS.md §2.11: "Combat Stats" block — critChance/critDamage always
+    // show (base 5%/50% even on a fresh character); every other secondary stat only shows once it
+    // has a nonzero (gear/class/shrine) source, so a new character doesn't see a wall of zeros.
+    // Shown value is the UNSCALED aggregator (no Fear scaling outside battle, per §2.1).
+    leftCol.appendChild(el('div', { class: 'tcat mt8' }, ['Combat Stats']));
+    var combatPanel = el('div', { class: 'panel' });
+    var combatBlock = el('div', { class: 'mt4' });
+    var SECONDARY_STAT_ROWS = [
+      ['critChance', 'Critical Strike Chance', 'pct'],
+      ['critDamage', 'Critical Strike Damage', 'pct'],
+      ['accuracy', 'Accuracy', 'pct'],
+      ['armorPen', 'Armor Penetration', 'pct'],
+      ['block', 'Block Chance', 'blockpct'],
+      ['spellPower', 'Spell Power', 'flat'],
+      ['luck', 'Luck', 'flat']
+    ];
+    SECONDARY_STAT_ROWS.forEach(function (row) {
+      var key = row[0], label = row[1], fmt = row[2];
+      var value = (fmt === 'blockpct') ? Game.Character.getBlockChance(c) : Game.Character.getSecondaryStat(c, key);
+      var alwaysShow = (key === 'critChance' || key === 'critDamage');
+      if (!alwaysShow && !value) return;
+      var display = (fmt === 'flat') ? String(value) : (Math.round(value * 1000) / 10) + '%';
+      combatBlock.appendChild(el('div', { class: 'stat-row' }, [
+        el('span', { class: 'stat-name' }, [label]),
+        el('span', { class: 'stat-value' }, [display]),
+        statInfoGlyph(key, label)
+      ]));
+    });
+    combatPanel.appendChild(combatBlock);
+    leftCol.appendChild(combatPanel);
+
     // Skills table
     rightCol.appendChild(el('div', { class: 'tcat mt8' }, ['Skills']));
     var skillsPanel = el('div', { class: 'panel' });
@@ -473,10 +506,10 @@ Game.Screens = (function () {
   }
 
   // ---------- Status: Classes tab (Phase 6a; DESIGN.md §3, Classes.md) ----------
-  // Archived layout: "On the right side of the page you will now notice an icon representing
-  // your newly-obtained class. Drag this icon to the box labeled 'Primary.'" Our UI substitutes
-  // click-to-assign buttons for drag-and-drop (phase brief), and a Deactivate button carries the
-  // archived permanent-wipe warning text verbatim in its confirm dialog.
+  // [revised] v1.11 (docs/SPEC-CLASS-LINEAGE.md section 2.5): the archived Primary/Secondary boxes,
+  // Deactivate button and Inactive Classes list are replaced by the Hero Tree panel: Calling /
+  // Ascension / Mastery (lineage tiers 1-3, permanent) + one Legendary row with [Set Legendary] /
+  // [Unslot], enabled only in a town with an Academy (R5).
   // v1.1 revision (DESIGN.md §3): 'Base' / 'Advanced' / 'Legendary', keyed off classDef.tier.
   // v1.2 Phase 2 (docs/SPEC-V1.2.md Phase 2) adds 'Third Tier' for tier 3 (Shadowknight/Magus/
   // Gambit) and moves Legendary to tier 4 (Runeblade/Vaultbreaker/Heir of the Echo) — checked via
@@ -495,6 +528,89 @@ Game.Screens = (function () {
     return ' (advances ' + (baseDef ? baseDef.name : classDef.baseClass) + ')';
   }
 
+  // True while standing in a town with an Academy (the R5 facility check, mirrors buyAbility).
+  function atAcademy() {
+    if (!Game.World || !Game.World.currentArea) return false;
+    return !!Game.World.getFacility(Game.World.currentArea(), 'academy');
+  }
+
+  // One class's name, Class Level and XP progress (or "Mastered" once maxed, R8a).
+  function appendClassProgress(row, c, classId) {
+    var classDef = Game.Classes.getClass(classId);
+    var entry = c.classes[classId] || { classXp: 0, classLevelsEarned: 0, classLevelsSpent: 0 };
+    row.appendChild(el('span', { class: 'stat-value' }, [
+      classDef ? (classDef.name + lineageSuffix(classDef)) : classId
+    ]));
+    var unspent = Game.Classes.unspentClassLevels(c, classId);
+    if (Game.Classes.isClassMaxed(c, classId)) {
+      row.appendChild(el('span', { class: 'tinyfont' }, [
+        ' Class Lv ' + entry.classLevelsEarned + ' \u2014 Mastered, unspent: ' + unspent
+      ]));
+      return;
+    }
+    // +2/+1 offset matches Game.Classes.grantClassXp's level-up threshold convention (see
+    // that function's comment): classLevelsEarned already counts "class level 1" at zero.
+    var xpForNext = Game.Classes.classXpForLevel(entry.classLevelsEarned + 2);
+    var xpBase = Game.Classes.classXpForLevel(entry.classLevelsEarned + 1);
+    row.appendChild(el('span', { class: 'tinyfont' }, [
+      ' Class Lv ' + entry.classLevelsEarned + ' (' + Math.max(0, entry.classXp - xpBase) + '/' +
+      Math.max(1, xpForNext - xpBase) + ' XP), unspent: ' + unspent
+    ]));
+  }
+
+  // Legendary slot row + "Unlocked Legendaries" list, shared by Status > Classes and the Academy.
+  // Buttons are enabled only at an Academy (R5); elsewhere they carry the hint text instead.
+  function renderLegendaryRows(panel, c, refresh) {
+    var inTown = atAcademy();
+    var hint = 'Visit an Academy to change your Legendary.';
+    function swap(classId) {
+      var res = Game.Classes.setLegendary(c, classId);
+      alert(res.message);
+      Game.persist();
+      refresh();
+    }
+    var obtainedLegs = Object.keys(c.classes || {}).filter(function (id) {
+      var d = Game.Classes.getClass(id);
+      return d && d.legendary;
+    });
+    var slotted = c.legendaryClass || null;
+    var row = el('div', { class: 'stat-row' });
+    row.appendChild(el('span', { class: 'stat-name' }, ['Legendary']));
+    if (slotted) {
+      appendClassProgress(row, c, slotted);
+      row.appendChild(el('button', {
+        class: 'button',
+        title: inTown ? '' : hint,
+        disabled: inTown ? null : 'disabled',
+        onclick: function () { swap(null); }
+      }, ['Unslot']));
+    } else {
+      row.appendChild(el('span', { class: 'tinyfont' }, [obtainedLegs.length ? 'No Legendary chosen' : '???']));
+    }
+    panel.appendChild(row);
+    var others = obtainedLegs.filter(function (id) { return id !== slotted; });
+    if (others.length) {
+      panel.appendChild(el('div', { class: 'tcat2 mt8' }, ['Unlocked Legendaries']));
+      others.forEach(function (id, idx) {
+        var d = Game.Classes.getClass(id);
+        var entry = c.classes[id];
+        panel.appendChild(el('div', { class: 'stat-row alt' + (idx % 2) }, [
+          el('span', { class: 'stat-name' }, [d.name]),
+          el('span', { class: 'tinyfont' }, [' Class Lv ' + entry.classLevelsEarned]),
+          el('button', {
+            class: 'button',
+            title: inTown ? '' : hint,
+            disabled: inTown ? null : 'disabled',
+            onclick: function () { swap(id); }
+          }, ['Set Legendary'])
+        ]));
+      });
+    }
+    if ((slotted || others.length) && !inTown) {
+      panel.appendChild(el('div', { class: 'tinyfont mt4' }, [hint]));
+    }
+  }
+
   function renderStatusClasses(root, c) {
     if (!c.classes) c.classes = {};
 
@@ -510,107 +626,37 @@ Game.Screens = (function () {
       return;
     }
 
-    // ---- Primary / Secondary boxes ----
-    root.appendChild(el('div', { class: 'tcat mt8' }, ['Active Classes']));
-    var activePanel = el('div', { class: 'panel' });
-    ['primary', 'secondary'].forEach(function (slot) {
-      var key = slot === 'primary' ? 'primaryClass' : 'secondaryClass';
-      var classId = c[key];
-      var classDef = classId ? Game.Classes.getClass(classId) : null;
+    // ---- Hero Tree (SPEC-CLASS-LINEAGE section 2.5) ----
+    root.appendChild(el('div', { class: 'tcat mt8' }, ['Hero Tree']));
+    var treePanel = el('div', { class: 'panel' });
+    var TREE_ROWS = {
+      1: { label: 'Calling', empty: 'Unlocks at level 5 \u2014 The First Calling' },
+      2: { label: 'Ascension', empty: 'Unlocks at level 30 \u2014 The Trials of Ascension' },
+      3: { label: 'Mastery', empty: 'Unlocks at level 60 \u2014 The Master\'s Calling' }
+    };
+    Game.Classes.lineageOf(c).forEach(function (rec) {
+      var info = TREE_ROWS[rec.tier];
       var row = el('div', { class: 'stat-row' });
-      row.appendChild(el('span', { class: 'stat-name' }, [slot === 'primary' ? 'Primary' : 'Secondary']));
-      row.appendChild(el('span', { class: 'stat-value' }, [
-        classDef ? (classDef.name + lineageSuffix(classDef)) : '(empty box)'
-      ]));
-      if (classDef) {
-        var entry = c.classes[classId] || { classXp: 0, classLevelsEarned: 0, classLevelsSpent: 0 };
-        // +2/+1 offset matches Game.Classes.grantClassXp's level-up threshold convention (see
-        // that function's comment): classLevelsEarned already counts "class level 1" at zero.
-        var xpForNext = Game.Classes.classXpForLevel(entry.classLevelsEarned + 2);
-        var xpBase = Game.Classes.classXpForLevel(entry.classLevelsEarned + 1);
-        var xpPct = xpForNext > xpBase ? Math.min(100, Math.round(((entry.classXp - xpBase) / (xpForNext - xpBase)) * 100)) : 0;
-        row.appendChild(el('span', { class: 'tinyfont' }, [
-          ' Class Lv ' + entry.classLevelsEarned + ' (' + Math.max(0, entry.classXp - xpBase) + '/' + Math.max(1, xpForNext - xpBase) + ' XP), unspent: ' +
-          Game.Classes.unspentClassLevels(c, classId)
-        ]));
-        row.appendChild(el('button', {
-          class: 'button',
-          onclick: function () {
-            // archived WARNING (Classes.md): deactivating permanently wipes that class's XP,
-            // Class Levels, and abilities — confirm text mirrors the manual almost verbatim.
-            var warn = 'Deactivate ' + classDef.name + '? You will lose all skills, abilities, ' +
-              'Class Experience, and Class Levels in that class. This action cannot be undone and ' +
-              'is completely permanent. If you wish to rebuild the class, you will need to simply ' +
-              'activate it again.';
-            if (!window.confirm(warn)) return;
-            var res = Game.Classes.deactivate(c, slot);
-            if (!res.ok) alert(res.message);
-            Game.persist();
-            refreshStatusScreen();
-          }
-        }, ['Deactivate']));
+      row.appendChild(el('span', { class: 'stat-name' }, [info.label]));
+      if (!rec.classId) {
+        row.appendChild(el('span', { class: 'tinyfont' }, [info.empty]));
+      } else {
+        appendClassProgress(row, c, rec.classId);
       }
-      activePanel.appendChild(row);
+      treePanel.appendChild(row);
     });
-    root.appendChild(activePanel);
+    renderLegendaryRows(treePanel, c, refreshStatusScreen);
+    root.appendChild(treePanel);
 
     // Sorts class ids by tier (Base 1 -> Advanced 2 -> Third Tier 3 -> Legendary 4, DESIGN.md §3
     // v1.1 revision + v1.2 Phase 2), dropping any id with no resolvable definition. Used by both
-    // the Inactive Classes list and the Class Abilities roster below so each groups consistently.
+    // the Class Abilities roster below so it groups consistently.
     function sortByTier(ids) {
       return ids
         .map(function (id) { return { id: id, def: Game.Classes.getClass(id) }; })
         .filter(function (rec) { return !!rec.def; })
         .sort(function (a, b) { return (a.def.tier || 1) - (b.def.tier || 1); });
     }
-
-    // ---- Inactive (obtained-but-not-slotted) classes: click to assign ----
-    root.appendChild(el('div', { class: 'tcat mt8' }, ['Inactive Classes']));
-    var inactivePanel = el('div', { class: 'panel' });
-    var inactiveIds = Object.keys(c.classes).filter(function (id) {
-      return c.primaryClass !== id && c.secondaryClass !== id;
-    });
-    var inactiveRecs = sortByTier(inactiveIds);
-    if (inactiveRecs.length === 0) {
-      inactivePanel.appendChild(el('div', { class: 'smallfont' }, ['No inactive classes.']));
-    } else {
-      var lastInactiveTier = null;
-      inactiveRecs.forEach(function (rec, idx) {
-        var classId = rec.id;
-        var classDef = rec.def;
-        if (tierLabel(classDef) !== lastInactiveTier) {
-          lastInactiveTier = tierLabel(classDef);
-          inactivePanel.appendChild(el('div', { class: 'tcat2' + (idx > 0 ? ' mt8' : '') }, [lastInactiveTier]));
-        }
-        var entry = c.classes[classId];
-        var row = el('div', { class: 'stat-row alt' + (idx % 2) }, [
-          el('span', { class: 'stat-name' }, [classDef.name + lineageSuffix(classDef)]),
-          el('span', { class: 'tinyfont' }, [' Class Lv ' + entry.classLevelsEarned]),
-          el('button', {
-            class: 'button',
-            disabled: c.primaryClass ? 'disabled' : null,
-            onclick: function () {
-              var res = Game.Classes.activate(c, classId, 'primary');
-              if (!res.ok) alert(res.message);
-              Game.persist();
-              refreshStatusScreen();
-            }
-          }, ['Set Primary']),
-          el('button', {
-            class: 'button',
-            disabled: c.secondaryClass ? 'disabled' : null,
-            onclick: function () {
-              var res = Game.Classes.activate(c, classId, 'secondary');
-              if (!res.ok) alert(res.message);
-              Game.persist();
-              refreshStatusScreen();
-            }
-          }, ['Set Secondary'])
-        ]);
-        inactivePanel.appendChild(row);
-      });
-    }
-    root.appendChild(inactivePanel);
 
     // ---- Ability roster per obtained class (owned + available, read-only here; purchased at
     // the Academy's Class Abilities section) ----
@@ -639,7 +685,7 @@ Game.Screens = (function () {
           ]));
         });
       });
-      abilitiesPanel.appendChild(el('div', { class: 'smallfont mt8' }, ['Purchase abilities at an Academy (Town screen) while the class is active.']));
+      abilitiesPanel.appendChild(el('div', { class: 'smallfont mt8' }, ['Purchase abilities at an Academy (Town screen) while the class is active (your Hero Tree and slotted Legendary).']));
     }
     root.appendChild(abilitiesPanel);
   }
@@ -675,6 +721,12 @@ Game.Screens = (function () {
     }
     if (SKILL_EFFECT_ARMOR_SKILLS.indexOf(skillName) !== -1) {
       var armorPct = Math.min(BALANCE.ARMOR_SKILL_ARMOR_PER_LEVEL * lvl, BALANCE.ARMOR_SKILL_ARMOR_CAP);
+      // docs/SPEC-NONDEX-DEFENSE.md §2.3: Heavy/Medium Armor also brace — M = a full set's brace
+      // (Endurance included, before the cap). Light Armor and Shields keep the plain line.
+      if (skillName === 'Heavy Armor' || skillName === 'Medium Armor') {
+        var braceM = BALANCE.BRACE_PER_ARMOR_SKILL_LEVEL * lvl * (1 + BALANCE.BRACE_PER_ENDURANCE * c.endurance);
+        return '+' + Math.round(armorPct * 100) + '% Armor and -' + Math.round(braceM * 100) + '% damage taken when worn';
+      }
       return '+' + Math.round(armorPct * 100) + '% Armor when worn';
     }
     if (SKILL_EFFECT_MAGIC_SCHOOLS.indexOf(skillName) !== -1) {
@@ -1071,7 +1123,9 @@ Game.Screens = (function () {
     if (tech.effect === 'buff' && tech.statKind) {
       var buffLabel = UI_STAT_KIND_LABEL[tech.statKind] || tech.statKind;
       var buffDuration = tech.buffDuration || 3;
-      if (tech.statKind === 'dodge' || tech.statKind === 'double_attack') {
+      if (tech.statKind === 'dodge') {
+        parts.push('+' + Math.round(tech.power * 1000) / 10 + '% Dodge effectiveness for ' + buffDuration + ' turns'); // SPEC-ROGUE-BOSS-COST §2.2
+      } else if (tech.statKind === 'double_attack') {
         parts.push('+' + Math.round(tech.power * 100) + '% ' + buffLabel + ' for ' + buffDuration + ' turns');
       } else {
         parts.push('+' + tech.power + ' ' + buffLabel + ' for ' + buffDuration + ' turns');
@@ -1191,7 +1245,8 @@ Game.Screens = (function () {
       actions.appendChild(el('div', { class: 'mt8' }, [
         el('button', {
           class: 'button',
-          title: '95% chance to find a monster (archived: forum t-755.md)',
+          // archived: reference/forum/t-755.md (95% hunt chance)
+          title: '95% chance to find a monster',
           onclick: performHunt
         }, ['Hunt'])
       ]));
@@ -1255,7 +1310,8 @@ Game.Screens = (function () {
         el('b', {}, ['Camp']), ' ',
         el('button', {
           class: 'button',
-          title: 'Free, but risky — thieves or an ambush may find you in the night (archived: forum t-756.md).',
+          // archived: reference/forum/t-756.md (camp robbery / ambush risk)
+          title: 'Free, but risky — thieves or an ambush may find you in the night.',
           onclick: function () {
             var res = Game.World.camp();
             if (!res.ok) { notify(res.message); return; }
@@ -1287,7 +1343,8 @@ Game.Screens = (function () {
         el('b', {}, ['Forage']), ' ',
         el('button', {
           class: 'button',
-          title: 'Search the area for materials and provisions — free, but shares Camp\'s risk of robbery or ambush (archived: forum t-756.md).',
+          // archived: reference/forum/t-756.md (camp robbery / ambush risk)
+          title: 'Search the area for materials and provisions — free, but shares Camp\'s risk of robbery or ambush.',
           onclick: function () {
             var res = Game.World.forage();
             if (!res.ok) { notify(res.message); return; }
@@ -1805,9 +1862,14 @@ Game.Screens = (function () {
 
     // ---- Phase 6a: Class Abilities section (Classes.md: "Gaining Class Levels will allow you
     // to purchase additional skills and abilities for that class from the Academy"). One
-    // sub-list per ACTIVE class (Primary/Secondary) — an obtained-but-inactive class must be
-    // slotted first on the Status > Classes tab before its abilities can be bought here. ----
-    var activeClassIds = [c.primaryClass, c.secondaryClass].filter(function (id) { return id; });
+    // sub-list per ACTIVE class (lineage + slotted Legendary, v1.11) — an unslotted Legendary must
+    // be set below before its abilities can be bought here. ----
+    var activeClassIds = Game.Classes.activeClassIds(c);
+    // v1.11 (SPEC-CLASS-LINEAGE section 2.5): the Academy also shows the Legendary row + swap buttons.
+    body.appendChild(el('div', { class: 'tcat2 mt8' }, ['Legendary Calling']));
+    var legPanel = el('div', {});
+    renderLegendaryRows(legPanel, c, refreshTownScreen);
+    body.appendChild(legPanel);
     if (activeClassIds.length > 0) {
       body.appendChild(el('div', { class: 'tcat2 mt8' }, ['Class Abilities']));
       activeClassIds.forEach(function (classId) {
@@ -2141,7 +2203,7 @@ Game.Screens = (function () {
             class: 'button',
             style: 'margin-right:4px;',
             onclick: function () {
-              if (!window.confirm('Become a ' + (classDef ? classDef.name : classId) + '? This choice is permanent.')) return;
+              if (!window.confirm('This choice is permanent. ' + (classDef ? classDef.name : classId) + ' will join your Hero Tree for good.')) return;
               var res = Game.Quests.turnIn(quest.id, classId);
               alert(res.message);
               if (res.ok) {

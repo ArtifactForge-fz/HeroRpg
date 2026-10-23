@@ -30,11 +30,16 @@ go in the spec and the commit message). Run with `node`.
    Game.Battle._rng = mulberry32(runIndex);
    ```
    Never add a second `_rng`.
-3. **Drive loop:** copy `simulateOneBattle()` from `tests/test_p6b_content.js` (~line
-   625) — it drives `Game.Battle.start(monsterId, options)` / `attack()` / `useTech()` /
-   `useItem()` with a sane policy (best affordable tech, heal below threshold). Fixture:
-   the "modest-geared warrior" from the shipped boss tests — do NOT invent a stronger
-   fixture; an over-geared fixture hides losses.
+3. **Drive loop:** copy `fightOnce()` from `tests/boss_fixture.js` — it drives
+   `Game.Battle.start(monsterId, options)` / `attack()` / `useItem()` with the standard policy:
+   use a Crystal *before* the next action would empty the Energy pool (`useItem` is refused at
+   0 Energy), heal below 40% HP, else attack (casters: best affordable Firebolt rank). It also
+   tallies HP spent (HP lost + HP healed). Fixture: the **prepared** build — best non-unique,
+   non-cursed gear in every slot, half-level skills, the lineage open at that level with every
+   passive bought, 6 best heals + 6 best Crystals (`buildPreparedWarrior()` there is the warrior
+   case). Boss gates run every lineage × class option on these rules
+   (`docs/SPEC-BOSS-COST-BAND.md` §3.3). Don't gate bosses on an under-geared build: the
+   contract is written for prepared heroes.
    Gotcha: set `c.dexterity = 999` when you need deterministic player-first initiative —
    a monster opening strike consumes RNG and desyncs seeded comparisons.
 
@@ -43,13 +48,17 @@ go in the spec and the commit message). Run with `node`.
 - **≥300 trials per cell** (the v1.4 P0 standard).
 - **Cells:** at-level regular monster; boss with a *prepared* player (consumables,
   at-tier gear); 5-levels-down.
-- **Metrics:** win %, rounds, HP remaining, damage-per-energy, consumables spent.
+- **Metrics:** win %, rounds, **HP spent per win** (heals included), HP left, damage-per-energy,
+  consumables spent (and as % of stock). HP left alone is not a cost metric: heals reset it, so it
+  barely moves with boss strength (`docs/SPEC-BOSS-COST-RETUNE.md` §1.2).
 
 ## The difficulty contract (pass/fail)
 
 - At-level regulars: **≥85–100% win**.
-- Bosses: prepared players win reliably but **pay** (meaningful HP loss or consumed
-  resources — a free boss kill is a fail even at 100% win).
+- Bosses (`docs/SPEC-BOSS-COST-BAND.md` §2, amended by `docs/SPEC-BOSS-COST-RETUNE.md`):
+  each lineage's **weakest** class option wins **≥ 85%** (finale ≥ 75%); its **cheapest** option
+  spends **≥ 35% of the HP bar per win** or ≥ 3 consumables (finale: ≥ 45% HP spent); the most
+  expensive build spends **≤ 50% of its stock**. No win ceiling — 100% is fine if it pays.
 - 5-levels-down: certain death via Fear. Known accepted limitation: not fully enforced
   past ~L50 (Fear-spared healing sustain, DESIGN §4). New mechanics must not *widen*
   this hole — verify true 5-down cells stay at ~0% win.

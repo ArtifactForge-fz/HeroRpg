@@ -234,7 +234,7 @@ Game._debug = {
     Game.Classes.addClassXp(Game.state.character, n);
     Game.persist();
     Game.refreshCurrentScreen();
-    console.log('Granted ' + n + ' class XP (Primary full rate, Secondary half).');
+    console.log('Granted ' + n + ' battle XP worth of class XP (shared pool, split over active un-maxed classes).');
   },
 
   // v1.2 Phase 2: an optional classId picks a SPECIFIC Legendary (roster grew from 1 to 3 —

@@ -343,6 +343,21 @@ Game.Wiki = (function () {
       if (item.damage) stats.push('Dmg ' + item.damage);
       if (item.armor) stats.push('Armor ' + item.armor);
       if (item.magicArmor) stats.push('MArmor ' + item.magicArmor);
+      // docs/SPEC-SECONDARY-STATS.md §2.8/§2.11: show a weapon family's signature secondary-stat
+      // bonus in the same Stats column as Dmg/Armor/MArmor above.
+      if (item.bonuses) {
+        var WIKI_BONUS_LABEL = {
+          critChance: 'Crit Chance', critDamage: 'Crit Damage', accuracy: 'Accuracy',
+          armorPen: 'Armor Pen', block: 'Block', spellPower: 'Spell Power', luck: 'Luck'
+        };
+        var WIKI_FLAT_BONUS = { spellPower: true, luck: true };
+        for (var wbKey in item.bonuses) {
+          if (!Object.prototype.hasOwnProperty.call(item.bonuses, wbKey)) continue;
+          var wbVal = item.bonuses[wbKey];
+          var wbLabel = WIKI_BONUS_LABEL[wbKey] || wbKey;
+          stats.push(wbLabel + ' +' + (WIKI_FLAT_BONUS[wbKey] ? wbVal : (Math.round(wbVal * 1000) / 10 + '%')));
+        }
+      }
       var reqText = statReqText(item.statReqs);
       if (reqText) stats.push('Req: ' + reqText);
 
@@ -412,7 +427,10 @@ Game.Wiki = (function () {
         el('td', {}, [m.name]),
         el('td', { class: 'tinyfont right' }, [String(m.level)]),
         el('td', { class: 'tinyfont right' }, [String(m.hp)]),
-        el('td', { class: 'tinyfont right' }, [String(m.damage)]),
+        // SPEC-MONSTER-TECH-POWER §2.2: a boss's basic attack is cut; show what it actually swings for.
+        // Guarded: a browser still holding a pre-v1.12 cached battle.js has no helper — fall back to
+        // the raw damage rather than crash the whole wiki.
+        el('td', { class: 'tinyfont right' }, [String((Game.Battle && Game.Battle.monsterBasicPower) ? Game.Battle.monsterBasicPower(m) : m.damage)]),
         el('td', { class: 'tinyfont right' }, [String(m.armor)]),
         el('td', { class: 'tinyfont right' }, [String(m.magicArmor || 0)]),
         el('td', { class: 'tinyfont right' }, [String(m.xp)]),
@@ -473,7 +491,9 @@ Game.Wiki = (function () {
     if (tech.effect === 'buff' && tech.statKind) {
       var buffLabel = WIKI_STAT_KIND_LABEL[tech.statKind] || tech.statKind;
       var buffDuration = tech.buffDuration || 3;
-      parts.push((tech.statKind === 'dodge' || tech.statKind === 'double_attack')
+      parts.push(tech.statKind === 'dodge'
+        ? ('+' + Math.round(tech.power * 1000) / 10 + '% Dodge effectiveness (' + buffDuration + ' turns)') // SPEC-ROGUE-BOSS-COST §2.2
+        : tech.statKind === 'double_attack'
         ? ('+' + Math.round(tech.power * 100) + '% ' + buffLabel + ' (' + buffDuration + ' turns)')
         : ('+' + tech.power + ' ' + buffLabel + ' (' + buffDuration + ' turns)'));
     }
@@ -487,6 +507,8 @@ Game.Wiki = (function () {
     if (tech.requiresOffhandWeapon) parts.push('Requires offhand weapon');
     if (tech.requiresArmorClass) parts.push('Requires ' + (WIKI_ARMOR_CLASS_LABEL[tech.requiresArmorClass] || tech.requiresArmorClass));
     if (tech.goldSteal) parts.push('Steals ' + tech.goldSteal + ' gold on hit');
+    // SPEC-MONSTER-TECH-POWER §2.1: monster techs scale with the monster's attack damage.
+    if (tech.monsterOnly && tech.effect === 'damage') parts.push('Scales with the monster: at least its attack damage (bosses: 70%)' + (tech.signature ? '; signature, x1.3' : ''));
     return parts.join('; ') || '—';
   }
 

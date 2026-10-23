@@ -40,9 +40,9 @@ Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's que
    prompt — scope additions sent mid-flight via messages arrive looking like prompt injection
    and get (correctly) refused. Review every delivery: run suites yourself, read the risky
    modules, sim-check balance claims. Never eyeball a balance number — sim it.
-5. **All test suites must pass before any work is called done** (14 as of v1.9 —
-   `test_companion.js` joined in v1.9, `test_v18_engine.js` and `test_reachability.js` in v1.8,
-   `test_wiki.js` in v1.7):
+5. **All test suites must pass before any work is called done** (15 as of v1.10 —
+   `test_secondary_stats.js` joined in v1.10, `test_companion.js` in v1.9,
+   `test_v18_engine.js` and `test_reachability.js` in v1.8, `test_wiki.js` in v1.7):
    `cd tests && for t in test_*.js; do node $t; done` (each exits 0 on pass).
 
 ## Architecture
@@ -64,7 +64,7 @@ Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's que
   `{ambush:true}` (camp-only, monster strikes first).
 - Guarded-hook pattern for cross-module bonuses: `if (Game.World && Game.World.shrineBonus)…`,
   same for `Game.Classes.classBonus(c, effect)` (effects: damage_pct, armor_flat,
-  magic_armor_flat, dodge_flat, energy_max_flat, hp_max_flat, gold_pct, double_attack_flat).
+  magic_armor_flat, dodge_pct, energy_max_flat, hp_max_flat, gold_pct, double_attack_flat).
 
 ## Established balance formulas (do not re-derive)
 
@@ -77,9 +77,15 @@ Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's que
 - Weapon tiers at levelReq 1 / 5–15 / 25 / 35, damage ≈ 3+2×levelReq. Uniques (tag 'unique'):
   monster-drop-only, +15–25% or hybrid stats, never in shops/recipes.
 - Any balance claim gets a scratchpad simulation using the real game code loaded in `node vm`
-  (see `tools/`-adjacent pattern in tests; prior sims measured win %, rounds, HP-left, and
-  damage-per-energy). Difficulty contract for bosses: prepared players win reliably but pay
-  (HP or consumables); at-level regulars ≥85–100% win; 5-level-down = certain death via Fear.
+  (see `tests/boss_fixture.js` and `/balance-sim`; sims measure win %, rounds, HP spent per win,
+  consumables and damage-per-energy). Difficulty contract: at-level regulars ≥85–100% win;
+  5-level-down = certain death via Fear; **bosses** (`docs/SPEC-BOSS-COST-BAND.md` §2, amended by
+  `docs/SPEC-BOSS-COST-RETUNE.md`), judged on the prepared fixture (best gear in every slot,
+  half-level skills, every passive, 6 heals + 6 Crystals): every lineage's weakest class option
+  wins ≥ 85% (finale ≥ 75%); its cheapest option spends ≥ 35% of the HP bar per win, heals
+  included, or ≥ 3 consumables (finale: ≥ 45% HP spent); no build spends > 50% of its stock.
+  Under-geared heroes are expected to lose boss fights. "HP left on win" is NOT a cost metric:
+  the heal-at-40% policy resets it, so it doesn't move with boss strength.
 
 ## Content conventions
 
@@ -158,6 +164,107 @@ rebuilds it after every commit so a deployable single-file build always matches 
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
 re-enable it. Never build/ship from a tree with red suites.
 
+## Recently completed (2026-10-23) — boss cost retune (unreleased, on `v1.11-hero-tree`)
+
+Specs `docs/SPEC-BOSS-COST-BAND.md` (the measurable boss contract) and
+`docs/SPEC-BOSS-COST-RETUNE.md` (all decisions user-resolved; §3.3 = sim gate). Commit `73a6c36`.
+**No save change.** No changelog entry yet (draft in the retune report); ships with the next release.
+- Boss contract: see "Established balance formulas" above. Metric = **HP spent per win** (HP lost
+  + HP healed, over max HP), because HP left on win doesn't respond to boss strength (sweep proof
+  in the retune spec §1.2/§3.1).
+- Boss defs in `js/data/monsters.js` wrap the old base + premium in a multiplier: L40–L90 ×1.25 HP /
+  ×1.3 damage; L18 ×1.25/×1.1, L25 ×1.5/×1.3, L32 ×1.75/×1.3, L100 ×1.25/×1.1; L10 unchanged.
+  User-directed exception to the ratchet rule (boss constants only).
+- `tests/boss_fixture.js` is the one prepared-warrior boss fixture (Warrior → Crusader → Paladin);
+  all 7 boss sims use it. It uses a Crystal before Energy runs out — `useItem` is refused at
+  0 Energy, so "Crystal once `!canAct`" never fires (the old sims' bug).
+- Accepted trade-offs: under-geared heroes lose most boss fights (28–52% for the old fixtures);
+  the uniform buff makes warrior/caster lines pay most of the increase (a boss-accuracy-vs-dodge
+  spec could target the rogue line instead). Boss Dexterity only decides initiative, not dodge.
+
+## Recently completed (2026-10-23) — v1.12.0 "The Whole Arsenal" (release candidate)
+
+`docs/SPEC-MONSTER-TECH-POWER.md` (sim-locked, §3.1), on branch `v1.11-hero-tree` as its own release
+after v1.11.0. **No save change** (save version stays 12). **Not pushed, merged, or deployed.**
+- Monster tech power = `max(tech.power, round(F × monster.damage))`, F 1.00 regular / 0.70 boss;
+  `signature: true` (Red Moon's Judgment only) ×1.3. Boss basic attacks = `round(0.55 × damage)`.
+- Graded techs hitting the player: Magic Armor + 0.5 × Armor (× Fear), Bracing × 0.5, Block at half
+  chance (still no `rng()` roll at chance 0). Ungraded techs / basic attacks unchanged.
+- Constants in `js/balance.js`: `MONSTER_TECH_DAMAGE_FRACTION`, `BOSS_TECH_DAMAGE_FRACTION`,
+  `BOSS_BASIC_ATTACK_MULT`, `SIGNATURE_TECH_MULT`, `TECH_PHYSICAL_DEFENSE_SHARE`. Helpers
+  `Game.Battle.monsterTechPower` / `monsterBasicPower` (wiki.html now loads battle.js for the latter).
+
+## Recently completed (2026-10-23) — v1.11.0 "The Hero Tree" (release candidate)
+
+Three user-directed specs in one release, stacked on v1.10.0. Built in the `HeroRpg-playable`
+working copy (not a git checkout), then **committed on branch `v1.11-hero-tree`** in a fresh clone
+(`HeroRpg-git`, branched from `main` `e06c63d`): one commit for v1.10.0, one for v1.11.0.
+**Not pushed, merged, or deployed — all user-gated.** **Save version 11 → 12.**
+- **Working-copy drift (found while committing):** `HeroRpg-playable` predated part of `main` —
+  PR #1's six tech chains (42 ranks), the Conjurer techs' `skill: 'Conjuration'` link, and its
+  `test_companion.js` Test 12 + changelog lines. The commits keep `main`'s content; Test 12 was
+  moved to the Hero Tree setup. The v1.10/v1.11 sims ran without those 42 ranks (their caster
+  fixture uses Firebolt only). Develop in the git clone from now on, not the plain-file copy.
+- **Hero Tree** (`docs/SPEC-CLASS-LINEAGE.md`, [revised] Classes.md slots/activation/wipe): the
+  tier 1/2/3 class picks are permanent and always active (`c.lineage`), plus one Legendary slot
+  (`c.legendaryClass`, change only at an Academy, progress kept, its techs unslotted on swap-out).
+  No deactivation. Class XP = one pool `CLASS_XP_POOL_FRACTION` 0.5 split evenly over active,
+  un-maxed classes (a class is "Mastered" once its earned levels cover every ability).
+  `activate`/`deactivate` are gone; `activeClassIds`/`lineageOf`/`setLegendary`/`isClassMaxed`
+  are new. Migration v11→v12 per spec §2.4.
+- **Rogue boss cost** (`docs/SPEC-ROGUE-BOSS-COST.md`): Dex dodge with diminishing returns
+  (`DEX_DODGE_MAX` 0.30, `DEX_DODGE_HALF` 100); Dodge skill, `dodge_pct` passives (renamed from
+  `dodge_flat`, powers ×2.5), shrine and dodge buffs all multiply it; all 11 bosses get
+  `dexterity = BOSS_DEXTERITY(level)` = 5·level+10.
+- **Bracing** (`docs/SPEC-NONDEX-DEFENSE.md`): Heavy/Medium Armor pieces cut landed monster hits
+  after the penetration floor (1%/armor-skill level per full set, ×(1 + 0.002·Endurance), cap
+  0.50, ×Fear); Estari Ruin Warden damage 33 → 28.
+- **Review re-sim** (lineage spec §3.2): Heavy/Medium lineages win the L100 boss 99–100% (was
+  88–96%); Gambit/Assassin now pay at every boss (≤ 78% HP left); casters slip as accepted (L10
+  boss 86.3%, L90–100 95.7–98.3%). **Open follow-ups:** caster compensation spec; boss tech power
+  scaling spec.
+- **Sim-harness gotcha:** `Game.Classes.activate` (v1.10 and earlier) took `(c, classId, slot)`.
+  The v1.10 P0 script passed `(c, slot, classId)`, so its fixtures never had a class active and
+  `docs/SPEC-SECONDARY-STATS.md` §3.1 was measured without class bonuses.
+- Process: lead spec + sims; two Sonnet agents in sequence (lineage, then dodge + Bracing; they
+  share `classes.js`/`balance.js`/`screens.js`/tests); lead review re-ran all 15 suites, read the
+  migration/balance/battle diffs, re-simmed the shipped code and checked the Hero Tree UI in a
+  real browser (served over http — the browser pane renders `file://` pages as static snapshots).
+
+## Recently completed (2026-10-21) — v1.10.0 "Keen Edges & Lucky Coins" (release candidate)
+
+**Secondary stats** + a player-facing text cleanup. Spec `docs/SPEC-SECONDARY-STATS.md` (all
+decisions D1–D9 user-resolved; §3.1 = P0 sim results). Save version unchanged (11) — no new
+persisted field. Prepared in the `HeroRpg-playable` working copy, which is **not a git checkout**:
+delivered as `Pathc/release-v1.10.0.patch` (one level up). **Not committed, merged, or deployed —
+all user-gated.**
+- **Mechanics:** seven secondary stats on one aggregator (`Game.Character.getSecondaryStat`:
+  base + gear `bonuses` + class passives + shrine, capped): crit chance/damage (5% base ×1.5,
+  resolved on the SAME single rng() roll as glancing — glancing keeps the low band, so RNG
+  call order is unchanged), Accuracy (weapon attacks + weapon/physicalRoll techs, not spells),
+  Armor Penetration (stacks with tech `armorPierce`, total cap 0.75, incl. Limit Break),
+  shield Block (one extra rng() only when block > 0), Spell Power (same slot as Attunement;
+  boosts servitor ticks too), Luck (lucky forage pick + small XP multiplier; no extra rng() at 0).
+  No crit on Limit Breaks, heals, ticks, or monster/companion hits.
+- **Sources:** `bonuses` on all 98 weapon/shield items (one signature stat per family, levelReq
+  bands), optional `bonusEffects` on 8 existing class passives (ids/costs/ability counts
+  unchanged), 7 shrine buffs appended.
+- **Fear (D8):** new stats ×fearMultiplier at 1–4 levels below, suppressed to 0 at 5+
+  (`SECONDARY_FEAR_SUPPRESS_LEVELS`). P0 found that unscaled stats widened the 5-down hole (Ranger
+  L86 76→92% win); only full suppression at 5+ restored shipped numbers. The implemented code was
+  re-simmed against the pre-work snapshot: 5-down cells identical, bosses still cost HP.
+- **Cleanup:** 31 player-visible archive-file notes (`(Arkan.md)` etc.) removed from item/area/
+  monster/tech/class/quest text and button tooltips; citations kept as code comments.
+  Shadowknight's "+13% Damage (all sources)" corrected to "weapon Damage" (`damage_pct` only
+  feeds weapon damage — same fix as Wizard/Magus).
+- Process: lead spec + P0 sim; one Sonnet agent implemented; lead review fixed one hard-coded
+  constant duplicate. Real-browser check done (Status "Combat Stats" panel, item info lines,
+  wiki column, crit battle log, Version Log/footer).
+- **Ops note — the `D:/Claude - collection folder/HeroRPG` base path doesn't exist on every
+  machine.** Without editing tracked files, run the suites from a scratch copy of `tests/` with
+  that string rewritten to the checkout path (`__dirname` suites like `test_reachability.js` and
+  `test_secondary_stats.js` run in place). Same trick for `tools/build_artifact.js` (`ROOT`).
+
 ## Recently completed (2026-07-25) — v1.9.0 (merged from two EXTERNAL PRs; live)
 
 **First release assembled from outside contributions.** Two GitHub PRs by `Nayan-cl` were
@@ -195,7 +302,7 @@ final roster 211 techs, no duplicate ids). Save version **10 → 11**.
      tech reports "Unknown technique"): the retired tech id stays in `c.techs`, the retired
      ability id in the class entry, and the **5 class levels spent on it are burned unrefunded**
      (a class-level-8 Conjurer is left 3 free — one of four Pacts). ~3 lines in the v10→v11
-     migration would clear it. **This one is live for real players — fix it first.**
+     migration would clear it. **This one is live for real players — fix it first.** **Fixed in v1.11 (`docs/SPEC-LEGACY-CONJURER-CLEANUP.md`).**
 - Also open from PR #2's own notes: companion icons are adapted copies (bespoke art wanted), no
   shipped monster carries the new `target` specials yet, command-tech powers are provisional.
 - Ops note: the tracked `post-commit` hook did NOT fire on the merge commits — the single-file

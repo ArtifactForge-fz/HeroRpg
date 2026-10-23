@@ -5,6 +5,7 @@ var vm = require('vm');
 var fs = require('fs');
 var path = require('path');
 var FakeDom = require('./fakedom.js');
+var BossFixture = require('./boss_fixture.js'); // shared prepared-warrior boss sim (docs/SPEC-BOSS-COST-RETUNE.md §4)
 
 var base = "D:/Claude - collection folder/HeroRPG/js";
 
@@ -593,7 +594,7 @@ assert(loaded.character.fury === 0, 'migration adds fury=0');
 Game.state = loaded;
 Game.persist();
 var resaved = JSON.parse(localStorageStore['herorpg_save']);
-assert(resaved.version === 11, 'resave stamps current version 11 (v1.9 companion migration on top), got ' + resaved.version);
+assert(resaved.version === 12, 'resave stamps current version 12 (v1.9 companion migration on top), got ' + resaved.version);
 
 
 // v1 chain still works end-to-end (v1 -> v2 -> v3 -> v4)
@@ -642,7 +643,7 @@ assert(loadedV9.character.equipment.offhand === null, 'v8->v9 migration backfill
 Game.state = loadedV9;
 Game.persist();
 var resavedV9 = JSON.parse(localStorageStore['herorpg_save']);
-assert(resavedV9.version === 11, 'resave stamps CURRENT_VERSION 11, got ' + resavedV9.version);
+assert(resavedV9.version === 12, 'resave stamps CURRENT_VERSION 12, got ' + resavedV9.version);
 
 
 // v1 -> v9 full chain also ends up with equipment.offhand present (SPEC-V1.2.md Phase 1 #5).
@@ -1113,7 +1114,8 @@ assert(Game.Inventory.equippedMagicArmorTotal(c20) === expectedMagicArmor20,
 // =================== Test 21: Dodge/Double Attack skill XP at proc site, capped at 2L+1 ===================
 console.log('\n=== Test 21: Dodge/Double Attack skill XP granted at proc site, capped at 2L+1 (v1.2 Phase 1 #3) ===');
 var c21 = makeCharacter({ name: 'DodgeDoubleAttackXpTest' });
-c21.dexterity = 200; // saturates both Dodge and Double Attack chances to their caps
+c21.dexterity = 200; // Double Attack saturates at its cap; Dodge is 0.22 here (Dex alone can no longer reach DODGE_CAP, SPEC-ROGUE-BOSS-COST §2.1) — still far above the stubbed 0.01 roll
+assert(Game.Battle.playerDodgeChance(c21) > 0.01 && Game.Battle.playerDodgeChance(c21) < BALANCE.DODGE_CAP, 'sanity: Dex 200 gives a real but sub-cap dodge chance, got ' + Game.Battle.playerDodgeChance(c21));
 setRng(fixedRng(0.01)); // well under both capped chances -> both procs fire
 var b21 = Game.Battle.start('plains_field_rat');
 Game.Battle.attack();
@@ -1324,7 +1326,7 @@ Game.Battle.endBattle();
 console.log('\n=== Test 25: non-elemental (grade:null) tech damage ignores Magic Armor; graded techs still mitigated (v1.2 Phase 1 #7) ===');
 
 var c25 = makeCharacter({ name: 'NonElementalTest' });
-c25.primaryClass = 'warrior'; // minimal setup: isClassTechUsable only checks primaryClass/secondaryClass
+c25.lineage.tier1 = 'warrior'; // minimal setup: isClassTechUsable reads activeClassIds (v1.11 lineage)
 c25.techs.push('tech_crushing_blow');
 c25.techSets[0][1] = 'tech_crushing_blow'; // slot 0 already holds the Swords starter tech (Cleave I)
 setRng(fixedRng(0.99));
@@ -1589,8 +1591,8 @@ assert(!!warlord && warlord.boss === true, 'majiku_warlord exists and is a boss'
 assert(warlord.level === 50, 'majiku_warlord is level 50');
 var wlBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 50;
 var wlBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 50;
-assert(warlord.hp === wlBaseHp + 12 * 50, 'majiku_warlord hp carries the +12*level boss premium (' + wlBaseHp + ' + 600 = ' + (wlBaseHp + 600) + '), got ' + warlord.hp);
-assert(warlord.damage === wlBaseDmg + Math.round(1.5 * 50 + 10), 'majiku_warlord damage carries the F1 round(1.5*level+10) boss premium (' + wlBaseDmg + ' + 85 = ' + (wlBaseDmg + 85) + '), got ' + warlord.damage);
+assert(warlord.hp === Math.round(1.25 * (wlBaseHp + 12 * 50)), 'majiku_warlord hp = x1.25 (docs/SPEC-BOSS-COST-RETUNE.md) on the +12*level boss premium: round(1.25 x (' + wlBaseHp + ' + 600)) = ' + Math.round(1.25 * (wlBaseHp + 12 * 50)) + ', got ' + warlord.hp);
+assert(warlord.damage === Math.round(1.3 * (wlBaseDmg + Math.round(1.5 * 50 + 10))), 'majiku_warlord damage = x1.3 (docs/SPEC-BOSS-COST-RETUNE.md) on the F1 round(1.5*level+10) boss premium: round(1.3 x (' + wlBaseDmg + ' + 85)) = ' + Math.round(1.3 * (wlBaseDmg + Math.round(1.5 * 50 + 10))) + ', got ' + warlord.damage);
 assert(warlord.xp === BALANCE.MONSTER_XP(50) * 3, 'majiku_warlord xp carries the x3 boss premium');
 
 // =================== Test 31: Level-Arc Band A weapon damage is TAPERED, not literal ===================
@@ -1655,109 +1657,16 @@ Object.keys(eiArmorExpected45).forEach(function (id) {
   assert(it.armor !== literalArmor45, id + ' armor is NOT the literal-formula value ' + literalArmor45);
 });
 
-// =================== Test 32: majiku_warlord lair fight — winnable but costly (real RNG sim) ===================
-console.log('\n=== Test 32: majiku_warlord (Band A lair boss) is winnable-but-costly for a geared level-50 warrior ===');
-function buildLevel50KuraanWarrior() {
-  var skillPoints = {};
-  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
-  skillPoints['Swords'] = 3;
-  skillPoints['Heavy Armor'] = 2;
-  var c = Game.Character.create({
-    race: 'Human',
-    name: 'WarlordTester',
-    gender: 'Male',
-    skillPoints: skillPoints
-  });
-  c.level = 50;
-  c.xp = BALANCE.XP_TO_LEVEL(50);
-  // 49 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
-  // (same split style as the eidas_echo debug-warrior build, test_p6b_content.js).
-  c.statPoints = 49 * BALANCE.LEVELUP_STAT_POINTS;
-  var totalPoints = c.statPoints;
-  for (var i = 0; i < totalPoints; i++) {
-    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
-    Game.Character.spendStatPoint(c, stat);
-  }
-  var gearIds = ['sword_kuraan_reclaimers_blade', 'heavy_body_kuraan_bulwark_plate', 'shield_kuraan_wardbulwark'];
-  gearIds.forEach(function (id) {
-    Game.Inventory.addItem(c, id);
-    var res = Game.Inventory.equip(c, id);
-    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
-  });
-  for (i = 0; i < 6; i++) {
-    Game.Inventory.addItem(c, 'sphere_cclass_1');
-    Game.Inventory.addItem(c, 'crystal_cclass_1');
-  }
-  Game.Character.recalcDerived(c);
-  c.hitPoints = c.hitPointsMax;
-  c.energy = c.energyMax;
-  return c;
-}
-
-function countBandAConsumables(c) {
-  var n = 0;
-  for (var i = 0; i < c.inventory.length; i++) {
-    if (c.inventory[i] === 'sphere_cclass_1' || c.inventory[i] === 'crystal_cclass_1') n++;
-  }
-  return n;
-}
-
-function simulateWarlordBattle() {
-  var c = buildLevel50KuraanWarrior();
-  Game.state.character = c;
-  Game.state.battle = null;
-  Game.Battle._rng = Math.random; // real RNG for this sim
-
-  var consumablesBefore = countBandAConsumables(c);
-  var battle = Game.Battle.start('majiku_warlord');
-  var rounds = 0;
-  var MAX_ROUNDS = 500;
-  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
-    rounds++;
-    if (!Game.Battle.canAct(battle)) {
-      var crystalIdx = c.inventory.indexOf('crystal_cclass_1');
-      if (crystalIdx !== -1) {
-        Game.Battle.useItem('crystal_cclass_1');
-        continue;
-      }
-    }
-    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_cclass_1') !== -1) {
-      Game.Battle.useItem('sphere_cclass_1');
-      continue;
-    }
-    Game.Battle.attack();
-  }
-  var consumablesAfter = countBandAConsumables(c);
-  return {
-    phase: battle.phase,
-    hpLeftFrac: c.hitPoints / c.hitPointsMax,
-    consumablesConsumed: consumablesBefore - consumablesAfter
-  };
-}
-
-var WARLORD_SIM_COUNT = 30;
-var wlWins = 0;
-var wlOutcomes = {};
-var wlHpLeftSum = 0;
-var wlConsumedSum = 0;
-for (var wlRun = 0; wlRun < WARLORD_SIM_COUNT; wlRun++) {
-  var wlResult = simulateWarlordBattle();
-  wlOutcomes[wlResult.phase] = (wlOutcomes[wlResult.phase] || 0) + 1;
-  if (wlResult.phase === 'won') {
-    wlWins++;
-    wlHpLeftSum += wlResult.hpLeftFrac;
-    wlConsumedSum += wlResult.consumablesConsumed;
-  }
-}
-var wlWinRate = wlWins / WARLORD_SIM_COUNT;
-var wlAvgHpLeft = wlWins ? wlHpLeftSum / wlWins : 0;
-var wlAvgConsumed = wlWins ? wlConsumedSum / wlWins : 0;
-console.log('majiku_warlord sim results over ' + WARLORD_SIM_COUNT + ' battles: ' + JSON.stringify(wlOutcomes) +
-  ' — win rate ' + (wlWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (wlAvgHpLeft * 100).toFixed(0) +
-  '%, avg consumables spent ' + wlAvgConsumed.toFixed(1));
-// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
-assert(wlWinRate >= 0.6, 'majiku_warlord is reliably beatable by a geared level-50 warrior (win rate ' + (wlWinRate * 100).toFixed(1) + '%, want >= 60%)');
-assert(wlAvgHpLeft <= 0.85 || wlAvgConsumed >= 1, 'majiku_warlord extracts a real cost on wins (avg HP left ' + (wlAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + wlAvgConsumed.toFixed(1) + ')');
+// =================== Test 32: majiku_warlord lair fight — a prepared hero wins but pays (real RNG sim) ===================
+console.log('\n=== Test 32: majiku_warlord (Band A lair boss) is winnable-but-costly for a prepared level-50 warrior ===');
+// Boss contract (docs/SPEC-BOSS-COST-BAND.md §2, as amended by docs/SPEC-BOSS-COST-RETUNE.md D0/D6),
+// judged on the shared PREPARED warrior (tests/boss_fixture.js, SPEC-BOSS-COST-RETUNE D5).
+// These are regression floors; the 300-trial lineage grid in SPEC-BOSS-COST-RETUNE §3.3 is the gate.
+var wlSim = BossFixture.simulate(Game, 'majiku_warlord', 50, 30);
+console.log(BossFixture.describe('majiku_warlord', wlSim));
+assert(wlSim.winRate >= 0.85, 'majiku_warlord is reliably beatable by a prepared level-50 warrior (win rate ' + (wlSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(wlSim.avgHpSpent >= 0.35 || wlSim.avgConsumed >= 3, 'majiku_warlord extracts a real cost on wins (avg HP spent ' + (wlSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables; spent ' + wlSim.avgConsumed.toFixed(1) + ')');
+assert(wlSim.avgConsumed <= 0.5 * wlSim.stock, 'majiku_warlord is not ruinous: at most half the stock per win (avg ' + wlSim.avgConsumed.toFixed(1) + ' of ' + wlSim.stock + ')');
 
 // =================== Test 33: Level-Arc Band B (Majiku Highlands) monster formulas + boss premiums ===================
 console.log('\n=== Test 33: Band B regulars match the header formulas; majiku_ridge_chieftain carries the F1 boss premiums ===');
@@ -1786,8 +1695,8 @@ assert(!!chieftain && chieftain.boss === true, 'majiku_ridge_chieftain exists an
 assert(chieftain.level === 60, 'majiku_ridge_chieftain is level 60');
 var mrcBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 60;
 var mrcBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 60;
-assert(chieftain.hp === mrcBaseHp + 12 * 60, 'majiku_ridge_chieftain hp carries the +12*level boss premium (' + mrcBaseHp + ' + 720 = ' + (mrcBaseHp + 720) + '), got ' + chieftain.hp);
-assert(chieftain.damage === mrcBaseDmg + Math.round(1.5 * 60 + 10), 'majiku_ridge_chieftain damage carries the F1 round(1.5*level+10) boss premium (' + mrcBaseDmg + ' + 100 = ' + (mrcBaseDmg + 100) + '), got ' + chieftain.damage);
+assert(chieftain.hp === Math.round(1.25 * (mrcBaseHp + 12 * 60)), 'majiku_ridge_chieftain hp = x1.25 (docs/SPEC-BOSS-COST-RETUNE.md) on the +12*level boss premium: round(1.25 x (' + mrcBaseHp + ' + 720)) = ' + Math.round(1.25 * (mrcBaseHp + 12 * 60)) + ', got ' + chieftain.hp);
+assert(chieftain.damage === Math.round(1.3 * (mrcBaseDmg + Math.round(1.5 * 60 + 10))), 'majiku_ridge_chieftain damage = x1.3 (docs/SPEC-BOSS-COST-RETUNE.md) on the F1 round(1.5*level+10) boss premium: round(1.3 x (' + mrcBaseDmg + ' + 100)) = ' + Math.round(1.3 * (mrcBaseDmg + Math.round(1.5 * 60 + 10))) + ', got ' + chieftain.damage);
 assert(chieftain.xp === BALANCE.MONSTER_XP(60) * 3, 'majiku_ridge_chieftain xp carries the x3 boss premium');
 
 // =================== Test 34: Level-Arc Band B weapon damage is TAPERED, not literal ===================
@@ -1849,109 +1758,16 @@ var taperedArmor58 = correctedArmor(58); // 52 / 2 = 26
   assert(it.armor !== taperedArmor55, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor55 + ' (taper is re-derived per levelReq)');
 });
 
-// =================== Test 35: majiku_ridge_chieftain lair fight — winnable but costly (real RNG sim) ===================
-console.log('\n=== Test 35: majiku_ridge_chieftain (Band B lair boss) is winnable-but-costly for a geared level-60 warrior ===');
-function buildLevel60MajikuWarrior() {
-  var skillPoints = {};
-  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
-  skillPoints['Swords'] = 3;
-  skillPoints['Heavy Armor'] = 2;
-  var c = Game.Character.create({
-    race: 'Human',
-    name: 'ChieftainTester',
-    gender: 'Male',
-    skillPoints: skillPoints
-  });
-  c.level = 60;
-  c.xp = BALANCE.XP_TO_LEVEL(60);
-  // 59 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
-  // (same split style as buildLevel50KuraanWarrior above / the eidas_echo debug-warrior build).
-  c.statPoints = 59 * BALANCE.LEVELUP_STAT_POINTS;
-  var totalPoints60 = c.statPoints;
-  for (var i = 0; i < totalPoints60; i++) {
-    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
-    Game.Character.spendStatPoint(c, stat);
-  }
-  var gearIds60 = ['sword_majiku_hostbreaker', 'heavy_body_ridgeplate_cuirass', 'shield_highland_bulwark'];
-  gearIds60.forEach(function (id) {
-    Game.Inventory.addItem(c, id);
-    var res = Game.Inventory.equip(c, id);
-    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
-  });
-  for (i = 0; i < 6; i++) {
-    Game.Inventory.addItem(c, 'sphere_dclass_1');
-    Game.Inventory.addItem(c, 'crystal_dclass_1');
-  }
-  Game.Character.recalcDerived(c);
-  c.hitPoints = c.hitPointsMax;
-  c.energy = c.energyMax;
-  return c;
-}
-
-function countBandBConsumables(c) {
-  var n = 0;
-  for (var i = 0; i < c.inventory.length; i++) {
-    if (c.inventory[i] === 'sphere_dclass_1' || c.inventory[i] === 'crystal_dclass_1') n++;
-  }
-  return n;
-}
-
-function simulateChieftainBattle() {
-  var c = buildLevel60MajikuWarrior();
-  Game.state.character = c;
-  Game.state.battle = null;
-  Game.Battle._rng = Math.random; // real RNG for this sim
-
-  var consumablesBefore = countBandBConsumables(c);
-  var battle = Game.Battle.start('majiku_ridge_chieftain');
-  var rounds = 0;
-  var MAX_ROUNDS = 500;
-  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
-    rounds++;
-    if (!Game.Battle.canAct(battle)) {
-      var crystalIdx = c.inventory.indexOf('crystal_dclass_1');
-      if (crystalIdx !== -1) {
-        Game.Battle.useItem('crystal_dclass_1');
-        continue;
-      }
-    }
-    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_dclass_1') !== -1) {
-      Game.Battle.useItem('sphere_dclass_1');
-      continue;
-    }
-    Game.Battle.attack();
-  }
-  var consumablesAfter = countBandBConsumables(c);
-  return {
-    phase: battle.phase,
-    hpLeftFrac: c.hitPoints / c.hitPointsMax,
-    consumablesConsumed: consumablesBefore - consumablesAfter
-  };
-}
-
-var CHIEFTAIN_SIM_COUNT = 30;
-var mrcWins = 0;
-var mrcOutcomes = {};
-var mrcHpLeftSum = 0;
-var mrcConsumedSum = 0;
-for (var mrcRun = 0; mrcRun < CHIEFTAIN_SIM_COUNT; mrcRun++) {
-  var mrcResult = simulateChieftainBattle();
-  mrcOutcomes[mrcResult.phase] = (mrcOutcomes[mrcResult.phase] || 0) + 1;
-  if (mrcResult.phase === 'won') {
-    mrcWins++;
-    mrcHpLeftSum += mrcResult.hpLeftFrac;
-    mrcConsumedSum += mrcResult.consumablesConsumed;
-  }
-}
-var mrcWinRate = mrcWins / CHIEFTAIN_SIM_COUNT;
-var mrcAvgHpLeft = mrcWins ? mrcHpLeftSum / mrcWins : 0;
-var mrcAvgConsumed = mrcWins ? mrcConsumedSum / mrcWins : 0;
-console.log('majiku_ridge_chieftain sim results over ' + CHIEFTAIN_SIM_COUNT + ' battles: ' + JSON.stringify(mrcOutcomes) +
-  ' — win rate ' + (mrcWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (mrcAvgHpLeft * 100).toFixed(0) +
-  '%, avg consumables spent ' + mrcAvgConsumed.toFixed(1));
-// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
-assert(mrcWinRate >= 0.6, 'majiku_ridge_chieftain is reliably beatable by a geared level-60 warrior (win rate ' + (mrcWinRate * 100).toFixed(1) + '%, want >= 60%)');
-assert(mrcAvgHpLeft <= 0.85 || mrcAvgConsumed >= 1, 'majiku_ridge_chieftain extracts a real cost on wins (avg HP left ' + (mrcAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + mrcAvgConsumed.toFixed(1) + ')');
+// =================== Test 35: majiku_ridge_chieftain lair fight — a prepared hero wins but pays (real RNG sim) ===================
+console.log('\n=== Test 35: majiku_ridge_chieftain (Band B lair boss) is winnable-but-costly for a prepared level-60 warrior ===');
+// Boss contract (docs/SPEC-BOSS-COST-BAND.md §2, as amended by docs/SPEC-BOSS-COST-RETUNE.md D0/D6),
+// judged on the shared PREPARED warrior (tests/boss_fixture.js, SPEC-BOSS-COST-RETUNE D5).
+// These are regression floors; the 300-trial lineage grid in SPEC-BOSS-COST-RETUNE §3.3 is the gate.
+var mrcSim = BossFixture.simulate(Game, 'majiku_ridge_chieftain', 60, 30);
+console.log(BossFixture.describe('majiku_ridge_chieftain', mrcSim));
+assert(mrcSim.winRate >= 0.85, 'majiku_ridge_chieftain is reliably beatable by a prepared level-60 warrior (win rate ' + (mrcSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(mrcSim.avgHpSpent >= 0.35 || mrcSim.avgConsumed >= 3, 'majiku_ridge_chieftain extracts a real cost on wins (avg HP spent ' + (mrcSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables; spent ' + mrcSim.avgConsumed.toFixed(1) + ')');
+assert(mrcSim.avgConsumed <= 0.5 * mrcSim.stock, 'majiku_ridge_chieftain is not ruinous: at most half the stock per win (avg ' + mrcSim.avgConsumed.toFixed(1) + ' of ' + mrcSim.stock + ')');
 
 // =================== Test 36: Level-Arc Band C (The Frozen Reaches / Ukai approach) monster formulas + boss premiums ===================
 console.log('\n=== Test 36: Band C regulars match the header formulas; ukai_deep_dweller carries the F1 boss premiums ===');
@@ -1980,8 +1796,8 @@ assert(!!deepDweller && deepDweller.boss === true, 'ukai_deep_dweller exists and
 assert(deepDweller.level === 70, 'ukai_deep_dweller is level 70');
 var uddBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 70;
 var uddBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 70;
-assert(deepDweller.hp === uddBaseHp + 12 * 70, 'ukai_deep_dweller hp carries the +12*level boss premium (' + uddBaseHp + ' + 840 = ' + (uddBaseHp + 840) + '), got ' + deepDweller.hp);
-assert(deepDweller.damage === uddBaseDmg + Math.round(1.5 * 70 + 10), 'ukai_deep_dweller damage carries the F1 round(1.5*level+10) boss premium (' + uddBaseDmg + ' + 115 = ' + (uddBaseDmg + 115) + '), got ' + deepDweller.damage);
+assert(deepDweller.hp === Math.round(1.25 * (uddBaseHp + 12 * 70)), 'ukai_deep_dweller hp = x1.25 (docs/SPEC-BOSS-COST-RETUNE.md) on the +12*level boss premium: round(1.25 x (' + uddBaseHp + ' + 840)) = ' + Math.round(1.25 * (uddBaseHp + 12 * 70)) + ', got ' + deepDweller.hp);
+assert(deepDweller.damage === Math.round(1.3 * (uddBaseDmg + Math.round(1.5 * 70 + 10))), 'ukai_deep_dweller damage = x1.3 (docs/SPEC-BOSS-COST-RETUNE.md) on the F1 round(1.5*level+10) boss premium: round(1.3 x (' + uddBaseDmg + ' + 115)) = ' + Math.round(1.3 * (uddBaseDmg + Math.round(1.5 * 70 + 10))) + ', got ' + deepDweller.damage);
 assert(deepDweller.xp === BALANCE.MONSTER_XP(70) * 3, 'ukai_deep_dweller xp carries the x3 boss premium');
 
 // =================== Test 37: Level-Arc Band C weapon damage is TAPERED, not literal ===================
@@ -2043,109 +1859,16 @@ var taperedArmor68 = correctedArmor(68); // 59 / 2 = 30
   assert(it.armor !== taperedArmor65, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor65 + ' (taper is re-derived per levelReq)');
 });
 
-// =================== Test 38: ukai_deep_dweller lair fight — winnable but costly (real RNG sim) ===================
-console.log('\n=== Test 38: ukai_deep_dweller (Band C lair boss) is winnable-but-costly for a geared level-70 warrior ===');
-function buildLevel70FrostholdWarrior() {
-  var skillPoints = {};
-  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
-  skillPoints['Swords'] = 3;
-  skillPoints['Heavy Armor'] = 2;
-  var c = Game.Character.create({
-    race: 'Human',
-    name: 'DeepDwellerTester',
-    gender: 'Male',
-    skillPoints: skillPoints
-  });
-  c.level = 70;
-  c.xp = BALANCE.XP_TO_LEVEL(70);
-  // 69 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
-  // (same split style as buildLevel60MajikuWarrior above / the eidas_echo debug-warrior build).
-  c.statPoints = 69 * BALANCE.LEVELUP_STAT_POINTS;
-  var totalPoints70 = c.statPoints;
-  for (var i = 0; i < totalPoints70; i++) {
-    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
-    Game.Character.spendStatPoint(c, stat);
-  }
-  var gearIds70 = ['sword_frosthold_vanguard_blade', 'heavy_body_glacial_bulwark_plate', 'shield_frosthold_bulwark'];
-  gearIds70.forEach(function (id) {
-    Game.Inventory.addItem(c, id);
-    var res = Game.Inventory.equip(c, id);
-    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
-  });
-  for (i = 0; i < 6; i++) {
-    Game.Inventory.addItem(c, 'sphere_eclass_1');
-    Game.Inventory.addItem(c, 'crystal_eclass_1');
-  }
-  Game.Character.recalcDerived(c);
-  c.hitPoints = c.hitPointsMax;
-  c.energy = c.energyMax;
-  return c;
-}
-
-function countBandCConsumables(c) {
-  var n = 0;
-  for (var i = 0; i < c.inventory.length; i++) {
-    if (c.inventory[i] === 'sphere_eclass_1' || c.inventory[i] === 'crystal_eclass_1') n++;
-  }
-  return n;
-}
-
-function simulateDeepDwellerBattle() {
-  var c = buildLevel70FrostholdWarrior();
-  Game.state.character = c;
-  Game.state.battle = null;
-  Game.Battle._rng = Math.random; // real RNG for this sim
-
-  var consumablesBefore = countBandCConsumables(c);
-  var battle = Game.Battle.start('ukai_deep_dweller');
-  var rounds = 0;
-  var MAX_ROUNDS = 500;
-  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
-    rounds++;
-    if (!Game.Battle.canAct(battle)) {
-      var crystalIdx = c.inventory.indexOf('crystal_eclass_1');
-      if (crystalIdx !== -1) {
-        Game.Battle.useItem('crystal_eclass_1');
-        continue;
-      }
-    }
-    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_eclass_1') !== -1) {
-      Game.Battle.useItem('sphere_eclass_1');
-      continue;
-    }
-    Game.Battle.attack();
-  }
-  var consumablesAfter = countBandCConsumables(c);
-  return {
-    phase: battle.phase,
-    hpLeftFrac: c.hitPoints / c.hitPointsMax,
-    consumablesConsumed: consumablesBefore - consumablesAfter
-  };
-}
-
-var DEEP_DWELLER_SIM_COUNT = 30;
-var uddWins = 0;
-var uddOutcomes = {};
-var uddHpLeftSum = 0;
-var uddConsumedSum = 0;
-for (var uddRun = 0; uddRun < DEEP_DWELLER_SIM_COUNT; uddRun++) {
-  var uddResult = simulateDeepDwellerBattle();
-  uddOutcomes[uddResult.phase] = (uddOutcomes[uddResult.phase] || 0) + 1;
-  if (uddResult.phase === 'won') {
-    uddWins++;
-    uddHpLeftSum += uddResult.hpLeftFrac;
-    uddConsumedSum += uddResult.consumablesConsumed;
-  }
-}
-var uddWinRate = uddWins / DEEP_DWELLER_SIM_COUNT;
-var uddAvgHpLeft = uddWins ? uddHpLeftSum / uddWins : 0;
-var uddAvgConsumed = uddWins ? uddConsumedSum / uddWins : 0;
-console.log('ukai_deep_dweller sim results over ' + DEEP_DWELLER_SIM_COUNT + ' battles: ' + JSON.stringify(uddOutcomes) +
-  ' — win rate ' + (uddWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (uddAvgHpLeft * 100).toFixed(0) +
-  '%, avg consumables spent ' + uddAvgConsumed.toFixed(1));
-// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
-assert(uddWinRate >= 0.6, 'ukai_deep_dweller is reliably beatable by a geared level-70 warrior (win rate ' + (uddWinRate * 100).toFixed(1) + '%, want >= 60%)');
-assert(uddAvgHpLeft <= 0.85 || uddAvgConsumed >= 1, 'ukai_deep_dweller extracts a real cost on wins (avg HP left ' + (uddAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + uddAvgConsumed.toFixed(1) + ')');
+// =================== Test 38: ukai_deep_dweller lair fight — a prepared hero wins but pays (real RNG sim) ===================
+console.log('\n=== Test 38: ukai_deep_dweller (Band C lair boss) is winnable-but-costly for a prepared level-70 warrior ===');
+// Boss contract (docs/SPEC-BOSS-COST-BAND.md §2, as amended by docs/SPEC-BOSS-COST-RETUNE.md D0/D6),
+// judged on the shared PREPARED warrior (tests/boss_fixture.js, SPEC-BOSS-COST-RETUNE D5).
+// These are regression floors; the 300-trial lineage grid in SPEC-BOSS-COST-RETUNE §3.3 is the gate.
+var uddSim = BossFixture.simulate(Game, 'ukai_deep_dweller', 70, 30);
+console.log(BossFixture.describe('ukai_deep_dweller', uddSim));
+assert(uddSim.winRate >= 0.85, 'ukai_deep_dweller is reliably beatable by a prepared level-70 warrior (win rate ' + (uddSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(uddSim.avgHpSpent >= 0.35 || uddSim.avgConsumed >= 3, 'ukai_deep_dweller extracts a real cost on wins (avg HP spent ' + (uddSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables; spent ' + uddSim.avgConsumed.toFixed(1) + ')');
+assert(uddSim.avgConsumed <= 0.5 * uddSim.stock, 'ukai_deep_dweller is not ruinous: at most half the stock per win (avg ' + uddSim.avgConsumed.toFixed(1) + ' of ' + uddSim.stock + ')');
 
 // =================== Test 39: Level-Arc Band D (Estari Ruins Deep) monster formulas + boss premiums ===================
 console.log('\n=== Test 39: Band D regulars match the header formulas; estari_warden_prime carries the F1 boss premiums ===');
@@ -2174,8 +1897,8 @@ assert(!!wardenPrime && wardenPrime.boss === true, 'estari_warden_prime exists a
 assert(wardenPrime.level === 80, 'estari_warden_prime is level 80');
 var ewpBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 80;
 var ewpBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 80;
-assert(wardenPrime.hp === ewpBaseHp + 12 * 80, 'estari_warden_prime hp carries the +12*level boss premium (' + ewpBaseHp + ' + 960 = ' + (ewpBaseHp + 960) + '), got ' + wardenPrime.hp);
-assert(wardenPrime.damage === ewpBaseDmg + Math.round(1.5 * 80 + 10), 'estari_warden_prime damage carries the F1 round(1.5*level+10) boss premium (' + ewpBaseDmg + ' + 130 = ' + (ewpBaseDmg + 130) + '), got ' + wardenPrime.damage);
+assert(wardenPrime.hp === Math.round(1.25 * (ewpBaseHp + 12 * 80)), 'estari_warden_prime hp = x1.25 (docs/SPEC-BOSS-COST-RETUNE.md) on the +12*level boss premium: round(1.25 x (' + ewpBaseHp + ' + 960)) = ' + Math.round(1.25 * (ewpBaseHp + 12 * 80)) + ', got ' + wardenPrime.hp);
+assert(wardenPrime.damage === Math.round(1.3 * (ewpBaseDmg + Math.round(1.5 * 80 + 10))), 'estari_warden_prime damage = x1.3 (docs/SPEC-BOSS-COST-RETUNE.md) on the F1 round(1.5*level+10) boss premium: round(1.3 x (' + ewpBaseDmg + ' + 130)) = ' + Math.round(1.3 * (ewpBaseDmg + Math.round(1.5 * 80 + 10))) + ', got ' + wardenPrime.damage);
 assert(wardenPrime.xp === BALANCE.MONSTER_XP(80) * 3, 'estari_warden_prime xp carries the x3 boss premium');
 
 // =================== Test 40: Level-Arc Band D weapon damage is TAPERED, not literal ===================
@@ -2241,109 +1964,16 @@ var taperedArmor78 = correctedArmor(78); // 66 / 2 = 33
   assert(it.armor !== taperedArmor75, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor75 + ' (taper is re-derived per levelReq)');
 });
 
-// =================== Test 41: estari_warden_prime lair fight — winnable but costly (real RNG sim) ===================
-console.log('\n=== Test 41: estari_warden_prime (Band D lair boss) is winnable-but-costly for a geared level-80 warrior ===');
-function buildLevel80WellspringWarrior() {
-  var skillPoints = {};
-  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
-  skillPoints['Swords'] = 3;
-  skillPoints['Heavy Armor'] = 2;
-  var c = Game.Character.create({
-    race: 'Human',
-    name: 'WardenPrimeTester',
-    gender: 'Male',
-    skillPoints: skillPoints
-  });
-  c.level = 80;
-  c.xp = BALANCE.XP_TO_LEVEL(80);
-  // 79 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
-  // (same split style as buildLevel70FrostholdWarrior above).
-  c.statPoints = 79 * BALANCE.LEVELUP_STAT_POINTS;
-  var totalPoints80 = c.statPoints;
-  for (var i = 0; i < totalPoints80; i++) {
-    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
-    Game.Character.spendStatPoint(c, stat);
-  }
-  var gearIds80 = ['sword_estari_wardblade', 'heavy_body_warden_plate', 'shield_estari_bulwark'];
-  gearIds80.forEach(function (id) {
-    Game.Inventory.addItem(c, id);
-    var res = Game.Inventory.equip(c, id);
-    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
-  });
-  for (i = 0; i < 6; i++) {
-    Game.Inventory.addItem(c, 'sphere_fclass_1');
-    Game.Inventory.addItem(c, 'crystal_fclass_1');
-  }
-  Game.Character.recalcDerived(c);
-  c.hitPoints = c.hitPointsMax;
-  c.energy = c.energyMax;
-  return c;
-}
-
-function countBandDConsumables(c) {
-  var n = 0;
-  for (var i = 0; i < c.inventory.length; i++) {
-    if (c.inventory[i] === 'sphere_fclass_1' || c.inventory[i] === 'crystal_fclass_1') n++;
-  }
-  return n;
-}
-
-function simulateWardenPrimeBattle() {
-  var c = buildLevel80WellspringWarrior();
-  Game.state.character = c;
-  Game.state.battle = null;
-  Game.Battle._rng = Math.random; // real RNG for this sim
-
-  var consumablesBefore = countBandDConsumables(c);
-  var battle = Game.Battle.start('estari_warden_prime');
-  var rounds = 0;
-  var MAX_ROUNDS = 500;
-  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
-    rounds++;
-    if (!Game.Battle.canAct(battle)) {
-      var crystalIdx = c.inventory.indexOf('crystal_fclass_1');
-      if (crystalIdx !== -1) {
-        Game.Battle.useItem('crystal_fclass_1');
-        continue;
-      }
-    }
-    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_fclass_1') !== -1) {
-      Game.Battle.useItem('sphere_fclass_1');
-      continue;
-    }
-    Game.Battle.attack();
-  }
-  var consumablesAfter = countBandDConsumables(c);
-  return {
-    phase: battle.phase,
-    hpLeftFrac: c.hitPoints / c.hitPointsMax,
-    consumablesConsumed: consumablesBefore - consumablesAfter
-  };
-}
-
-var WARDEN_PRIME_SIM_COUNT = 30;
-var ewpWins = 0;
-var ewpOutcomes = {};
-var ewpHpLeftSum = 0;
-var ewpConsumedSum = 0;
-for (var ewpRun = 0; ewpRun < WARDEN_PRIME_SIM_COUNT; ewpRun++) {
-  var ewpResult = simulateWardenPrimeBattle();
-  ewpOutcomes[ewpResult.phase] = (ewpOutcomes[ewpResult.phase] || 0) + 1;
-  if (ewpResult.phase === 'won') {
-    ewpWins++;
-    ewpHpLeftSum += ewpResult.hpLeftFrac;
-    ewpConsumedSum += ewpResult.consumablesConsumed;
-  }
-}
-var ewpWinRate = ewpWins / WARDEN_PRIME_SIM_COUNT;
-var ewpAvgHpLeft = ewpWins ? ewpHpLeftSum / ewpWins : 0;
-var ewpAvgConsumed = ewpWins ? ewpConsumedSum / ewpWins : 0;
-console.log('estari_warden_prime sim results over ' + WARDEN_PRIME_SIM_COUNT + ' battles: ' + JSON.stringify(ewpOutcomes) +
-  ' — win rate ' + (ewpWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (ewpAvgHpLeft * 100).toFixed(0) +
-  '%, avg consumables spent ' + ewpAvgConsumed.toFixed(1));
-// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
-assert(ewpWinRate >= 0.6, 'estari_warden_prime is reliably beatable by a geared level-80 warrior (win rate ' + (ewpWinRate * 100).toFixed(1) + '%, want >= 60%)');
-assert(ewpAvgHpLeft <= 0.85 || ewpAvgConsumed >= 1, 'estari_warden_prime extracts a real cost on wins (avg HP left ' + (ewpAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + ewpAvgConsumed.toFixed(1) + ')');
+// =================== Test 41: estari_warden_prime lair fight — a prepared hero wins but pays (real RNG sim) ===================
+console.log('\n=== Test 41: estari_warden_prime (Band D lair boss) is winnable-but-costly for a prepared level-80 warrior ===');
+// Boss contract (docs/SPEC-BOSS-COST-BAND.md §2, as amended by docs/SPEC-BOSS-COST-RETUNE.md D0/D6),
+// judged on the shared PREPARED warrior (tests/boss_fixture.js, SPEC-BOSS-COST-RETUNE D5).
+// These are regression floors; the 300-trial lineage grid in SPEC-BOSS-COST-RETUNE §3.3 is the gate.
+var ewpSim = BossFixture.simulate(Game, 'estari_warden_prime', 80, 30);
+console.log(BossFixture.describe('estari_warden_prime', ewpSim));
+assert(ewpSim.winRate >= 0.85, 'estari_warden_prime is reliably beatable by a prepared level-80 warrior (win rate ' + (ewpSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(ewpSim.avgHpSpent >= 0.35 || ewpSim.avgConsumed >= 3, 'estari_warden_prime extracts a real cost on wins (avg HP spent ' + (ewpSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables; spent ' + ewpSim.avgConsumed.toFixed(1) + ')');
+assert(ewpSim.avgConsumed <= 0.5 * ewpSim.stock, 'estari_warden_prime is not ruinous: at most half the stock per win (avg ' + ewpSim.avgConsumed.toFixed(1) + ' of ' + ewpSim.stock + ')');
 
 // =================== Test 42: Level-Arc Band E (Ascent to the Skyspire) monster formulas + boss premiums ===================
 console.log('\n=== Test 42: Band E regulars match the header formulas; society_anima_horror carries the F1 boss premiums ===');
@@ -2372,8 +2002,8 @@ assert(!!animaHorror && animaHorror.boss === true, 'society_anima_horror exists 
 assert(animaHorror.level === 90, 'society_anima_horror is level 90');
 var sahBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 90;
 var sahBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 90;
-assert(animaHorror.hp === sahBaseHp + 12 * 90, 'society_anima_horror hp carries the +12*level boss premium (' + sahBaseHp + ' + 1080 = ' + (sahBaseHp + 1080) + '), got ' + animaHorror.hp);
-assert(animaHorror.damage === sahBaseDmg + Math.round(1.5 * 90 + 10), 'society_anima_horror damage carries the F1 round(1.5*level+10) boss premium (' + sahBaseDmg + ' + 145 = ' + (sahBaseDmg + 145) + '), got ' + animaHorror.damage);
+assert(animaHorror.hp === Math.round(1.25 * (sahBaseHp + 12 * 90)), 'society_anima_horror hp = x1.25 (docs/SPEC-BOSS-COST-RETUNE.md) on the +12*level boss premium: round(1.25 x (' + sahBaseHp + ' + 1080)) = ' + Math.round(1.25 * (sahBaseHp + 12 * 90)) + ', got ' + animaHorror.hp);
+assert(animaHorror.damage === Math.round(1.3 * (sahBaseDmg + Math.round(1.5 * 90 + 10))), 'society_anima_horror damage = x1.3 (docs/SPEC-BOSS-COST-RETUNE.md) on the F1 round(1.5*level+10) boss premium: round(1.3 x (' + sahBaseDmg + ' + 145)) = ' + Math.round(1.3 * (sahBaseDmg + Math.round(1.5 * 90 + 10))) + ', got ' + animaHorror.damage);
 assert(animaHorror.xp === BALANCE.MONSTER_XP(90) * 3, 'society_anima_horror xp carries the x3 boss premium');
 
 // =================== Test 43: Level-Arc Band E weapon damage is TAPERED, not literal ===================
@@ -2437,109 +2067,16 @@ var taperedArmor88 = correctedArmor(88); // 73 / 2 = 37
   assert(it.armor !== taperedArmor85, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor85 + ' (taper is re-derived per levelReq)');
 });
 
-// =================== Test 44: society_anima_horror lair fight — winnable but costly (real RNG sim) ===================
-console.log('\n=== Test 44: society_anima_horror (Band E lair boss) is winnable-but-costly for a geared level-90 warrior ===');
-function buildLevel90SkyspireWarrior() {
-  var skillPoints = {};
-  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
-  skillPoints['Swords'] = 3;
-  skillPoints['Heavy Armor'] = 2;
-  var c = Game.Character.create({
-    race: 'Human',
-    name: 'AnimaHorrorTester',
-    gender: 'Male',
-    skillPoints: skillPoints
-  });
-  c.level = 90;
-  c.xp = BALANCE.XP_TO_LEVEL(90);
-  // 89 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
-  // (same split style as buildLevel80WellspringWarrior above).
-  c.statPoints = 89 * BALANCE.LEVELUP_STAT_POINTS;
-  var totalPoints90 = c.statPoints;
-  for (var i = 0; i < totalPoints90; i++) {
-    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
-    Game.Character.spendStatPoint(c, stat);
-  }
-  var gearIds90 = ['sword_spireward_blade', 'heavy_body_spireward_plate', 'shield_spireward_aegis'];
-  gearIds90.forEach(function (id) {
-    Game.Inventory.addItem(c, id);
-    var res = Game.Inventory.equip(c, id);
-    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
-  });
-  for (i = 0; i < 6; i++) {
-    Game.Inventory.addItem(c, 'sphere_gclass_1');
-    Game.Inventory.addItem(c, 'crystal_gclass_1');
-  }
-  Game.Character.recalcDerived(c);
-  c.hitPoints = c.hitPointsMax;
-  c.energy = c.energyMax;
-  return c;
-}
-
-function countBandEConsumables(c) {
-  var n = 0;
-  for (var i = 0; i < c.inventory.length; i++) {
-    if (c.inventory[i] === 'sphere_gclass_1' || c.inventory[i] === 'crystal_gclass_1') n++;
-  }
-  return n;
-}
-
-function simulateAnimaHorrorBattle() {
-  var c = buildLevel90SkyspireWarrior();
-  Game.state.character = c;
-  Game.state.battle = null;
-  Game.Battle._rng = Math.random; // real RNG for this sim
-
-  var consumablesBefore = countBandEConsumables(c);
-  var battle = Game.Battle.start('society_anima_horror');
-  var rounds = 0;
-  var MAX_ROUNDS = 500;
-  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
-    rounds++;
-    if (!Game.Battle.canAct(battle)) {
-      var crystalIdx = c.inventory.indexOf('crystal_gclass_1');
-      if (crystalIdx !== -1) {
-        Game.Battle.useItem('crystal_gclass_1');
-        continue;
-      }
-    }
-    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_gclass_1') !== -1) {
-      Game.Battle.useItem('sphere_gclass_1');
-      continue;
-    }
-    Game.Battle.attack();
-  }
-  var consumablesAfter = countBandEConsumables(c);
-  return {
-    phase: battle.phase,
-    hpLeftFrac: c.hitPoints / c.hitPointsMax,
-    consumablesConsumed: consumablesBefore - consumablesAfter
-  };
-}
-
-var ANIMA_HORROR_SIM_COUNT = 30;
-var sahWins = 0;
-var sahOutcomes = {};
-var sahHpLeftSum = 0;
-var sahConsumedSum = 0;
-for (var sahRun = 0; sahRun < ANIMA_HORROR_SIM_COUNT; sahRun++) {
-  var sahResult = simulateAnimaHorrorBattle();
-  sahOutcomes[sahResult.phase] = (sahOutcomes[sahResult.phase] || 0) + 1;
-  if (sahResult.phase === 'won') {
-    sahWins++;
-    sahHpLeftSum += sahResult.hpLeftFrac;
-    sahConsumedSum += sahResult.consumablesConsumed;
-  }
-}
-var sahWinRate = sahWins / ANIMA_HORROR_SIM_COUNT;
-var sahAvgHpLeft = sahWins ? sahHpLeftSum / sahWins : 0;
-var sahAvgConsumed = sahWins ? sahConsumedSum / sahWins : 0;
-console.log('society_anima_horror sim results over ' + ANIMA_HORROR_SIM_COUNT + ' battles: ' + JSON.stringify(sahOutcomes) +
-  ' — win rate ' + (sahWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (sahAvgHpLeft * 100).toFixed(0) +
-  '%, avg consumables spent ' + sahAvgConsumed.toFixed(1));
-// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables.
-assert(sahWinRate >= 0.6, 'society_anima_horror is reliably beatable by a geared level-90 warrior (win rate ' + (sahWinRate * 100).toFixed(1) + '%, want >= 60%)');
-assert(sahAvgHpLeft <= 0.85 || sahAvgConsumed >= 1, 'society_anima_horror extracts a real cost on wins (avg HP left ' + (sahAvgHpLeft * 100).toFixed(0) + '%, avg consumables spent ' + sahAvgConsumed.toFixed(1) + ')');
+// =================== Test 44: society_anima_horror lair fight — a prepared hero wins but pays (real RNG sim) ===================
+console.log('\n=== Test 44: society_anima_horror (Band E lair boss) is winnable-but-costly for a prepared level-90 warrior ===');
+// Boss contract (docs/SPEC-BOSS-COST-BAND.md §2, as amended by docs/SPEC-BOSS-COST-RETUNE.md D0/D6),
+// judged on the shared PREPARED warrior (tests/boss_fixture.js, SPEC-BOSS-COST-RETUNE D5).
+// These are regression floors; the 300-trial lineage grid in SPEC-BOSS-COST-RETUNE §3.3 is the gate.
+var sahSim = BossFixture.simulate(Game, 'society_anima_horror', 90, 30);
+console.log(BossFixture.describe('society_anima_horror', sahSim));
+assert(sahSim.winRate >= 0.85, 'society_anima_horror is reliably beatable by a prepared level-90 warrior (win rate ' + (sahSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(sahSim.avgHpSpent >= 0.35 || sahSim.avgConsumed >= 3, 'society_anima_horror extracts a real cost on wins (avg HP spent ' + (sahSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables; spent ' + sahSim.avgConsumed.toFixed(1) + ')');
+assert(sahSim.avgConsumed <= 0.5 * sahSim.stock, 'society_anima_horror is not ruinous: at most half the stock per win (avg ' + sahSim.avgConsumed.toFixed(1) + ' of ' + sahSim.stock + ')');
 
 // =================== Test 45: Level-Arc Band F (The Red Moon / Eidas's Sanctum) monster formulas + boss premiums ===================
 console.log('\n=== Test 45: Band F regulars match the header formulas; eidas_ascendant carries the amplified FINALE boss premiums ===');
@@ -2570,9 +2107,9 @@ var eaBaseHp = BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 100;
 var eaBaseDmg = BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 100;
 var eaStandardHpPremium = 12 * 100; // the F1 CONVENTION NOTES starting ballpark every other Level-Arc boss uses
 var eaAmplifiedHpPremium = Math.round(12 * 100 * 1.4); // Band F's deliberate FINALE amplification
-assert(eidasAscendant.hp === eaBaseHp + eaAmplifiedHpPremium, 'eidas_ascendant hp carries the amplified 1.4x hp premium (' + eaBaseHp + ' + ' + eaAmplifiedHpPremium + ' = ' + (eaBaseHp + eaAmplifiedHpPremium) + '), got ' + eidasAscendant.hp);
-assert(eidasAscendant.hp > eaBaseHp + eaStandardHpPremium, 'eidas_ascendant hp premium (' + eaAmplifiedHpPremium + ') exceeds the standard +12*level premium (' + eaStandardHpPremium + ') other Level-Arc bosses use -- the FINALE is deliberately tougher');
-assert(eidasAscendant.damage === eaBaseDmg + Math.round(1.5 * 100 + 10), 'eidas_ascendant damage carries the F1 round(1.5*level+10) boss premium (' + eaBaseDmg + ' + 160 = ' + (eaBaseDmg + 160) + '), got ' + eidasAscendant.damage);
+assert(eidasAscendant.hp === Math.round(1.25 * (eaBaseHp + eaAmplifiedHpPremium)), 'eidas_ascendant hp = x1.25 (docs/SPEC-BOSS-COST-RETUNE.md) on the amplified 1.4x hp premium: round(1.25 x (' + eaBaseHp + ' + ' + eaAmplifiedHpPremium + ')) = ' + Math.round(1.25 * (eaBaseHp + eaAmplifiedHpPremium)) + ', got ' + eidasAscendant.hp);
+assert(eidasAscendant.hp > Math.round(1.25 * (eaBaseHp + eaStandardHpPremium)), 'eidas_ascendant hp (' + eidasAscendant.hp + ') exceeds what the standard +12*level premium would give under the same x1.25 retune (' + Math.round(1.25 * (eaBaseHp + eaStandardHpPremium)) + ') -- the FINALE is deliberately tougher');
+assert(eidasAscendant.damage === Math.round(1.1 * (eaBaseDmg + Math.round(1.5 * 100 + 10))), 'eidas_ascendant damage = x1.1 (docs/SPEC-BOSS-COST-RETUNE.md) on the F1 round(1.5*level+10) boss premium: round(1.1 x (' + eaBaseDmg + ' + 160)) = ' + Math.round(1.1 * (eaBaseDmg + Math.round(1.5 * 100 + 10))) + ', got ' + eidasAscendant.damage);
 assert(eidasAscendant.xp === BALANCE.MONSTER_XP(100) * 3, 'eidas_ascendant xp carries the x3 boss premium');
 assert(eidasAscendant.curseChance === BALANCE.CURSE_APPLY_CHANCE, 'eidas_ascendant carries curseChance BALANCE.CURSE_APPLY_CHANCE, matching his moon-anima-horror creations');
 // The signature tech (mon_red_moons_judgment) is unique to this boss: no other monster in the
@@ -2648,110 +2185,16 @@ var taperedArmor98 = correctedArmor(98); // 80 / 2 = 40
   assert(it.armor !== taperedArmor95, id + ' sub-tier armor (' + it.armor + ') differs from the main-tier corrected value ' + taperedArmor95 + ' (taper is re-derived per levelReq)');
 });
 
-// =================== Test 47: eidas_ascendant lair fight — THE ARC FINALE, winnable but the costliest fight in the game (real RNG sim) ===================
-console.log('\n=== Test 47: eidas_ascendant (Band F FINAL lair boss) is winnable but the costliest fight in the game for a geared level-100 warrior ===');
-function buildLevel100RedMoonWarrior() {
-  var skillPoints = {};
-  BALANCE.SKILLS.forEach(function (s) { skillPoints[s] = 0; });
-  skillPoints['Swords'] = 3;
-  skillPoints['Heavy Armor'] = 2;
-  var c = Game.Character.create({
-    race: 'Human',
-    name: 'EidasAscendantTester',
-    gender: 'Male',
-    skillPoints: skillPoints
-  });
-  c.level = 100;
-  c.xp = BALANCE.XP_TO_LEVEL(100);
-  // 99 levels' worth of stat points, spent mostly into Strength with some Vitality/Endurance
-  // (same split style as buildLevel90SkyspireWarrior above).
-  c.statPoints = 99 * BALANCE.LEVELUP_STAT_POINTS;
-  var totalPoints100 = c.statPoints;
-  for (var i = 0; i < totalPoints100; i++) {
-    var stat = (i % 5 === 0) ? 'vitality' : (i % 5 === 1 ? 'endurance' : 'strength');
-    Game.Character.spendStatPoint(c, stat);
-  }
-  var gearIds100 = ['sword_redmoon_blade', 'heavy_body_redmoon_plate', 'shield_redmoon_aegis'];
-  gearIds100.forEach(function (id) {
-    Game.Inventory.addItem(c, id);
-    var res = Game.Inventory.equip(c, id);
-    if (!res.ok) throw new Error('test setup: could not equip ' + id + ': ' + res.failures.join(' '));
-  });
-  for (i = 0; i < 8; i++) {
-    Game.Inventory.addItem(c, 'sphere_hclass_1');
-    Game.Inventory.addItem(c, 'crystal_hclass_1');
-  }
-  Game.Character.recalcDerived(c);
-  c.hitPoints = c.hitPointsMax;
-  c.energy = c.energyMax;
-  return c;
-}
-
-function countBandFConsumables(c) {
-  var n = 0;
-  for (var i = 0; i < c.inventory.length; i++) {
-    if (c.inventory[i] === 'sphere_hclass_1' || c.inventory[i] === 'crystal_hclass_1') n++;
-  }
-  return n;
-}
-
-function simulateEidasAscendantBattle() {
-  var c = buildLevel100RedMoonWarrior();
-  Game.state.character = c;
-  Game.state.battle = null;
-  Game.Battle._rng = Math.random; // real RNG for this sim
-
-  var consumablesBefore = countBandFConsumables(c);
-  var battle = Game.Battle.start('eidas_ascendant');
-  var rounds = 0;
-  var MAX_ROUNDS = 800;
-  while (battle.phase === 'active' && rounds < MAX_ROUNDS) {
-    rounds++;
-    if (!Game.Battle.canAct(battle)) {
-      var crystalIdx = c.inventory.indexOf('crystal_hclass_1');
-      if (crystalIdx !== -1) {
-        Game.Battle.useItem('crystal_hclass_1');
-        continue;
-      }
-    }
-    if (c.hitPoints < c.hitPointsMax * 0.4 && c.inventory.indexOf('sphere_hclass_1') !== -1) {
-      Game.Battle.useItem('sphere_hclass_1');
-      continue;
-    }
-    Game.Battle.attack();
-  }
-  var consumablesAfter = countBandFConsumables(c);
-  return {
-    phase: battle.phase,
-    hpLeftFrac: c.hitPoints / c.hitPointsMax,
-    consumablesConsumed: consumablesBefore - consumablesAfter
-  };
-}
-
-var EIDAS_ASCENDANT_SIM_COUNT = 60;
-var eaWins = 0;
-var eaOutcomes = {};
-var eaHpLeftSum = 0;
-var eaConsumedSum = 0;
-for (var eaRun = 0; eaRun < EIDAS_ASCENDANT_SIM_COUNT; eaRun++) {
-  var eaResult = simulateEidasAscendantBattle();
-  eaOutcomes[eaResult.phase] = (eaOutcomes[eaResult.phase] || 0) + 1;
-  if (eaResult.phase === 'won') {
-    eaWins++;
-    eaHpLeftSum += eaResult.hpLeftFrac;
-    eaConsumedSum += eaResult.consumablesConsumed;
-  }
-}
-var eaWinRate = eaWins / EIDAS_ASCENDANT_SIM_COUNT;
-var eaAvgHpLeft = eaWins ? eaHpLeftSum / eaWins : 0;
-var eaAvgConsumed = eaWins ? eaConsumedSum / eaWins : 0;
-console.log('eidas_ascendant sim results over ' + EIDAS_ASCENDANT_SIM_COUNT + ' battles: ' + JSON.stringify(eaOutcomes) +
-  ' — win rate ' + (eaWinRate * 100).toFixed(1) + '%, avg HP left on win ' + (eaAvgHpLeft * 100).toFixed(0) +
-  '%, avg consumables spent ' + eaAvgConsumed.toFixed(1));
-// Difficulty contract (CLAUDE.md): prepared players win reliably but pay HP/consumables --
-// but as the FINALE, eidas_ascendant should be the COSTLIEST fight in the game (not unwinnable).
-assert(eaWinRate >= 0.6, 'eidas_ascendant is winnable by a geared level-100 warrior (win rate ' + (eaWinRate * 100).toFixed(1) + '%, want >= 60%, per the difficulty contract\'s "not unwinnable" floor)');
-assert(eaAvgConsumed >= 2, 'eidas_ascendant extracts a heavier cost than a normal band boss (avg consumables spent ' + eaAvgConsumed.toFixed(1) + ', want >= 2 -- society_anima_horror\'s Band E sim spent ~1.4)');
+// =================== Test 47: eidas_ascendant lair fight — a prepared hero wins but pays (real RNG sim) ===================
+console.log('\n=== Test 47: eidas_ascendant (Band F FINAL lair boss) is winnable but the costliest fight in the game for a prepared level-100 warrior ===');
+// Boss contract (docs/SPEC-BOSS-COST-BAND.md §2, as amended by docs/SPEC-BOSS-COST-RETUNE.md D0/D6),
+// judged on the shared PREPARED warrior (tests/boss_fixture.js, SPEC-BOSS-COST-RETUNE D5).
+// These are regression floors; the 300-trial lineage grid in SPEC-BOSS-COST-RETUNE §3.3 is the gate.
+var eaSim = BossFixture.simulate(Game, 'eidas_ascendant', 100, 60);
+console.log(BossFixture.describe('eidas_ascendant', eaSim));
+assert(eaSim.winRate >= 0.75, 'eidas_ascendant is reliably beatable by a prepared level-100 warrior (win rate ' + (eaSim.winRate * 100).toFixed(1) + '%, want >= 75%)');
+assert(eaSim.avgHpSpent >= 0.45, 'eidas_ascendant is the costliest fight: a prepared hero spends >= 45% of the HP bar per win (avg ' + (eaSim.avgHpSpent * 100).toFixed(0) + '%; band bosses need 35%)');
+assert(eaSim.avgConsumed <= 0.5 * eaSim.stock, 'eidas_ascendant is not ruinous: at most half the stock per win (avg ' + eaSim.avgConsumed.toFixed(1) + ' of ' + eaSim.stock + ')');
 
 // =================== Test 48: v1.4 P2 (G1) — AP boss multiplier (BALANCE.AP_BOSS_MULT) ===================
 console.log('\n=== Test 48: AP boss win grants BALANCE.AP_PER_WIN(monster level) x BALANCE.AP_BOSS_MULT ===');
@@ -2828,7 +2271,7 @@ Game.Battle.endBattle();
 // =================== Test 51: v1.4 P3 (G2) — Frenzied champion affix ===================
 console.log('\n=== Test 51: Frenzied champion affix — damage escalates +5%/action, caps at +40% ===');
 var cFz = makeCharacter({ name: 'FrenziedTest' });
-cFz.dexterity = 60; // playerFirst vs a level-50 boss (used only for its large, rounding-friendly damage stat)
+cFz.dexterity = 999; // playerFirst vs a level-50 boss (boss dex is 5L+10 = 260 since SPEC-ROGUE-BOSS-COST §2.3; stale pin 60 -> 999) (used only for its large, rounding-friendly damage stat)
 Game.Character.recalcDerived(cFz);
 cFz.hitPoints = cFz.hitPointsMax = 1000000;
 cFz.energy = cFz.energyMax = 1000000;
@@ -2839,7 +2282,7 @@ bFz.monster.script = []; // isolate from majiku_warlord's own boss script (cover
 bFz.monster.affix = 'frenzied';
 bFz.monster.hp = bFz.monster.hpMax = 10000000;
 bFz.monster.energy = bFz.monster.energyMax = 10000000;
-var baseDamageFz = bFz.monster.damage;
+var baseDamageFz = Game.Battle.monsterBasicPower(bFz.monster); // boss basic attack is cut to 0.55 x damage since SPEC-MONSTER-TECH-POWER §2.2 (stale pin: monster.damage)
 var dmgHistoryFz = [];
 for (var roundFz = 1; roundFz <= 12; roundFz++) {
   Game.Battle.attack();
@@ -2926,7 +2369,7 @@ Game.Battle.endBattle();
 // =================== Test 55: v1.4 P3 (G2) — boss script fires exactly once at its threshold ===================
 console.log('\n=== Test 55: boss script (kastengard_custodian, fortify @ 50%) fires exactly once when HP first crosses its threshold ===');
 var cScript = makeCharacter({ name: 'BossScriptTest' });
-cScript.dexterity = 60; // playerFirst vs a level-32 boss
+cScript.dexterity = 999; // playerFirst vs a level-32 boss (boss dex 170 since SPEC-ROGUE-BOSS-COST §2.3; stale pin 60 -> 999)
 cScript.level = 32; // avoid Fear complicating the player's own hit (irrelevant to what's asserted, but keeps it simple)
 cScript.strength = 100;
 Game.Character.recalcDerived(cScript);
@@ -3759,7 +3202,7 @@ Game.Battle.endBattle();
 // =================== Test 78: v1.5 P3 — boss script + behavior coexist ===================
 console.log('\n=== Test 78: v1.5 P3 boss integration — a boss with BOTH a `script` (HP-threshold) and a `behavior` (per-turn telegraph) still fires its script at the threshold AND exhibits its behavior ===');
 var c78 = makeCharacter({ name: 'BossCoexistTest' });
-c78.dexterity = 60; // playerFirst vs a level-32 boss
+c78.dexterity = 999; // playerFirst vs a level-32 boss (boss dex 170 since SPEC-ROGUE-BOSS-COST §2.3; stale pin 60 -> 999)
 c78.level = 32; // avoid Fear complicating the player's own hit (same fixture shape as Test 55)
 c78.strength = 100;
 Game.Character.recalcDerived(c78);
@@ -3898,7 +3341,12 @@ Game.Inventory.addItem(c82, 'rod_apprentice_wand');
 var eqRod82 = Game.Inventory.equip(c82, 'rod_apprentice_wand');
 assert(eqRod82.ok, 'rod equips: ' + eqRod82.failures.join(';'));
 var powerWithRod82 = Game.Battle.techEffectivePower(c82, techFirebolt82);
-var expectedPowerWithRod82 = Math.round(techFirebolt82.power * (1 + c82.intelligence * 0.02) * (1 + BALANCE.ROD_SPELL_MULT));
+// docs/SPEC-SECONDARY-STATS.md §2.8: rod_apprentice_wand now carries bonuses.spellPower (band 0
+// Rod -> +1), added in the same slot as the Attunement buff, inside the Int/magic-skill/Rod
+// multiplier — read via the aggregator (Game.Character.getSecondaryStat) rather than hardcoded so
+// this test tracks the item's own data instead of re-deriving the band formula.
+var rodSpellPower82 = Game.Character.getSecondaryStat(c82, 'spellPower');
+var expectedPowerWithRod82 = Math.round((techFirebolt82.power + rodSpellPower82) * (1 + c82.intelligence * 0.02) * (1 + BALANCE.ROD_SPELL_MULT));
 assert(powerWithRod82 === expectedPowerWithRod82,
   'Rod equipped raises Firebolt I power by ROD_SPELL_MULT, expected ' + expectedPowerWithRod82 + ', got ' + powerWithRod82);
 assert(powerWithRod82 > powerNoRod82, 'Rod equipped strictly raises offensive-tech damage');
@@ -3912,8 +3360,12 @@ var healTech82 = Game.Battle.getTech('tech_mend_wounds_1');
 var healCostWithRod82 = Game.Battle.effectiveTechEnergyCost(c82, healTech82);
 assert(healCostWithRod82 === healTech82.energyCost, 'heal techs keep full Energy cost even with a Rod equipped');
 var healPowerWithRod82 = Game.Battle.techEffectivePower(c82, healTech82);
-var expectedHealPowerWithRod82 = Math.round(healTech82.power * (1 + c82.intelligence * 0.01));
-assert(healPowerWithRod82 === expectedHealPowerWithRod82, 'heal techs keep their unmodified power even with a Rod equipped');
+// docs/SPEC-SECONDARY-STATS.md §2.6: Spell Power (from the equipped Rod's own bonuses.spellPower,
+// same aggregator as above) now adds to heals too, in the same slot as the tech's own power — this
+// is a secondary-stat effect, not the Rod-specific bonus this test is otherwise checking (ROD_SPELL_MULT/
+// ROD_TECH_ENERGY_DISCOUNT, both still correctly unapplied to heals above).
+var expectedHealPowerWithRod82 = Math.round((healTech82.power + rodSpellPower82) * (1 + c82.intelligence * 0.01));
+assert(healPowerWithRod82 === expectedHealPowerWithRod82, 'heal techs keep their unmodified ROD power even with a Rod equipped (Spell Power from gear still applies)');
 
 // =================== Test 83: v1.6 P1 (CB-2) — INT speeds magic-school/Rod skill-XP, not weapon skill-XP ===================
 console.log('\n=== Test 83: v1.6 P1 INT-scaled skill-XP for magic schools + Rods, weapon skills unaffected (CB-2) ===');
@@ -4131,6 +3583,280 @@ console.log('\n=== Test 87: EI-2 armor ladder is non-decreasing by levelReq, per
     assert(violations.length === 0, 'v1.6 P3 EI-2: ' + key + ' is non-decreasing by levelReq (armor and magicArmor)' + (violations.length ? ': ' + violations.join('; ') : ''));
   });
   assert(groupCount >= 8, 'sanity: checked at least 8 class/slot groups (got ' + groupCount + ')');
+})();
+
+// =================== Test 100: SPEC-ROGUE-BOSS-COST §2.1 — diminishing-returns Dexterity dodge ===================
+console.log('\n=== Test 100: dodge model (SPEC-ROGUE-BOSS-COST §2.1) — Dex curve, skill/passive multipliers, boss Dexterity ===');
+(function () {
+  var c = makeCharacter({ name: 'DexDodgeTest' });
+  c.dexterity = 10000; // absurd Dexterity ALONE: approaches DEX_DODGE_MAX but can never reach DODGE_CAP
+  var dexOnly = Game.Battle.playerDodgeChance(c);
+  assert(dexOnly < 0.33, 'Dex 10,000 alone stays under DEX_DODGE_MAX + DODGE_BASE (< 0.33), got ' + dexOnly);
+  assert(dexOnly < BALANCE.DODGE_CAP, 'Dex alone never reaches DODGE_CAP');
+
+  var c2 = makeCharacter({ name: 'LowDexSkillTest' });
+  c2.dexterity = 5;
+  c2.skills['Dodge'].level = 100; // the skill multiplies the tiny Dex term, it adds nothing of its own
+  assert(Game.Battle.playerDodgeChance(c2) < 0.06, 'a Dex-5 hero with Dodge skill 100 stays under 0.06, got ' + Game.Battle.playerDodgeChance(c2));
+  c2.shrineBuffs = [{ id: 'shrine_phantom_step', battlesLeft: 8 }]; // +30% effectiveness of ~2.9%: still tiny
+  assert(Game.Battle.playerDodgeChance(c2) < 0.06, 'passives/shrine scale the Dex term too: Dex-5 + skill 100 + Phantom Step still < 0.06, got ' + Game.Battle.playerDodgeChance(c2));
+
+  // Hand-computed: Dex 100 -> 0.30*100/200 = 0.15; Dodge 50 -> x1.5 = 0.225; Shadowstep Grace +0.20 -> x1.2 = 0.27; + DODGE_BASE 0.02 = 0.29.
+  var c3 = makeCharacter({ name: 'DodgeFormulaTest' });
+  c3.dexterity = 100;
+  c3.skills['Dodge'].level = 50;
+  c3.shrineBuffs = [{ id: 'shrine_shadowstep_grace', battlesLeft: 6 }];
+  assert(Math.abs(Game.Battle.playerDodgeChance(c3) - 0.29) < 1e-9, 'exact formula: 0.02 + 0.15 x 1.5 x 1.2 = 0.29, got ' + Game.Battle.playerDodgeChance(c3));
+  // A class passive stacks into the SAME multiplier: Rogue's Quickstep (+0.20) + shrine (+0.20) -> x1.4.
+  Game.Classes.obtainClass(c3, 'thief');
+  Game.Classes.obtainClass(c3, 'rogue');
+  c3.classes['rogue'].abilities.push('rogue_quickstep');
+  assert(Math.abs(Game.Battle.playerDodgeChance(c3) - (0.02 + 0.15 * 1.5 * 1.4)) < 1e-9, 'passive + shrine bonuses sum inside one multiplier: expected ' + (0.02 + 0.15 * 1.5 * 1.4) + ', got ' + Game.Battle.playerDodgeChance(c3));
+
+  // Boss Dexterity (§2.3): all 11 bosses carry BOSS_DEXTERITY(level); an all-Dex hero of the boss's level goes second,
+  // one two levels above goes first (ties go to the player).
+  var bossList = Game.Data.monsters.filter(function (m) { return m.boss; });
+  bossList.forEach(function (m) {
+    assert(m.dexterity === 5 * m.level + 10 && m.dexterity === BALANCE.BOSS_DEXTERITY(m.level), m.id + ' dexterity is 5*level+10, got ' + m.dexterity);
+  });
+  var cb = makeCharacter({ name: 'BossOrderTest' });
+  cb.level = 40;
+  cb.dexterity = 5 * 40; // every stat point ever earned, spent on Dexterity
+  setRng(fixedRng(0.5));
+  var bb = Game.Battle.start('eidas_echo');
+  assert(bb.playerFirst === false, 'an all-Dex hero at the L40 boss level (Dex 200 < 210) does NOT strike first');
+  Game.Battle.endBattle();
+  var cb2 = makeCharacter({ name: 'BossOrderTest2' });
+  cb2.level = 42;
+  cb2.dexterity = 5 * 42;
+  var bb2 = Game.Battle.start('eidas_echo');
+  assert(bb2.playerFirst === true, 'an all-Dex hero two levels above the boss (Dex 210 >= 210) strikes first (tie goes to the player)');
+  Game.Battle.endBattle();
+})();
+
+// =================== Test 101: SPEC-NONDEX-DEFENSE §2.1 — Bracing ===================
+console.log('\n=== Test 101: Bracing (SPEC-NONDEX-DEFENSE §2.1) — Heavy/Medium Armor skill x Endurance, after the floor, before Block/Defend ===');
+(function () {
+  var HEAVY = ['heavy_head_great_helm', 'heavy_body_stoneback_warplate', 'heavy_legs_warplate_legguards', 'heavy_feet_ironclad_sabatons'];
+  var LIGHT = ['light_head_hood_of_wayfaring', 'light_body_traveler_tunic', 'light_legs_supple_leggings', 'light_feet_soft_boots'];
+  var MEDIUM = ['medium_head_riveted_cap', 'medium_body_studded_jerkin', 'medium_legs_banded_greaves', 'medium_feet_reinforced_boots'];
+  var SLOTS = ['head', 'body', 'legs', 'feet'];
+  var RAW = 1000;                    // monster.damage forced high so the floor, not Armor, decides the hit...
+  var FLOORED = Math.round(RAW * BALANCE.DAMAGE_PENETRATION_FLOOR); // ...300 (neutral variance at rng 0.5)
+
+  // Fresh hero wearing `items`, armor skill `skillLvl`, `end` Endurance, `lvlDown` levels under the monster;
+  // a huge Armor buff pins every hit to the penetration floor. Returns the HP lost to the monster's reply.
+  function brace(items, armorSkill, skillLvl, end, lvlDown, how) {
+    var c = makeCharacter({ name: 'BraceTest' });
+    c.dexterity = 999; // player first: the monster's only action is the reply to ours
+    c.level = 20 - lvlDown; // juneros_riptide_hunter is level 20
+    c.endurance = end;
+    c.skills[armorSkill].level = skillLvl;
+    for (var i = 0; i < 4; i++) c.equipment[SLOTS[i]] = items[i];
+    Game.Character.recalcDerived(c);
+    c.hitPoints = c.hitPointsMax = 1000000;
+    c.energy = c.energyMax = 1000000;
+    setRng(fixedRng(0.5)); // no dodge / glancing / crit / tech pick, neutral variance
+    var b = Game.Battle.start('juneros_riptide_hunter');
+    b.monster.damage = RAW;
+    b.monster.hp = b.monster.hpMax = 1000000;
+    b.playerStatuses.push({ type: 'buff', name: 'TestWall', statKind: 'armor', power: 100000000, turnsLeft: 99 });
+    var frac = Game.Battle.playerBraceFraction(b);
+    var realBlock = Game.Character.getBlockChance;
+    if (how === 'block' || how === 'both') Game.Character.getBlockChance = function () { return 1; }; // rng 0.5 < 1 -> blocked
+    var before = c.hitPoints;
+    if (how === 'defend' || how === 'both') Game.Battle.defend(); else Game.Battle.attack();
+    Game.Character.getBlockChance = realBlock;
+    var lost = before - c.hitPoints;
+    Game.Battle.endBattle();
+    return { lost: lost, frac: frac };
+  }
+
+  var r1 = brace(HEAVY, 'Heavy Armor', 20, 0, 0);
+  assert(Math.abs(r1.frac - 0.2) < 1e-9, 'full Heavy set at skill 20, Endurance 0 -> brace 0.20, got ' + r1.frac);
+  assert(r1.lost === Math.round(FLOORED * 0.8), 'full Heavy set at skill 20 takes exactly round(floored x 0.8) = ' + Math.round(FLOORED * 0.8) + ', got ' + r1.lost);
+
+  var r2 = brace(HEAVY, 'Heavy Armor', 20, 100, 0);
+  assert(Math.abs(r2.frac - 0.2 * 1.2) < 1e-9, 'Endurance 100 multiplies the brace by 1.2 -> 0.24, got ' + r2.frac);
+  assert(r2.lost === Math.round(FLOORED * (1 - 0.24)), 'Endurance 100 -> hit is round(floored x 0.76) = ' + Math.round(FLOORED * 0.76) + ', got ' + r2.lost);
+
+  var r3 = brace(LIGHT, 'Light Armor', 50, 100, 0);
+  assert(r3.frac === 0 && r3.lost === FLOORED, 'a full Light Armor set gives no Bracing: frac ' + r3.frac + ', hit ' + r3.lost + ' (floored ' + FLOORED + ')');
+
+  var rm = brace(MEDIUM, 'Medium Armor', 20, 0, 0);
+  assert(Math.abs(rm.frac - 0.2) < 1e-9, 'Medium Armor braces at the same rate as Heavy, got ' + rm.frac);
+
+  var rp = brace([HEAVY[0], LIGHT[1], LIGHT[2], LIGHT[3]], 'Heavy Armor', 20, 0, 0);
+  assert(Math.abs(rp.frac - 0.05) < 1e-9, 'one Heavy piece = a quarter of the Heavy rate (0.05), got ' + rp.frac);
+
+  var r4 = brace(HEAVY, 'Heavy Armor', 200, 100, 0);
+  assert(r4.frac === BALANCE.BRACE_CAP, 'BRACE_CAP holds at skill 200 + Endurance 100, got ' + r4.frac);
+  assert(r4.lost === Math.round(FLOORED * (1 - BALANCE.BRACE_CAP)), 'capped brace takes round(floored x 0.5), got ' + r4.lost);
+
+  var r5 = brace(HEAVY, 'Heavy Armor', 20, 0, 2);
+  assert(Math.abs(r5.frac - 0.2 * 0.8) < 1e-9, 'Fear 2 levels under scales the brace by 0.8 -> 0.16, got ' + r5.frac);
+  assert(r5.lost === Math.round(FLOORED * (1 - 0.16)), 'Fear-scaled brace: hit is round(floored x 0.84) = ' + Math.round(FLOORED * 0.84) + ', got ' + r5.lost);
+
+  var braced = Math.round(FLOORED * 0.8);
+  var r6 = brace(HEAVY, 'Heavy Armor', 20, 0, 0, 'defend');
+  assert(r6.lost === Math.round(braced * BALANCE.DEFEND_DAMAGE_MULT), 'Defend still halves the braced hit: expected ' + Math.round(braced * BALANCE.DEFEND_DAMAGE_MULT) + ', got ' + r6.lost);
+  var r7 = brace(HEAVY, 'Heavy Armor', 20, 0, 0, 'block');
+  assert(r7.lost === Math.round(braced * (1 - BALANCE.BLOCK_REDUCTION)), 'Block still halves the braced hit: expected ' + Math.round(braced * (1 - BALANCE.BLOCK_REDUCTION)) + ', got ' + r7.lost);
+  var r8 = brace(HEAVY, 'Heavy Armor', 20, 0, 0, 'both');
+  var afterBlock = Math.round(braced * (1 - BALANCE.BLOCK_REDUCTION));
+  assert(r8.lost === Math.round(afterBlock * BALANCE.DEFEND_DAMAGE_MULT), 'Block + Defend + Bracing stack in order: expected ' + Math.round(afterBlock * BALANCE.DEFEND_DAMAGE_MULT) + ', got ' + r8.lost);
+
+  // Estari Ruin Warden's basic damage trim (SPEC-NONDEX-DEFENSE §2.2): 33 -> 28.
+  assert(Game.Data.monsters.filter(function (m) { return m.id === 'estari_ruin_warden'; })[0].damage === 28, 'Estari Ruin Warden damage is 28');
+})();
+
+// =================== Test 102: SPEC-MONSTER-TECH-POWER — tech scaling, boss basic cut, half physical defense vs graded techs ===================
+console.log('\n=== Test 102: monster tech power + boss basic cut + half Armor/Bracing/Block vs graded techs (SPEC-MONSTER-TECH-POWER §2) ===');
+(function () {
+  var HEAVY = ['heavy_head_great_helm', 'heavy_body_stoneback_warplate', 'heavy_legs_warplate_legguards', 'heavy_feet_ironclad_sabatons'];
+  var SLOTS = ['head', 'body', 'legs', 'feet'];
+
+  // One monster reply under a constant 0.5 rng: 'caster' behavior (tech chance 0.75, wind-up 0.15) makes
+  // the 0.5 roll pick the single listed tech; no techs + 'simple' makes it a basic attack. Neutral
+  // variance, no glancing, no dodge. Armor / Magic Armor / Block chance are stubbed per call.
+  function reply(monsterId, opts) {
+    var c = makeCharacter({ name: 'TechPowerTest' });
+    c.dexterity = 999;
+    var m0 = Game.Data.monsters.filter(function (m) { return m.id === monsterId; })[0];
+    c.level = opts.level || m0.level;
+    if (opts.brace) {
+      c.skills['Heavy Armor'].level = 20;
+      for (var i = 0; i < 4; i++) c.equipment[SLOTS[i]] = HEAVY[i];
+    }
+    Game.Character.recalcDerived(c);
+    c.hitPoints = c.hitPointsMax = 1000000;
+    c.energy = c.energyMax = 1000000;
+    var calls = 0;
+    setRng(function () { calls++; return 0.5; });
+    var b = Game.Battle.start(monsterId);
+    b.monster.hp = b.monster.hpMax = 1000000;
+    if (opts.hpFrac) b.monster.hp = Math.round(b.monster.hpMax * opts.hpFrac);
+    b.monster.energy = b.monster.energyMax = 1000000;
+    if (!opts.keepScript) b.monster.script = [];
+    if (opts.techId) { b.monster.techs = [opts.techId]; b.monster.behavior = 'caster'; }
+    else { b.monster.techs = []; b.monster.behavior = 'simple'; }
+    if (opts.mutate) opts.mutate(b.monster);
+    var realArmor = Game.Character.getArmor, realMA = Game.Character.getMagicArmor, realBlock = Game.Character.getBlockChance;
+    Game.Character.getArmor = function () { return opts.armor || 0; };
+    Game.Character.getMagicArmor = function () { return opts.magicArmor || 0; };
+    Game.Character.getBlockChance = function () { return opts.block || 0; };
+    var before = c.hitPoints;
+    var callsBefore = calls;
+    Game.Battle.attack();
+    Game.Character.getArmor = realArmor; Game.Character.getMagicArmor = realMA; Game.Character.getBlockChance = realBlock;
+    var res = { lost: before - c.hitPoints, calls: calls - callsBefore, damage: b.monster.damage };
+    Game.Battle.endBattle();
+    return res;
+  }
+  function monDef(id) { return Game.Data.monsters.filter(function (m) { return m.id === id; })[0]; }
+  var LANCE = Game.Battle.getTech('mon_anima_lance'); // Dark-graded, own power 22
+
+  // --- helpers on the data
+  var archivist = monDef('vault_forsaken_archivist');
+  assert(archivist.damage === 73 && !archivist.boss, 'fixture: vault_forsaken_archivist is a regular L35 monster, damage 73');
+  assert(Game.Battle.monsterTechPower(archivist, LANCE) === 73, 'monsterTechPower: regular L35 tech = round(1.0 x 73) = 73 (Anima Lance own power 22)');
+  assert(Game.Battle.monsterBasicPower(archivist) === 73, 'monsterBasicPower: a regular monster\'s basic attack is unchanged (73)');
+  assert(Game.Battle.monsterTechPower({ damage: 5, boss: true }, { power: 22 }) === 22, 'monsterTechPower floors at tech.power (boss)');
+  assert(Game.Battle.monsterTechPower({ damage: 100 }, { power: 22, signature: true }) === 130, 'signature multiplies the scaled value: round(1.3 x 1.0 x 100) = 130');
+
+  // --- landed regular tech / basic (zero defenses -> hit equals base power)
+  var r1 = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance' });
+  assert(r1.lost === 73, 'regular L35 tech lands for round(1.0 x 73) = 73, got ' + r1.lost);
+  var r1b = reply('vault_forsaken_archivist', {});
+  assert(r1b.lost === 73, 'regular monster basic attack still lands for 73, got ' + r1b.lost);
+
+  // --- boss L90
+  var horror = monDef('society_anima_horror');
+  assert(horror.boss && horror.damage === 426, 'fixture: society_anima_horror is a boss with damage 426 (boss cost retune, docs/SPEC-BOSS-COST-RETUNE.md)');
+  assert(Game.Battle.monsterTechPower(horror, LANCE) === 298, 'boss L90 tech power = round(0.7 x 426) = 298');
+  assert(Game.Battle.monsterBasicPower(horror) === 234, 'boss L90 basic attack = round(0.55 x 426) = 234');
+  var r2 = reply('society_anima_horror', { techId: 'mon_anima_lance' });
+  assert(r2.lost === 298, 'boss L90 tech lands for 298, got ' + r2.lost);
+  var r2b = reply('society_anima_horror', {});
+  assert(r2b.lost === 234, 'boss L90 basic attack lands for 234, got ' + r2b.lost);
+
+  // --- Red Moon's Judgment (signature) at L100
+  var asc = monDef('eidas_ascendant');
+  assert(asc.boss && asc.damage === 399, 'fixture: eidas_ascendant boss, damage 399 (boss cost retune)');
+  assert(Game.Battle.getTech('mon_red_moons_judgment').signature === true, 'mon_red_moons_judgment carries signature: true');
+  var sigCount = Game.Data.techs.filter(function (t) { return t.signature; }).length;
+  assert(sigCount === 1, 'exactly one signature tech exists, got ' + sigCount);
+  var rj = reply('eidas_ascendant', { techId: 'mon_red_moons_judgment' });
+  assert(rj.lost === Math.round(1.3 * 0.7 * 399) && rj.lost === 363, 'Red Moon\'s Judgment at L100 lands for round(1.3 x 0.7 x 399) = 363, got ' + rj.lost);
+  var ro = reply('eidas_ascendant', { techId: 'mon_radiant_smite' });
+  assert(ro.lost === 279, 'Ascendant\'s other techs land for round(0.7 x 399) = 279, got ' + ro.lost);
+
+  // --- a tech whose own power is above the scaled value keeps it
+  var weak = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', mutate: function (m) { m.damage = 5; } });
+  assert(weak.lost === LANCE.power, 'a tech whose own power (' + LANCE.power + ') exceeds F x damage keeps it, got ' + weak.lost);
+
+  // --- enrage (real script, fires on the player's action) raises both basic attack and tech power
+  var enraged = Math.round(426 * 1.12);
+  var re = reply('society_anima_horror', { techId: 'mon_anima_lance', keepScript: true, hpFrac: 0.39 });
+  assert(re.damage === enraged, 'enrage script fired: monster damage ' + re.damage + ' (expected ' + enraged + ')');
+  assert(re.lost === Math.round(0.7 * enraged), 'enraged boss tech = round(0.7 x ' + enraged + ') = ' + Math.round(0.7 * enraged) + ', got ' + re.lost);
+  var reb = reply('society_anima_horror', { keepScript: true, hpFrac: 0.39 });
+  assert(reb.lost === Math.round(0.55 * enraged), 'enraged boss basic = round(0.55 x ' + enraged + ') = ' + Math.round(0.55 * enraged) + ', got ' + reb.lost);
+
+  // --- the charged release is built on the cut basic attack
+  (function () {
+    var c = makeCharacter({ name: 'ChargeCut' });
+    c.dexterity = 999; c.level = 90;
+    Game.Character.recalcDerived(c);
+    c.hitPoints = c.hitPointsMax = 1000000; c.energy = c.energyMax = 1000000;
+    setRng(fixedRng(0.5));
+    var b = Game.Battle.start('society_anima_horror');
+    b.monster.hp = b.monster.hpMax = 1000000; b.monster.energy = 1000000; b.monster.script = [];
+    b.monster.techs = []; b.monster.behavior = 'simple';
+    b.charge = { mult: BALANCE.AFFIX_CHARGED_MULT };
+    var realArmor = Game.Character.getArmor; Game.Character.getArmor = function () { return 0; };
+    var before = c.hitPoints;
+    Game.Battle.attack();
+    Game.Character.getArmor = realArmor;
+    var lost = before - c.hitPoints;
+    assert(lost === Math.round(234 * BALANCE.AFFIX_CHARGED_MULT), 'charged release = round(234 x charge mult) = ' + Math.round(234 * BALANCE.AFFIX_CHARGED_MULT) + ', got ' + lost);
+    Game.Battle.endBattle();
+  })();
+
+  // --- graded mitigation = Magic Armor + 0.5 x Armor (x Fear); ungraded / basic keep full Armor
+  var g = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', armor: 40, magicArmor: 10 });
+  assert(g.lost === 73 - (10 + 0.5 * 40), 'graded tech vs MA 10 + Armor 40: mitigation 30 -> 43, got ' + g.lost);
+  var gf = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', armor: 40, magicArmor: 10, level: 33 });
+  assert(gf.lost === Math.round(73 - 30 * 0.8), 'Fear (2 levels under, x0.8) scales the whole graded sum: ' + Math.round(73 - 30 * 0.8) + ', got ' + gf.lost);
+  var ungraded = Game.Data.techs.filter(function (t) { return t.monsterOnly && !t.grade && t.effect === 'damage'; })[0];
+  assert(!!ungraded, 'an ungraded monster damage tech exists for the ungraded checks (' + (ungraded && ungraded.id) + ')');
+  var up = reply('vault_forsaken_archivist', { techId: ungraded.id, armor: 40, magicArmor: 10 });
+  assert(up.lost === 73 - 40, 'an ungraded tech keeps full Armor (40) and ignores Magic Armor: 33, got ' + up.lost);
+  var bs = reply('vault_forsaken_archivist', { armor: 40, magicArmor: 10 });
+  assert(bs.lost === 73 - 40, 'a basic attack keeps full Armor: 33, got ' + bs.lost);
+
+  // --- Bracing halved vs graded, full vs basic / ungraded (full Heavy set, skill 20 -> brace 0.20)
+  var gb = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', brace: true });
+  assert(gb.lost === Math.round(73 * (1 - 0.2 * 0.5)), 'graded tech: Bracing halved -> round(73 x 0.9) = 66, got ' + gb.lost);
+  var bb = reply('vault_forsaken_archivist', { brace: true });
+  assert(bb.lost === Math.round(73 * 0.8), 'basic attack: full Bracing -> round(73 x 0.8) = 58, got ' + bb.lost);
+  var ub = reply('vault_forsaken_archivist', { techId: ungraded.id, brace: true });
+  assert(ub.lost === Math.round(73 * 0.8), 'ungraded tech: full Bracing -> 58, got ' + ub.lost);
+
+  // --- Block: the 0.5 roll blocks iff chance > 0.5. Chance 0.8: graded halves to 0.4 (no block), others keep 0.8 (block)
+  var blocked73 = Math.round(73 * (1 - BALANCE.BLOCK_REDUCTION));
+  var gk = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', block: 0.8 });
+  assert(gk.lost === 73, 'graded tech: Block chance 0.8 halves to 0.4 -> the 0.5 roll does not block, got ' + gk.lost);
+  var gk2 = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', block: 1.2 });
+  assert(gk2.lost === blocked73, 'graded tech: Block chance 1.2 halves to 0.6 -> the 0.5 roll blocks (a graded tech can now be blocked), got ' + gk2.lost);
+  var bk = reply('vault_forsaken_archivist', { block: 0.8 });
+  assert(bk.lost === blocked73, 'basic attack: full Block chance 0.8 -> blocked, got ' + bk.lost);
+  var uk = reply('vault_forsaken_archivist', { techId: ungraded.id, block: 0.8 });
+  assert(uk.lost === blocked73, 'ungraded tech: full Block chance 0.8 -> blocked, got ' + uk.lost);
+  // exactly one rng() for the Block roll when the (halved) chance is above 0, none at 0
+  var k0 = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', block: 0 });
+  var k1 = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', block: 0.0002 });
+  assert(k1.calls - k0.calls === 1, 'Block rolls one rng() when the halved chance is above 0 and none at 0 (calls ' + k0.calls + ' vs ' + k1.calls + ')');
 })();
 
 // =================== Summary ===================

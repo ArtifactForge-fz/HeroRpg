@@ -12,6 +12,73 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.12.0',
+    date: '2026-10-23',
+    title: 'The Whole Arsenal',
+    saveVersion: 12,
+    highlights: [
+      'Monsters fight with their whole arsenal. Every monster\'s special attacks now grow with the ' +
+        'monster, so the spells of the far north hurt like the far north. Bosses lean on their ' +
+        'techniques more and swing less, and the red moon\'s judgment is the most terrible blow in ' +
+        'the game.',
+      'Armor, shields and braced stances now also blunt magical attacks, at half strength.'
+    ]
+  },
+
+  {
+    version: 'v1.11.0',
+    date: '2026-10-23',
+    title: 'The Hero Tree',
+    saveVersion: 12,
+    highlights: [
+      'Your classes now grow together. The callings you choose at levels 5, 30 and 60 are ' +
+        'permanent and always active: no more Primary and Secondary slots, and no more losing a ' +
+        'class by deactivating it. Your Status screen shows them as your Hero Tree.',
+      'Class experience is shared between the classes still learning; once a class is mastered, ' +
+        'its share goes to the others.',
+      'Legendary classes get a slot of their own on top, and you can swap between the ones you\'ve ' +
+        'unlocked at any Academy without losing their progress. Existing heroes keep every class ' +
+        'level and ability they\'ve earned.',
+      'Footwork rewritten. Dodging now comes from Dexterity, with less gained from each point the ' +
+        'more you have, so even the nimblest hero can\'t slip every blow. Your Dodge skill, dodge ' +
+        'abilities, shrine blessings and footwork techniques now make that chance bigger instead of ' +
+        'adding a fixed amount. Thieves, Rogues, Gambits and Assassins finally get full use from ' +
+        'their dodge abilities. Bosses are also quicker: most will strike first unless you clearly ' +
+        'outclass them.',
+      'Armor that holds. Heavy and medium armor now pay off when a blow lands: the better you know ' +
+        'your armor, and the more Endurance behind it, the less each hit hurts. Light armor stays ' +
+        'the armor of quick feet.',
+      'Old Conjurers made whole. If your Conjurer learned Summon Elemental before the companion ' +
+        'update, that retired technique is now cleared away and the 5 Class Levels you spent on it ' +
+        'are returned, ready for a Pact.'
+    ]
+  },
+
+  {
+    version: 'v1.10.0',
+    date: '2026-10-21',
+    title: 'Keen Edges & Lucky Coins',
+    saveVersion: 11,
+    highlights: [
+      'New combat stats. Your hero now has Critical Strike Chance, Critical Strike Damage, ' +
+        'Accuracy, Armor Penetration, Block, Spell Power and Luck — check the new Combat Stats ' +
+        'section of your Status screen. Every hero starts with a 5% chance to land a critical ' +
+        'strike, with weapons and with damaging techniques alike.',
+      'Every weapon type now carries a signature stat: Swords add Accuracy, Knives add Critical ' +
+        'Strike Chance, Polearms pierce Armor, Hand-to-Hand weapons add Critical Strike Damage, ' +
+        'Rods add Spell Power, and Shields can now block blows. Better gear carries more.',
+      'Eight class abilities gained a bonus effect on top of what they already did: Opportunist, ' +
+        'Killing Instinct, Marksman\'s Eye, Dragon\'s Might, Barrier Ward, Arcane Might, Anima ' +
+        'Mastery and Lucky Coin. If you already learned one, you have the bonus now. Arcane Might ' +
+        'and Anima Mastery now also strengthen your techniques.',
+      'Seven new blessings at the Spirit Shrine, one for each new stat.',
+      'Fear still rules: the new stats weaken when you fight above your level, and fade entirely ' +
+        'against a foe five or more levels beyond you.',
+      'Item, area, technique and quest descriptions read cleaner, without stray archive notes.'
+    ]
+  },
+
+  {
     version: 'v1.9.0',
     date: '2026-07-25',
     title: 'The Conjurer Binds a Companion',

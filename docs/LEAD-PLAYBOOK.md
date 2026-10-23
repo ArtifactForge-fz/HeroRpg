@@ -63,15 +63,21 @@ Full recipe in `/balance-sim`. The essentials:
   index.html order (core is DOM-free by architecture; copy the load preamble from
   `tests/test_p3_battle.js`). Stub `Game.Battle._rng` with a seeded PRNG (mulberry32) —
   it is the single RNG surface, world.js delegates to it.
-- **Drive loop:** copy `simulateOneBattle()` from `tests/test_p6b_content.js` (~line 625)
-  — it drives `Game.Battle.start/attack/useTech/useItem` with a sane policy. The
-  "modest-geared warrior" fixture from the shipped boss tests is the standard player.
+- **Drive loop:** copy `fightOnce()` from `tests/boss_fixture.js` — it drives
+  `Game.Battle.start/attack/useItem` with the standard policy (Crystal before the Energy
+  pool empties, since `useItem` is refused at 0 Energy; heal below 40% HP) and tallies HP
+  spent. Its prepared warrior is the standard boss player; boss gates run the full lineage
+  grid (12 lineages × every class option, `docs/SPEC-BOSS-COST-BAND.md` §3.3) on the same
+  prepared build rules.
   Gotcha: set `c.dexterity = 999` when you need deterministic player-first initiative
   (a monster's opening strike consumes RNG and desyncs seeded comparisons).
 - **Grid:** ≥300 trials per cell; cells = at-level regular, boss (prepared player),
-  5-levels-down. Metrics: win %, rounds, HP-left, damage-per-energy, consumables spent.
-- **Contract:** at-level regulars ≥85–100% win; bosses winnable-but-costly for prepared
-  players (meaningful HP loss or consumed resources — not free); 5-down = certain death
+  5-levels-down. Metrics: win %, rounds, HP spent per win (heals included), damage-per-energy,
+  consumables spent.
+- **Contract:** at-level regulars ≥85–100% win; bosses per `docs/SPEC-BOSS-COST-BAND.md` §2
+  (amended by `docs/SPEC-BOSS-COST-RETUNE.md`): each lineage's weakest option wins ≥ 85%
+  (finale ≥ 75%), its cheapest option spends ≥ 35% of the HP bar per win or ≥ 3 consumables
+  (finale ≥ 45% HP spent), no build spends > 50% of its stock; 5-down = certain death
   via Fear (known limitation past ~L50, DESIGN §4 — new mechanics must not *widen* it;
   v1.4 P0 verified provisions leave true 5-down cells at 0.0%).
 - Sim scripts are **ephemeral** (scratchpad, not committed); the *results* are durable

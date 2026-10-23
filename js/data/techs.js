@@ -202,7 +202,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 2,
     skillReq: 0,
-    desc: 'Knits shallow wounds closed with a wash of Light-grade Anima. Unaffected by Fear (Fear.md: "affects spell damage, not healing").'
+    // archived: reference/manual/Fear.md "affects spell damage, not healing"
+    desc: 'Knits shallow wounds closed with a wash of Light-grade Anima. Unaffected by Fear.'
   },
 
   // ---------- Alteration: buff (+damage a few turns), per Recent_Updates.md 2007-04-06 "Alteration is now affected by Spell Powers" ----------
@@ -491,7 +492,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 5,
     skillReq: 12,
-    desc: 'A profound working of Light-grade Anima that can pull a hero back from the brink. Requires Mend Wounds II and Abjuration 12. Unaffected by Fear (Fear.md).'
+    // archived: reference/manual/Fear.md
+    desc: 'A profound working of Light-grade Anima that can pull a hero back from the brink. Requires Mend Wounds II and Abjuration 12. Unaffected by Fear.'
   },
   {
     id: 'tech_shadowlash_3',
@@ -1694,7 +1696,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 6,
     skillReq: 20,
-    desc: 'A Kuraan-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds III and Abjuration 20. Unaffected by Fear (Fear.md).'
+    // archived: reference/manual/Fear.md
+    desc: 'A Kuraan-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds III and Abjuration 20. Unaffected by Fear.'
   },
   {
     id: 'tech_cleave_4',
@@ -1763,7 +1766,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 8,
     skillReq: 30,
-    desc: 'A Majiku-Highlands-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds IV and Abjuration 30. Unaffected by Fear (Fear.md).'
+    // archived: reference/manual/Fear.md
+    desc: 'A Majiku-Highlands-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds IV and Abjuration 30. Unaffected by Fear.'
   },
   {
     id: 'tech_cleave_5',
@@ -1832,7 +1836,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 10,
     skillReq: 40,
-    desc: 'A Frozen-Reaches-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds V and Abjuration 40. Unaffected by Fear (Fear.md).'
+    // archived: reference/manual/Fear.md
+    desc: 'A Frozen-Reaches-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds V and Abjuration 40. Unaffected by Fear.'
   },
   {
     id: 'tech_cleave_6',
@@ -1901,7 +1906,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 12,
     skillReq: 50,
-    desc: 'An Estari-Wellspring-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds VI and Abjuration 50. Unaffected by Fear (Fear.md).'
+    // archived: reference/manual/Fear.md
+    desc: 'An Estari-Wellspring-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds VI and Abjuration 50. Unaffected by Fear.'
   },
   {
     id: 'tech_cleave_7',
@@ -1970,7 +1976,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 14,
     skillReq: 60,
-    desc: 'A Skyspire-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds VII and Abjuration 60. Unaffected by Fear (Fear.md).'
+    // archived: reference/manual/Fear.md
+    desc: 'A Skyspire-era working of Light-grade Anima, mending wounds no earlier rank could close. Requires Mend Wounds VII and Abjuration 60. Unaffected by Fear.'
   },
   {
     id: 'tech_cleave_8',
@@ -2040,7 +2047,8 @@ Game.Data.techs = [
     effect: 'heal',
     trainingCost: 16,
     skillReq: 70,
-    desc: 'A Red-Moon-era working of Light-grade Anima, the highest rank ever taught, mending wounds no earlier rank could close. Requires Mend Wounds VIII and Abjuration 70. Unaffected by Fear (Fear.md).'
+    // archived: reference/manual/Fear.md
+    desc: 'A Red-Moon-era working of Light-grade Anima, the highest rank ever taught, mending wounds no earlier rank could close. Requires Mend Wounds VIII and Abjuration 70. Unaffected by Fear.'
   },
   {
     id: 'tech_cleave_9',
@@ -2108,6 +2116,7 @@ Game.Data.techs = [
     grade: 'Star',
     energyCost: 70,
     power: 240,
+    signature: true, // invented: docs/SPEC-MONSTER-TECH-POWER.md §2.1 (D6) — scales as SIGNATURE_TECH_MULT x the boss tech fraction x monster.damage (330 at L100), not the plain floor
     effect: 'damage',
     monsterOnly: true,
     desc: "Eidas's own working, a devastating lance of Star-grade Anima drawn straight from the red moon itself — used by nothing else in Exos."
@@ -2731,7 +2740,7 @@ Game.Data.techs = [
     skill: 'Light Armor',
     grade: null,
     energyCost: 10,
-    power: 0.04,
+    power: 0.10, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.04)
     statKind: 'dodge',
     buffDuration: 5, // P0-locked retune 3->5 (§0 finding 1)
     requiresArmorClass: 'light',
@@ -2748,7 +2757,7 @@ Game.Data.techs = [
     skill: 'Light Armor',
     grade: null,
     energyCost: 15,
-    power: 0.06,
+    power: 0.15, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.06)
     statKind: 'dodge',
     buffDuration: 5,
     requiresArmorClass: 'light',
@@ -2765,7 +2774,7 @@ Game.Data.techs = [
     skill: 'Light Armor',
     grade: null,
     energyCost: 20,
-    power: 0.09,
+    power: 0.225, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.09)
     statKind: 'dodge',
     buffDuration: 5,
     requiresArmorClass: 'light',
@@ -2782,7 +2791,7 @@ Game.Data.techs = [
     skill: 'Light Armor',
     grade: null,
     energyCost: 26,
-    power: 0.12,
+    power: 0.30, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.12)
     statKind: 'dodge',
     buffDuration: 5,
     requiresArmorClass: 'light',
@@ -3069,7 +3078,7 @@ Game.Data.techs = [
     skill: 'Dodge',
     grade: null,
     energyCost: 10,
-    power: 0.05,
+    power: 0.125, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.05)
     statKind: 'dodge',
     buffDuration: 5, // P0-locked retune 3->5 (§0 finding 1)
     effect: 'buff',
@@ -3085,7 +3094,7 @@ Game.Data.techs = [
     skill: 'Dodge',
     grade: null,
     energyCost: 15,
-    power: 0.08,
+    power: 0.20, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.08)
     statKind: 'dodge',
     buffDuration: 5,
     effect: 'buff',
@@ -3101,7 +3110,7 @@ Game.Data.techs = [
     skill: 'Dodge',
     grade: null,
     energyCost: 21,
-    power: 0.12,
+    power: 0.30, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.12)
     statKind: 'dodge',
     buffDuration: 5,
     effect: 'buff',
@@ -3117,7 +3126,7 @@ Game.Data.techs = [
     skill: 'Dodge',
     grade: null,
     energyCost: 27,
-    power: 0.16,
+    power: 0.40, // invented: SPEC-ROGUE-BOSS-COST §2.2 (dodge multiplier, was 0.16)
     statKind: 'dodge',
     buffDuration: 5,
     effect: 'buff',

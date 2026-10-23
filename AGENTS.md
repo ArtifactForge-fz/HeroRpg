@@ -77,9 +77,15 @@ Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's que
 - Weapon tiers at levelReq 1 / 5–15 / 25 / 35, damage ≈ 3+2×levelReq. Uniques (tag 'unique'):
   monster-drop-only, +15–25% or hybrid stats, never in shops/recipes.
 - Any balance claim gets a scratchpad simulation using the real game code loaded in `node vm`
-  (see `tools/`-adjacent pattern in tests; prior sims measured win %, rounds, HP-left, and
-  damage-per-energy). Difficulty contract for bosses: prepared players win reliably but pay
-  (HP or consumables); at-level regulars ≥85–100% win; 5-level-down = certain death via Fear.
+  (see `tests/boss_fixture.js` and `/balance-sim`; sims measure win %, rounds, HP spent per win,
+  consumables and damage-per-energy). Difficulty contract: at-level regulars ≥85–100% win;
+  5-level-down = certain death via Fear; **bosses** (`docs/SPEC-BOSS-COST-BAND.md` §2, amended by
+  `docs/SPEC-BOSS-COST-RETUNE.md`), judged on the prepared fixture (best gear in every slot,
+  half-level skills, every passive, 6 heals + 6 Crystals): every lineage's weakest class option
+  wins ≥ 85% (finale ≥ 75%); its cheapest option spends ≥ 35% of the HP bar per win, heals
+  included, or ≥ 3 consumables (finale: ≥ 45% HP spent); no build spends > 50% of its stock.
+  Under-geared heroes are expected to lose boss fights. "HP left on win" is NOT a cost metric:
+  the heal-at-40% policy resets it, so it doesn't move with boss strength.
 
 ## Content conventions
 

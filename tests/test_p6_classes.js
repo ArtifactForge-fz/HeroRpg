@@ -5,8 +5,10 @@
 // (re-gated from 38 by level-arc F4), "The Master's Calling", TWO per tier-2 class via v1.5 P4
 // BRANCHING — supersedes the old branch-convergence rule) -> Legendary (Runeblade of
 // Kuraan/Vaultbreaker/Heir of the Echo, each
-// with its own mutually-independent special unlock route). Covers obtain/activate/deactivate,
-// class XP/levels, ability purchase incl. passive + tech hooks, class-only tech battle gating,
+// with its own mutually-independent special unlock route). v1.11 (docs/SPEC-CLASS-LINEAGE.md) turned
+// the Primary/Secondary slots into the Hero Tree: tier 1/2/3 classes auto-activate into c.lineage
+// on obtain, ONE optional Legendary slot (setLegendary, Academy-only), shared class-XP pool, no
+// deactivation. Covers obtain/lineage/Legendary slot, class XP/levels, ability purchase incl. passive + tech hooks, class-only tech battle gating,
 // advancedOptionsFor/thirdTierOptionsFor (now tier-2-keyed), classChoice quest turn-ins (fixed
 // array + 'advanced'/'tier3' sentinels), save v6->v7 migration (rogue->thief re-basing), the v1.5
 // P4 legacy "impossible combo" load path (§5), and all 3 Legendary unlock routes (boss-kill,
@@ -325,11 +327,14 @@ assert(Array.isArray(loadedV6.character.classes.thief.abilities) && loadedV6.cha
   'thief.abilities reset to empty (old rogue_* ability ids do not exist on the new thief roster)');
 assert(!!loadedV6.character.classes.warrior, 'unrelated classes.warrior entry untouched by the rename');
 assert(loadedV6.character.classes.warrior.classXp === 40, 'classes.warrior progress untouched, got ' + loadedV6.character.classes.warrior.classXp);
-assert(loadedV6.character.primaryClass === 'thief', 'primaryClass (active slot) renamed rogue -> thief, got ' + loadedV6.character.primaryClass);
+// v1.11 (v11->v12 step, SPEC-CLASS-LINEAGE M1/M2): the v6->v7 rename still re-keys rogue -> thief, and
+// the Primary slot (now thief) wins the tier-1 lineage tie against warrior; the slot fields are gone.
+assert(loadedV6.character.lineage.tier1 === 'thief', 'old Primary (rogue, renamed thief) fills lineage.tier1, got ' + loadedV6.character.lineage.tier1);
+assert(!('primaryClass' in loadedV6.character) && !('secondaryClass' in loadedV6.character), 'primaryClass/secondaryClass deleted by the v11->v12 step');
 Game.state = loadedV6;
 Game.persist();
 var resavedV6 = JSON.parse(localStorageStore['herorpg_save']);
-assert(resavedV6.version === 11, 'resaved payload is stamped CURRENT_VERSION 11, got ' + resavedV6.version);
+assert(resavedV6.version === 12, 'resaved payload is stamped CURRENT_VERSION 12, got ' + resavedV6.version);
 
 
 // Second crafted payload: rogue in the SECONDARY slot instead of primary ("incl. active slots").
@@ -338,8 +343,8 @@ var v6Character2 = makeV6Character({ primaryClass: 'warrior', secondaryClass: 'r
 localStorageStore['herorpg_save'] = JSON.stringify({ version: 6, state: { character: v6Character2 } });
 var loadedV6b = Game.Save.load();
 assert(loadedV6b !== null, 'v6 save (secondary=rogue) loads without error');
-assert(loadedV6b.character.primaryClass === 'warrior', 'primaryClass (warrior) untouched');
-assert(loadedV6b.character.secondaryClass === 'thief', 'secondaryClass (active slot) renamed rogue -> thief, got ' + loadedV6b.character.secondaryClass);
+assert(loadedV6b.character.lineage.tier1 === 'warrior', 'Primary (warrior) wins the tier-1 lineage slot over Secondary (thief), got ' + loadedV6b.character.lineage.tier1);
+assert(Game.Classes.activeClassIds(loadedV6b.character).indexOf('thief') === -1, 'the renamed Secondary thief stays in c.classes but is not active (M2)');
 assert(!!loadedV6b.character.classes.thief, 'classes.thief present after secondary-slot migration too');
 
 // A v6 save with NO rogue entry at all is unaffected beyond the version bump.
@@ -377,11 +382,12 @@ assert(Array.isArray(loadedV1.character.techs), 'v1->v7: techs array added (v2->
 assert(loadedV1.character.currentLocation === 'eldor', 'v1->v7: currentLocation added (v3->v4 step)');
 assert(loadedV1.character.quests && typeof loadedV1.character.quests === 'object', 'v1->v7: quests map added (v4->v5 step)');
 assert(loadedV1.character.classes && typeof loadedV1.character.classes === 'object' && Object.keys(loadedV1.character.classes).length === 0, 'v1->v7: classes map added (v5->v6 step)');
-assert(loadedV1.character.primaryClass === null && loadedV1.character.secondaryClass === null, 'v1->v7: class slots null');
+assert(loadedV1.character.lineage && loadedV1.character.lineage.tier1 === null && loadedV1.character.lineage.tier2 === null && loadedV1.character.lineage.tier3 === null && loadedV1.character.legendaryClass === null, 'v1->v12: lineage all null + legendaryClass null (v11->v12 step)');
+assert(!('primaryClass' in loadedV1.character) && !('secondaryClass' in loadedV1.character), 'v1->v12: no primaryClass/secondaryClass fields remain');
 assert(loadedV1.character.legendaryUnlocked === false, 'v1->v7: legendary latch false');
 Game.state = loadedV1;
 Game.persist();
-assert(JSON.parse(localStorageStore['herorpg_save']).version === 11, 'v1->v11 resave stamps version 11');
+assert(JSON.parse(localStorageStore['herorpg_save']).version === 12, 'v1->v12 resave stamps version 12');
 
 
 // =================== Test 3: first_calling gates at level 5 ===================
@@ -465,50 +471,48 @@ assert(Game.Classes.isObtained(c7, 'gladiator') === true, 'gladiator obtained');
 assert(Game.Classes.isObtained(c7, 'crusader') === false, 'crusader NOT obtained (only the chosen branch)');
 assert(c7.quests['trials_of_eldor'].status === 'completed', 'trials_of_eldor marked completed');
 
-// =================== Test 8: addClassXp — primary/secondary fractions, none unassigned ===================
-console.log('\n=== Test 8: addClassXp rates + classLevelsEarned curve ===');
+// =================== Test 8: addClassXp — shared pool over active classes, none for non-lineage ===================
+console.log('\n=== Test 8: addClassXp shared pool (v1.11) + classLevelsEarned curve ===');
 var c8 = makeCharacter({ name: 'XpTester' });
 setLevel(c8, 30);
 Game.Classes.obtainClass(c8, 'warrior');
-Game.Classes.obtainClass(c8, 'magician');
-Game.Classes.obtainClass(c8, 'thief'); // obtained but left inactive on purpose
-Game.Classes.activate(c8, 'warrior', 'primary');
-Game.Classes.activate(c8, 'magician', 'secondary');
+Game.Classes.obtainClass(c8, 'gladiator');
+Game.Classes.obtainClass(c8, 'thief'); // a SECOND tier-1 class: obtained but never in the lineage, so never active
 Game.Classes.addClassXp(c8, 100);
-// v1.6 P2 (PG-2, SPEC-V1.6-REBALANCE.md §6.2): primary/secondary no longer gain the full/half raw
-// amount outright — both are further scaled by CLASS_XP_FRACTION_PRIMARY (0.5) / _SECONDARY (0.25).
-assert(c8.classes['warrior'].classXp === Math.floor(100 * BALANCE.CLASS_XP_FRACTION_PRIMARY), 'primary (warrior) gained 100*CLASS_XP_FRACTION_PRIMARY class XP, got ' + c8.classes['warrior'].classXp);
-assert(c8.classes['magician'].classXp === Math.floor(100 * BALANCE.CLASS_XP_FRACTION_SECONDARY), 'secondary (magician) gained 100*CLASS_XP_FRACTION_SECONDARY class XP, got ' + c8.classes['magician'].classXp);
-assert(c8.classes['thief'].classXp === 0, 'inactive obtained class (thief) gained 0 class XP');
+// v1.11 (SPEC-CLASS-LINEAGE R8/D2): ONE pool, floor(100 * CLASS_XP_POOL_FRACTION), split evenly over the 2 active classes.
+var pool8 = Math.floor(100 * BALANCE.CLASS_XP_POOL_FRACTION);
+assert(c8.classes['warrior'].classXp === Math.floor(pool8 / 2), 'warrior gained floor(pool/2) class XP, got ' + c8.classes['warrior'].classXp);
+assert(c8.classes['gladiator'].classXp === Math.floor(pool8 / 2), 'gladiator gained floor(pool/2) class XP, got ' + c8.classes['gladiator'].classXp);
+assert(c8.classes['thief'].classXp === 0, 'obtained-but-not-active class (thief) gained 0 class XP');
 var c8b = makeCharacter({ name: 'CurveTester' });
 setLevel(c8b, 30);
 Game.Classes.obtainClass(c8b, 'warrior');
-Game.Classes.activate(c8b, 'warrior', 'primary');
 var xpForLevel1 = Game.Classes.classXpForLevel(1);
 assert(xpForLevel1 === 0, 'classXpForLevel(1) === 0 (cumulative curve convention), got ' + xpForLevel1);
 var xpForLevel2 = Game.Classes.classXpForLevel(2);
 // v1.6 P2 (PG-2): steepened round(30*(n-1)^1.6) -> round(120*(n-1)^1.9), LOCKED by the P0 calc.
 assert(xpForLevel2 === Math.round(120 * Math.pow(1, 1.9)), 'classXpForLevel(2) matches round(120*(n-1)^1.9), got ' + xpForLevel2);
-// addClassXp scales the raw amount down by CLASS_XP_FRACTION_PRIMARY before banking it — divide by
-// that fraction here so the character's PRIMARY slot nets exactly xpForLevel2 worth of class XP.
-Game.Classes.addClassXp(c8b, xpForLevel2 / BALANCE.CLASS_XP_FRACTION_PRIMARY);
+// addClassXp scales the raw amount down by CLASS_XP_POOL_FRACTION before banking it — divide by
+// that fraction here so the lone active class nets exactly xpForLevel2 worth of class XP.
+Game.Classes.addClassXp(c8b, xpForLevel2 / BALANCE.CLASS_XP_POOL_FRACTION);
 assert(c8b.classes['warrior'].classLevelsEarned === 1, 'classLevelsEarned incremented once at the level-2 threshold, got ' + c8b.classes['warrior'].classLevelsEarned);
 var xpForLevel3 = Game.Classes.classXpForLevel(3);
-Game.Classes.addClassXp(c8b, (xpForLevel3 - xpForLevel2 + 5) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
+Game.Classes.addClassXp(c8b, (xpForLevel3 - xpForLevel2 + 5) / BALANCE.CLASS_XP_POOL_FRACTION);
 assert(c8b.classes['warrior'].classLevelsEarned >= 2, 'classLevelsEarned climbs further with more class XP, got ' + c8b.classes['warrior'].classLevelsEarned);
 
 // =================== Test 9: buyAbility gating ===================
-console.log('\n=== Test 9: buyAbility blocked without Academy/active slot/levels ===');
+console.log('\n=== Test 9: buyAbility blocked without Academy/active class/levels ===');
 var c9 = makeCharacter({ name: 'AbilityBuyer' });
 setLevel(c9, 5);
 Game.Classes.obtainClass(c9, 'warrior');
+Game.Classes.obtainClass(c9, 'thief'); // second tier-1 class: obtained, never in the lineage
 c9.currentLocation = 'plains_of_averast'; // no academy here
 var buyNoAcademy = Game.Classes.buyAbility(c9, 'warrior', 'warrior_iron_hide');
 assert(buyNoAcademy.ok === false, 'buyAbility blocked away from an Academy: ' + buyNoAcademy.message);
 c9.currentLocation = 'eldor'; // Eldor has an Academy
-var buyNotActive = Game.Classes.buyAbility(c9, 'warrior', 'warrior_iron_hide');
-assert(buyNotActive.ok === false, 'buyAbility blocked while warrior is obtained but not active: ' + buyNotActive.message);
-Game.Classes.activate(c9, 'warrior', 'primary');
+c9.classes['thief'].classLevelsEarned = 5;
+var buyNotActive = Game.Classes.buyAbility(c9, 'thief', 'thief_light_fingers');
+assert(buyNotActive.ok === false, 'buyAbility blocked while thief is obtained but not active (not in the lineage): ' + buyNotActive.message);
 var buyNoLevels = Game.Classes.buyAbility(c9, 'warrior', 'warrior_iron_hide');
 assert(buyNoLevels.ok === false, 'buyAbility blocked with 0 unspent Class Levels: ' + buyNoLevels.message);
 
@@ -520,12 +524,11 @@ c10.strength = 60; // representative mid-strength build so a 6% damage_pct bump 
 c10.equippedWeaponSkill = 'Swords';
 Game.Character.recalcDerived(c10);
 Game.Classes.obtainClass(c10, 'warrior');
-Game.Classes.activate(c10, 'warrior', 'primary');
 c10.currentLocation = 'eldor';
 var armorBefore10 = Game.Character.getArmor(c10);
 // Iron Hide costs 2, Brutal Strikes costs 3 -> need 5 unspent Class Levels. Divide by
-// CLASS_XP_FRACTION_PRIMARY (v1.6 P2) so the primary slot nets the full intended raw amount.
-Game.Classes.addClassXp(c10, (Game.Classes.classXpForLevel(6) + 20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
+// CLASS_XP_POOL_FRACTION so the lone active class nets the full intended raw amount.
+Game.Classes.addClassXp(c10, (Game.Classes.classXpForLevel(6) + 20) / BALANCE.CLASS_XP_POOL_FRACTION);
 var unspent10 = Game.Classes.unspentClassLevels(c10, 'warrior');
 assert(unspent10 >= 5, 'enough unspent class levels for Iron Hide (2) + Brutal Strikes (3), got ' + unspent10);
 var buyIronHide = Game.Classes.buyAbility(c10, 'warrior', 'warrior_iron_hide');
@@ -545,8 +548,7 @@ var c11 = makeCharacter({ name: 'TechBuyer' });
 setLevel(c11, 5);
 c11.currentLocation = 'eldor';
 Game.Classes.obtainClass(c11, 'warrior');
-Game.Classes.activate(c11, 'warrior', 'primary');
-Game.Classes.addClassXp(c11, (Game.Classes.classXpForLevel(6) + 10) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
+Game.Classes.addClassXp(c11, (Game.Classes.classXpForLevel(6) + 10) / BALANCE.CLASS_XP_POOL_FRACTION);
 var buyCrushingBlow = Game.Classes.buyAbility(c11, 'warrior', 'warrior_crushing_blow');
 assert(buyCrushingBlow.ok === true, 'Crushing Blow purchased: ' + buyCrushingBlow.message);
 assert(c11.techs.indexOf('tech_crushing_blow') !== -1, 'tech_crushing_blow added to c.techs');
@@ -566,64 +568,53 @@ assert(battle11.monster.hp < beforeHp11, 'Crushing Blow lands damage while Warri
 Game.Battle.flee();
 Game.Battle.endBattle();
 
-var deactivateWarrior11 = Game.Classes.deactivate(c11, 'primary');
-assert(deactivateWarrior11.ok === true, 'warrior deactivated: ' + deactivateWarrior11.message);
-assert(c11.techs.indexOf('tech_crushing_blow') === -1, 'tech_crushing_blow removed from c.techs on deactivate');
-assert(c11.techSets[0][0] === null, 'tech_crushing_blow removed from the equipped set slot on deactivate');
-c11.techs.push('tech_crushing_blow');
-c11.techSets[0][0] = 'tech_crushing_blow';
+// v1.11 (R2): there is no deactivation any more, so "class not active" is simulated by emptying
+// the lineage slot directly. The class tech stays known + slotted; only the active-class gate bites.
+c11.lineage.tier1 = null;
+assert(c11.techs.indexOf('tech_crushing_blow') !== -1 && c11.techSets[0][0] === 'tech_crushing_blow', 'tech stays known and slotted (nothing strips it)');
 c11.hitPoints = c11.hitPointsMax; c11.energy = c11.energyMax;
 var battle11b = Game.Battle.start('plains_field_rat');
 battle11b.monster.hp = 999;
 var beforeHp11b = battle11b.monster.hp;
 Game.Battle.useTech('tech_crushing_blow');
-assert(battle11b.monster.hp === beforeHp11b, 'Crushing Blow does NOT land while Warrior is inactive, even if slotted (hp unchanged at ' + battle11b.monster.hp + ')');
+assert(battle11b.monster.hp === beforeHp11b, 'Crushing Blow does NOT land while Warrior is not an active class, even if slotted (hp unchanged at ' + battle11b.monster.hp + ')');
 Game.Battle.flee();
 Game.Battle.endBattle();
 
 // =================== Test 11c (v1.3.1 fix 6): current HP clamped down after losing an hp_max_flat passive ===================
-console.log('\n=== Test 11c: deactivating an hp_max_flat passive clamps current HP down to the new max ===');
+console.log('\n=== Test 11c: swapping out a Legendary with an hp_max_flat passive clamps current HP down to the new max ===');
 var c11c = makeCharacter({ name: 'HpClampTest' });
 setLevel(c11c, 30);
 c11c.currentLocation = 'eldor';
-Game.Classes.obtainClass(c11c, 'crusader');
-Game.Classes.activate(c11c, 'crusader', 'primary');
-// Iron Vitality (crusader_iron_vitality, hp_max_flat +40) costs 3 unspent Class Levels.
-Game.Classes.addClassXp(c11c, (Game.Classes.classXpForLevel(10) + 100) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
-var unspent11c = Game.Classes.unspentClassLevels(c11c, 'crusader');
-assert(unspent11c >= 3, 'enough unspent class levels for Iron Vitality (3), got ' + unspent11c);
+Game.Classes.obtainClass(c11c, 'runeblade_of_kuraan'); // first Legendary auto-fills the slot (R4)
+// Ancestral Vigor (runeblade_ancestral_vigor, hp_max_flat +30) costs 3 unspent Class Levels.
+Game.Classes.addClassXp(c11c, (Game.Classes.classXpForLevel(10) + 100) / BALANCE.CLASS_XP_POOL_FRACTION);
+var unspent11c = Game.Classes.unspentClassLevels(c11c, 'runeblade_of_kuraan');
+assert(unspent11c >= 3, 'enough unspent class levels for Ancestral Vigor (3), got ' + unspent11c);
 var hpMaxBefore11c = c11c.hitPointsMax;
-var buyIronVitality11c = Game.Classes.buyAbility(c11c, 'crusader', 'crusader_iron_vitality');
-assert(buyIronVitality11c.ok === true, 'Iron Vitality purchased: ' + buyIronVitality11c.message);
-assert(c11c.hitPointsMax === hpMaxBefore11c + 40, 'Iron Vitality raises hitPointsMax by +40 (before=' + hpMaxBefore11c + ', after=' + c11c.hitPointsMax + ')');
+var buyVigor11c = Game.Classes.buyAbility(c11c, 'runeblade_of_kuraan', 'runeblade_ancestral_vigor');
+assert(buyVigor11c.ok === true, 'Ancestral Vigor purchased: ' + buyVigor11c.message);
+assert(c11c.hitPointsMax === hpMaxBefore11c + 30, 'Ancestral Vigor raises hitPointsMax by +30 (before=' + hpMaxBefore11c + ', after=' + c11c.hitPointsMax + ')');
 c11c.hitPoints = c11c.hitPointsMax; // full HP, at the boosted max
-var deactivate11c = Game.Classes.deactivate(c11c, 'primary');
-assert(deactivate11c.ok === true, 'crusader deactivated: ' + deactivate11c.message);
-assert(c11c.hitPointsMax === hpMaxBefore11c, 'hitPointsMax drops back by 40 after losing Iron Vitality');
+var unslot11c = Game.Classes.setLegendary(c11c, null);
+assert(unslot11c.ok === true, 'Legendary unslotted at the Academy: ' + unslot11c.message);
+assert(c11c.hitPointsMax === hpMaxBefore11c, 'hitPointsMax drops back by 30 after losing Ancestral Vigor');
 assert(c11c.hitPoints === c11c.hitPointsMax, 'v1.3.1 fix 6: current hitPoints clamped down to the new (lower) max, not left dangling above it (hitPoints=' + c11c.hitPoints + ', hitPointsMax=' + c11c.hitPointsMax + ')');
 
-// =================== Test 12: deactivate wipes xp/levels/abilities; reactivate starts at zero ===================
-console.log('\n=== Test 12: deactivate permanently wipes progress; reactivating rebuilds from zero ===');
-var c12 = makeCharacter({ name: 'Deactivator' });
+// =================== Test 12: no deactivation / no wipe (v1.11 R2) ===================
+console.log('\n=== Test 12: there is no deactivate path and nothing is ever wiped (SPEC-CLASS-LINEAGE R2) ===');
+assert(typeof Game.Classes.deactivate === 'undefined' && typeof Game.Classes.activate === 'undefined', 'Game.Classes exposes no activate/deactivate');
+var c12 = makeCharacter({ name: 'NoDeactivator' });
 setLevel(c12, 5);
 c12.currentLocation = 'eldor';
 Game.Classes.obtainClass(c12, 'magician');
-Game.Classes.activate(c12, 'magician', 'primary');
-Game.Classes.addClassXp(c12, (Game.Classes.classXpForLevel(4) + 5) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
-var preWipeLevels = c12.classes['magician'].classLevelsEarned;
-assert(preWipeLevels > 0, 'magician earned some class levels before wipe test, got ' + preWipeLevels);
+Game.Classes.addClassXp(c12, (Game.Classes.classXpForLevel(4) + 5) / BALANCE.CLASS_XP_POOL_FRACTION);
+assert(c12.classes['magician'].classLevelsEarned > 0, 'magician earned some class levels, got ' + c12.classes['magician'].classLevelsEarned);
 Game.Classes.buyAbility(c12, 'magician', 'magician_arcane_reserves');
-assert(c12.classes['magician'].abilities.length === 1, 'magician has 1 purchased ability before deactivate');
-var deactivate12 = Game.Classes.deactivate(c12, 'primary');
-assert(deactivate12.ok === true, 'deactivate succeeds: ' + deactivate12.message);
-assert(c12.primaryClass === null, 'primaryClass cleared after deactivate');
-assert(Game.Classes.isObtained(c12, 'magician') === true, 'magician remains obtained (latch stays) after deactivate');
-assert(c12.classes['magician'].classXp === 0, 'classXp wiped to 0');
-assert(c12.classes['magician'].classLevelsEarned === 0, 'classLevelsEarned wiped to 0');
-assert(c12.classes['magician'].classLevelsSpent === 0, 'classLevelsSpent wiped to 0');
-assert(c12.classes['magician'].abilities.length === 0, 'abilities array wiped empty');
-Game.Classes.activate(c12, 'magician', 'primary');
-assert(c12.classes['magician'].classXp === 0 && c12.classes['magician'].classLevelsEarned === 0, 'reactivated magician starts at zero XP/levels');
+var snap12 = JSON.stringify([c12.lineage, c12.classes['magician']]);
+assert(Game.Classes.setLegendary(c12, 'magician').ok === false, 'a lineage class cannot be put in (or removed via) the Legendary slot');
+assert(Game.Classes.setLegendary(c12, null).ok === false, 'unslotting an empty Legendary slot is refused; the lineage is untouched');
+assert(JSON.stringify([c12.lineage, c12.classes['magician']]) === snap12, 'lineage + class progress identical after every attempt to remove a lineage class');
 
 // =================== Test 13: Legendary boss-kill unlock (unchanged by the v1.1 revision) ===================
 console.log('\n=== Test 13: Legendary unlock — level gate + one-per-save latch ===');
@@ -643,24 +634,21 @@ winBattle('estari_ruin_warden');
 var classesCountAfter13 = Object.keys(c13.classes).length;
 assert(classesCountAfter13 === classesCountBefore13, 'second boss kill does not obtain a duplicate legendary class entry');
 
-// =================== Test 14: sweep — every class of every tier can obtain/activate/buy/deactivate ===================
-console.log('\n=== Test 14: sweep all 10 classes — activate/deactivate/buyAbility correctly for every tier ===');
+// =================== Test 14: sweep — every class of every tier can obtain/auto-activate/buy ===================
+console.log('\n=== Test 14: sweep all classes — obtain/auto-activate/buyAbility correctly for every tier ===');
 Game.Data.classes.forEach(function (cd) {
   var sc = makeCharacter({ name: 'Sweep_' + cd.id });
   setLevel(sc, cd.tier === 1 ? 5 : 30);
   sc.currentLocation = 'eldor';
   var obtainRes = Game.Classes.obtainClass(sc, cd.id);
   assert(obtainRes.ok === true, 'sweep: ' + cd.id + ' obtained: ' + obtainRes.message);
-  var activateRes = Game.Classes.activate(sc, cd.id, 'primary');
-  assert(activateRes.ok === true, 'sweep: ' + cd.id + ' activated as primary: ' + activateRes.message);
+  assert(Game.Classes.activeClassIds(sc).indexOf(cd.id) !== -1, 'sweep: ' + cd.id + ' is active immediately on obtain (lineage tier slot or auto-filled Legendary slot)');
   var cheapest = cd.abilities.slice().sort(function (a, b) { return a.classLevelCost - b.classLevelCost; })[0];
-  Game.Classes.addClassXp(sc, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY); // plenty of class levels for any tier
+  Game.Classes.addClassXp(sc, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_POOL_FRACTION); // plenty of class levels for any tier
   var buyRes = Game.Classes.buyAbility(sc, cd.id, cheapest.id);
   assert(buyRes.ok === true, 'sweep: ' + cd.id + ' bought its cheapest ability (' + cheapest.id + '): ' + buyRes.message);
   assert(sc.classes[cd.id].abilities.indexOf(cheapest.id) !== -1, 'sweep: ' + cd.id + ' ability recorded as owned');
-  var deactivateRes = Game.Classes.deactivate(sc, 'primary');
-  assert(deactivateRes.ok === true, 'sweep: ' + cd.id + ' deactivated: ' + deactivateRes.message);
-  assert(sc.classes[cd.id].abilities.length === 0, 'sweep: ' + cd.id + ' abilities wiped after deactivate');
+  assert(sc.classes[cd.id].abilities.length === 1 && Game.Classes.activeClassIds(sc).indexOf(cd.id) !== -1, 'sweep: ' + cd.id + ' keeps its ability and stays active (no deactivation exists)');
 });
 
 // =================== Test 15: full no-debug loop — base then advanced, across both quests ===================
@@ -676,8 +664,7 @@ for (var lk = 0; lk < 4; lk++) winBattle('plains_vermin_swarm');
 var loopCallingTurnIn = Game.Quests.turnIn('first_calling', 'thief');
 assert(loopCallingTurnIn.ok === true, 'loop: turned in First Calling for thief: ' + loopCallingTurnIn.message);
 assert(Game.Classes.isObtained(c15, 'thief') === true, 'loop: thief obtained');
-var loopActivateThief = Game.Classes.activate(c15, 'thief', 'primary');
-assert(loopActivateThief.ok === true, 'loop: thief activated as primary');
+assert(c15.lineage.tier1 === 'thief', 'loop: thief joined the lineage (tier 1) on turn-in');
 
 setLevel(c15, 30);
 // v1.7 Phase Q: trials_of_eldor re-homed Eldor -> Kastengard Vanguard Camp (minLevel 26).
@@ -692,14 +679,14 @@ var loopTrialsTurnIn = Game.Quests.turnIn('trials_of_eldor', 'mercenary');
 assert(loopTrialsTurnIn.ok === true, 'loop: turned in Trials of Ascension for mercenary: ' + loopTrialsTurnIn.message);
 assert(Game.Classes.isObtained(c15, 'mercenary') === true, 'loop: mercenary obtained');
 
-var loopActivateMerc = Game.Classes.activate(c15, 'mercenary', 'secondary');
-assert(loopActivateMerc.ok === true, 'loop: mercenary activated as secondary: ' + loopActivateMerc.message);
+assert(c15.lineage.tier2 === 'mercenary', 'loop: mercenary joined the lineage (tier 2) on turn-in');
 
 // Grind class XP via Game._debug.addClassXp — enough for Quick Pockets (2) + Efficient Strike (4).
-// mercenary is the SECONDARY slot here (thief is primary), so addClassXp only grants it
-// CLASS_XP_FRACTION_SECONDARY (0.25, v1.6 P2 — was 0.5) of the raw amount — divide by that
-// fraction so mercenary itself nets the target.
-Game._debug.addClassXp((Game.Classes.classXpForLevel(8) + 20) / BALANCE.CLASS_XP_FRACTION_SECONDARY);
+// thief, mercenary AND the Runeblade (auto-slotted by the Trials' estari_ruin_warden boss kill, R4)
+// are all active + un-maxed, so the shared pool (CLASS_XP_POOL_FRACTION) is split three ways —
+// divide by the fraction and multiply by 3 so mercenary itself nets the target.
+assert(Game.Classes.activeClassIds(c15).join(',') === 'thief,mercenary,runeblade_of_kuraan', 'loop: three active classes (thief, mercenary, auto-slotted Runeblade)');
+Game._debug.addClassXp(3 * (Game.Classes.classXpForLevel(8) + 20) / BALANCE.CLASS_XP_POOL_FRACTION);
 var unspentLoop = Game.Classes.unspentClassLevels(c15, 'mercenary');
 assert(unspentLoop >= 6, 'loop: ground enough class levels for Quick Pockets (2) + Efficient Strike (4), unspent=' + unspentLoop);
 
@@ -740,7 +727,9 @@ try {
   assert(classesText.indexOf('Base') !== -1, 'Classes tab shows a "Base" tier header');
   assert(classesText.indexOf('Advanced') !== -1, 'Classes tab shows an "Advanced" tier header');
   assert(classesText.indexOf('(advances Thief)') !== -1, 'Classes tab shows baseClass lineage "(advances Thief)" on the Mercenary entry');
-  assert(classesText.indexOf('Primary') !== -1, 'Classes tab shows the Primary box');
+  assert(classesText.indexOf('Hero Tree') !== -1 && classesText.indexOf('Calling') !== -1 && classesText.indexOf('Ascension') !== -1 && classesText.indexOf('Mastery') !== -1, 'Classes tab shows the Hero Tree panel rows (Calling / Ascension / Mastery)');
+  assert(classesText.indexOf('Unlocks at level 60') !== -1, 'the empty Mastery row shows its unlock hint');
+  assert(classesText.indexOf('Primary') === -1 && classesText.indexOf('Secondary') === -1 && classesText.indexOf('Deactivate') === -1 && classesText.indexOf('Inactive Classes') === -1, 'no Primary/Secondary/Deactivate/Inactive Classes UI remains');
 
   // Empty-state hint for a fresh sub-5 character with no classes (level-5 gate, v1.1 revision).
   var cEmpty = makeCharacter({ name: 'NoClassesYet' });
@@ -761,6 +750,7 @@ try {
   academyHeader.parent.click(); // expand the facility panel
   var townText = document.getElementById('maincontent').textContent;
   assert(townText.indexOf('Class Abilities') !== -1, 'Academy panel shows the Class Abilities section for an active class');
+  assert(townText.indexOf('Legendary Calling') !== -1, 'Academy panel shows the Legendary row');
 } catch (e) {
   failures++;
   console.error('FAIL: UI smoke test threw: ' + e.stack);
@@ -853,11 +843,11 @@ assert(rightBranch18.ok === true, 'turnIn accepts shadowknight for a warrior-bas
 assert(Game.Classes.isObtained(c18, 'shadowknight') === true, 'shadowknight obtained');
 assert(c18.quests['masters_calling'].status === 'completed', 'masters_calling marked completed');
 
-// Full loop: activate(primary) -> buyAbility -> class-tech usable in battle.
+// Full loop: (auto-active lineage) -> buyAbility -> class-tech usable in battle.
 c18.currentLocation = 'eldor';
-var activateSk18 = Game.Classes.activate(c18, 'shadowknight', 'primary');
-assert(activateSk18.ok === true, 'shadowknight activated as primary: ' + activateSk18.message);
-Game.Classes.addClassXp(c18, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY); // plenty of class levels
+assert(c18.lineage.tier1 === 'warrior' && c18.lineage.tier2 === 'gladiator' && c18.lineage.tier3 === 'shadowknight', 'the full Warrior -> Gladiator -> Shadowknight lineage is active, got ' + JSON.stringify(c18.lineage));
+// three un-maxed active classes share the pool 3 ways — multiply so Shadowknight still nets level 20
+Game.Classes.addClassXp(c18, 3 * Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_POOL_FRACTION); // plenty of class levels
 var buySk18 = Game.Classes.buyAbility(c18, 'shadowknight', 'shadowknight_shadow_blade');
 assert(buySk18.ok === true, 'Shadow Blade purchased: ' + buySk18.message);
 assert(c18.techs.indexOf('tech_shadow_blade') !== -1, 'tech_shadow_blade added to c.techs');
@@ -922,45 +912,44 @@ Game.Inventory.addItem(c21, 'quest_eidas_echo_seal');
 assert(Game.Classes.isObtained(c21, 'heir_of_the_echo') === true, 'Heir of the Echo ALSO obtained — Runeblade did not block it');
 assert(Game.Classes.isObtained(c21, 'vaultbreaker') === false, 'vaultbreaker still NOT obtained (its own route was never triggered here)');
 
-// =================== Test 22 (v1.5 P4): obtain/activate/buyAbility/classBonus for two of the ===
-// =================== new Tier-3 classes at once (Paladin primary + Ranger secondary) ============
-console.log('\n=== Test 22 (v1.5 P4): obtain/activate/buyAbility/classBonus for two NEW Tier-3 classes held simultaneously (Paladin + Ranger) ===');
+// =================== Test 22 (v1.5 P4 / v1.11): classBonus sums EVERY active class (lineage + Legendary) ======
+console.log('\n=== Test 22 (v1.5 P4 / v1.11): classBonus sums a Tier-3 lineage class + the slotted Legendary; a non-lineage Tier-3 class contributes nothing ===');
 var c22 = makeCharacter({ name: 'NewClassTester' });
 setLevel(c22, 60);
 c22.currentLocation = 'eldor';
 var obtainPaladin22 = Game.Classes.obtainClass(c22, 'paladin');
 assert(obtainPaladin22.ok === true, 'paladin obtained: ' + obtainPaladin22.message);
-var obtainRanger22 = Game.Classes.obtainClass(c22, 'ranger');
+var obtainVb22 = Game.Classes.obtainClass(c22, 'vaultbreaker');
+assert(obtainVb22.ok === true, 'vaultbreaker obtained: ' + obtainVb22.message);
+var obtainRanger22 = Game.Classes.obtainClass(c22, 'ranger'); // a SECOND tier-3 class: never joins the lineage
 assert(obtainRanger22.ok === true, 'ranger obtained: ' + obtainRanger22.message);
-assert(Game.Classes.activate(c22, 'paladin', 'primary').ok === true, 'paladin activated as primary');
-assert(Game.Classes.activate(c22, 'ranger', 'secondary').ok === true, 'ranger activated as secondary');
-Game.Classes.addClassXp(c22, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY); // plenty of class levels (grants to BOTH slots, primary CLASS_XP_FRACTION_PRIMARY + secondary CLASS_XP_FRACTION_SECONDARY)
+assert(Game.Classes.activeClassIds(c22).join(',') === 'paladin,vaultbreaker', 'active = paladin (tier 3) + vaultbreaker (Legendary), ranger is not active, got ' + Game.Classes.activeClassIds(c22).join(','));
+// paladin + vaultbreaker are both active and un-maxed -> pool split 2 ways
+Game.Classes.addClassXp(c22, 2 * Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_POOL_FRACTION);
 
 var dmgPctBefore22 = Game.Classes.classBonus(c22, 'damage_pct');
 var buyHolyBulwark22 = Game.Classes.buyAbility(c22, 'paladin', 'paladin_holy_bulwark');
 assert(buyHolyBulwark22.ok === true, "Paladin's Holy Bulwark purchased: " + buyHolyBulwark22.message);
 var buyRighteousFury22 = Game.Classes.buyAbility(c22, 'paladin', 'paladin_righteous_fury');
 assert(buyRighteousFury22.ok === true, "Paladin's Righteous Fury purchased: " + buyRighteousFury22.message);
-var buyMarksmansEye22 = Game.Classes.buyAbility(c22, 'ranger', 'ranger_marksmans_eye');
-assert(buyMarksmansEye22.ok === true, "Ranger's Marksman's Eye purchased: " + buyMarksmansEye22.message);
-var buyWoodlandStep22 = Game.Classes.buyAbility(c22, 'ranger', 'ranger_woodland_step');
-assert(buyWoodlandStep22.ok === true, "Ranger's Woodland Step purchased: " + buyWoodlandStep22.message);
+var buyTwofold22 = Game.Classes.buyAbility(c22, 'vaultbreaker', 'vaultbreaker_twofold_resolve');
+assert(buyTwofold22.ok === true, "Vaultbreaker's Twofold Resolve purchased: " + buyTwofold22.message);
+var buyPlating22 = Game.Classes.buyAbility(c22, 'vaultbreaker', 'vaultbreaker_vault_forged_plating');
+assert(buyPlating22.ok === true, "Vaultbreaker's Vault-Forged Plating purchased: " + buyPlating22.message);
+assert(Game.Classes.buyAbility(c22, 'ranger', 'ranger_marksmans_eye').ok === false, 'a non-lineage Ranger cannot buy abilities');
 
 var paladinDef22 = Game.Classes.getClass('paladin');
-var rangerDef22 = Game.Classes.getClass('ranger');
+var vbDef22 = Game.Classes.getClass('vaultbreaker');
 var expectedDmgPct22 = Game.Classes.getAbility(paladinDef22, 'paladin_righteous_fury').power +
-  Game.Classes.getAbility(rangerDef22, 'ranger_marksmans_eye').power;
+  Game.Classes.getAbility(vbDef22, 'vaultbreaker_twofold_resolve').power;
 var dmgPctAfter22 = Game.Classes.classBonus(c22, 'damage_pct');
 assert(Math.abs(dmgPctAfter22 - (dmgPctBefore22 + expectedDmgPct22)) < 1e-9,
-  'classBonus(damage_pct) sums BOTH active new classes\' passives (Paladin\'s Righteous Fury + Ranger\'s Marksman\'s Eye), expected +' + expectedDmgPct22 + ', got delta ' + (dmgPctAfter22 - dmgPctBefore22));
-assert(Game.Classes.classBonus(c22, 'armor_flat') === Game.Classes.getAbility(paladinDef22, 'paladin_holy_bulwark').power,
-  'classBonus(armor_flat) reflects Paladin\'s Holy Bulwark alone (Ranger has none), got ' + Game.Classes.classBonus(c22, 'armor_flat'));
-assert(Game.Classes.classBonus(c22, 'dodge_flat') === Game.Classes.getAbility(rangerDef22, 'ranger_woodland_step').power,
-  'classBonus(dodge_flat) reflects Ranger\'s Woodland Step alone (Paladin has none), got ' + Game.Classes.classBonus(c22, 'dodge_flat'));
-
-var deactivatePaladin22 = Game.Classes.deactivate(c22, 'primary');
-assert(deactivatePaladin22.ok === true, 'paladin deactivated: ' + deactivatePaladin22.message);
-assert(Game.Classes.classBonus(c22, 'armor_flat') === 0, 'deactivating Paladin drops classBonus(armor_flat) back to 0');
+  "classBonus(damage_pct) sums BOTH active classes' passives (Paladin's Righteous Fury + Vaultbreaker's Twofold Resolve), expected +" + expectedDmgPct22 + ', got delta ' + (dmgPctAfter22 - dmgPctBefore22));
+assert(Game.Classes.classBonus(c22, 'armor_flat') === Game.Classes.getAbility(paladinDef22, 'paladin_holy_bulwark').power + Game.Classes.getAbility(vbDef22, 'vaultbreaker_vault_forged_plating').power,
+  "classBonus(armor_flat) sums Paladin's Holy Bulwark + Vaultbreaker's plating, got " + Game.Classes.classBonus(c22, 'armor_flat'));
+// Force-own a Ranger passive: still contributes nothing because Ranger is not in activeClassIds.
+c22.classes['ranger'].abilities.push('ranger_woodland_step');
+assert(Game.Classes.classBonus(c22, 'dodge_pct') === 0, 'a Ranger passive on a non-lineage class contributes nothing to classBonus');
 
 // =================== Test 23 (v1.5 P4): a NEW class's classOnly tech is battle-castable while ===
 // =================== active and refused while inactive, incl. a GRADED (Light) tech's mitigation ==
@@ -969,8 +958,7 @@ var c23 = makeCharacter({ name: 'NewTechBuyer' });
 setLevel(c23, 60);
 c23.currentLocation = 'eldor';
 Game.Classes.obtainClass(c23, 'paladin');
-Game.Classes.activate(c23, 'paladin', 'primary');
-Game.Classes.addClassXp(c23, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
+Game.Classes.addClassXp(c23, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_POOL_FRACTION);
 var buySmite23 = Game.Classes.buyAbility(c23, 'paladin', 'paladin_smite');
 assert(buySmite23.ok === true, 'Smite purchased: ' + buySmite23.message);
 assert(c23.techs.indexOf('tech_paladin_smite') !== -1, 'tech_paladin_smite added to c.techs');
@@ -986,16 +974,16 @@ assert(battle23.monster.hp < beforeHp23, "Paladin's Smite (Light-grade, Magic-Ar
 Game.Battle.flee();
 Game.Battle.endBattle();
 
-var deactivatePaladin23 = Game.Classes.deactivate(c23, 'primary');
-assert(deactivatePaladin23.ok === true, 'paladin deactivated: ' + deactivatePaladin23.message);
-c23.techs.push('tech_paladin_smite'); // re-add to c.techs to isolate the class-active gate specifically (deactivate already stripped it, matching Test 11's pattern)
-c23.techSets[0][0] = 'tech_paladin_smite';
+// v1.11 (R2): no deactivation — simulate "class not active" by emptying the lineage slot directly;
+// the tech stays known + slotted, isolating the class-active gate specifically.
+c23.lineage.tier3 = null;
+assert(c23.techs.indexOf('tech_paladin_smite') !== -1 && c23.techSets[0][0] === 'tech_paladin_smite', 'tech stays known and slotted');
 c23.hitPoints = c23.hitPointsMax; c23.energy = c23.energyMax;
 var battle23b = Game.Battle.start('plains_field_rat');
 battle23b.monster.hp = 999;
 var beforeHp23b = battle23b.monster.hp;
 Game.Battle.useTech('tech_paladin_smite');
-assert(battle23b.monster.hp === beforeHp23b, "Paladin's Smite does NOT land while Paladin is inactive, even if slotted (hp unchanged at " + battle23b.monster.hp + ')');
+assert(battle23b.monster.hp === beforeHp23b, "Paladin's Smite does NOT land while Paladin is not an active class, even if slotted (hp unchanged at " + battle23b.monster.hp + ')');
 Game.Battle.flee();
 Game.Battle.endBattle();
 
@@ -1022,8 +1010,7 @@ cA.currentLocation = 'eldor';
 cA.intelligence = 50;
 Game.Character.recalcDerived(cA);
 Game.Classes.obtainClass(cA, 'conjurer');
-Game.Classes.activate(cA, 'conjurer', 'primary');
-Game.Classes.addClassXp(cA, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
+Game.Classes.addClassXp(cA, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_POOL_FRACTION);
 var buyFireA = Game.Classes.buyAbility(cA, 'conjurer', 'conjurer_pact_fire');
 assert(buyFireA.ok === true, 'Pact of Cinders purchased: ' + buyFireA.message);
 assert(cA.techs.indexOf('tech_summon_fire') !== -1 && cA.techs.indexOf('tech_cmd_conflagration') !== -1,
@@ -1170,8 +1157,7 @@ Game.Battle.endBattle();
 var cH = makeCharacter({ name: 'CompanionTesterH' });
 setLevel(cH, 60);
 Game.Classes.obtainClass(cH, 'conjurer');
-Game.Classes.activate(cH, 'conjurer', 'primary');
-Game.Classes.addClassXp(cH, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_FRACTION_PRIMARY);
+Game.Classes.addClassXp(cH, Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_POOL_FRACTION);
 Game.Classes.buyAbility(cH, 'conjurer', 'conjurer_pact_fire');
 cH.techSets[0][0] = 'tech_summon_fire';
 cH.techSets[0][1] = 'tech_cmd_conflagration';
@@ -1239,11 +1225,11 @@ var legacyComboChar = makeV6Character({
 });
 localStorageStore['herorpg_save'] = JSON.stringify({ version: 6, state: { character: legacyComboChar } });
 var loadedLegacyCombo = Game.Save.load();
-assert(loadedLegacyCombo !== null, 'legacy Crusader+Shadowknight save loads without error through the full v6->v10 migration chain');
+assert(loadedLegacyCombo !== null, 'legacy Crusader+Shadowknight save loads without error through the full v6->v12 migration chain');
 assert(!!loadedLegacyCombo.character.classes.crusader, 'classes.crusader preserved');
 assert(!!loadedLegacyCombo.character.classes.shadowknight, 'classes.shadowknight preserved — an "impossible" combo under the NEW branching rule (Shadowknight now re-homed to gladiator), kept per §5 [revised]: obtaining is permanent, no migration strips or re-keys it');
 assert(loadedLegacyCombo.character.classes.shadowknight.abilities.indexOf('shadowknight_inner_fire') !== -1, "shadowknight's previously-purchased ability survives migration untouched");
-assert(loadedLegacyCombo.character.primaryClass === 'crusader' && loadedLegacyCombo.character.secondaryClass === 'shadowknight', 'both active slots preserved');
+assert(loadedLegacyCombo.character.lineage.tier2 === 'crusader' && loadedLegacyCombo.character.lineage.tier3 === 'shadowknight', 'M5: the old-convergence combo migrates as-is: crusader = lineage tier 2, shadowknight = lineage tier 3');
 
 Game.state = loadedLegacyCombo;
 Game.state.battle = null;
@@ -1259,7 +1245,7 @@ var legacyBattle = Game.Battle.start('plains_field_rat');
 legacyBattle.monster.hp = 999;
 var legacyHpBefore = legacyBattle.monster.hp;
 Game.Battle.useTech('tech_shadow_blade');
-assert(legacyBattle.monster.hp < legacyHpBefore, "legacy Shadowknight's class tech is still fully usable in battle (still active in the secondary slot), hp " + legacyHpBefore + ' -> ' + legacyBattle.monster.hp);
+assert(legacyBattle.monster.hp < legacyHpBefore, "legacy Shadowknight's class tech is still fully usable in battle (still active in lineage tier 3), hp " + legacyHpBefore + ' -> ' + legacyBattle.monster.hp);
 Game.Battle.flee();
 Game.Battle.endBattle();
 
@@ -1277,7 +1263,6 @@ var c26 = makeCharacter({ name: 'ClassPacingTest' });
 setLevel(c26, 5);
 c26.currentLocation = 'eldor';
 Game.Classes.obtainClass(c26, 'warrior');
-Game.Classes.activate(c26, 'warrior', 'primary');
 var cheapestWarriorAbility26 = Game.Classes.getClass('warrior').abilities.slice().sort(function (a, b) { return a.classLevelCost - b.classLevelCost; })[0];
 
 // Drive the REAL addClassXp function repeatedly with a representative per-win combat-XP amount
@@ -1303,6 +1288,350 @@ while (oldEarned26 < cheapestWarriorAbility26.classLevelCost && oldWins26 < 1000
   oldWins26++;
 }
 assert(winsNeeded26 > oldWins26 * 3, 'v1.6 P2 (PG-2): a freshly-obtained class needs MANY more wins to reach its first ability than the old curve/fraction (' + winsNeeded26 + ' wins vs old ' + oldWins26 + ' wins)');
+
+// =================== Tests 27-35 (v1.11 Hero Tree; docs/SPEC-CLASS-LINEAGE.md R1-R8a, M1-M6) ==========
+// Stubbed RNG throughout (fixedRng via winBattle); Legendary changes always stand in an Academy town.
+
+function atTown(c) { c.currentLocation = 'eldor'; return c; }     // Eldor has an Academy
+function atWilds(c) { c.currentLocation = 'plains_of_averast'; return c; } // no Academy here
+
+// ---- Test 27: R1 — every tier 1/2/3 class auto-activates into its lineage slot on obtain ----
+console.log('\n=== Test 27 (R1): obtaining a tier 1/2/3 class writes c.lineage.tierN and activates it immediately ===');
+Game.Data.classes.filter(function (cd) { return cd.tier >= 1 && cd.tier <= 3; }).forEach(function (cd) {
+  var rc = makeCharacter({ name: 'R1_' + cd.id });
+  var res = Game.Classes.obtainClass(rc, cd.id);
+  assert(res.ok === true && rc.lineage['tier' + cd.tier] === cd.id, 'R1: ' + cd.id + ' fills lineage.tier' + cd.tier);
+  assert(Game.Classes.activeClassIds(rc).indexOf(cd.id) !== -1, 'R1: ' + cd.id + ' is in activeClassIds immediately');
+  assert(res.message === cd.name + ' joins your Hero Tree.', 'R1: join message for ' + cd.id + ', got "' + res.message + '"');
+  assert(rc.legendaryClass === null, 'R1: a lineage class never touches the Legendary slot');
+});
+var c27 = makeCharacter({ name: 'R1_Order' });
+Game.Classes.obtainClass(c27, 'warrior');
+Game.Classes.obtainClass(c27, 'thief'); // 2nd tier-1: obtained, never active (the quests can't produce this; debug only)
+assert(c27.lineage.tier1 === 'warrior' && Game.Classes.isObtained(c27, 'thief') && Game.Classes.activeClassIds(c27).join(',') === 'warrior', 'R1: a second class of an already-filled tier is obtained but stays out of the lineage');
+Game.Classes.obtainClass(c27, 'rogue');
+Game.Classes.obtainClass(c27, 'gambit');
+assert(JSON.stringify(Game.Classes.lineageOf(c27)) === JSON.stringify([{ tier: 1, classId: 'warrior' }, { tier: 2, classId: 'rogue' }, { tier: 3, classId: 'gambit' }]), 'lineageOf returns [{tier, classId}] for tiers 1-3, got ' + JSON.stringify(Game.Classes.lineageOf(c27)));
+assert(JSON.stringify(Game.Classes.lineageOf(makeCharacter({ name: 'R1_Empty' }))) === JSON.stringify([{ tier: 1, classId: null }, { tier: 2, classId: null }, { tier: 3, classId: null }]), 'lineageOf of a fresh hero is three empty tiers');
+assert(Game.Classes.activeClassIds(c27).join(',') === 'warrior,rogue,gambit', 'activeClassIds orders tier1, tier2, tier3');
+assert(Game.Character.create({ race: 'Human', name: 'Fresh', gender: 'Male', skillPoints: {} }).lineage.tier2 === null, 'character.create() initialises lineage + legendaryClass');
+
+// ---- Test 28: R2 — no deactivate path exists anywhere ----
+console.log('\n=== Test 28 (R2): no deactivate/activate path exists; quest-choice warning text ===');
+assert(Object.keys(Game.Classes).filter(function (k) { return /activate|deactivate|setPrimary|setSecondary/i.test(k); }).length === 0, 'Game.Classes exposes no activate/deactivate-style function');
+assert(Object.keys(Game._debug || {}).filter(function (k) { return /deactivate/i.test(k); }).length === 0, 'no debug helper deactivates a class either');
+var c28 = makeCharacter({ name: 'R2_Hero' });
+Game.Classes.obtainClass(c28, 'warrior');
+var noSlot28 = Game.Classes.obtainClass(c28, 'warrior');
+assert(noSlot28.ok === false && c28.lineage.tier1 === 'warrior', 'obtaining a class twice is refused and leaves the lineage intact');
+var confirmSeen28 = [];
+var oldConfirm28 = global.window.confirm;
+global.window.confirm = function (m) { confirmSeen28.push(m); return true; };
+var c28q = makeCharacter({ name: 'R2_Quest' });
+setLevel(c28q, 5);
+c28q.currentLocation = 'eldor';
+Game.Quests.accept('first_calling');
+for (var q28 = 0; q28 < 4; q28++) winBattle('plains_vermin_swarm');
+Game.Screens.navigate('journal');
+var jbtn28 = document.getElementById('maincontent').queryAllByClass('button').filter(function (n) { return n.textContent === 'Thief'; })[0];
+assert(!!jbtn28, 'journal shows the Thief class-choice button');
+if (jbtn28) {
+  jbtn28.click();
+  assert(confirmSeen28.length === 1 && confirmSeen28[0] === 'This choice is permanent. Thief will join your Hero Tree for good.', 'class-choice confirm warns "This choice is permanent. Thief will join your Hero Tree for good.", got ' + JSON.stringify(confirmSeen28));
+  assert(c28q.lineage.tier1 === 'thief', 'confirming the choice puts Thief into lineage.tier1');
+}
+global.window.confirm = oldConfirm28;
+
+// ---- Test 29: R3 — classBonus sums every active class incl. the Legendary, nothing from an unslotted one ----
+console.log('\n=== Test 29 (R3): classBonus/isClassTechUsable use activeClassIds — 3 lineage classes + slotted Legendary, nothing from an unslotted Legendary ===');
+var c29 = makeCharacter({ name: 'R3_Hero' });
+setLevel(c29, 60);
+['warrior', 'gladiator', 'shadowknight', 'vaultbreaker', 'runeblade_of_kuraan'].forEach(function (id) { Game.Classes.obtainClass(c29, id); });
+assert(c29.legendaryClass === 'vaultbreaker', 'first Legendary obtained (vaultbreaker) took the slot; runeblade waits');
+[['warrior', 'warrior_brutal_strikes'], ['gladiator', 'gladiator_savage_strikes'], ['shadowknight', 'shadowknight_inner_fire'],
+ ['vaultbreaker', 'vaultbreaker_twofold_resolve'], ['runeblade_of_kuraan', 'runeblade_runic_might']].forEach(function (pair) {
+  c29.classes[pair[0]].abilities.push(pair[1]); // direct grant: this test is about the bonus sum, not the purchase flow
+});
+var expected29 = 0.06 + 0.11 + 0.13 + 0.15; // runeblade's 0.12 is NOT included
+assert(Math.abs(Game.Classes.classBonus(c29, 'damage_pct') - expected29) < 1e-9, 'damage_pct sums warrior+gladiator+shadowknight+slotted vaultbreaker and NOTHING from the unslotted runeblade, expected ' + expected29 + ', got ' + Game.Classes.classBonus(c29, 'damage_pct'));
+var techOf = function (id) { return Game.Battle.getTech(id); };
+assert(Game.Classes.isClassTechUsable(c29, techOf('tech_shadow_blade')) === true, 'a lineage class tech is usable');
+assert(Game.Classes.isClassTechUsable(c29, techOf('tech_vault_reckoning')) === true, 'the slotted Legendary tech is usable');
+assert(Game.Classes.isClassTechUsable(c29, techOf('tech_runic_severance')) === false, 'the unslotted Legendary tech is NOT usable');
+assert(Game.Classes.isClassTechUsable(c29, techOf('tech_crushing_blow')) === true, 'warrior tech usable (lineage tier 1)');
+assert(Game.Classes.isClassTechUsable(c29, techOf('tech_anima_surge')) === false, 'a class never obtained is not usable');
+
+// ---- Test 30: R4 — first Legendary auto-fills an empty slot (any route), later ones wait ----
+console.log('\n=== Test 30 (R4): the first Legendary auto-fills an empty Legendary slot wherever obtained; the second waits ===');
+var c30 = makeCharacter({ name: 'R4_Hero' });
+setLevel(c30, 35);
+atWilds(c30);
+var legFirst30 = Game.Classes.obtainClass(c30, 'vaultbreaker');
+assert(c30.legendaryClass === 'vaultbreaker', 'first Legendary fills the empty slot even outside an Academy town');
+assert(legFirst30.message === 'Vaultbreaker now walks beside you as your Legendary calling.', 'auto-fill uses the swap toast wording, got "' + legFirst30.message + '"');
+winBattle('estari_ruin_warden'); // boss-kill route (obtainClass in battle.js onWin)
+assert(Game.Classes.isObtained(c30, 'runeblade_of_kuraan') && c30.legendaryClass === 'vaultbreaker', 'second Legendary (boss-kill route) is obtained but WAITS: slot unchanged');
+Game.Inventory.addItem(c30, 'quest_eidas_echo_seal'); // relic route
+assert(Game.Classes.isObtained(c30, 'heir_of_the_echo') && c30.legendaryClass === 'vaultbreaker', 'third Legendary (relic route) also waits');
+assert(Game.Classes.activeClassIds(c30).join(',') === 'vaultbreaker', 'only the slotted Legendary is active');
+// boss-kill route fills an EMPTY slot too
+var c30b = makeCharacter({ name: 'R4_BossKill' });
+setLevel(c30b, 35);
+winBattle('estari_ruin_warden');
+assert(c30b.legendaryClass === 'runeblade_of_kuraan', 'boss-kill route auto-fills an empty slot');
+// relic route
+var c30c = makeCharacter({ name: 'R4_Relic' });
+setLevel(c30c, 35);
+Game.Inventory.addItem(c30c, 'quest_eidas_echo_seal');
+assert(c30c.legendaryClass === 'heir_of_the_echo', 'relic route auto-fills an empty slot');
+// an emptied slot is re-filled by the NEXT Legendary obtained (not by the ones already waiting)
+var c30d = makeCharacter({ name: 'R4_Refill' });
+Game.Classes.obtainClass(c30d, 'runeblade_of_kuraan');
+atTown(c30d);
+Game.Classes.setLegendary(c30d, null);
+atWilds(c30d);
+Game.Classes.obtainClass(c30d, 'vaultbreaker');
+assert(c30d.legendaryClass === 'vaultbreaker', 'with the slot empty, the next Legendary obtained auto-fills it (R4)');
+
+// ---- Test 31: R5 — setLegendary refusals and success ----
+console.log('\n=== Test 31 (R5): setLegendary only at an Academy, never in battle, only obtained legendary ids ===');
+var c31 = makeCharacter({ name: 'R5_Hero' });
+setLevel(c31, 35);
+['warrior', 'runeblade_of_kuraan', 'vaultbreaker'].forEach(function (id) { Game.Classes.obtainClass(c31, id); });
+atWilds(c31);
+var r31a = Game.Classes.setLegendary(c31, 'vaultbreaker');
+assert(r31a.ok === false && /Academy/.test(r31a.message) && c31.legendaryClass === 'runeblade_of_kuraan', 'refused outside an Academy town: ' + r31a.message);
+assert(Game.Classes.setLegendary(c31, null).ok === false && c31.legendaryClass === 'runeblade_of_kuraan', 'unslotting is refused outside an Academy too');
+atTown(c31);
+setRng(fixedRng(0.99));
+var b31 = Game.Battle.start('plains_field_rat');
+var r31b = Game.Classes.setLegendary(c31, 'vaultbreaker');
+assert(r31b.ok === false && /battle/i.test(r31b.message) && c31.legendaryClass === 'runeblade_of_kuraan', 'refused in battle even at an Academy: ' + r31b.message);
+Game.Battle.flee();
+Game.Battle.endBattle();
+var r31c = Game.Classes.setLegendary(c31, 'warrior');
+assert(r31c.ok === false && c31.legendaryClass === 'runeblade_of_kuraan', 'refused for a non-legendary class id: ' + r31c.message);
+assert(Game.Classes.setLegendary(c31, 'heir_of_the_echo').ok === false, 'refused for a Legendary that has not been obtained');
+assert(Game.Classes.setLegendary(c31, 'no_such_class').ok === false, 'refused for an unknown id');
+assert(Game.Classes.setLegendary(c31, 'runeblade_of_kuraan').ok === false, 'refused when it is already the slotted Legendary');
+assert(c31.legendaryClass === 'runeblade_of_kuraan', 'slot unchanged after every refusal');
+var gold31 = c31.gold, ap31 = c31.trainingPoints;
+var r31d = Game.Classes.setLegendary(c31, 'vaultbreaker');
+assert(r31d.ok === true && c31.legendaryClass === 'vaultbreaker', 'swap succeeds at an Academy: ' + r31d.message);
+assert(r31d.message === 'Vaultbreaker now walks beside you as your Legendary calling.', 'swap toast wording, got "' + r31d.message + '"');
+assert(c31.gold === gold31 && c31.trainingPoints === ap31, 'a swap costs nothing');
+var r31e = Game.Classes.setLegendary(c31, null);
+assert(r31e.ok === true && c31.legendaryClass === null, 'unslot (null) succeeds at an Academy: ' + r31e.message);
+assert(r31e.message === 'Vaultbreaker rests. Its techniques have been unslotted, but nothing it taught you is forgotten.', 'unslot toast wording, got "' + r31e.message + '"');
+assert(Game.Classes.isObtained(c31, 'vaultbreaker') && Game.Classes.isObtained(c31, 'runeblade_of_kuraan'), 'both Legendaries stay obtained');
+
+// ---- Test 32: R6 — swap-out keeps progress, unslots techs from every techSet, keeps them in c.techs ----
+console.log('\n=== Test 32 (R6): swapping a Legendary out keeps xp/levels/abilities, removes its techs from every techSet, keeps them in c.techs; swapping back needs no re-buy ===');
+var c32 = makeCharacter({ name: 'R6_Hero' });
+setLevel(c32, 60);
+atTown(c32);
+['warrior', 'runeblade_of_kuraan', 'vaultbreaker'].forEach(function (id) { Game.Classes.obtainClass(c32, id); });
+Game.Classes.addClassXp(c32, 2 * Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_POOL_FRACTION);
+var buyRs32 = Game.Classes.buyAbility(c32, 'runeblade_of_kuraan', 'runeblade_runic_severance');
+assert(buyRs32.ok === true, 'Runic Severance (Legendary tech) purchased: ' + buyRs32.message);
+var buyCb32 = Game.Classes.buyAbility(c32, 'warrior', 'warrior_crushing_blow');
+assert(buyCb32.ok === true, 'Crushing Blow (lineage tech) purchased: ' + buyCb32.message);
+var buyMight32 = Game.Classes.buyAbility(c32, 'runeblade_of_kuraan', 'runeblade_runic_might');
+assert(buyMight32.ok === true, 'Runic Might (Legendary passive) purchased: ' + buyMight32.message);
+c32.techSets[0][0] = 'tech_runic_severance';
+c32.techSets[1][3] = 'tech_runic_severance'; // slotted in a SECOND set as well
+c32.techSets[2][2] = 'tech_crushing_blow';
+var before32 = JSON.stringify(c32.classes['runeblade_of_kuraan']);
+var earned32 = c32.classes['runeblade_of_kuraan'].classLevelsEarned;
+assert(earned32 > 0 && c32.classes['runeblade_of_kuraan'].classXp > 0, 'sanity: the Legendary has progress to keep');
+var dmgWithRb32 = Game.Classes.classBonus(c32, 'damage_pct');
+var swap32 = Game.Classes.setLegendary(c32, 'vaultbreaker');
+assert(swap32.ok === true, 'runeblade swapped out for vaultbreaker: ' + swap32.message);
+assert(JSON.stringify(c32.classes['runeblade_of_kuraan']) === before32, 'swapped-out Legendary keeps xp, levels earned/spent and bought abilities byte-for-byte');
+assert(c32.techs.indexOf('tech_runic_severance') !== -1, "the swapped-out Legendary's tech stays in c.techs (still learned)");
+var slotted32 = [];
+c32.techSets.forEach(function (set, si) { set.forEach(function (t, ti) { if (t === 'tech_runic_severance') slotted32.push(si + ':' + ti); }); });
+assert(slotted32.length === 0, 'the swapped-out tech is removed from EVERY techSet slot, still slotted at: ' + slotted32.join(','));
+assert(c32.techSets[0][0] === null && c32.techSets[1][3] === null, 'its former slots are left empty (null), not shifted');
+assert(c32.techSets[2][2] === 'tech_crushing_blow', "other classes' slotted techs are untouched");
+assert(Math.abs(dmgWithRb32 - 0.12) < 1e-9, 'sanity: runeblade Runic Might (0.12) applied while slotted, got ' + dmgWithRb32);
+assert(Math.abs(Game.Classes.classBonus(c32, 'damage_pct') - 0) < 1e-9, 'Runic Might (0.12) no longer applies once runeblade is unslotted (no other damage passives owned)');
+assert(Game.Classes.isClassTechUsable(c32, Game.Battle.getTech('tech_runic_severance')) === false, 'the swapped-out tech is not castable');
+var swapBack32 = Game.Classes.setLegendary(c32, 'runeblade_of_kuraan');
+assert(swapBack32.ok === true, 'swapping back works: ' + swapBack32.message);
+assert(JSON.stringify(c32.classes['runeblade_of_kuraan']) === before32, 'progress unchanged after swapping back');
+assert(Math.abs(Game.Classes.classBonus(c32, 'damage_pct') - 0.12) < 1e-9, 'Runic Might applies again after swapping back, with no re-buy');
+assert(Game.Classes.isClassTechUsable(c32, Game.Battle.getTech('tech_runic_severance')) === true, 'the tech is castable again after swapping back (re-slot it manually)');
+assert(Game.Classes.buyAbility(c32, 'runeblade_of_kuraan', 'runeblade_runic_severance').message === 'Already purchased.', 'no re-buy is needed or possible');
+
+// ---- Test 33: R7 — an unslotted Legendary earns no class XP and cannot buy abilities ----
+console.log('\n=== Test 33 (R7): an unslotted Legendary earns no class XP and cannot buy Academy abilities ===');
+var c33 = makeCharacter({ name: 'R7_Hero' });
+setLevel(c33, 35);
+atTown(c33);
+['warrior', 'runeblade_of_kuraan', 'vaultbreaker'].forEach(function (id) { Game.Classes.obtainClass(c33, id); }); // vaultbreaker waits
+c33.classes['vaultbreaker'].classLevelsEarned = 6; // unspent levels on the unslotted one
+Game.Classes.addClassXp(c33, 1000);
+assert(c33.classes['vaultbreaker'].classXp === 0, 'unslotted Legendary gained no class XP, got ' + c33.classes['vaultbreaker'].classXp);
+assert(c33.classes['runeblade_of_kuraan'].classXp > 0 && c33.classes['warrior'].classXp > 0, 'the active classes did earn XP');
+var buy33 = Game.Classes.buyAbility(c33, 'vaultbreaker', 'vaultbreaker_twofold_resolve');
+assert(buy33.ok === false && /active/.test(buy33.message) && c33.classes['vaultbreaker'].abilities.length === 0, 'unslotted Legendary cannot buy abilities even with unspent levels: ' + buy33.message);
+winBattle('plains_vermin_swarm'); // real onWin path
+assert(c33.classes['vaultbreaker'].classXp === 0, 'a real battle win still gives the unslotted Legendary nothing');
+
+// ---- Test 34: R8/R8a — shared pool, even split, maxed drops out ----
+console.log('\n=== Test 34 (R8/R8a): one shared pool split evenly over active classes that are not maxed ===');
+var c34 = makeCharacter({ name: 'R8_Hero' });
+setLevel(c34, 60);
+['warrior', 'gladiator', 'shadowknight', 'vaultbreaker'].forEach(function (id) { Game.Classes.obtainClass(c34, id); });
+var costSum = function (id) { return Game.Classes.getClass(id).abilities.reduce(function (t, a) { return t + a.classLevelCost; }, 0); };
+assert(Game.Classes.isClassMaxed(c34, 'warrior') === false, 'a fresh class is not maxed');
+Game.Classes.addClassXp(c34, 800);
+// pool = floor(800 * 0.5) = 400, 4 earning classes -> 100 each
+assert(['warrior', 'gladiator', 'shadowknight', 'vaultbreaker'].every(function (id) { return c34.classes[id].classXp === 100; }), 'pool 400 split evenly 4 ways = 100 each, got ' + ['warrior', 'gladiator', 'shadowknight', 'vaultbreaker'].map(function (id) { return c34.classes[id].classXp; }).join('/'));
+// remainder is floored per class
+var c34r = makeCharacter({ name: 'R8_Remainder' });
+['warrior', 'gladiator', 'shadowknight'].forEach(function (id) { Game.Classes.obtainClass(c34r, id); });
+Game.Classes.addClassXp(c34r, 101); // pool 50 -> floor(50/3) = 16 each
+assert(['warrior', 'gladiator', 'shadowknight'].every(function (id) { return c34r.classes[id].classXp === 16; }), 'pool 50 over 3 classes -> floor(50/3)=16 each');
+// maxed by EARNED levels (R8a), even with every level unspent
+assert(costSum('warrior') === 8, 'sanity: warrior abilities cost 8 levels in total, got ' + costSum('warrior'));
+c34.classes['warrior'].classLevelsEarned = 7;
+assert(Game.Classes.isClassMaxed(c34, 'warrior') === false, '7 of 8 earned levels is not maxed');
+c34.classes['warrior'].classLevelsEarned = 8; // none bought: classLevelsSpent stays 0
+assert(Game.Classes.isClassMaxed(c34, 'warrior') === true && c34.classes['warrior'].classLevelsSpent === 0, 'maxed by earned levels even though nothing is bought (R8a)');
+var warriorXpBefore34 = c34.classes['warrior'].classXp;
+var maxedNow34 = Game.Classes.addClassXp(c34, 600); // pool 300 over 3 non-maxed classes -> 100 each
+assert(c34.classes['warrior'].classXp === warriorXpBefore34, 'the maxed class earns nothing');
+assert(['gladiator', 'shadowknight', 'vaultbreaker'].every(function (id) { return c34.classes[id].classXp === 200; }), "the maxed class's share goes to the others (100 + 100 = 200 each)");
+assert(Array.isArray(maxedNow34) && maxedNow34.length === 0, 'addClassXp reports no newly maxed class when none crossed the line');
+// newly-maxed report
+c34.classes['gladiator'].classLevelsEarned = costSum('gladiator') - 1;
+c34.classes['gladiator'].classXp = Game.Classes.classXpForLevel(costSum('gladiator') - 1 + 1) ; // just under the next threshold
+var maxedNow34b = Game.Classes.addClassXp(c34, 100000);
+assert(maxedNow34b.indexOf('gladiator') !== -1 && Game.Classes.isClassMaxed(c34, 'gladiator'), 'a class that crosses the line is reported as newly maxed: ' + JSON.stringify(maxedNow34b));
+// all maxed -> nothing awarded
+Object.keys(c34.classes).forEach(function (id) { c34.classes[id].classLevelsEarned = costSum(id); });
+var snap34 = JSON.stringify(c34.classes);
+var none34 = Game.Classes.addClassXp(c34, 100000);
+assert(JSON.stringify(c34.classes) === snap34 && none34.length === 0, 'all active classes maxed -> no class XP awarded at all');
+// an unslotted/unobtained maxed state does not matter; battle integration + mastered log
+var c34b = makeCharacter({ name: 'R8_Battle' });
+Game.Classes.obtainClass(c34b, 'warrior');
+c34b.classes['warrior'].classLevelsEarned = costSum('warrior') - 1;
+c34b.classes['warrior'].classXp = Game.Classes.classXpForLevel(costSum('warrior')) ;
+setRng(fixedRng(0.99));
+var mb34 = Game.Battle.start('plains_vermin_swarm');
+mb34.monster.hp = 1;
+Game.Battle.attack();
+assert(mb34.phase === 'won', 'sanity: battle won, phase=' + mb34.phase);
+if (Game.Classes.isClassMaxed(c34b, 'warrior')) {
+  assert(mb34.log.some(function (l) { return l === 'You have mastered the Warrior class. Its experience now flows to your other callings.'; }), 'the win logs the Mastered line: ' + mb34.log.slice(-4).join(' | '));
+} else {
+  assert(c34b.classes['warrior'].classXp > 0, 'the win granted class XP via the real onWin path');
+}
+Game.Battle.endBattle();
+var c34c = makeCharacter({ name: 'R8_Zero' });
+assert(Game.Classes.addClassXp(c34c, 500).length === 0 && Object.keys(c34c.classes).length === 0, 'a hero with no classes earns nothing and does not throw');
+
+// ---- Test 35: migration v11 -> v12 (M1-M6) + the full v1 -> v12 chain ----
+console.log('\n=== Test 35 (M1-M6): save v11 -> v12 lineage migration + the full v1 -> v12 chain ===');
+function entry35(earned, xp) { return { classXp: xp || 0, classLevelsEarned: earned || 0, classLevelsSpent: 0, abilities: [] }; }
+function v11Load(classes, primary, secondary) {
+  var base = makeCharacter({ name: 'Mig' });
+  var o = JSON.parse(JSON.stringify(base));
+  delete o.lineage; delete o.legendaryClass;
+  o.classes = classes;
+  o.primaryClass = primary === undefined ? null : primary;
+  o.secondaryClass = secondary === undefined ? null : secondary;
+  o.legendaryUnlocked = false;
+  localStorageStore['herorpg_save'] = JSON.stringify({ version: 11, state: { character: o } });
+  return Game.Save.load();
+}
+// M1: one class per tier fills each slot; M3: Primary legendary wins
+var m1 = v11Load({ warrior: entry35(2, 300), gladiator: entry35(1), shadowknight: entry35(0), vaultbreaker: entry35(3), runeblade_of_kuraan: entry35(1) }, 'vaultbreaker', 'warrior');
+assert(m1 !== null && m1.character.lineage.tier1 === 'warrior' && m1.character.lineage.tier2 === 'gladiator' && m1.character.lineage.tier3 === 'shadowknight', 'M1: one obtained class per tier fills lineage.tier1/2/3, got ' + JSON.stringify(m1 && m1.character.lineage));
+assert(m1.character.legendaryClass === 'vaultbreaker', 'M3: a legendary Primary becomes the Legendary slot, got ' + m1.character.legendaryClass);
+assert(!('primaryClass' in m1.character) && !('secondaryClass' in m1.character), 'M4: primaryClass/secondaryClass are deleted');
+assert(m1.character.classes.warrior.classXp === 300 && m1.character.classes.warrior.classLevelsEarned === 2 && Object.keys(m1.character.classes).length === 5, 'M4: no c.classes entry is changed or removed');
+// M3 variants
+var m3b = v11Load({ warrior: entry35(), runeblade_of_kuraan: entry35(), vaultbreaker: entry35() }, 'warrior', 'vaultbreaker');
+assert(m3b.character.legendaryClass === 'vaultbreaker', 'M3: else a legendary Secondary becomes the slot, got ' + m3b.character.legendaryClass);
+var m3c = v11Load({ warrior: entry35(), vaultbreaker: entry35(), heir_of_the_echo: entry35(), runeblade_of_kuraan: entry35() }, 'warrior', null);
+assert(m3c.character.legendaryClass === 'runeblade_of_kuraan', 'M3: else the first obtained Legendary in data order (runeblade precedes vaultbreaker/heir), got ' + m3c.character.legendaryClass);
+var m3d = v11Load({ warrior: entry35() }, 'warrior', null);
+assert(m3d.character.legendaryClass === null, 'M3: else null');
+// M2: duplicates in one tier
+var m2a = v11Load({ warrior: entry35(1), thief: entry35(5) }, 'warrior', 'thief');
+assert(m2a.character.lineage.tier1 === 'warrior', 'M2: Primary wins among duplicates, got ' + m2a.character.lineage.tier1);
+var m2b = v11Load({ warrior: entry35(1), thief: entry35(5) }, null, 'thief');
+assert(m2b.character.lineage.tier1 === 'thief', 'M2: then Secondary, got ' + m2b.character.lineage.tier1);
+var m2c = v11Load({ warrior: entry35(1), thief: entry35(5) }, null, null);
+assert(m2c.character.lineage.tier1 === 'thief', 'M2: then highest classLevelsEarned, got ' + m2c.character.lineage.tier1);
+var m2d = v11Load({ thief: entry35(2), warrior: entry35(2) }, null, null);
+assert(m2d.character.lineage.tier1 === 'warrior', 'M2: then js/data/classes.js order (warrior precedes thief) on a full tie, got ' + m2d.character.lineage.tier1);
+assert(Game.Classes.isObtained(m2c.character, 'warrior') && Game.Classes.activeClassIds(m2c.character).indexOf('warrior') === -1, 'M2: the losing duplicate stays in c.classes but is never active');
+// M5: old-convergence combo
+var m5 = v11Load({ crusader: entry35(4), shadowknight: entry35(8) }, 'crusader', 'shadowknight');
+assert(m5.character.lineage.tier1 === null && m5.character.lineage.tier2 === 'crusader' && m5.character.lineage.tier3 === 'shadowknight', 'M5: Crusader + Shadowknight (old convergence) migrates as-is (tier1 stays empty), got ' + JSON.stringify(m5.character.lineage));
+// M6: a once-deactivated (zeroed) class re-enters the lineage at class level 0 (display "Class Lv 0")
+var m6 = v11Load({ warrior: entry35(0, 0) }, null, null);
+assert(m6.character.lineage.tier1 === 'warrior' && m6.character.classes.warrior.classXp === 0 && m6.character.classes.warrior.classLevelsEarned === 0, 'M6: a zeroed (once-deactivated) class re-enters the lineage with zero progress, nothing refunded');
+// empty
+var mEmpty = v11Load({}, null, null);
+assert(mEmpty.character.lineage.tier1 === null && mEmpty.character.lineage.tier2 === null && mEmpty.character.lineage.tier3 === null && mEmpty.character.legendaryClass === null, 'a v11 hero with no classes gets an empty lineage and a null Legendary slot');
+// round trip stamps 12 and keeps the new fields
+Game.state = m1; Game.persist();
+var rt35 = JSON.parse(localStorageStore['herorpg_save']);
+assert(rt35.version === 12 && rt35.state.character.lineage.tier2 === 'gladiator' && rt35.state.character.legendaryClass === 'vaultbreaker', 'resave stamps version 12 and persists lineage + legendaryClass');
+var reload35 = Game.Save.load();
+assert(reload35 !== null && reload35.character.lineage.tier3 === 'shadowknight' && reload35.character.legendaryClass === 'vaultbreaker', 'a v12 save reloads unchanged (no re-migration)');
+// full chain v1 -> v12 with classes arriving at v6 (old slots) — covered end-to-end by Test 1 (v6) and Test 2 (v1);
+// here a v1 payload is run once more and checked against the complete current shape.
+var v1Chain35 = { version: 1, state: { character: JSON.parse(JSON.stringify(v1Character)) } };
+localStorageStore['herorpg_save'] = JSON.stringify(v1Chain35);
+var chain35 = Game.Save.load();
+assert(chain35 !== null && chain35.character.lineage && chain35.character.legendaryClass === null && chain35.character.companion === null && chain35.character.ap === 0 && !('primaryClass' in chain35.character), 'the full v1 -> v12 chain yields the complete current shape (lineage, legendaryClass, companion, ap; no slot fields)');
+Game.state = chain35; Game.persist();
+assert(JSON.parse(localStorageStore['herorpg_save']).version === 12, 'v1 -> v12 chain resaves at version 12');
+
+// ---- Test 36: UI — Hero Tree panel, Legendary buttons gated on the Academy ----
+console.log('\n=== Test 36: Hero Tree UI — Legendary [Set Legendary]/[Unslot] enabled only at an Academy ===');
+try {
+  var c36 = makeCharacter({ name: 'UI_Hero' });
+  setLevel(c36, 60);
+  ['warrior', 'gladiator', 'runeblade_of_kuraan', 'vaultbreaker'].forEach(function (id) { Game.Classes.obtainClass(c36, id); });
+  c36.classes['warrior'].classLevelsEarned = 8; // maxed -> "Mastered"
+  var openClassesTab = function () {
+    Game.Screens.navigate('status');
+    document.getElementById('maincontent').queryAllByClass('infobox-tab').filter(function (n) { return n.textContent === 'Classes'; })[0].click();
+    return document.getElementById('maincontent');
+  };
+  atWilds(c36);
+  var root36 = openClassesTab();
+  var txt36 = root36.textContent;
+  assert(txt36.indexOf('Mastered') !== -1, 'a maxed class shows "Mastered" on the Hero Tree');
+  assert(txt36.indexOf('Unlocks at level 60') !== -1, 'the empty Mastery row shows its unlock hint');
+  assert(txt36.indexOf('Unlocked Legendaries') !== -1 && txt36.indexOf('Visit an Academy to change your Legendary.') !== -1, 'outside an Academy the hint is shown');
+  var legBtns36 = root36.queryAllByClass('button').filter(function (n) { return n.textContent === 'Set Legendary' || n.textContent === 'Unslot'; });
+  assert(legBtns36.length === 2 && legBtns36.every(function (b) { return b.disabled === 'disabled' || b.attrs && b.attrs.disabled === 'disabled' || b.getAttribute && b.getAttribute('disabled') === 'disabled'; }), 'Set Legendary + Unslot are disabled away from an Academy');
+  atTown(c36);
+  var root36b = openClassesTab();
+  var legBtns36b = root36b.queryAllByClass('button').filter(function (n) { return n.textContent === 'Set Legendary' || n.textContent === 'Unslot'; });
+  assert(legBtns36b.length === 2 && legBtns36b.every(function (b) { return !(b.disabled === 'disabled' || (b.attrs && b.attrs.disabled === 'disabled') || (b.getAttribute && b.getAttribute('disabled') === 'disabled')); }), 'Set Legendary + Unslot are enabled at an Academy');
+  var setBtn36 = legBtns36b.filter(function (n) { return n.textContent === 'Set Legendary'; })[0];
+  setBtn36.click();
+  assert(c36.legendaryClass === 'vaultbreaker', 'clicking Set Legendary swaps the slot (runeblade -> vaultbreaker), got ' + c36.legendaryClass);
+  var cNo36 = makeCharacter({ name: 'UI_NoLegend' });
+  setLevel(cNo36, 60);
+  Game.Classes.obtainClass(cNo36, 'warrior');
+  var rootNo36 = openClassesTab();
+  assert(rootNo36.textContent.indexOf('???') !== -1 && rootNo36.textContent.indexOf('Unlocked Legendaries') === -1, 'with no Legendary unlocked the row shows "???" and no Unlocked Legendaries list');
+} catch (e36) {
+  failures++;
+  console.error('FAIL: Hero Tree UI test threw: ' + e36.stack);
+}
+
 
 // =================== Summary ===================
 console.log('\n===================================');

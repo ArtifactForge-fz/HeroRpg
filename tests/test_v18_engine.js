@@ -194,10 +194,13 @@ console.log('\n=== Test 1: typed dodge/double_attack buffs raise chance; DODGE_C
   setRng(fixedRng(0.99)); // no dodge/glancing/double-attack procs on the monster's own counter
   Game.Battle.useTech('tech_test_dodge_small');
   var after = Game.Battle.playerDodgeChance(c);
-  assert(Math.abs((after - before) - 0.05) < 1e-9, 'small dodge buff (+0.05) raised playerDodgeChance by exactly 0.05: before=' + before + ' after=' + after);
+  // SPEC-ROGUE-BOSS-COST §2.1: a typed dodge buff multiplies the Dex-derived term (DODGE_BASE stays flat) instead of adding flat chance.
+  assert(Math.abs((after - BALANCE.DODGE_BASE) - (before - BALANCE.DODGE_BASE) * 1.05) < 1e-9, 'small dodge buff (+0.05) made dodge 5% more effective: before=' + before + ' after=' + after);
   Game.Battle.endBattle();
 
   var c2 = makeCharacter({ name: 'DodgeCapTest' });
+  c2.dexterity = 200; c2.skills['Dodge'].level = 50; // Dex term 0.2 x 1.5 = 0.30: below the cap until the x1.9 buff pushes it over
+  assert(Game.Battle.playerDodgeChance(c2) < BALANCE.DODGE_CAP, 'sanity: Dex 200 + Dodge skill 50 sits below DODGE_CAP before the buff');
   freshBattle();
   setRng(fixedRng(0.99));
   Game.Battle.useTech('tech_test_dodge_big'); // +0.9, should clamp to DODGE_CAP
