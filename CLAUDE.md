@@ -266,7 +266,7 @@ final roster 211 techs, no duplicate ids). Save version **10 → 11**.
      tech reports "Unknown technique"): the retired tech id stays in `c.techs`, the retired
      ability id in the class entry, and the **5 class levels spent on it are burned unrefunded**
      (a class-level-8 Conjurer is left 3 free — one of four Pacts). ~3 lines in the v10→v11
-     migration would clear it. **This one is live for real players — fix it first.**
+     migration would clear it. **This one is live for real players — fix it first.** **Fixed in v1.11 (`docs/SPEC-LEGACY-CONJURER-CLEANUP.md`).**
 - Also open from PR #2's own notes: companion icons are adapted copies (bespoke art wanted), no
   shipped monster carries the new `target` specials yet, command-tech powers are provisional.
 - Ops note: the tracked `post-commit` hook did NOT fire on the merge commits — the single-file

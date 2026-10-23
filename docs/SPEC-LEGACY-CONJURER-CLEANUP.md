@@ -3,6 +3,7 @@
 **Status:** READY FOR IMPLEMENTATION — D0–D2 resolved by the user 2026-10-23 (§5): ships inside v1.11 (option B), with the refund and the one-time notice. Authored 2026-10-23 (user-directed: "start on #5", the
 top item of the v1.9 review queue in `CLAUDE.md`, item 4: "This one is live for real players — fix
 it first").
+**Implemented 2026-10-23 on branch `v1.11-hero-tree`.**
 **Relationship to authority:** fixes a data-migration gap left by `docs/SPEC-COMPANION-SYSTEM.md`
 (v1.9, D0/D4), which retired the Conjurer's original signature. No game rule changes. One
 deliberate break with an in-repo precedent (D1, the refund) is flagged below.

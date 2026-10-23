@@ -7,6 +7,17 @@ Game.Save = (function () {
   var STORAGE_KEY = 'herorpg_save';
   var CURRENT_VERSION = 12;
 
+  // Ids removed from js/data — kept here so old saves are cleaned on load
+  // (docs/SPEC-LEGACY-CONJURER-CLEANUP.md section 2.1). An explicit table, never a generic
+  // "drop unknown ids" sweep, so a failed data load can never delete a player's real techs.
+  var RETIRED_TECHS = ['tech_summon_elemental'];            // v1.9, SPEC-COMPANION-SYSTEM D4
+  var RETIRED_ABILITIES = {                                 // classId -> { abilityId: classLevelCost refunded }
+    conjurer: { conjurer_summon_elemental: 5 }              // v1.9, cost per js/data/classes.js @ v1.8
+  };
+
+  // Transient (never persisted): the player-facing notes from the most recent load/import.
+  var lastLoadNotes = [];
+
 
   // Transient fields are never persisted: `battle` (Phase 3) holds a live reference to the
   // character plus per-fight state; reloading mid-battle simply abandons the battle.
@@ -50,7 +61,58 @@ Game.Save = (function () {
     return migrate(payload);
   }
 
+  // Retired-id sweep (SPEC-LEGACY-CONJURER-CLEANUP C1-C5). Runs on every load/import of every save
+  // version. Idempotent: the refund only happens when the ability id is actually removed.
+  // Returns the list of player-facing notes (one per affected class).
+  function sanitizeRetired(state) {
+    var notes = [];
+    var c = state && state.character;
+    if (!c) return notes;
+    var i, n;
+    // C1: c.techs
+    if (c.techs && c.techs.length) {
+      for (i = c.techs.length - 1; i >= 0; i--) {
+        if (RETIRED_TECHS.indexOf(c.techs[i]) !== -1) c.techs.splice(i, 1);
+      }
+    }
+    // C2: tech-bar slots become empty
+    if (c.techSets && c.techSets.length) {
+      for (i = 0; i < c.techSets.length; i++) {
+        var set = c.techSets[i];
+        if (!set || !set.length) continue;
+        for (n = 0; n < set.length; n++) {
+          if (RETIRED_TECHS.indexOf(set[n]) !== -1) set[n] = null;
+        }
+      }
+    }
+    // C3: retired class abilities + refund of the Class Levels spent on them
+    if (c.classes) {
+      for (var classId in RETIRED_ABILITIES) {
+        if (!Object.prototype.hasOwnProperty.call(RETIRED_ABILITIES, classId)) continue;
+        var entry = c.classes[classId];
+        if (!entry || !entry.abilities || !entry.abilities.length) continue;
+        var refunded = 0;
+        for (var abilityId in RETIRED_ABILITIES[classId]) {
+          if (!Object.prototype.hasOwnProperty.call(RETIRED_ABILITIES[classId], abilityId)) continue;
+          var idx = entry.abilities.indexOf(abilityId);
+          while (idx !== -1) {
+            entry.abilities.splice(idx, 1);
+            refunded += RETIRED_ABILITIES[classId][abilityId];
+            idx = entry.abilities.indexOf(abilityId);
+          }
+        }
+        if (refunded > 0) {
+          entry.classLevelsSpent = Math.max(0, (entry.classLevelsSpent || 0) - refunded);
+          notes.push('Summon Elemental has been retired from the Conjurer\'s teachings. The ' + refunded +
+            ' Class Levels you spent on it have been returned — visit an Academy to learn a Pact.');
+        }
+      }
+    }
+    return notes;
+  }
+
   function migrate(payload) {
+    lastLoadNotes = [];
     if (!payload || typeof payload.version !== 'number') return null;
 
     var state = payload.state;
@@ -288,6 +350,8 @@ Game.Save = (function () {
       version = 12;
     }
 
+    lastLoadNotes = sanitizeRetired(state);
+
     if (version === CURRENT_VERSION) return state;
     return null;
   }
@@ -330,7 +394,8 @@ Game.Save = (function () {
     load: load,
     wipe: wipe,
     exportString: exportString,
-    importString: importString
+    importString: importString,
+    getLastLoadNotes: function () { return lastLoadNotes.slice(); }
   };
 })();
 

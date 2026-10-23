@@ -470,6 +470,7 @@
       var str = ta.value;
       if (!str) { status.textContent = 'Paste a save string first.'; return; }
       var state = Game.Save.importString(str);
+      var importNotes = Game.Save.getLastLoadNotes();
       if (!state) { status.textContent = 'Import failed: invalid save string.'; return; }
       // Fix #10 (unchanged, v1.3.1): importing used to overwrite Game.state on any valid string
       // with no warning, unlike New Game (which does confirm). Only prompt when there's an
@@ -481,6 +482,7 @@
       Game.persist();
       closePanel();
       boot();
+      showLoadNotes(importNotes);
     });
     btnRow.appendChild(importBtn);
 
@@ -532,8 +534,18 @@
     panel.appendChild(newGameBtn);
   }
 
+  // SPEC-LEGACY-CONJURER-CLEANUP 2.2: one-time notices from the retired-id sweep. Toast, with the
+  // same alert() fallback as js/ui/screens.js notify(). The sweep is persisted on the next save,
+  // so a later load finds nothing to clean and shows nothing.
+  function showLoadNotes(notes) {
+    for (var i = 0; i < notes.length; i++) {
+      if (Game.UI && Game.UI.toast) { Game.UI.toast(notes[i]); } else { alert(notes[i]); }
+    }
+  }
+
   function boot() {
     var loaded = Game.Save.load();
+    var loadNotes = Game.Save.getLastLoadNotes();
     if (loaded && loaded.character) {
       Game.state = loaded;
       Game.Screens.navigate('status');
@@ -542,6 +554,8 @@
       Game.Screens.navigate('creation');
     }
     renderSavePanel();
+    if (loadNotes.length && Game.persist) Game.persist(); // write the cleaned save back so the notice shows once
+    showLoadNotes(loadNotes);
   }
 
   // Footer version-log link text derives from the changelog data so it can never go stale.

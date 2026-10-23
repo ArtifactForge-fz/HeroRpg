@@ -443,6 +443,84 @@ console.log('\n=== Test 12: the eight Conjurer companion techs are linked to the
   Game.Battle.endBattle();
 })();
 
+console.log('\n=== Test 13: legacy Conjurer cleanup (docs/SPEC-LEGACY-CONJURER-CLEANUP.md C1-C5) — retired Summon Elemental swept + refunded on load ===');
+(function () {
+  var NOTE = "Summon Elemental has been retired from the Conjurer's teachings. The 5 Class Levels you spent on it have been returned \u2014 visit an Academy to learn a Pact.";
+  function legacyChar(classId, spent, withLegacy) {
+    var o = JSON.parse(JSON.stringify(makeCharacter({ name: 'LegacyConj' })));
+    delete o.lineage; delete o.legendaryClass; delete o.companion; // pre-v11/v12 shape
+    o.classes = {};
+    o.classes[classId] = { classXp: 0, classLevelsEarned: 8, classLevelsSpent: spent, abilities: withLegacy ? ['conjurer_summon_elemental'] : [] };
+    o.primaryClass = classId; o.secondaryClass = null; o.legendaryUnlocked = false;
+    o.techs = (o.techs || []).slice();
+    if (withLegacy) {
+      o.techs.push('tech_summon_elemental');
+      o.techSets = [[], [], []];
+      o.techSets[0][0] = 'tech_summon_elemental';
+      o.techSets[2][3] = 'tech_summon_elemental';
+    }
+    return o;
+  }
+  function loadV(version, o) {
+    localStorageStore['herorpg_save'] = JSON.stringify({ version: version, state: { character: o } });
+    return Game.Save.load();
+  }
+
+  // (a) v10 legacy Conjurer through the full chain to v12
+  var a = loadV(10, legacyChar('conjurer', 8, true));
+  assert(a !== null && a.character.lineage !== undefined && a.character.companion === null, '(a) the v10 save migrates through the chain to the v12 shape');
+  var ac = a.character;
+  assert(ac.techs.indexOf('tech_summon_elemental') === -1, '(a) retired tech gone from c.techs');
+  assert(ac.techSets[0][0] === null && ac.techSets[2][3] === null, '(a) both tech-set slots are now null');
+  assert(ac.classes.conjurer.abilities.indexOf('conjurer_summon_elemental') === -1, '(a) retired ability gone');
+  assert(ac.classes.conjurer.classLevelsSpent === 3, '(a) 5 Class Levels refunded: 8 -> 3, got ' + ac.classes.conjurer.classLevelsSpent);
+  var notes = Game.Save.getLastLoadNotes();
+  assert(notes.length === 1 && notes[0] === NOTE, '(a) exactly one note with the spec text, got ' + JSON.stringify(notes));
+  notes.push('mutated');
+  assert(Game.Save.getLastLoadNotes().length === 1, '(a) getLastLoadNotes returns a copy (read-only)');
+
+  // (b) idempotent: re-save and reload
+  Game.state = a; Game.persist();
+  assert(localStorageStore['herorpg_save'].indexOf('lastLoadNotes') === -1, '(b) lastLoadNotes is never persisted');
+  var before = JSON.stringify(a.character);
+  var b = Game.Save.load();
+  assert(JSON.stringify(b.character) === before, '(b) loading the cleaned save again changes nothing');
+  assert(Game.Save.getLastLoadNotes().length === 0, '(b) ...and yields no note');
+  assert(b.character.classes.conjurer.classLevelsSpent === 3, '(b) no second refund');
+
+  // (c) a Conjurer who never bought it is untouched
+  var cc = legacyChar('conjurer', 3, false);
+  var cBefore = JSON.stringify(cc.classes);
+  var c3 = loadV(10, cc);
+  assert(c3.character.classes.conjurer.classLevelsSpent === 3 && JSON.stringify(c3.character.classes) === cBefore, '(c) an unaffected Conjurer keeps its class entry untouched');
+  assert(Game.Save.getLastLoadNotes().length === 0, '(c) no note');
+
+  // (d) a non-Conjurer save is untouched
+  var d = loadV(10, legacyChar('warrior', 8, false));
+  assert(d.character.classes.warrior.classLevelsSpent === 8 && d.character.classes.warrior.abilities.length === 0, '(d) a non-Conjurer is untouched');
+  assert(Game.Save.getLastLoadNotes().length === 0, '(d) no note');
+
+  // (e) spent 2 with the ability floors at 0
+  var e = loadV(10, legacyChar('conjurer', 2, true));
+  assert(e.character.classes.conjurer.classLevelsSpent === 0, '(e) classLevelsSpent floors at 0, got ' + e.character.classes.conjurer.classLevelsSpent);
+  assert(e.character.classes.conjurer.abilities.indexOf('conjurer_summon_elemental') === -1, '(e) ability still removed');
+  assert(Game.Save.getLastLoadNotes().length === 1, '(e) still one note');
+
+  // (f) the sweep is version-independent: a current-version (v12) save with leftovers is cleaned too
+  var f = JSON.parse(JSON.stringify(makeCharacter({ name: 'V12Legacy' })));
+  f.classes = { conjurer: { classXp: 0, classLevelsEarned: 8, classLevelsSpent: 8, abilities: ['conjurer_summon_elemental'] } };
+  f.techs = ['tech_summon_elemental'];
+  f.techSets = [['tech_summon_elemental', null], [], []];
+  var fl = loadV(12, f);
+  assert(fl.character.techs.indexOf('tech_summon_elemental') === -1 && fl.character.techSets[0][0] === null, '(f) v12 save: retired tech swept');
+  assert(fl.character.classes.conjurer.abilities.length === 0 && fl.character.classes.conjurer.classLevelsSpent === 3, '(f) v12 save: ability removed, levels refunded');
+  assert(Game.Save.getLastLoadNotes().length === 1, '(f) v12 save: one note');
+
+  // the import path goes through migrate() too
+  var imp = Game.Save.importString(window.btoa(JSON.stringify({ version: 12, state: { character: JSON.parse(JSON.stringify(f)) } })));
+  assert(imp !== null && Game.Save.getLastLoadNotes().length === 1, 'importString sweeps and records the note too');
+})();
+
 console.log('\n===================================');
 if (failures === 0) {
   console.log('ALL TESTS PASSED');

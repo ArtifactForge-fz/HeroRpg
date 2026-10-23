@@ -33,7 +33,10 @@ Game.Data.changelog = [
         'outclass them.',
       'Armor that holds. Heavy and medium armor now pay off when a blow lands: the better you know ' +
         'your armor, and the more Endurance behind it, the less each hit hurts. Light armor stays ' +
-        'the armor of quick feet.'
+        'the armor of quick feet.',
+      'Old Conjurers made whole. If your Conjurer learned Summon Elemental before the companion ' +
+        'update, that retired technique is now cleared away and the 5 Class Levels you spent on it ' +
+        'are returned, ready for a Pact.'
     ]
   },
 
