@@ -1,7 +1,7 @@
 # SPEC — Boss sims with class techs and the Conjurer companion
 
-**Status:** IMPLEMENTED (uncommitted) on branch `v1.11-hero-tree`, on top of the boss cost retune
-(`73a6c36`). Test tooling and a sim gate only: **no game code or combat constant changed.**
+**Status:** IMPLEMENTED (commit `b78d958`) on branch `v1.11-hero-tree`, on top of the boss cost retune
+(`73a6c36`); not yet merged to `main`, released or deployed. Test tooling and a sim gate only: **no game code or combat constant changed.**
 Authored 2026-10-28 (user-directed: "update the boss balance sims to include class techs and the
 conjurer companion", the gap named in `docs/SPEC-BOSS-COST-BAND.md` §3.3 and the boss cost retune
 report). Scope decisions (user, 2026-10-28): fixture + 300-trial grid + in-repo test cells; all

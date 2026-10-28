@@ -1,6 +1,6 @@
 # SPEC — Water pact boss cost (the Tidal Undine heals only when you're hurt)
 
-**Status:** IMPLEMENTED (uncommitted) on branch `v1.11-hero-tree`. D0–D1 resolved by the user
+**Status:** IMPLEMENTED (commit `f17b05a`) on branch `v1.11-hero-tree`; not yet merged to `main`, released or deployed. D0–D1 resolved by the user
 2026-10-28 (§4). Sim gate run 2026-10-28 (§3) on the real code: passes. Authored 2026-10-28
 (user-directed: "fix the water-pact first", follow-up F1 of `docs/SPEC-BOSS-SIM-TECHS.md`).
 

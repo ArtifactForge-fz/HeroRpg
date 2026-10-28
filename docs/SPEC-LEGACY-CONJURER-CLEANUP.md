@@ -1,6 +1,6 @@
 # SPEC — Legacy Conjurer cleanup (clear the retired Summon Elemental from old saves, refund its levels)
 
-**Status:** IMPLEMENTED in v1.11.0 (commit `a0b6cab`, branch `v1.11-hero-tree`), open PR 4 (`v1.11-hero-tree` → `main`); not merged, released or deployed. D0–D2 resolved by the user 2026-10-23 (§5): ships inside v1.11 (option B), with the refund and the one-time notice. Authored 2026-10-23 (user-directed: "start on #5", the
+**Status:** SHIPPED in v1.11.0 (commit `a0b6cab`), merged to `main` with PR 4 (`dbc83a8`) and deployed with v1.13.0 on 2026-10-28. D0–D2 resolved by the user 2026-10-23 (§5): ships inside v1.11 (option B), with the refund and the one-time notice. Authored 2026-10-23 (user-directed: "start on #5", the
 top item of the v1.9 review queue in `CLAUDE.md`, item 4: "This one is live for real players — fix
 it first").
 **Relationship to authority:** fixes a data-migration gap left by `docs/SPEC-COMPANION-SYSTEM.md`

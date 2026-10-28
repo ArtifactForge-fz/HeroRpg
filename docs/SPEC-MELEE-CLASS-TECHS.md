@@ -1,9 +1,9 @@
 # SPEC — Melee class techs that work for melee builds (and a Seer's Ward a Seer can use)
 
-**Status:** IMPLEMENTED (uncommitted) on branch `v1.11-hero-tree`. The package is O6 + W1. D1–D8
+**Status:** IMPLEMENTED (commit `93430cd`) on branch `v1.11-hero-tree`; not yet merged to `main`, released or deployed. The package is O6 + W1. D1–D8
 were resolved by the user on 2026-10-28, all as recommended, with distinct twin names (§5). The
-implementation and its grid re-run are in §7. Authored 2026-10-28 on branch `v1.11-hero-tree` (open
-PR 4), on top of the boss-sim fixture of `docs/SPEC-BOSS-SIM-TECHS.md`. Fixes that spec's follow-ups
+implementation and its grid re-run are in §7. Authored 2026-10-28 on branch `v1.11-hero-tree`,
+on top of the boss-sim fixture of `docs/SPEC-BOSS-SIM-TECHS.md`. Fixes that spec's follow-ups
 **F2** (Finding 2, §3.2) and **F3** (Finding 4, §3.4).
 
 **Relationship to authority:** changes the data shape of 13 shipped class techs and one class buff

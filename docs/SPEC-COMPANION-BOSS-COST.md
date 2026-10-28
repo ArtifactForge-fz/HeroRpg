@@ -1,6 +1,6 @@
 # SPEC — Companion boss cost (Fire, Earth and Wind pacts)
 
-**Status:** IMPLEMENTED (uncommitted) on branch `v1.11-hero-tree`. Every change was directed by the
+**Status:** IMPLEMENTED (commit `2d7f59e`) on branch `v1.11-hero-tree`; not yet merged to `main`, released or deployed. Every change was directed by the
 user on 2026-10-28 (§4). Sim gate run 2026-10-28 on the implemented code (§3): **all 132 boss ×
 lineage cells pass B1/B2/B3**. Follows `docs/SPEC-WATER-PACT-COST.md` (Water) and closes the rest of
 follow-up F1 of `docs/SPEC-BOSS-SIM-TECHS.md`.
