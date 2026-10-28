@@ -2,20 +2,23 @@
 
 Single-player browser remake of **herorpg.net** (2004–2008, dead), reconstructed from Wayback
 Machine scrapes. Static HTML/CSS/JS, no build step, no dependencies — open `index.html` via
-`file://`. **Shipped: v1.9.0 (save version 11) — merged, pushed and DEPLOYED LIVE 2026-07-25.**
+`file://`. **Shipped: v1.13.0 (save version 12) — 2026-10-28.**
 v1.4 gameplay + mobile, v1.4.1/.2 UX info passes, v1.5 (reactive monsters + Tier-3
 branching/24-class roster + the Conjurer summoner), v1.6 (a full balance & progression rebalance
 from playtest feedback), v1.7 (quest-arc redistribution, Arkan racial parity, destinations-UI
 cards, and a reference wiki), v1.8 (a technique chain for every skill — 72 new techs incl. the
-first player debuffs — plus the item-reachability pass that finally unwalled dual-wield), and
-v1.9 (the companion system + Conjurer redesign, and six tech chains completed to rank IX; see
-"Recently completed" below) are all released. Two accepted known limitations:
+first player debuffs — plus the item-reachability pass that finally unwalled dual-wield),
+v1.9 (the companion system + Conjurer redesign, and six tech chains completed to rank IX), and
+v1.10–v1.12 (PR #4: secondary stats, the Hero Tree, Dex-curve dodge + Bracing, scaling monster
+techs) plus v1.13 (per-town Academy curricula + boss cost retune; see "Recently completed" below)
+are all released. Two accepted
+known limitations:
 the 5-levels-down=death contract isn't fully enforced at high levels (Fear-spared healing
 sustain — DESIGN §4), and boss-telegraph integration is deferred (a boss charged hit can spike
 past heal+death in one blow; 3 low bosses carry behaviors, the other 8 keep their v1.4 scripts —
 DESIGN §4 / SPEC-V1.5-MONSTER-AI §6). **v1.9 carries four KNOWN-ACCEPTED review items** (the user
-merged over them on 2026-07-25) — see "Recently completed" below; the two cheap ones (legacy
-Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's queue.
+merged over them on 2026-07-25) — see "Recently completed" below; item 4 (legacy Conjurer ghosts)
+was fixed by PR #4 (v1.11); PR #1's missing spec is the top of the next cycle's queue.
 
 ## Cardinal rules
 
@@ -40,9 +43,9 @@ Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's que
    prompt — scope additions sent mid-flight via messages arrive looking like prompt injection
    and get (correctly) refused. Review every delivery: run suites yourself, read the risky
    modules, sim-check balance claims. Never eyeball a balance number — sim it.
-5. **All test suites must pass before any work is called done** (15 as of v1.10 —
-   `test_secondary_stats.js` joined in v1.10, `test_companion.js` in v1.9,
-   `test_v18_engine.js` and `test_reachability.js` in v1.8, `test_wiki.js` in v1.7):
+5. **All test suites must pass before any work is called done** (16 as of v1.13 —
+   `test_academy.js` joined in v1.13, `test_secondary_stats.js` in v1.10, `test_companion.js` in
+   v1.9, `test_v18_engine.js` and `test_reachability.js` in v1.8, `test_wiki.js` in v1.7):
    `cd tests && for t in test_*.js; do node $t; done` (each exits 0 on pass).
 
 ## Architecture
@@ -96,6 +99,13 @@ Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's que
   must be hash-distinct from existing ones (`test_icons.js` enforces presence). Rendered via
   `Game.UI.icon(id, size)` — the ONLY place icon paths are built (the artifact bundler patches
   that one line).
+- **Academy curricula (v1.10):** a tech is taught only where `skillReq <= BALANCE.ACADEMY_SKILLREQ_CAP[townId]`
+  (`Game.World.teachesTech` / `academyForTech`; the cap table is the ONE source, read by world.js,
+  the Academy panel and the wiki). Adding an academy town means adding its cap — world.js fails
+  OPEN (unlisted ⇒ teaches everything) so nothing strands, and `tests/test_academy.js` is what
+  stops a new town from silently teaching rank IX. Adding a tech means checking it still lands on
+  a curriculum: rank 1 must stay in Eldor, and a later rank must never be taught earlier than its
+  predecessor (both asserted). Academy `specialty` lists in areas.js are flavour only.
 - Quest step kinds: kill / collect / touch / visit (+ `acceptItems`, `classChoice` rewards incl.
   the `'advanced'` sentinel). Quest materials use id prefix `quest_`.
 - Version Log: every release milestone gets a PREPENDED entry in `js/data/changelog.js`
@@ -106,7 +116,7 @@ Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's que
 
 ## Testing
 
-`tests/` (fakedom.js + 14 suites) is the source of truth; suites reference the game by absolute
+`tests/` (fakedom.js + 16 suites) is the source of truth; suites reference the game by absolute
 path so they run from anywhere. When a change breaks a hardcoded expectation (monster counts,
 save version), update the stale constant — never weaken a behavioral assertion. New mechanics
 need stubbed-RNG tests. fakedom quirk: dynamically created elements lack `.style` unless the
@@ -164,11 +174,56 @@ rebuilds it after every commit so a deployable single-file build always matches 
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
 re-enable it. Never build/ship from a tree with red suites.
 
-## Recently completed (2026-10-23) — boss cost retune (unreleased, on `v1.11-hero-tree`)
+## Recently completed (2026-10-28) — v1.13.0 (per-town Academy curricula + boss cost retune)
+
+**Merged with PR #4 (Nayan-cl, v1.10–v1.12) on 2026-10-28.** The Academy work was built and committed
+locally as "v1.10.0" on 2026-07-26 but never pushed or deployed (live stayed v1.9.0); PR #4 had
+independently used v1.10.0 for Keen Edges & Lucky Coins, so the Academy curricula were renumbered
+to **v1.13.0** (save 12, no migration) and ship together with PR #4's unreleased boss cost retune.
+Code comments that said "v1.10" for the Academy now say v1.13. Section below is the original
+Academy write-up (its "v1.10" = this v1.13).
+
+User-directed content/UX change: "skills/techs should also be separated over the different towns —
+e.g. Starspark 3 is quite late, and does not need to be learnable in the starting city." Before
+this, ALL 165 academy-learnable techs were buyable at ALL 7 academies; the only gates were
+previous-rank-known + governing skill + Training Points. Save version unchanged (11), no migration.
+Design authority: DESIGN.md §5 "Per-town curricula"; decision (user, 2026-07-26): **tier gate +
+school flavour**, tier being the hard gate.
+- **The gate is one constant**, `BALANCE.ACADEMY_SKILLREQ_CAP` — Eldor 5, Ju‘Mak 10, Saratus 12,
+  Kastengard 25, Kuraan 45, Frosthold 60, Skyspire 70. These are NOT new numbers: each is the
+  highest skillReq step the shipped chain tables already put at or below that town's own
+  `minLevel`. Curriculum sizes land at 32/59/69/97/135/155/165 of 165.
+- **`[invented]`, no sim gate owed** — it changes WHERE a rank is bought, never combat math.
+  `manual/Techniques.md` ("most towns have an Academy") and the 2007 trainer news post
+  (`site/homepage_2007.md`, "we can easily change the levels at which spells can be learned") are
+  the cited authority; neither records a per-town curriculum, so the split itself is invented.
+- **Four invariants, asserted in `tests/test_academy.js` (35 assertions):** every rank 1 stays in
+  the starting city · the ladder is monotonic · the last town teaches everything · no tech and no
+  chain rank is stranded. world.js fails OPEN for an unlisted academy town, so the *test* — not the
+  code — is what stops a newly added town from silently teaching rank IX.
+- **Legacy-safe:** an already-known tech is never re-checked, so saves keep everything bought under
+  the old flat curriculum; `canLearn` still answers "Already known" wherever the player stands.
+- **UI:** off-curriculum ranks are NOT hidden (they would appear deleted) — they render under
+  **"Taught elsewhere"**, grouped by the town that teaches them with its level, so the Academy is
+  also a travel signpost. Home schools sort first and each academy names its tradition
+  (`specialty` / `specialtyLabel` in areas.js — flavour only, no discount, nothing blocked; a TP
+  discount was deliberately NOT taken, as that would shift progression pacing and owe a sim).
+  The wiki gains a **"Taught at"** column — `wiki.html` now loads `js/core/world.js` so the cap
+  table has exactly one reader and the wiki cannot drift from the game.
+- Stale-test note: `test_p4_world.js` Test 7/7b trained Firebolt II and Cleave II/III in Eldor.
+  Those assert CHAIN gating, so the fix was to stand the fixture in the town that teaches the rank
+  (`currentLocation`), not to weaken the assertion.
+- Verified beyond the suites: the Academy panel was rendered through fakedom at Eldor / Saratus /
+  Skyspire (Skyspire correctly shows no "Taught elsewhere" section), and the wiki column resolves
+  Starspark III → Saratus (L14+), Starspark IX → Skyspire Landing (L85+).
+- Residual: a human browser pass over the new Academy sections (fakedom can't see layout), and the
+  four v1.9 review items below are still open and unchanged.
+
+## Recently completed (2026-10-23) — boss cost retune (shipped in v1.13.0)
 
 Specs `docs/SPEC-BOSS-COST-BAND.md` (the measurable boss contract) and
 `docs/SPEC-BOSS-COST-RETUNE.md` (all decisions user-resolved; §3.3 = sim gate). Commit `73a6c36`.
-**No save change.** No changelog entry yet (draft in the retune report); ships with the next release.
+**No save change.** Changelog line lives in the v1.13.0 entry.
 - Boss contract: see "Established balance formulas" above. Metric = **HP spent per win** (HP lost
   + HP healed, over max HP), because HP left on win doesn't respond to boss strength (sweep proof
   in the retune spec §1.2/§3.1).

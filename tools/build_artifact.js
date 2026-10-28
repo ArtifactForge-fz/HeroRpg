@@ -20,7 +20,7 @@ const firstScript = indexHtml.indexOf('<script', bodyStart);
 const shell = indexHtml.slice(bodyStart, firstScript).trim();
 
 // Script order from index.html
-const order = [...indexHtml.matchAll(/<script src="([^"]+)"><\/script>/g)].map(m => m[1]);
+const order = [...indexHtml.matchAll(/<script src="([^"]+)"><\/script>/g)].map(m => m[1].split('?')[0]); // drop the ?v= cache-buster
 if (order.length < 20) throw new Error('unexpected script count: ' + order.length);
 
 // Inline boot script (the <script> block with no src)

@@ -52,7 +52,11 @@ Game.Data.areas = [
       { type: 'synthesis' },
       { type: 'inn' },
       { type: 'vault' },
-      { type: 'academy' },
+      // v1.13 per-town curricula (js/balance.js ACADEMY_SKILLREQ_CAP): `specialty` is FLAVOUR ONLY
+      // -- the hard gate is the skillReq cap. A town's home schools are listed first in the
+      // Academy panel and named in its blurb; every school within the cap is still taught here,
+      // so a build can never be walled by standing in the 'wrong' town.
+      { type: 'academy', specialty: [], specialtyLabel: 'The Royal Academy: the founding curriculum, every discipline at its first rank.' },
       { type: 'shrine' },
       // archived: New_Player_Guide.md §5.1.5 "Tavern" (quests); Recent_Updates.md 2007-05-15
       // "Added a new quest to the tavern in Eldor" and 2007-05-08 "A new quest in Eldor is
@@ -140,7 +144,8 @@ Game.Data.areas = [
       },
       { type: 'inn' },
       { type: 'vault' },
-      { type: 'academy' },
+      { type: 'academy', specialty: ['Knives', 'Thievery', 'Dodge', 'Light Armor'],
+        specialtyLabel: 'Frontier drill-yard: the quick, quiet trades a border village lives by.' },
       { type: 'tavern' }
     ],
     desc: 'A frontier village on the edge of the Forests of Kuraan, known for stocking pricier goods than Eldor’s market.'
@@ -302,7 +307,8 @@ Game.Data.areas = [
       { type: 'vault' },
       // archived: Arkan.md "battlemages reinforce the front with white and black magic derived
       // from the study of runes" — Saratus's Academy trains the Arkan magic tradition.
-      { type: 'academy' },
+      { type: 'academy', specialty: ['Evocation', 'Abjuration', 'Conjuration', 'Absorption', 'Alteration', 'Rods'],
+        specialtyLabel: 'The Arkan battlemage academy: every arcane school, taught openly (Arkan.md).' },
       // archived: DESIGN.md §6 facility list includes Spirit Shrine at any major city; the
       // Arkan magic-and-technology capital is a natural second Shrine site. NO synthesis here —
       // Synthesis Shop stays Eldor-exclusive (DESIGN.md §6, archived: "Synthesis Shop is now open
@@ -463,7 +469,8 @@ Game.Data.areas = [
       // archived: Arkan.md battlemage/rune-study tradition already trains at Saratus's own
       // Academy; this forward camp offers the same Training-Points-for-techs service (New
       // Vault or Spirit Shrine this far out — those stay Eldor/Saratus-exclusive per DESIGN.md §6).
-      { type: 'academy' },
+      { type: 'academy', specialty: ['Swords', 'Polearms', 'Shields', 'Heavy Armor', 'Medium Armor'],
+        specialtyLabel: 'Academy proctors drilling the Vanguard: arms, shields and plate.' },
       // v1.7 Phase Q (docs/SPEC-V1.7-CONTENT-UX.md §2) [invented]: an ENABLER, not archived —
       // quests were front-loaded in Eldor with no L26-40 hub of their own; a Tavern here lets the
       // camp host the L26-33 band's quest-givers (kastengard_investigation, trials_of_eldor,
@@ -584,7 +591,8 @@ Game.Data.areas = [
       },
       { type: 'inn' },
       { type: 'vault' },
-      { type: 'academy' },
+      { type: 'academy', specialty: ['Hand to Hand', 'Dual Wield', 'Double Attack', 'Alteration'],
+        specialtyLabel: "The reclamation column's own instructors: close work, two blades, and the shaping arts." },
       // archived: New_Player_Guide.md §5.1.5 "Tavern" (quest source) — the camp's own quest-giver
       // location, mirroring every other quest-giving settlement (Eldor/Ju`Mak/Saratus/Laik).
       { type: 'tavern' }
@@ -756,7 +764,8 @@ Game.Data.areas = [
       },
       { type: 'inn' },
       { type: 'vault' },
-      { type: 'academy' },
+      { type: 'academy', specialty: ['Abjuration', 'Absorption', 'Heavy Armor', 'Swords'],
+        specialtyLabel: 'Holding the line at the ice-fields: wards, endurance, and the long guard.' },
       // archived: Anima_Shards.md / Cursed.md Spirit Shrine services — Frosthold is the first
       // Level-Arc settlement to carry one (Kuraan Reclamation Camp did not), matching the
       // per-band brief's facility list for the 61-90 range's waystation.
@@ -938,7 +947,8 @@ Game.Data.areas = [
       },
       { type: 'inn' },
       { type: 'vault' },
-      { type: 'academy' },
+      { type: 'academy', specialty: ['Evocation', 'Conjuration', 'Rods', 'Alteration'],
+        specialtyLabel: "The Society of Modern Magic's last logistics corps: the master ranks, taught nowhere else." },
       { type: 'shrine' },
       { type: 'tavern' }
     ],

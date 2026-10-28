@@ -144,6 +144,24 @@ guardAssert(
     'save format.'
 );
 
+// ---- 2b. ?v= cache-busters <-> changelog[0].version ----
+// The live site has no build step and the host sends no cache headers, so browsers heuristically
+// cache js/css for days. A release that changes several modules then runs as a mix of cached-old
+// and fresh-new scripts and dies at boot (happened at the v1.13.0 deploy). Every local script and
+// stylesheet URL in the deployed pages carries ?v=<release>; this fails until a release bumps them.
+var cacheBustVersion = changelogTop.version.replace(/^v/, '');
+['index.html', 'wiki.html', 'changelog.html'].forEach(function (page) {
+  var html = fs.readFileSync(path.join(base, '..', page), 'utf8');
+  var refs = html.match(/(?:<script src|<link rel="stylesheet" href)="(?:js|css)\/[^"]*"/g) || [];
+  guardAssert(refs.length > 0, page + ': found no local script/stylesheet references');
+  refs.forEach(function (ref) {
+    guardAssert(
+      ref.indexOf('?v=' + cacheBustVersion + '"') !== -1,
+      page + ': ' + ref + ' must end in ?v=' + cacheBustVersion + ' (bump every cache-buster on release)'
+    );
+  });
+});
+
 // ---- 3. Structural sanity of the changelog ----
 guardAssert(
   Array.isArray(Game.Data.changelog) && Game.Data.changelog.length > 0,

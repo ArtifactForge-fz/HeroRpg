@@ -1199,6 +1199,10 @@ assert(resWithdrawItemNoVault.ok === false && /Vault/.test(resWithdrawItemNoVaul
 console.log('\n=== Test 7: Academy chain gating (Firebolt II requires Firebolt I + Evocation skillReq) ===');
 var c7 = makeCharacter({ skills: { 'Evocation': 3 }, name: 'AcademyTest' });
 c7.trainingPoints = 10;
+// v1.13 (per-town Academy curricula, js/balance.js ACADEMY_SKILLREQ_CAP): rank II (skillReq 8) is
+// taught at Ju`Mak Village, not in the starting city. This block tests CHAIN gating, so it stands
+// in a town whose curriculum carries the rank; the curriculum gate itself is tests/test_academy.js.
+c7.currentLocation = 'jumak_village';
 assert(c7.techs.indexOf('tech_firebolt_1') !== -1, 'sanity: Firebolt I known via starter tech');
 var check7a = Game.World.canLearn(c7, Game.Battle.getTech('tech_firebolt_2'));
 assert(check7a.ok === false, 'Firebolt II blocked: Evocation skill too low (' + check7a.failures.join(' ') + ')');
@@ -1232,6 +1236,9 @@ assert(res7c.ok === false && /Academy/.test(res7c.message), 'no Academy in hunti
 console.log('\n=== Test 7b: weapon-tech chain gating (Cleave II requires Cleave I + Swords 6) ===');
 var c7d = makeCharacter({ skills: { 'Swords': 3 }, name: 'WeaponChainTest' });
 c7d.trainingPoints = 10;
+// v1.13: Cleave II (skillReq 6) -> Ju`Mak Village; Cleave III (skillReq 12) -> Saratus. Same
+// reasoning as Test 7 above — chain gating under test, curriculum gate covered in test_academy.js.
+c7d.currentLocation = 'jumak_village';
 assert(c7d.techs.indexOf('tech_cleave_1') !== -1, 'sanity: Cleave I known via starter tech');
 var check7d = Game.World.canLearn(c7d, Game.Battle.getTech('tech_cleave_2'));
 assert(check7d.ok === false, 'Cleave II blocked: Swords skill too low (' + check7d.failures.join(' ') + ')');
@@ -1249,6 +1256,7 @@ assert(c7d.trainingPoints === tpBefore7d - Game.Battle.getTech('tech_cleave_2').
 var check7f = Game.World.canLearn(c7d, Game.Battle.getTech('tech_cleave_3'));
 assert(check7f.ok === false, 'Cleave III blocked: Swords skill (6) below skillReq 12: ' + check7f.failures.join(' '));
 c7d.skills['Swords'].level = 12;
+c7d.currentLocation = 'saratus'; // v1.13: rank III's curriculum town
 var check7g = Game.World.canLearn(c7d, Game.Battle.getTech('tech_cleave_3'));
 assert(check7g.ok === true, 'Cleave III learnable once Swords >= 12 and Cleave II known');
 

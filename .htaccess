@@ -1,0 +1,10 @@
+# Deployed by tools/deploy.sh. Pages, scripts and styles must be revalidated on every load:
+# without this the host sends no cache headers, browsers cache them heuristically for days,
+# and after a release the game boots on a mix of old and new modules (blank screen).
+# 'no-cache' still allows a cheap 304 when a file hasn't changed. IfModule guards keep a host
+# without mod_headers from turning this file into a 500.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|js|css)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>

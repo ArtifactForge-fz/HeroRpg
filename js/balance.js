@@ -715,6 +715,46 @@ var BALANCE = {
 
   BURN_TURNS: 2,
 
+  // ---------------- v1.13: per-town Academy curricula ----------------
+  // [invented] (user-directed 2026-07-26: "skills/techs should also be separated over the
+  // different towns -- e.g. Starspark 3 is quite late, and does not need to be learnable in the
+  // starting city"). The archived model gives the two gates we already implement -- reach a skill
+  // level, then "visit a 'trainer' to learn the next spell in the chain" (site/homepage_2007.md)
+  // -- and states that "MOST towns have an Academy from which you can learn techniques"
+  // (manual/Techniques.md), but never records WHICH techs a given town taught. Splitting the
+  // curriculum across towns is therefore invented in the original's spirit, and it restores the
+  // stated intent of that news post: "we can easily change the levels at which spells can be
+  // learned", i.e. rank availability is a progression lever, not a flat list.
+  //
+  // Each academy town teaches every tech whose `skillReq` is <= its cap. The caps are NOT new
+  // numbers: each is the highest skillReq step that the shipped chain tables already place at or
+  // below that town's own `minLevel` gate (js/data/areas.js), so the curriculum ladder is just the
+  // existing skillReq ladder projected onto the existing town ladder. Nothing is re-tuned, and no
+  // combat math is touched -- this gates WHERE a tech is bought, never what it does, so no
+  // /balance-sim gate is owed (progression pacing only; see docs/DESIGN.md §5).
+  //
+  //   town (minLevel)          cap   9-rank chains    4-rank chains
+  //   eldor (0)                  5   I                I
+  //   jumak_village (6)         10   II               II
+  //   saratus (14)              12   III              --
+  //   kastengard (26)           25   IV               III
+  //   kuraan (44)               45   V, VI            IV
+  //   frosthold (65)            60   VII, VIII        --
+  //   skyspire_landing (85)     70   IX               --
+  //
+  // An academy town MISSING from this table teaches everything (fail-open), so adding a town can
+  // never silently strand a tech; tests/test_academy.js asserts every academy town is listed AND
+  // that every academy-learnable tech is taught somewhere.
+  ACADEMY_SKILLREQ_CAP: {
+    eldor: 5,
+    jumak_village: 10,
+    saratus: 12,
+    kastengard_vanguard_camp: 25,
+    kuraan_reclamation_camp: 45,
+    frosthold_waystation: 60,
+    skyspire_landing: 70
+  },
+
   // ==================== Secondary Stats (docs/SPEC-SECONDARY-STATS.md) ====================
   // One aggregator, Game.Character.getSecondaryStat (§2.1): BASE + gear bonuses + class
   // bonusEffects + shrine buffs, clamped to CAP (spellPower uncapped). All constants below are

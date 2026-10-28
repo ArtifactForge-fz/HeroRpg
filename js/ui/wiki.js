@@ -512,6 +512,15 @@ Game.Wiki = (function () {
     return parts.join('; ') || '—';
   }
 
+  // v1.13 per-town curricula. The wiki runs on its own page with world.js loaded, so it reuses the
+  // same resolver the Academy panel does rather than duplicating the cap table.
+  function techAcademyText(tech) {
+    if (tech.monsterOnly || (tech.id || '').indexOf('mon_') === 0) return '—';
+    if (tech.classOnly) return 'Class ability';
+    var host = Game.World && Game.World.academyForTech ? Game.World.academyForTech(tech) : null;
+    return host ? host.name + ' (L' + host.minLevel + '+)' : '—';
+  }
+
   function renderTechsSection() {
     var chains = buildTechChains();
     var totalCount = (Game.Data.techs || []).length;
@@ -519,13 +528,17 @@ Game.Wiki = (function () {
     var box = filterBox('Filter techniques by name, chain, or skill...');
     wrap.appendChild(el('div', { class: 'panel mb8' }, [box]));
 
-    var t = table(['Chain', 'Name', 'Skill', 'Grade', 'Effect', 'Power', 'Details', 'Energy', 'Skill Req', 'Shard Cost', 'Class Only']);
+    var t = table(['Chain', 'Name', 'Taught at', 'Skill', 'Grade', 'Effect', 'Power', 'Details', 'Energy', 'Skill Req', 'Shard Cost', 'Class Only']);
     var entries = [];
     chains.forEach(function (group) {
       group.techs.forEach(function (tech) {
         var tr = el('tr', { title: tech.desc || '' }, [
           el('td', { class: 'tinyfont' }, [group.chain]),
           el('td', {}, [tech.name]),
+          // v1.13: which Academy sells this rank (js/balance.js ACADEMY_SKILLREQ_CAP). Monster-only
+          // and classOnly techs are never sold at an Academy, so they say so rather than naming a
+          // town that cannot actually teach them.
+          el('td', { class: 'tinyfont' }, [techAcademyText(tech)]),
           el('td', { class: 'tinyfont' }, [tech.skill || '']),
           el('td', { class: 'tinyfont' }, [tech.grade || '—']),
           el('td', { class: 'tinyfont' }, [tech.effect || '']),
