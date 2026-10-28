@@ -1,4 +1,4 @@
-// v1.10 exit test — per-town Academy curricula (js/balance.js ACADEMY_SKILLREQ_CAP, resolved by
+// v1.13 exit test — per-town Academy curricula (js/balance.js ACADEMY_SKILLREQ_CAP, resolved by
 // js/core/world.js academyCap/teachesTech/academyForTech, rendered by js/ui/screens.js's Academy
 // panel and wiki.js's "Taught at" column).
 //
@@ -189,7 +189,7 @@ assert(far.ok === false, 'Starspark IX is not learnable in Eldor');
 // ---------------------------------------------------------------------------
 console.log('\n=== Test 5: legacy saves ===');
 
-// A pre-v1.10 character could legitimately hold a rank bought in Eldor under the flat curriculum.
+// A pre-v1.13 character could legitimately hold a rank bought in Eldor under the flat curriculum.
 c.currentLocation = 'eldor';
 var known = Game.World.canLearn(c, techById('tech_starspark_3'));
 assert(known.ok === false && known.failures.join(' ').indexOf('Already known') !== -1,

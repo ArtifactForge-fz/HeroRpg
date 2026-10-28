@@ -1,6 +1,6 @@
 # SPEC — v1.2 "Living Skills, Full Classes, World Fill"
 
-**Status:** In progress (branch `v1.2-skills-classes-content`). Authored 2026-07-10 by the lead.
+**Status:** SHIPPED in v1.2 (Phases 1–4, last commit `4f4ffe9`, plus the icon pass). Authored 2026-07-10 by the lead.
 **Authority:** extends `docs/DESIGN.md`; every number tagged `[archived]`/`[invented]`/`[revised]`
 per Cardinal Rule 1. Implementation is delegated to Sonnet subagents per phase; the lead reviews
 each delivery (run all 10 suites, read risky modules, sim-check balance) before the next phase.

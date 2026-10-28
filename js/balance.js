@@ -88,9 +88,35 @@ var BALANCE = {
   // "Increases the possibility to Dodge"); numbers chosen so a naked level-1 has a small
   // baseline chance and a dedicated Dodge build can meaningfully avoid hits.
   DODGE_BASE: 0.02,
-  DODGE_PER_DEX: 0.004,
-  DODGE_PER_SKILL_LEVEL: 0.01,
+  // invented: docs/SPEC-ROGUE-BOSS-COST.md §2.1 — Dexterity dodge is a diminishing-returns curve,
+  // DEX_DODGE_MAX * Dex / (Dex + DEX_DODGE_HALF) (Dex 100 = half of the max), so Dex alone can never
+  // reach DODGE_CAP. Replaces the old linear DODGE_PER_DEX. [archived: Dexterity.md "Increases the
+  // possibility to Dodge" — still true, along a curve]
+  DEX_DODGE_MAX: 0.30, // invented: SPEC-ROGUE-BOSS-COST §2.1 (D5, sim-locked)
+  DEX_DODGE_HALF: 100, // invented: SPEC-ROGUE-BOSS-COST §2.1 (D5, sim-locked)
+  DODGE_PER_SKILL_LEVEL: 0.01, // invented: SPEC-ROGUE-BOSS-COST §2.1 — per-level MULTIPLIER on the Dexterity dodge term (x(1 + 0.01 * skill)); no longer a flat +1%/level
   DODGE_CAP: 0.5,
+  // invented: SPEC-ROGUE-BOSS-COST §2.3 — every boss's Dexterity (turn order), 5 * level + 10: a hero
+  // earns 5 stat points per level, so even an all-Dex hero of the boss's level can't out-speed it; ~2
+  // levels above can. Ties still go to the player. Used as `dexterity:` in js/data/monsters.js.
+  BOSS_DEXTERITY: function (level) { return 5 * level + 10; },
+  // invented: docs/SPEC-NONDEX-DEFENSE.md §2.1 — Bracing: Heavy/Medium Armor skill (per worn
+  // head/body/legs/feet piece, /4) x (1 + BRACE_PER_ENDURANCE * Endurance), capped, softens every
+  // monster hit that lands (after the penetration floor). [archived intent: reference/manual/
+  // Heavy_Armor.md "Affects the efficiency of your heavy armor"; reference/manual/Endurance.md
+  // "Increases the damage reduction ability of your armor" — the archive gives no formula]
+  BRACE_PER_ARMOR_SKILL_LEVEL: 0.01, // invented: SPEC-NONDEX-DEFENSE §2.1 (D1) — the same 1%/level the Dodge skill used to give everyone
+  BRACE_PER_ENDURANCE: 0.002, // invented: SPEC-NONDEX-DEFENSE §2.1 (D5, variant E1) — +20% brace at 100 Endurance
+  BRACE_CAP: 0.50, // invented: SPEC-NONDEX-DEFENSE §2.1 — same ceiling as DODGE_CAP
+  // invented: docs/SPEC-MONSTER-TECH-POWER.md §2 — monster techs scale with the monster
+  // (techPower = max(tech.power, round(F x monster.damage))), sim-locked in §3.1; 'signature' techs
+  // get SIGNATURE_TECH_MULT on top, boss basic attacks are cut, and graded techs count physical
+  // defenses at half.
+  MONSTER_TECH_DAMAGE_FRACTION: 1.00, // invented: SPEC-MONSTER-TECH-POWER §2.1 — F for regular monsters
+  BOSS_TECH_DAMAGE_FRACTION: 0.70, // invented: SPEC-MONSTER-TECH-POWER §2.1 — F for bosses (monster.boss)
+  BOSS_BASIC_ATTACK_MULT: 0.55, // invented: SPEC-MONSTER-TECH-POWER §2.2 — boss basic attack = round(0.55 x damage); bosses only
+  SIGNATURE_TECH_MULT: 1.3, // invented: SPEC-MONSTER-TECH-POWER §2.1 (D6) — extra multiplier for a tech marked signature: true (Red Moon's Judgment)
+  TECH_PHYSICAL_DEFENSE_SHARE: 0.5, // invented: SPEC-MONSTER-TECH-POWER §2.3 — vs graded techs: + share x Armor on Magic Armor, Bracing x share, Block chance x share
   // invented (Phase 7 balance pass): monsters use their own gentler dodge scaling. The Phase 3
   // stand-in (level x DODGE_PER_SKILL_LEVEL) reached 33-40% at endgame levels and stalled fights;
   // monsters now dodge like a modestly dexterous player, capped well below the player cap.
@@ -335,6 +361,11 @@ var BALANCE = {
   //    their HP, scaling from ~29% at L40 to ~56% at L100 -- "winnable but costly", per the archived
   //    difficulty contract, CLAUDE.md). F3 should tune each REAL 41-100 boss individually the same
   //    way the 1-40 bosses were (this is a starting ballpark, not a hard rule).
+  //    Boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2, invented, user-directed): the
+  //    premiums above are now the BASE each boss def multiplies. L40-L90 bosses: hp x1.25, damage
+  //    x1.3 on top of base + premium; L18 x1.25/x1.1, L25 x1.5/x1.3, L32 x1.75/x1.3, L100
+  //    x1.25/x1.1, L10 unchanged. Locked by a 300-trial sim so every lineage's cheapest class
+  //    option spends >= 35% of its HP bar per boss win (finale >= 45%), docs/SPEC-BOSS-COST-BAND.md.
   //
   // No new runtime constants are added for either note above: F1 authors no content, so there is
   // nothing yet to wire a real BALANCE.* formula into. F3 should re-derive/re-cite these when real
@@ -592,13 +623,15 @@ var BALANCE = {
   // LOCKED calc.
   SKILL_XP_PER_MON_LEVEL: 0.6,
 
-  // PG-2: class-XP award fractions (js/core/classes.js addClassXp) — primary and secondary no
-  // longer receive the FULL / HALF combat-XP amount outright; both are scaled down further so a
-  // class spans a meaningful slice of its tier band instead of unlocking in a handful of kills
-  // (the shipped curve let a tier-3 class fully unlock in ~2-3 kills — REVIEW-2026-07-16.md PG-2).
-  // Paired with the steepened classXpForLevel curve (js/core/classes.js). [revised], LOCKED calc.
-  CLASS_XP_FRACTION_PRIMARY: 0.5,
-  CLASS_XP_FRACTION_SECONDARY: 0.25,
+  // PG-2: class-XP award (js/core/classes.js addClassXp) — scaled down from the archived full/half
+  // combat-XP amounts so a class spans a meaningful slice of its tier band instead of unlocking in
+  // a handful of kills (the shipped curve let a tier-3 class fully unlock in ~2-3 kills —
+  // REVIEW-2026-07-16.md PG-2). Paired with the steepened classXpForLevel curve. [revised], LOCKED calc.
+  // [revised] v1.11 (docs/SPEC-CLASS-LINEAGE.md R8/D2): the old CLASS_XP_FRACTION_PRIMARY (0.5,
+  // value kept) is renamed CLASS_XP_POOL_FRACTION and becomes ONE shared pool per battle,
+  // floor(battleXp x 0.5), split evenly over the active classes not yet maxed;
+  // CLASS_XP_FRACTION_SECONDARY (0.25) is retired along with the Secondary slot.
+  CLASS_XP_POOL_FRACTION: 0.5,
 
   // ==================== v1.6 P3: Economy & Items (docs/SPEC-V1.6-REBALANCE.md §3/§6, EI-1..EI-7) ====================
   // Playtest triage: docs/REVIEW-2026-07-16.md.
@@ -668,7 +701,7 @@ var BALANCE = {
 
   BURN_TURNS: 2,
 
-  // ---------------- v1.10: per-town Academy curricula ----------------
+  // ---------------- v1.13: per-town Academy curricula ----------------
   // [invented] (user-directed 2026-07-26: "skills/techs should also be separated over the
   // different towns -- e.g. Starspark 3 is quite late, and does not need to be learnable in the
   // starting city"). The archived model gives the two gates we already implement -- reach a skill
@@ -706,6 +739,56 @@ var BALANCE = {
     kuraan_reclamation_camp: 45,
     frosthold_waystation: 60,
     skyspire_landing: 70
-  }
+  },
+
+  // ==================== Secondary Stats (docs/SPEC-SECONDARY-STATS.md) ====================
+  // One aggregator, Game.Character.getSecondaryStat (§2.1): BASE + gear bonuses + class
+  // bonusEffects + shrine buffs, clamped to CAP (spellPower uncapped). All constants below are
+  // [invented], sim-gated and LOCKED by the lead's P0 sim (docs/SPEC-SECONDARY-STATS.md §3.1,
+  // 2026-10-21) incl. the D8 Fear rule.
+
+  // Critical Strike Chance/Damage (§2.2): no crit mechanic survived the archive; D1 locked a 5%
+  // base chance at x1.5 damage. Resolves on the SAME three-way roll as the existing glancing
+  // blow (U3) — glancing / crit / normal — never a second rng() call.
+  CRIT_BASE_CHANCE: 0.05, // invented (docs/SPEC-SECONDARY-STATS.md §2.1/D1, LOCKED by the P0 sim §3.1)
+  CRIT_CHANCE_CAP: 0.50, // invented (docs/SPEC-SECONDARY-STATS.md §2.1, LOCKED by the P0 sim §3.1)
+  CRIT_BASE_DAMAGE: 0.50, // invented (docs/SPEC-SECONDARY-STATS.md §2.1/D1, LOCKED by the P0 sim §3.1)
+  CRIT_DAMAGE_CAP: 2.00, // invented (docs/SPEC-SECONDARY-STATS.md §2.1, LOCKED by the P0 sim §3.1)
+
+  // Accuracy (§2.3): flat reduction of monsterDodgeChance on player weapon actions (basic attacks,
+  // offhand swing, weapon techs). Not spells (Int hit check unchanged, D2). Cap matches
+  // MONSTER_DODGE_CAP, since Accuracy above that does nothing.
+  ACCURACY_CAP: 0.15, // invented (docs/SPEC-SECONDARY-STATS.md §2.3, LOCKED by the P0 sim §3.1)
+
+  // Armor Penetration (§2.4): stacks additively with a weapon tech's own armorPierce field,
+  // capped in total. Never touches Magic Armor.
+  ARMOR_PEN_CAP: 0.30, // invented (docs/SPEC-SECONDARY-STATS.md §2.1/§2.4, LOCKED by the P0 sim §3.1)
+  ARMOR_PEN_TOTAL_CAP: 0.75, // invented (docs/SPEC-SECONDARY-STATS.md §2.4, LOCKED by the P0 sim §3.1)
+
+  // Block Chance (§2.5): gives the archived Shields skill (reference/manual/Shields.md) a role
+  // besides Armor. Requires a Shields-skill offhand item; scales with the Shields skill level on
+  // top of the aggregated `block` stat. On a block, final damage is halved (floor 1), after
+  // mitigation/DAMAGE_PENETRATION_FLOOR and before Defend halving. Grants Shields skill XP per
+  // proc, same use-based pattern as DODGE_SKILL_XP_PER_PROC.
+  BLOCK_CAP: 0.35, // invented (docs/SPEC-SECONDARY-STATS.md §2.1/§2.5, LOCKED by the P0 sim §3.1)
+  BLOCK_PER_SKILL_LEVEL: 0.0015, // invented (docs/SPEC-SECONDARY-STATS.md §2.5, LOCKED by the P0 sim §3.1)
+  BLOCK_REDUCTION: 0.5, // invented (docs/SPEC-SECONDARY-STATS.md §2.5, LOCKED by the P0 sim §3.1)
+  BLOCK_SKILL_XP_PER_PROC: 1, // invented (docs/SPEC-SECONDARY-STATS.md §2.5, LOCKED by the P0 sim §3.1)
+
+  // Luck (§2.7): archived as a 2004-era concept (reference/forum/t-449.md, Nerevar, 11-26-2004 —
+  // "what kind of items you can Forage for and how much experience you get from battles");
+  // mechanics below are [invented] within that archived intent.
+  LUCK_CAP: 50, // invented (docs/SPEC-SECONDARY-STATS.md §2.1/§2.7, LOCKED by the P0 sim §3.1)
+  LUCK_FORAGE_PICK_PER_POINT: 0.01, // invented (docs/SPEC-SECONDARY-STATS.md §2.7, LOCKED by the P0 sim §3.1)
+  LUCK_XP_PER_POINT: 0.002, // invented (docs/SPEC-SECONDARY-STATS.md §2.7, LOCKED by the P0 sim §3.1)
+
+  // Fear interaction (D8, §2.1/§3.1): new secondary stats scale with fearMultiplier at 1-4 levels
+  // below the enemy, same as every other archived stat (reference/manual/Fear.md — "lower your
+  // stats by 10% for each level you are under an enemy's level"). At this many levels below they
+  // are suppressed to 0 instead, matching the archived XP/loot cutoff (BALANCE.
+  // XP_LOOT_CUTOFF_LEVELS). The RULE (Fear scales stats) is [archived]; the "suppress entirely at
+  // 5+" threshold is [invented] (D8) — the P0 sim found new stats ignoring Fear widened the
+  // 5-levels-down win rate above shipped levels; full suppression at 5+ restored it exactly.
+  SECONDARY_FEAR_SUPPRESS_LEVELS: 5
 };
 

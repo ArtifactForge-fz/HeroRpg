@@ -38,6 +38,7 @@ loadScript('data/techs.js');
 loadScript('data/areas.js');
 loadScript('data/recipes.js');
 loadScript('data/quests.js');
+loadScript('core/battle.js'); // v1.12 (SPEC-MONSTER-TECH-POWER): Game.Battle.monsterBasicPower for the monster table's Dmg column
 loadScript('ui/wiki.js');
 
 // Every data/ui file ends with `window.Game = Game;`, so the fully-populated object lives at

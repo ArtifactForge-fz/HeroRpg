@@ -158,7 +158,7 @@ assert(loaded.character.equipment && loaded.character.equipment.weapon === null,
 Game.state = loaded;
 Game.persist();
 var resaved = JSON.parse(localStorageStore['herorpg_save']);
-assert(resaved.version === 11, 'resaved payload is stamped CURRENT_VERSION 11 (v1.9 companion migration), got ' + resaved.version);
+assert(resaved.version === 12, 'resaved payload is stamped CURRENT_VERSION 12 (v1.9 companion migration), got ' + resaved.version);
 
 assert(loaded.character.ap === 0, 'v1 save migration adds ap:0 (v9->v10 step), got ' + loaded.character.ap);
 assert(loaded.character.companion === null, 'v1 save migration adds companion:null (v10->v11 step, full v1->v11 chain), got ' + JSON.stringify(loaded.character.companion));
@@ -189,7 +189,7 @@ assert(loadedV10.character.companion === null, 'v10->v11 migration adds companio
 Game.state = loadedV10;
 Game.persist();
 var resavedV10 = JSON.parse(localStorageStore['herorpg_save']);
-assert(resavedV10.version === 11, 'v10->v11 resave stamps CURRENT_VERSION 11, got ' + resavedV10.version);
+assert(resavedV10.version === 12, 'v10->v11 resave stamps CURRENT_VERSION 12, got ' + resavedV10.version);
 
 // ================= Test 3: level/stat requirement gating =================
 

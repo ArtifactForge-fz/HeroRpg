@@ -1,6 +1,6 @@
 # SPEC-V1.7-CONTENT-UX — quest arc, Arkan parity, destinations UI
 
-Status: **DRAFT — in progress.** Origin: user requests 2026-07-17 (post-v1.6): (1) quests are
+Status: **SHIPPED in v1.7.0** "The Traveler's Arc & the Reference Wiki" (release commit `91c8ec1`). Origin: user requests 2026-07-17 (post-v1.6): (1) quests are
 front-loaded in the first town — spread them into an arc across town taverns; (2) address the
 backlogged Arkan feedback; (3) a clearer destinations UI (cards, level ranges). User-gated scope
 decisions (2026-07-17): **full quest redistribution** (incl. class advancement), Arkan **A2** (new

@@ -1,8 +1,7 @@
-# Feature Spec A/B/C — combat depth batch (user-directed, IN FLIGHT)
+# Feature Spec A/B/C — combat depth batch (user-directed)
 
-Status: partially implemented, see CLAUDE.md "IN-FLIGHT WORK" for the verified done/missing
-split. These specs are the implementation authority; hand them (plus a fresh disk-state gap
-list) to the implementing agent in its spawn prompt.
+Status: **IMPLEMENTED** — A, B and C are all in the v1.0 baseline (`6fd327e`, save version 8).
+Kept as the design record for these features.
 
 ## A. Escape can fail (relative-power based)
 

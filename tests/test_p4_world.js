@@ -1198,7 +1198,7 @@ assert(resWithdrawItemNoVault.ok === false && /Vault/.test(resWithdrawItemNoVaul
 console.log('\n=== Test 7: Academy chain gating (Firebolt II requires Firebolt I + Evocation skillReq) ===');
 var c7 = makeCharacter({ skills: { 'Evocation': 3 }, name: 'AcademyTest' });
 c7.trainingPoints = 10;
-// v1.10 (per-town Academy curricula, js/balance.js ACADEMY_SKILLREQ_CAP): rank II (skillReq 8) is
+// v1.13 (per-town Academy curricula, js/balance.js ACADEMY_SKILLREQ_CAP): rank II (skillReq 8) is
 // taught at Ju`Mak Village, not in the starting city. This block tests CHAIN gating, so it stands
 // in a town whose curriculum carries the rank; the curriculum gate itself is tests/test_academy.js.
 c7.currentLocation = 'jumak_village';
@@ -1235,7 +1235,7 @@ assert(res7c.ok === false && /Academy/.test(res7c.message), 'no Academy in hunti
 console.log('\n=== Test 7b: weapon-tech chain gating (Cleave II requires Cleave I + Swords 6) ===');
 var c7d = makeCharacter({ skills: { 'Swords': 3 }, name: 'WeaponChainTest' });
 c7d.trainingPoints = 10;
-// v1.10: Cleave II (skillReq 6) -> Ju`Mak Village; Cleave III (skillReq 12) -> Saratus. Same
+// v1.13: Cleave II (skillReq 6) -> Ju`Mak Village; Cleave III (skillReq 12) -> Saratus. Same
 // reasoning as Test 7 above — chain gating under test, curriculum gate covered in test_academy.js.
 c7d.currentLocation = 'jumak_village';
 assert(c7d.techs.indexOf('tech_cleave_1') !== -1, 'sanity: Cleave I known via starter tech');
@@ -1255,7 +1255,7 @@ assert(c7d.trainingPoints === tpBefore7d - Game.Battle.getTech('tech_cleave_2').
 var check7f = Game.World.canLearn(c7d, Game.Battle.getTech('tech_cleave_3'));
 assert(check7f.ok === false, 'Cleave III blocked: Swords skill (6) below skillReq 12: ' + check7f.failures.join(' '));
 c7d.skills['Swords'].level = 12;
-c7d.currentLocation = 'saratus'; // v1.10: rank III's curriculum town
+c7d.currentLocation = 'saratus'; // v1.13: rank III's curriculum town
 var check7g = Game.World.canLearn(c7d, Game.Battle.getTech('tech_cleave_3'));
 assert(check7g.ok === true, 'Cleave III learnable once Swords >= 12 and Cleave II known');
 
@@ -1420,7 +1420,7 @@ assert(Array.isArray(loaded11.character.afflictions) && loaded11.character.affli
 Game.state = loaded11;
 Game.persist();
 var resaved11 = JSON.parse(localStorageStore['herorpg_save']);
-assert(resaved11.version === 11, 'resave stamps version 11 (v1.9 companion migration on top), got ' + resaved11.version);
+assert(resaved11.version === 12, 'resave stamps version 12 (v1.9 companion migration on top), got ' + resaved11.version);
 
 
 // v1 -> v4 chain (continues on through v8; the historical "v4" name in the label below refers to
@@ -1454,7 +1454,7 @@ assert(Array.isArray(loaded11b.character.afflictions) && loaded11b.character.aff
 assert(loaded11b.character.name === 'V3Timer', 'v7->v8 migration: identity intact');
 Game.state = loaded11b;
 Game.persist();
-assert(JSON.parse(localStorageStore['herorpg_save']).version === 11, 'v7->v11 resave stamps version 11');
+assert(JSON.parse(localStorageStore['herorpg_save']).version === 12, 'v7->v11 resave stamps version 12');
 
 
 // A v7 save that (hypothetically) already carried an afflictions array is left untouched (no
@@ -1710,8 +1710,10 @@ Game.Battle.flee();
 Game.Battle.endBattle();
 
 // =================== Test 16: Shrine buffs grown to ~20 (v1.2 Phase 3 Content-B item 3) ===================
-console.log('\n=== Test 16: Spirit Shrine buff roster grown from 5 to 20; a new buff\'s shrineBonus applies via the unchanged Game.World.shrineBonus ===');
-assert(Game.Data.shrine.length === 20, '20 shrine buffs defined (5 original + 15 v1.2 Phase 3 additions), got ' + Game.Data.shrine.length);
+console.log('\n=== Test 16: Spirit Shrine buff roster grown from 5 to 27; a new buff\'s shrineBonus applies via the unchanged Game.World.shrineBonus ===');
+// docs/SPEC-SECONDARY-STATS.md §2.10: 7 new buffs APPENDED after shrine_kings_ransom (20 -> 27) —
+// stale count updated, same roster-growth precedent as the v1.2 Phase 3 bump this test documents.
+assert(Game.Data.shrine.length === 27, '27 shrine buffs defined (20 prior + 7 docs/SPEC-SECONDARY-STATS.md §2.10 additions), got ' + Game.Data.shrine.length);
 ['armor', 'damage', 'dodge', 'magicArmor', 'goldPct'].forEach(function (effect) {
   var count = Game.Data.shrine.filter(function (b) { return b.effect === effect; }).length;
   assert(count === 4, 'exactly 4 buffs use the existing effect "' + effect + '" (1 original + 3 new), got ' + count);
@@ -1726,7 +1728,8 @@ var res16 = Game.World.buyBuff('shrine_shadowstep_grace');
 assert(res16.ok === true, 'buyBuff succeeds for a new v1.2 buff: ' + res16.message);
 assert(c16.animaShards === 100 - 35, 'shardCost (35) deducted for Shadowstep Grace');
 var dodgeAfter16 = Game.Battle.playerDodgeChance(c16);
-assert(Math.abs(dodgeAfter16 - dodgeBefore16 - 0.08) < 1e-9, 'Shadowstep Grace adds +8% Dodge via the existing shrineBonus hook: before ' + dodgeBefore16 + ', after ' + dodgeAfter16);
+// SPEC-ROGUE-BOSS-COST §2.2: the buff is now a multiplier (+20% on the Dexterity dodge term; DODGE_BASE stays flat), not a flat +8%.
+assert(Math.abs((dodgeAfter16 - BALANCE.DODGE_BASE) - (dodgeBefore16 - BALANCE.DODGE_BASE) * 1.20) < 1e-9, 'Shadowstep Grace makes dodge 20% more effective via the existing shrineBonus hook: before ' + dodgeBefore16 + ', after ' + dodgeAfter16);
 
 // A new goldPct buff also stacks additively with the original Fortune's Favor via the same hook.
 var c16b = makeCharacter({ name: 'StackedGoldBuffTest' });

@@ -41,8 +41,9 @@ Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's que
    prompt — scope additions sent mid-flight via messages arrive looking like prompt injection
    and get (correctly) refused. Review every delivery: run suites yourself, read the risky
    modules, sim-check balance claims. Never eyeball a balance number — sim it.
-5. **All test suites must pass before any work is called done** (15 as of v1.10 —
-   `test_academy.js` joined in v1.10, `test_companion.js` in v1.9, `test_v18_engine.js` and
+5. **All test suites must pass before any work is called done** (16 as of v1.13 —
+   `test_academy.js` joined in v1.13, `test_secondary_stats.js` in v1.10, `test_companion.js` in v1.9,
+   `test_v18_engine.js` and
    `test_reachability.js` in v1.8, `test_wiki.js` in v1.7):
    `cd tests && for t in test_*.js; do node $t; done` (each exits 0 on pass).
 
@@ -78,9 +79,15 @@ Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's que
 - Weapon tiers at levelReq 1 / 5–15 / 25 / 35, damage ≈ 3+2×levelReq. Uniques (tag 'unique'):
   monster-drop-only, +15–25% or hybrid stats, never in shops/recipes.
 - Any balance claim gets a scratchpad simulation using the real game code loaded in `node vm`
-  (see `tools/`-adjacent pattern in tests; prior sims measured win %, rounds, HP-left, and
-  damage-per-energy). Difficulty contract for bosses: prepared players win reliably but pay
-  (HP or consumables); at-level regulars ≥85–100% win; 5-level-down = certain death via Fear.
+  (see `tests/boss_fixture.js` and `/balance-sim`; sims measure win %, rounds, HP spent per win,
+  consumables and damage-per-energy). Difficulty contract: at-level regulars ≥85–100% win;
+  5-level-down = certain death via Fear; **bosses** (`docs/SPEC-BOSS-COST-BAND.md` §2, amended by
+  `docs/SPEC-BOSS-COST-RETUNE.md`), judged on the prepared fixture (best gear in every slot,
+  half-level skills, every passive, 6 heals + 6 Crystals): every lineage's weakest class option
+  wins ≥ 85% (finale ≥ 75%); its cheapest option spends ≥ 35% of the HP bar per win, heals
+  included, or ≥ 3 consumables (finale: ≥ 45% HP spent); no build spends > 50% of its stock.
+  Under-geared heroes are expected to lose boss fights. "HP left on win" is NOT a cost metric:
+  the heal-at-40% policy resets it, so it doesn't move with boss strength.
 
 ## Content conventions
 
@@ -108,7 +115,7 @@ Conjurer save cleanup, PR #1's missing spec) are the top of the next cycle's que
 
 ## Testing
 
-`tests/` (fakedom.js + 15 suites) is the source of truth; suites reference the game by absolute
+`tests/` (fakedom.js + 16 suites) is the source of truth; suites reference the game by absolute
 path so they run from anywhere. When a change breaks a hardcoded expectation (monster counts,
 save version), update the stale constant — never weaken a behavioral assertion. New mechanics
 need stubbed-RNG tests. fakedom quirk: dynamically created elements lack `.style` unless the

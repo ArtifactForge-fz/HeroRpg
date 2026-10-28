@@ -1,6 +1,6 @@
 # SPEC — v1.8 "The Expanded Curriculum": Tech Polarity Expansion + Reachability Fixes
 
-**Status:** DRAFT — awaiting user approval (lead, 2026-07-19). No sim run yet; P0 is the gate.
+**Status:** SHIPPED in v1.8.0 "The Expanded Curriculum" (release commit `1437353`; P0 gate `ec80ad6`; v1.8.1 feedback patch `7b12f29`).
 **Baseline:** branch `v1.7-content` at `1607411` (v1.7.0 complete; **not yet merged to `main`,
 not deployed — both remain user-gated and are independent of this spec**). v1.8 work branches
 from `v1.7-content` (or from `main` after the v1.7 merge, whichever the user does first).

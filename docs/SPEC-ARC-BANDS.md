@@ -15,6 +15,8 @@ NOTES block in `js/balance.js`) before implementing.
 - **Bosses/lairs**: flat hp/damage premiums + ×3 xp; the F1 sim's costly-but-winnable target is a
   damage premium ≈ `round(1.5·lvl + 10)` — tune each real boss toward "prepared player wins but
   pays HP/consumables; at-level regulars ≥85–100%; 5-down = death via Fear."
+  **Retuned 2026-10-23** (`docs/SPEC-BOSS-COST-RETUNE.md`): every Band A–E boss multiplies that
+  base by ×1.25 HP / ×1.3 damage; Eidas Ascendant ×1.25 / ×1.1.
 - **Weapon/armor tiers past band 35 MUST taper** (F1 finding — else the game trivializes by L100):
   author damage/armor off `effectiveLevelReq = 35 + 0.7·(levelReq−35)`, NOT the literal levelReq.
   So a levelReq-95 weapon carries damage ≈ 3+2·(35+0.7·60) ≈ 157, not 193. Uniques (tag 'unique'):

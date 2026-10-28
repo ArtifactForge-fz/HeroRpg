@@ -1,8 +1,8 @@
 # SPEC — Arkan Racial Differentiation (doorstep zone + quest/class parity)
 
-**Status: DRAFT — not started.** Pending lead (Fable) review + reference sign-off before
-implementation (cardinal rule 4: lead does specs; this draft was written at the user's direct
-request during triage). Targets a content-only release; **no save-version bump expected**
+**Status: SHIPPED in v1.7.0** (commit `a809a92`, v1.7 phase P-R; options A2 and B2 + bridge
+quests, per `docs/SPEC-V1.7-CONTENT-UX.md`). Drafted at the user's direct request during triage.
+Content-only release; **no save-version bump**
 (mirrors v1.2 Phase 3 Content-A — data-only, no persisted character field changes). Origin:
 user playtest feedback 2026-07-14 (an Arkan character finds their starting experience is a
 reduced copy of the Human one).

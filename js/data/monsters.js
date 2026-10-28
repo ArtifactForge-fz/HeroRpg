@@ -433,15 +433,16 @@ Game.Data.monsters = [
     name: 'Ruin Warden of the Estari',
     level: 10,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(10), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.4 P3 (G2) boss script (docs/SPEC-V1.4-GAMEPLAY.md §4): data-driven, one interpreter in
     // js/core/battle.js (runBossScript) — no per-boss code. MODEST per the §7 guardrail: fortify
-    // amount 2 is ~6% of this boss's own damage stat (33), well under the ~15% ceiling.
+    // amount 2 is ~7% of this boss's own damage stat (28), well under the ~15% ceiling.
     script: [
       { atHpFrac: 0.5, effect: 'fortify', amount: 2, log: "The Ruin Warden's stone core flares — its hide hardens like fresh-poured rock!" }
     ],
     hp: 20 + 12 * 10 + 120, // invented: boss gets a flat HP premium over the regular-monster ballpark
     energy: 140, // invented: 40 + 10*level (retuned at Phase 3 milestone gate; see BALANCE.MONSTER_ATTACK_ENERGY_COST)
-    damage: 3 + 2 * 10 + 10, // invented: boss gets a flat damage premium
+    damage: 3 + 2 * 10 + 5, // invented: boss gets a flat damage premium — +5 (was +10, 33 -> 28): docs/SPEC-NONDEX-DEFENSE.md §2.2 (keeps the L10 caster boss cell over 85% under the new dodge model)
     armor: 12,
     magicArmor: 12,
     element: 'Dark',
@@ -722,7 +723,8 @@ Game.Data.monsters = [
       { itemId: 'medium_legs_foothills_greaves', chance: 0.05 },
       { itemId: 'potion_greater_healing', chance: 0.1 }
     ],
-    desc: 'A shaggy, thick-horned ram that charges downslope from the mountain wall no Human or Arkan has ever crossed (Averast.md).'
+    // archived: reference/manual/Averast.md
+    desc: 'A shaggy, thick-horned ram that charges downslope from the mountain wall no Human or Arkan has ever crossed.'
   },
 
   // ---------- Level 14 ----------
@@ -841,6 +843,7 @@ Game.Data.monsters = [
     name: 'Matriarch of the High Camp',
     level: 18,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(18), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): telegraph archetype — a pack
     // matriarch winding up a heavy blow is an apt thematic fit for the first real "watch the
     // wind-up" boss lesson. `behavior` (per-turn action choice) is independent of `script` below
@@ -851,9 +854,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.4, effect: 'enrage', amount: 1.12, log: 'The Matriarch throws back her head and howls — the whole pack answers, and she strikes harder!' }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 18 + 12 * 18, // invented: boss flat HP premium, ~12*level pattern
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 18 + 12 * 18)), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 565. Base premium: invented: boss flat HP premium, ~12*level pattern
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 18,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 18 + 12, // invented: boss flat damage premium
+    damage: Math.round(1.1 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 18 + 12)), // invented: x1.1 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 56. Base premium: invented: boss flat damage premium
     armor: 16,
     magicArmor: 10,
     element: 'Wind',
@@ -897,7 +900,8 @@ Game.Data.monsters = [
       // Phase 9: unique equipment (js/data/items.js). Appended last so prior loot rates are unchanged.
       { itemId: 'polearm_tidewalkers_harpoon', chance: 0.008 }
     ],
-    desc: 'A brine-slick predator that stalks the tideline of the isle\'s small human settlements (Averast.md), never straying far from the surf.'
+    // archived: reference/manual/Averast.md
+    desc: 'A brine-slick predator that stalks the tideline of the isle\'s small human settlements, never straying far from the surf.'
   },
 
   // ---------- Level 20 ----------
@@ -1026,6 +1030,7 @@ Game.Data.monsters = [
     name: 'The Juneros Leviathan',
     level: 25,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(25), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): enrage archetype — a brutish
     // beast boss (boss-lite death-throes escalation) fits a Leviathan better than a magic-flavored
     // caster. `behavior` and `script` are independent and both fire (see foothills_matriarch's
@@ -1036,9 +1041,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.5, effect: 'heal', amount: 0.10, log: 'The Leviathan dives beneath the shoal — the deep water knits its wounds!' }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 25 + 12 * 25,
+    hp: Math.round(1.5 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 25 + 12 * 25)), // invented: x1.5 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 930.
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 25,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 25 + 14,
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 25 + 14)), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 87.
     armor: 22,
     magicArmor: 16,
     element: 'Water',
@@ -1195,6 +1200,7 @@ Game.Data.monsters = [
     name: 'The Kastengard Custodian',
     level: 32,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(32), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): telegraph archetype — a sentry
     // construct visibly powering up before it strikes, same thematic fit as the regular Kastengard
     // Wardframe (js/data/monsters.js L26) sharing this flavor. `behavior` and `script` are
@@ -1206,9 +1212,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.5, effect: 'fortify', amount: 6, log: "The Custodian's runic wardplate reroutes power to its outer shell!" }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 32 + 12 * 32,
+    hp: Math.round(1.75 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 32 + 12 * 32)), // invented: x1.75 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 1379.
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 32,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 32 + 16,
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 32 + 16)), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 108.
     armor: 30,
     magicArmor: 24,
     element: 'Star',
@@ -1346,6 +1352,7 @@ Game.Data.monsters = [
     name: "Eidas' Echo",
     level: 40,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(40), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
     // empirically reverted. An earlier pass assigned 'enrage' here, but a real-RNG re-sim
     // (tests/test_p6b_content.js Part 4, "eidas_echo simulated beats-check") showed a charged
@@ -1364,9 +1371,9 @@ Game.Data.monsters = [
       { atHpFrac: 0.6, effect: 'heal', amount: 0.10, log: 'The projection flickers and steadies — anima knits its edges whole again.' },
       { atHpFrac: 0.25, effect: 'enrage', amount: 1.15, log: "Faced with its own unmaking, the echo's light burns cold and furious." }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 40 + 12 * 40, // invented: boss flat HP premium, ~12*level pattern (matches estari_ruin_warden's +120 at level 10)
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 40 + 12 * 40)), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 1225. Base premium: invented: boss flat HP premium, ~12*level pattern (matches estari_ruin_warden's +120 at level 10)
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 40,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 40 + 45, // invented: boss flat damage premium — raised at the Phase 7 balance pass (was +20): after the monster-dodge and weapon-tier fixes, a rested level-40 warrior won 100% barely scratched; the final boss must land meaningful hits through ~90 endgame Armor
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 40 + 45)), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 166. Base premium: invented: boss flat damage premium — raised at the Phase 7 balance pass (was +20): after the monster-dodge and weapon-tier fixes, a rested level-40 warrior won 100% barely scratched; the final boss must land meaningful hits through ~90 endgame Armor
     armor: 34,
     magicArmor: 34,
     element: 'Dark',
@@ -1610,6 +1617,7 @@ Game.Data.monsters = [
     name: 'The Majiku Warlord',
     level: 50,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(50), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
     // empirically reverted. An earlier pass assigned 'telegraph' here, but the real-RNG re-sim
     // (tests/test_p3_battle.js Test 32) collapsed from 87% win rate to 14-20% (floor is >=60%): a
@@ -1624,9 +1632,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.5, effect: 'enrage', amount: 1.15, log: 'The Warlord roars for a killing blow, and his war-camp answers with him!' }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 50 + 12 * 50, // 620 + 600 = 1220
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 50 + 12 * 50)), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 1525. Base premium: 620 + 600 = 1220
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 50,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 50 + Math.round(1.5 * 50 + 10), // 103 + 85 = 188
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 50 + Math.round(1.5 * 50 + 10))), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 244. Base premium: 103 + 85 = 188
     armor: 46,
     magicArmor: 44,
     element: 'Dark',
@@ -1831,6 +1839,7 @@ Game.Data.monsters = [
     name: 'The Majiku Ridge-Chieftain',
     level: 60,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(60), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
     // empirically reverted (same real-RNG win-rate-floor collapse documented on majiku_warlord's
     // and eidas_echo's entries in this file, tests/test_p3_battle.js Test 35); left without a P3
@@ -1842,9 +1851,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.5, effect: 'fortify', amount: 16, log: "The Chieftain plants his standard — the host's shieldwall closes around him!" }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 60 + 12 * 60, // 740 + 720 = 1460
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 60 + 12 * 60)), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 1825. Base premium: 740 + 720 = 1460
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 60,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 60 + Math.round(1.5 * 60 + 10), // 123 + 100 = 223
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 60 + Math.round(1.5 * 60 + 10))), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 290. Base premium: 123 + 100 = 223
     armor: 52,
     magicArmor: 50,
     element: 'Dark',
@@ -2049,6 +2058,7 @@ Game.Data.monsters = [
     name: 'The Ukai Deep-Dweller',
     level: 70,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(70), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
     // empirically reverted (same real-RNG win-rate-floor collapse documented on majiku_warlord's
     // and eidas_echo's entries in this file, tests/test_p3_battle.js Test 38); left without a P3
@@ -2060,9 +2070,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.5, effect: 'heal', amount: 0.10, log: 'The Deep-Dweller presses flat against the cavern wall, and the old stone feeds it strength.' }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 70 + 12 * 70, // 860 + 840 = 1700
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 70 + 12 * 70)), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 2125. Base premium: 860 + 840 = 1700
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 70,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 70 + Math.round(1.5 * 70 + 10), // 143 + 115 = 258
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 70 + Math.round(1.5 * 70 + 10))), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 335. Base premium: 143 + 115 = 258
     armor: 58,
     magicArmor: 56,
     element: 'Dark',
@@ -2276,6 +2286,7 @@ Game.Data.monsters = [
     name: 'Estari Warden-Prime',
     level: 80,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(80), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
     // empirically reverted (same real-RNG win-rate-floor collapse documented on majiku_warlord's
     // and eidas_echo's entries in this file, tests/test_p3_battle.js Test 41); left without a P3
@@ -2287,9 +2298,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.5, effect: 'fortify', amount: 21, log: 'The Warden-Prime channels the Wellspring itself through its wardframe!' }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 80 + 12 * 80, // 980 + 960 = 1940
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 80 + 12 * 80)), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 2425. Base premium: 980 + 960 = 1940
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 80,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 80 + Math.round(1.5 * 80 + 10), // 163 + 130 = 293
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 80 + Math.round(1.5 * 80 + 10))), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 381. Base premium: 163 + 130 = 293
     armor: 60,
     magicArmor: 58,
     element: 'Dark',
@@ -2509,6 +2520,7 @@ Game.Data.monsters = [
     name: 'Society Anima-Horror',
     level: 90,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(90), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
     // empirically reverted (same real-RNG win-rate-floor collapse documented on majiku_warlord's
     // and eidas_echo's entries in this file, tests/test_p3_battle.js Test 44); left without a P3
@@ -2520,9 +2532,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.4, effect: 'enrage', amount: 1.12, log: "The Horror's hunger sharpens to a single point — it lashes out harder!" }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 90 + 12 * 90, // 1100 + 1080 = 2180
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 90 + 12 * 90)), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 2725. Base premium: 1100 + 1080 = 2180
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 90,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 90 + Math.round(1.5 * 90 + 10), // 183 + 145 = 328
+    damage: Math.round(1.3 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 90 + Math.round(1.5 * 90 + 10))), // invented: x1.3 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 426. Base premium: 183 + 145 = 328
     armor: 62,
     magicArmor: 60,
     element: 'Dark',
@@ -2761,6 +2773,7 @@ Game.Data.monsters = [
     name: 'Eidas Ascendant',
     level: 100,
     boss: true,
+    dexterity: BALANCE.BOSS_DEXTERITY(100), // invented: SPEC-ROGUE-BOSS-COST §2.3
     // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §5, boss integration): NO behavior assigned —
     // empirically reverted. This fight is ALREADY the game's costliest by design (header comment
     // above) with the least win-rate headroom of any boss; the same real-RNG collapse documented
@@ -2777,9 +2790,9 @@ Game.Data.monsters = [
     script: [
       { atHpFrac: 0.5, effect: 'curse', amount: 0, log: 'Ascendant Eidas turns his gaze upon you, and the unfinished weight of a divine race settles over your soul.' }
     ],
-    hp: BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 100 + Math.round(12 * 100 * 1.4), // 1220 + 1680 = 2900
+    hp: Math.round(1.25 * (BALANCE.MONSTER_HP_BASE + BALANCE.MONSTER_HP_PER_LEVEL * 100 + Math.round(12 * 100 * 1.4))), // invented: x1.25 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 3625. Base premium: 1220 + 1680 = 2900
     energy: BALANCE.MONSTER_ENERGY_BASE + BALANCE.MONSTER_ENERGY_PER_LEVEL * 100,
-    damage: BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 100 + Math.round(1.5 * 100 + 10), // 203 + 160 = 363
+    damage: Math.round(1.1 * (BALANCE.MONSTER_DAMAGE_BASE + BALANCE.MONSTER_DAMAGE_PER_LEVEL * 100 + Math.round(1.5 * 100 + 10))), // invented: x1.1 boss cost retune (docs/SPEC-BOSS-COST-RETUNE.md §2.2) = 399. Base premium: 203 + 160 = 363
     armor: 64,
     magicArmor: 62,
     element: 'Star',

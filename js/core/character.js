@@ -100,12 +100,15 @@ Game.Character = (function () {
 
       // Phase 6a: class system (DESIGN.md §3; reference/manual/Classes.md). classes maps
       // classId -> per-class progress for every OBTAINED class (obtained != active — a class
-      // must additionally be slotted into primaryClass/secondaryClass to earn XP or use its
+      // must additionally be in the lineage or the Legendary slot to earn XP or use its
       // abilities). legendaryUnlocked is a one-per-save latch (archived: Legendary classes "may
       // only be obtained by one player" — single-player reinterpretation, DESIGN.md §3).
       classes: {}, // classId -> { classXp: 0, classLevelsEarned: 0, classLevelsSpent: 0, abilities: [] }
-      primaryClass: null,
-      secondaryClass: null,
+      // [revised] v1.11 Hero Tree (docs/SPEC-CLASS-LINEAGE.md section 2.1, save v12): replaces the
+      // old primaryClass/secondaryClass slots. lineage = the permanent tier 1/2/3 classes (set by
+      // Game.Classes.obtainClass, never cleared); legendaryClass = the one optional Legendary slot.
+      lineage: { tier1: null, tier2: null, tier3: null },
+      legendaryClass: null,
       legendaryUnlocked: false,
 
       // Feature B (user-directed): persistent status conditions, save v7->v8 (js/core/save.js).
@@ -257,9 +260,9 @@ Game.Character = (function () {
     // 2007-05-25); see BALANCE.ENERGY_PER_LEVEL for the Phase 7 balance-pass rationale.
     c.energyMax = BALANCE.START_ENERGY + (c.level - 1) * BALANCE.ENERGY_PER_LEVEL + classEnergyBonus;
     // v1.3.1 fix 6: recalcDerived only ever adjusted the maxes, never clamped current hitPoints/
-    // energy down to match — deactivating a class (or swapping a slot) that carried an
+    // energy down to match — swapping out a Legendary that carried an
     // hp_max_flat/energy_max_flat passive could leave current HP/Energy ABOVE the new, lower max
-    // (e.g. full HP at the bonus, then deactivate -> hitPointsMax drops but hitPoints does not).
+    // (e.g. full HP at the bonus, then swap it out -> hitPointsMax drops but hitPoints does not).
     // Callers that intentionally set current to the (old, higher) max right after calling this
     // (create(), spendStatPoint's vitality branch) are unaffected: they either raise the max first
     // or already re-clamp their own way.
@@ -335,6 +338,51 @@ Game.Character = (function () {
     // [revised] v1.6 P1 (CB-1/CB-5, SPEC-V1.6-REBALANCE.md §6): symmetric with getArmor above —
     // also trims the CB-5 "Intelligence does everything" overload a notch. LOCKED by the P0 sim gate.
     return Math.round(c.intelligence * BALANCE.INT_MAGIC_ARMOR_RATIO) + equipped + shrineBonus + classFlat;
+  }
+
+  // ---------------- Secondary stats (docs/SPEC-SECONDARY-STATS.md §2.1) ----------------
+
+  var SECONDARY_BASE = { critChance: BALANCE.CRIT_BASE_CHANCE, critDamage: BALANCE.CRIT_BASE_DAMAGE, accuracy: 0, armorPen: 0, block: 0, spellPower: 0, luck: 0 };
+  var SECONDARY_CAP = { critChance: 'CRIT_CHANCE_CAP', critDamage: 'CRIT_DAMAGE_CAP', accuracy: 'ACCURACY_CAP', armorPen: 'ARMOR_PEN_CAP', block: 'BLOCK_CAP', luck: 'LUCK_CAP' }; // spellPower is uncapped
+  var SECONDARY_CLASS_EFFECT = {
+    critChance: 'crit_chance_flat', critDamage: 'crit_damage_flat', accuracy: 'accuracy_flat',
+    armorPen: 'armor_pen_flat', block: 'block_flat', spellPower: 'spell_power_flat', luck: 'luck_flat'
+  };
+
+  // One aggregator so every secondary stat reads the same way (§2.1): BASE[key] + every equipped
+  // item's bonuses[key] (all 6 EQUIP_SLOTS) + Game.Classes.classBonus (active lineage + Legendary) +
+  // Game.World.shrineBonus, clamped to CAP[key] (spellPower has no cap). This is the UNSCALED
+  // value — battle.js applies Fear scaling/suppression on top of this inside a battle (§2.1 Fear
+  // bullet, D8); outside battle (e.g. the Status screen) this unscaled value is shown directly.
+  function getSecondaryStat(c, key) {
+    var base = SECONDARY_BASE[key];
+    if (base === undefined) return 0;
+    var total = base;
+    if (Game.Inventory && Game.Inventory.EQUIP_SLOTS) {
+      var slots = Game.Inventory.EQUIP_SLOTS;
+      for (var i = 0; i < slots.length; i++) {
+        var itemId = c.equipment && c.equipment[slots[i]];
+        if (!itemId) continue;
+        var item = Game.Inventory.getItem(itemId);
+        if (item && item.bonuses && item.bonuses[key]) total += item.bonuses[key];
+      }
+    }
+    if (Game.Classes && Game.Classes.classBonus) total += Game.Classes.classBonus(c, SECONDARY_CLASS_EFFECT[key]);
+    if (Game.World && Game.World.shrineBonus) total += Game.World.shrineBonus(c, key);
+    var capName = SECONDARY_CAP[key];
+    if (capName && BALANCE[capName] !== undefined) total = Math.min(BALANCE[capName], total);
+    return total;
+  }
+
+  // Shield-gated block chance (§2.5): 0 unless the offhand item's skill is 'Shields'; otherwise
+  // the aggregated `block` stat plus the Shields skill level's own contribution, capped.
+  function getBlockChance(c) {
+    var offhandId = c.equipment && c.equipment.offhand;
+    var item = (offhandId && Game.Inventory && Game.Inventory.getItem) ? Game.Inventory.getItem(offhandId) : null;
+    if (!item || item.skill !== 'Shields') return 0;
+    var skillLevel = (c.skills && c.skills['Shields']) ? c.skills['Shields'].level : 0;
+    var value = getSecondaryStat(c, 'block') + skillLevel * BALANCE.BLOCK_PER_SKILL_LEVEL;
+    return Math.min(BALANCE.BLOCK_CAP, value);
   }
 
   function goldTotalAsGold(c) {
@@ -446,6 +494,8 @@ Game.Character = (function () {
     spendStatPoint: spendStatPoint,
     skillCap: skillCap,
     addSkillXp: addSkillXp,
+    getSecondaryStat: getSecondaryStat,
+    getBlockChance: getBlockChance,
     goldTotalAsGold: goldTotalAsGold,
     hasAffliction: hasAffliction,
     addAffliction: addAffliction,
