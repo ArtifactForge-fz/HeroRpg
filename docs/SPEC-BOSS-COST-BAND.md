@@ -241,9 +241,10 @@ boss (more for the rogue line), and at L100 also push consumables to ≥ 4, whil
 - [ ] Save impact: none (no state change).
 - [ ] Changelog: none from this spec. The D9 retune will need a player-facing line ("bosses hit
       harder").
-- [ ] Unrelated finding: the test files hard-code `base = "D:/Claude - collection folder/HeroRPG/js"`
+- [x] Unrelated finding: the test files hard-code `base = "D:/Claude - collection folder/HeroRPG/js"`
       (`tests/test_p3_battle.js:9`, `tests/test_p6b_content.js:17`, `:381`, `:508`), so they fail on
-      any other checkout. Out of scope here (§6); worth its own fix.
+      any other checkout. Out of scope here (§6); worth its own fix. **Fixed 2026-10-28:** every
+      suite and `tools/build_artifact.js` now resolve the repo from `__dirname`.
 
 ## 5. Open decisions
 

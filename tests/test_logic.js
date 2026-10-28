@@ -13,7 +13,8 @@ global.window = window;
 
 var fs = require('fs');
 var path = require('path');
-var base = "D:/Claude - collection folder/HeroRPG/js";
+var repoRoot = path.resolve(__dirname, '..');
+var base = path.join(repoRoot, 'js');
 
 function loadScript(relPath) {
   var code = fs.readFileSync(path.join(base, relPath), 'utf8');

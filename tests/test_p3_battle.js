@@ -7,7 +7,8 @@ var path = require('path');
 var FakeDom = require('./fakedom.js');
 var BossFixture = require('./boss_fixture.js'); // shared prepared-warrior boss sim (docs/SPEC-BOSS-COST-RETUNE.md §4)
 
-var base = "D:/Claude - collection folder/HeroRPG/js";
+var repoRoot = path.resolve(__dirname, '..');
+var base = path.join(repoRoot, 'js');
 
 function freshDom() {
   var document = new FakeDom.FakeDocument();

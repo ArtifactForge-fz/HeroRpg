@@ -7,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = 'D:/Claude - collection folder/HeroRPG';
+const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(__dirname, 'herorpg_artifact.html');
 
 // Normalize CRLF: the repo stores LF but a core.autocrlf checkout materializes CRLF, which

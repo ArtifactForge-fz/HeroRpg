@@ -15,7 +15,8 @@ var path = require('path');
 var FakeDom = require('./fakedom.js');
 var BossFixture = require('./boss_fixture.js'); // shared prepared-warrior boss sim (docs/SPEC-BOSS-COST-RETUNE.md §4)
 
-var base = "D:/Claude - collection folder/HeroRPG/js";
+var repoRoot = path.resolve(__dirname, '..');
+var base = path.join(repoRoot, 'js');
 
 function freshDom() {
   var document = new FakeDom.FakeDocument();
@@ -379,7 +380,7 @@ newVarietyTechIds.forEach(function (tid) {
 // ---- every new monster has an icon (fs-level check; test_icons.js is the authoritative sweep
 // over ALL monsters — this just confirms the 15 new ones specifically didn't get missed) ----
 (function () {
-  var iconsDir = "D:/Claude - collection folder/HeroRPG/assets/icons";
+  var iconsDir = path.join(repoRoot, 'assets', 'icons');
   var missing = newVarietyIds.filter(function (id) { return !fs.existsSync(path.join(iconsDir, id + '.png')); });
   assert(missing.length === 0, 'every enemy-variety-pass monster has an icon' + (missing.length ? (': missing ' + missing.join(', ')) : ''));
 })();
@@ -506,7 +507,7 @@ assert(uniqueItems.length === 30, 'sanity: 30 unique items defined in items.js (
 // ---- every unique item has an icon (fs-level; test_icons.js is the authoritative sweep over ALL
 // items — this just confirms the 12 new ones specifically weren't missed) ----
 (function () {
-  var iconsDir = "D:/Claude - collection folder/HeroRPG/assets/icons";
+  var iconsDir = path.join(repoRoot, 'assets', 'icons');
   var missing = uniqueItems.filter(function (it) { return !fs.existsSync(path.join(iconsDir, it.id + '.png')); });
   assert(missing.length === 0, 'every unique item has an icon' + (missing.length ? (': missing ' + missing.map(function (it) { return it.id; }).join(', ')) : ''));
 })();

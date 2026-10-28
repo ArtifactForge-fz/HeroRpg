@@ -260,10 +260,9 @@ all user-gated.**
 - Process: lead spec + P0 sim; one Sonnet agent implemented; lead review fixed one hard-coded
   constant duplicate. Real-browser check done (Status "Combat Stats" panel, item info lines,
   wiki column, crit battle log, Version Log/footer).
-- **Ops note — the `D:/Claude - collection folder/HeroRPG` base path doesn't exist on every
-  machine.** Without editing tracked files, run the suites from a scratch copy of `tests/` with
-  that string rewritten to the checkout path (`__dirname` suites like `test_reachability.js` and
-  `test_secondary_stats.js` run in place). Same trick for `tools/build_artifact.js` (`ROOT`).
+- **Ops note — test paths:** every suite and `tools/build_artifact.js` now resolve the repo from
+  `__dirname`, so they run in place on any checkout and from any working directory. (They used to
+  hard-code `D:/Claude - collection folder/HeroRPG`.)
 
 ## Recently completed (2026-07-25) — v1.9.0 (merged from two EXTERNAL PRs; live)
 
