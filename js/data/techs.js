@@ -1095,9 +1095,9 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: 'Star', // invented: elemental, matches the Magician-line precedent (tech_arcane_cataclysm) — mitigated by Magic Armor/resistances
+    grade: null, // invented, docs/SPEC-ANIMA-RECKONING.md §2: non-elemental ("pure Anima"), ignores Armor/Magic Armor per the archived non-elemental rule; precedent tech_vault_reckoning
     energyCost: 40,
-    power: 84, // invented: +20% over Wizard's Arcane Cataclysm (70)
+    power: 95, // invented, docs/SPEC-ANIMA-RECKONING.md §2/§3 (sim-gated: smallest tested power the Magus casts at the L100 boss; 90 was not)
     effect: 'damage',
     classOnly: true,
     classId: 'magus',

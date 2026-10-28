@@ -1,8 +1,9 @@
 # SPEC — Anima Reckoning: an untyped T3 spell that keeps up with Firebolt
 
-**Status:** READY — the direction (untyped, T3 spell only, a power bump, L80–L90 counts as fine) was
-set by the user on 2026-10-29 while workshopping; D1–D3 resolved by the user the same day (§5; D1
-after screening power 90). Not implemented. Authored 2026-10-29 on branch `v1.11-hero-tree`
+**Status:** IMPLEMENTED on branch `v1.11-hero-tree`; not yet merged to `main`, released or deployed.
+Direction set by the user on 2026-10-29 while workshopping; D1–D3 resolved the same day (§5).
+**Implementation gate run 2026-10-29 (§7): passes** — the Magus uses Anima Reckoning at every T3
+boss, and no boss cell changes verdict. Authored 2026-10-29 on branch `v1.11-hero-tree`
 (user-directed: "pick up the first follow-up", F2 of `docs/SPEC-SPELL-CHAINS-AND-ARMOR.md` §9).
 Screened at 300 trials (§3); the implementation gate is owed.
 
@@ -97,15 +98,15 @@ casts > 0) and the kit keeps it in at least one class option at L100; regular ch
 
 ## 4. Conventions & handoff checklist
 
-- [ ] `js/data/techs.js` `tech_anima_reckoning`: `grade: null`, `power: 95`, comments citing §2.
-- [ ] Tests: any expectation built on its grade or power is a stale constant — update, never weaken.
+- [x] `js/data/techs.js` `tech_anima_reckoning`: `grade: null`, `power: 95`, comments citing §2.
+- [x] Tests: any expectation built on its grade or power is a stale constant — update, never weaken.
   `tests/test_p6_classes.js` lists the id only. New test: it is ungraded, so a monster's Armor and
   Magic Armor don't reduce it (stubbed RNG, as Test 109 (b) does for a temporary null grade).
-- [ ] Test 103 (D2).
-- [ ] Wiki shows it as non-elemental, power 95.
-- [ ] Save impact: none. Icons, ids, drop tables: none.
+- [x] Test 103 (D2).
+- [x] Wiki shows it as non-elemental, power 95.
+- [x] Save impact: none. Icons, ids, drop tables: none.
 - [ ] Changelog line (D3) in the release that ships this.
-- [ ] All 16 suites green.
+- [x] All 16 suites green.
 
 ## 5. Decisions
 
@@ -124,3 +125,21 @@ All resolved by the user on 2026-10-29.
 - A general scaling rule for class spells (class-level ranks, an Academy anchor) — workshopped, not
   chosen.
 - The Conjurer + Attunement + Heir boss cells.
+
+## 7. Implementation and gate (2026-10-29)
+
+- `js/data/techs.js` `tech_anima_reckoning`: `grade: null`, `power: 95`, both citing this spec.
+- `tests/test_p3_battle.js`: Test 103 back on the L90 boss (`society_anima_horror`) with its four
+  assertions unchanged (D2); the Magus now casts its class spell there about 4 times per win. New
+  Test 110: Anima Reckoning is ungraded, power 95, and a monster's Armor (10) and Magic Armor (3)
+  take nothing off it. No other test held a stale constant.
+- All 16 suites pass. The wiki lists it as non-elemental, damage 95.
+
+**Gate** (`docs/SPEC-BOSS-SIM-FULL-KIT.md` §3 method, real code, 300 trials, 1,404 cells; regular checks
+for seven lineages): **passes.**
+- B1 ✅ 132/132, B3 ✅ 132/132, B2 ❌ 8/132 — the same 8 as before (3 accepted melee cells, 5 Conjurer
+  cells). The only cheapest-cost change in the grid: Magus at the finale, 65% → 64%.
+- The Magus kit keeps Anima Reckoning in 3 of 4 class options at L60, L70, L80 and L90, and 4 of 4 at
+  L100 (was 0 at every T3 boss).
+- Regular checks identical to `docs/SPEC-SPELL-CHAINS-AND-ARMOR.md` §8: casters at L10 five levels up
+  0%, at-level 100% for all seven lineages.

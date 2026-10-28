@@ -3867,17 +3867,17 @@ console.log('\n=== Test 102: monster tech power + boss basic cut + half Armor/Br
   assert(k1.calls - k0.calls === 1, 'Block rolls one rng() when the halved chance is above 0 and none at 0 (calls ' + k0.calls + ' vs ' + k1.calls + ')');
 })();
 
-// =================== Test 103: a Magus using its class techs still pays at the L50 boss ===================
-console.log('\n=== Test 103: SPEC-BOSS-SIM-TECHS — a prepared Magus casting its class techs wins at L50 but pays ===');
+// =================== Test 103: a Magus using its class techs still pays at the L90 boss ===================
+console.log('\n=== Test 103: SPEC-BOSS-SIM-TECHS — a prepared Magus casting its class techs wins at L90 but pays ===');
 // docs/SPEC-BOSS-SIM-TECHS.md §4: regression floor for the 'techs' policy (the 300-trial grid in §3 is the gate).
-// Moved from L90 (society_anima_horror) to L50 by docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §7 (user, 2026-10-29): once the
-// fixture casts the strongest Firebolt, a T3 Magus (L60+) never finds a class spell that out-damages it, so the techs
-// policy casts none there (a follow-up spec). At L50 the Wizard-tier Magus still casts Arcane Cataclysm.
-var magusSim = BossFixture.simulate(Game, 'majiku_warlord', 50, 30, { lineage: 'magus', policy: 'techs' });
-console.log(BossFixture.describe('majiku_warlord (Magus, techs)', magusSim) + ', avg class techs cast ' + magusSim.avgCasts.toFixed(1));
-assert(magusSim.winRate >= 0.85, 'a prepared Magus with class techs beats majiku_warlord (win rate ' + (magusSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
-assert(magusSim.avgHpSpent >= 0.35 || magusSim.avgConsumed >= 3, 'majiku_warlord still costs a Magus with class techs (avg HP spent ' + (magusSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables)');
-assert(magusSim.avgConsumed <= 0.5 * magusSim.stock, 'majiku_warlord is not ruinous for a Magus with class techs (avg ' + magusSim.avgConsumed.toFixed(1) + ' of ' + magusSim.stock + ')');
+// Round trip: moved from L90 (society_anima_horror) to L50 by docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §7 when the T3 Magus
+// stopped casting its class spell (Firebolt out-damaged it), and back to L90 by docs/SPEC-ANIMA-RECKONING.md D2 now
+// that the untyped Anima Reckoning (power 95) is cast again.
+var magusSim = BossFixture.simulate(Game, 'society_anima_horror', 90, 30, { lineage: 'magus', policy: 'techs' });
+console.log(BossFixture.describe('society_anima_horror (Magus, techs)', magusSim) + ', avg class techs cast ' + magusSim.avgCasts.toFixed(1));
+assert(magusSim.winRate >= 0.85, 'a prepared Magus with class techs beats society_anima_horror (win rate ' + (magusSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(magusSim.avgHpSpent >= 0.35 || magusSim.avgConsumed >= 3, 'society_anima_horror still costs a Magus with class techs (avg HP spent ' + (magusSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables)');
+assert(magusSim.avgConsumed <= 0.5 * magusSim.stock, 'society_anima_horror is not ruinous for a Magus with class techs (avg ' + magusSim.avgConsumed.toFixed(1) + ' of ' + magusSim.stock + ')');
 assert(magusSim.avgCasts > 0, 'the techs policy actually casts the Magus class techs (avg ' + magusSim.avgCasts.toFixed(1) + ' per win)');
 
 // =================== Test 104: melee class techs strike with the weapon (SPEC-MELEE-CLASS-TECHS) ===================
@@ -4073,6 +4073,33 @@ console.log('\n=== Test 109: SPEC-SPELL-CHAINS-AND-ARMOR §2.1-2.2 — graded sp
     for (var i = 1; i < ranks.length; i++) { if (!(ranks[i].power > ranks[i - 1].power)) mono = false; }
     assert(mono, chain + ': power strictly increases with rank (' + ranks.map(function (t) { return t.power; }).join(', ') + ')');
   });
+})();
+
+// =================== Test 110: SPEC-ANIMA-RECKONING — Anima Reckoning is ungraded: Armor and Magic Armor do not reduce it ===================
+console.log('\n=== Test 110: SPEC-ANIMA-RECKONING §2 — tech_anima_reckoning is non-elemental (grade null, power 95); a monster\'s Armor and Magic Armor do not reduce it ===');
+(function () {
+  var tech = Game.Battle.getTech('tech_anima_reckoning');
+  assert(tech.grade === null, 'Anima Reckoning is ungraded (non-elemental), got ' + tech.grade);
+  assert(tech.power === 95, 'Anima Reckoning power is 95, got ' + tech.power);
+
+  var c = makeCharacter({ skills: { 'Evocation': 3 }, name: 'AnimaReckoningTest' });
+  c.lineage.tier3 = 'magus'; // classOnly tech: its class must be active (Game.Classes.isClassTechUsable)
+  c.techs.push('tech_anima_reckoning');
+  c.techSets[0][0] = 'tech_anima_reckoning';
+  c.hitPoints = c.hitPointsMax = 100000;
+  c.energy = c.energyMax = 1000;
+  setRng(fixedRng(0.5)); // Int hit roll hits; variance exactly 1.0; no glancing / crit (thresholds < 0.5)
+  var b = Game.Battle.start('plains_field_rat');
+  var A = 10, M = 3;
+  b.monster.armor = A; b.monster.magicArmor = M; b.monster.hp = b.monster.hpMax = 100000;
+  var fear = Game.Battle.fearMultiplier(b), curse = Game.Battle.playerCurseMultiplier(b);
+  var expected = Math.max(1, Math.round(Game.Battle.techEffectivePower(c, tech) * fear * curse));
+  var before = b.monster.hp;
+  Game.Battle.useTech('tech_anima_reckoning');
+  var dealt = before - b.monster.hp;
+  assert(dealt === expected, 'Anima Reckoning loses nothing to Armor (' + A + ') or Magic Armor (' + M + '): dealt ' + dealt + ', expected ' + expected);
+  assert(dealt > 0, 'sanity: the cast actually landed (dealt ' + dealt + ')');
+  Game.Battle.endBattle();
 })();
 
 // =================== Summary ===================
