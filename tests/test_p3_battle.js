@@ -3859,6 +3859,16 @@ console.log('\n=== Test 102: monster tech power + boss basic cut + half Armor/Br
   assert(k1.calls - k0.calls === 1, 'Block rolls one rng() when the halved chance is above 0 and none at 0 (calls ' + k0.calls + ' vs ' + k1.calls + ')');
 })();
 
+// =================== Test 103: a Magus using its class techs still pays at the L90 boss ===================
+console.log('\n=== Test 103: SPEC-BOSS-SIM-TECHS — a prepared Magus casting its class techs wins at L90 but pays ===');
+// docs/SPEC-BOSS-SIM-TECHS.md §4: regression floor for the 'techs' policy (the 300-trial grid in §3 is the gate).
+var magusSim = BossFixture.simulate(Game, 'society_anima_horror', 90, 30, { lineage: 'magus', policy: 'techs' });
+console.log(BossFixture.describe('society_anima_horror (Magus, techs)', magusSim) + ', avg class techs cast ' + magusSim.avgCasts.toFixed(1));
+assert(magusSim.winRate >= 0.85, 'a prepared Magus with class techs beats society_anima_horror (win rate ' + (magusSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(magusSim.avgHpSpent >= 0.35 || magusSim.avgConsumed >= 3, 'society_anima_horror still costs a Magus with class techs (avg HP spent ' + (magusSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables)');
+assert(magusSim.avgConsumed <= 0.5 * magusSim.stock, 'society_anima_horror is not ruinous for a Magus with class techs (avg ' + magusSim.avgConsumed.toFixed(1) + ' of ' + magusSim.stock + ')');
+assert(magusSim.avgCasts > 0, 'the techs policy actually casts the Magus class techs (avg ' + magusSim.avgCasts.toFixed(1) + ' per win)');
+
 // =================== Summary ===================
 console.log('\n===================================');
 if (failures === 0) {
