@@ -1,8 +1,8 @@
 # SPEC — Anima Reckoning: an untyped T3 spell that keeps up with Firebolt
 
 **Status:** READY — the direction (untyped, T3 spell only, a power bump, L80–L90 counts as fine) was
-set by the user on 2026-10-29 while workshopping; the open decisions D1–D3 (§5) are recommendations
-for the remaining details. Not implemented. Authored 2026-10-29 on branch `v1.11-hero-tree`
+set by the user on 2026-10-29 while workshopping; D1–D3 resolved by the user the same day (§5; D1
+after screening power 90). Not implemented. Authored 2026-10-29 on branch `v1.11-hero-tree`
 (user-directed: "pick up the first follow-up", F2 of `docs/SPEC-SPELL-CHAINS-AND-ARMOR.md` §9).
 Screened at 300 trials (§3); the implementation gate is owed.
 
@@ -78,6 +78,7 @@ keeps it, of 4 / cheapest boss HP spent %):
 | Power | L60 | L70 | L80 | L90 | L100 |
 |---|---|---|---|---|---|
 | 84 | 4.2 / 3 / 42 | 4.5 / 3 / 47 | 4.3 / 0 / 45 | 4.3 / 0 / 47 | 0.0 / 0 / 65 |
+| 90 | 4.0 / 3 / 42 | 4.3 / 3 / 47 | 4.1 / 3 / 45 | 4.1 / 3 / 47 | **0.0 / 0 / 65** |
 | **95** | 3.8 / 3 / 42 | 4.2 / 3 / 47 | 3.9 / 3 / 45 | 3.9 / 3 / 47 | **5.6 / 4 / 64** |
 | 100 | 3.6 / 3 / 42 | 4.0 / 3 / 47 | 3.8 / 3 / 45 | 3.8 / 3 / 47 | 5.4 / 4 / 61 |
 | 105 | 3.5 / 4 / 42 | 3.9 / 4 / 47 | 3.6 / 3 / 45 | 3.6 / 3 / 47 | 5.2 / 4 / 59 |
@@ -87,7 +88,8 @@ keeps it, of 4 / cheapest boss HP spent %):
   cost by at most 1 point (finale 64%, floor 45%). Every Magus boss cell wins 100%.
 - **Regular checks unchanged at every power:** Magus L10 five levels up 0%, at-level 100%, L29+
   five levels up 99–100% (the accepted limitation).
-- Not tested: power 90 (D1).
+- **Power 90 fails at L100** (never cast, the kit keeps it in no option), though it helps at
+  L80–L90 like 95. So 95 is the smallest working value of those tested (D1).
 
 **Implementation gate (owed, 300 trials):** the full 12-lineage kit grid plus the regular checks.
 Pass bar: no boss cell newly failing B1/B2/B3; Magus casts it at every T3 boss (`techs` policy, avg
@@ -105,13 +107,15 @@ casts > 0) and the kit keeps it in at least one class option at L100; regular ch
 - [ ] Changelog line (D3) in the release that ships this.
 - [ ] All 16 suites green.
 
-## 5. Open decisions
+## 5. Decisions
 
-| # | Decision | Recommendation |
+All resolved by the user on 2026-10-29.
+
+| # | Question | Decision |
 |---|---|---|
-| **D1** | Power: 95 (smallest tested that works), or screen 90 first | **95.** The sweep shows a flat cost curve (95 vs 84 moves bosses ≤ 1 point), so a smaller value saves little; 90 risks missing L100 again |
-| **D2** | Test 103: keep it at the L50 boss, or move it back to its original L90 boss (`society_anima_horror`), where the Magus casts its class spell again (3.9 per win at power 95) | **Move it back to L90.** It then tests a T3 class spell again, which was its point; record the round trip in the test comment |
-| **D3** | Player-facing wording | Changelog draft: "Anima Reckoning, the Magus's verdict of pure Anima, is no longer an elemental spell: it now ignores a monster's armor and magic armor, and hits harder." |
+| **D1** | Power: 95, or screen 90 first | **Screen 90 first, use it if it works at L100.** It doesn't (§3), so **95** |
+| **D2** | Test 103: keep it at the L50 boss, or move it back to its original L90 boss | **Back to L90** (`society_anima_horror`, as recommended): it tests a T3 class spell again. The test comment records the round trip |
+| **D3** | Player-facing wording | **As drafted** (as recommended): "Anima Reckoning, the Magus's verdict of pure Anima, is no longer an elemental spell: it now ignores a monster's armor and magic armor, and hits harder." |
 
 ## 6. Out of scope
 
