@@ -1,6 +1,7 @@
 # SPEC — Secondary Stats (crit, accuracy, block, Spell Power, armor penetration, Luck)
 
-**Status:** IMPLEMENTED — v1.10.0 release candidate (2026-10-21). P0 sim passed with the D8
+**Status:** IMPLEMENTED in v1.10.0 "Keen Edges & Lucky Coins" (commit `6147946`, branch `v1.11-hero-tree`),
+open PR 4 (`v1.11-hero-tree` → `main`); not merged, released or deployed. P0 sim passed with the D8
 Fear rule (§3.1) and was re-run on the implemented code with identical results; all decisions
 D1–D9 resolved (§5).
 **Relationship to authority:** extends `docs/DESIGN.md` §3 (stats, classes) and §4 (combat).

@@ -1,10 +1,8 @@
 # SPEC — Class Lineage (the Hero Tree: fixed T1+T2+T3, plus one swappable Legendary)
 
-**Implemented 2026-10-23 in v1.11.0 "The Hero Tree"** (save v12) together with
-`docs/SPEC-ROGUE-BOSS-COST.md` + `docs/SPEC-NONDEX-DEFENSE.md`; review re-sim in §3.2. Not committed,
-merged or deployed (user-gated).
-
-**Status (pre-implementation):** READY FOR IMPLEMENTATION — decisions D0–D7 resolved by the user 2026-10-22 (§5).
+**Status:** IMPLEMENTED in v1.11.0 "The Hero Tree" (save v12), commit `b51c8fb`, together with
+`docs/SPEC-ROGUE-BOSS-COST.md` + `docs/SPEC-NONDEX-DEFENSE.md`; review re-sim in §3.2. In
+open PR 4 (`v1.11-hero-tree` → `main`); not merged, released or deployed. Decisions D0–D7 resolved by the user 2026-10-22 (§5).
 Sim gate run 2026-10-22 (§3.1): passes, with the rogue-line boss cost accepted under D7 and moved
 to a separate follow-up spec. No monster buff ships (`MONSTER_HP_MULT` / `MONSTER_DAMAGE_MULT` are
 not added).

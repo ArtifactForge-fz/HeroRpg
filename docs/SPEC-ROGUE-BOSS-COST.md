@@ -1,8 +1,6 @@
 # SPEC — Rogue Boss Cost (Dexterity-driven dodge with diminishing returns + faster bosses)
 
-**Implemented 2026-10-23 in v1.11.0 "The Hero Tree"** together with `docs/SPEC-CLASS-LINEAGE.md` (review re-sim of the shipped code: `docs/SPEC-CLASS-LINEAGE.md` §3.2). Not committed, merged or deployed (user-gated).
-
-**Status:** READY FOR IMPLEMENTATION together with `docs/SPEC-NONDEX-DEFENSE.md`. D0–D7 resolved
+**Status:** IMPLEMENTED in v1.11.0 "The Hero Tree" (commit `b51c8fb`, branch `v1.11-hero-tree`) together with `docs/SPEC-NONDEX-DEFENSE.md` and `docs/SPEC-CLASS-LINEAGE.md` (review re-sim of the shipped code: its §3.2). In open PR 4 (`v1.11-hero-tree` → `main`); not merged, released or deployed. D0–D7 resolved
 by the user 2026-10-22/23 (§5). Sim gate run 2026-10-23 (§3.1). The rogue line now pays at every
 boss. **Not ready to ship on its own:** the new dodge model takes most dodge away from
 non-Dexterity builds, and 6 lineages fall below the boss

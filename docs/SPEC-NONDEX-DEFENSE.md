@@ -1,8 +1,6 @@
 # SPEC — Bracing (Heavy and Medium Armor turn blows; compensation for non-Dexterity builds)
 
-**Implemented 2026-10-23 in v1.11.0 "The Hero Tree"** together with `docs/SPEC-CLASS-LINEAGE.md` (review re-sim of the shipped code: `docs/SPEC-CLASS-LINEAGE.md` §3.2). Not committed, merged or deployed (user-gated).
-
-**Status:** READY FOR IMPLEMENTATION together with `docs/SPEC-ROGUE-BOSS-COST.md` (its D4). D0–D5
+**Status:** IMPLEMENTED in v1.11.0 "The Hero Tree" (commit `b51c8fb`, branch `v1.11-hero-tree`) together with `docs/SPEC-ROGUE-BOSS-COST.md` (its D4) and `docs/SPEC-CLASS-LINEAGE.md` (review re-sim of the shipped code: its §3.2). In open PR 4 (`v1.11-hero-tree` → `main`); not merged, released or deployed. D0–D5
 resolved by the user 2026-10-23 (§5). Sim gate run 2026-10-23 (§3.1): every Heavy/Medium Armor
 lineage wins the L100 boss at or above today's rate, and the rogue line's new boss cost holds.
 **Casters are deliberately not covered** (no Bracing for Light Armor): they stay 1–5 win points below

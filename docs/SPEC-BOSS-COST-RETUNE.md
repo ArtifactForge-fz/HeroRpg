@@ -1,6 +1,6 @@
 # SPEC — Boss Cost Retune (make the 11 shipped bosses meet the boss cost floor)
 
-**Status:** IMPLEMENTED (uncommitted, not released) — D0–D6 resolved by the user 2026-10-23. Sim gate run 2026-10-23 (§3.3): S1, S2 (prepared fixture), S3 and S4 all pass. Implemented 2026-10-23 (uncommitted): boss data, premium tests, shared prepared-warrior fixture; all 15 suites green.
+**Status:** IMPLEMENTED — commit `73a6c36` on branch `v1.11-hero-tree`, open PR 4 (`v1.11-hero-tree` → `main`); not merged, released or deployed (no version or changelog entry yet). D0–D6 resolved by the user 2026-10-23. Sim gate run 2026-10-23 (§3.3): S1, S2 (prepared fixture), S3 and S4 all pass. Implemented 2026-10-23: boss data, premium tests, shared prepared-warrior fixture; all 15 suites green.
 `docs/SPEC-BOSS-COST-BAND.md` (B2/B2f) **cannot be met by retuning boss stats**: "HP left on win"
 barely moves when bosses get stronger, and the finale's "≥ 4 consumables" is reachable only when
 the win rate has collapsed. This spec therefore proposes a metric amendment to that contract (D0)

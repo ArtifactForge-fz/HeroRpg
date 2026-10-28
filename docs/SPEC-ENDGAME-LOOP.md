@@ -1,6 +1,6 @@
 # SPEC — Endgame Loop (the Colosseum: Ascension, Relics, Honor)
 
-**Status:** Backlog, not started. Authored 2026-07-12. **Depends on v1.4 landing** (reuses AP and
+**Status:** Backlog, not started. Authored 2026-07-12. **Depended on v1.4, which has shipped — unblocked** (reuses AP and
 the champion-affix machinery — see §9). Sequence after `SPEC-V1.4-GAMEPLAY.md`.
 **Owner model:** lead (Fable) scopes/reviews; Sonnet subagents implement, each with a full up-front
 brief (CLAUDE.md cardinal rule 4).

@@ -1,8 +1,7 @@
 # SPEC — Monster tech power (techs carry the fight; armor counts against them at half)
 
-**Implemented 2026-10-23 on branch `v1.11-hero-tree` as v1.12.0.**
-
-**Status:** READY FOR IMPLEMENTATION — all decisions resolved by the user 2026-10-23 (§5: D0–D4 set the
+**Status:** IMPLEMENTED as v1.12.0 "The Whole Arsenal" (commit `a27ad8d`, branch `v1.11-hero-tree`),
+open PR 4 (`v1.11-hero-tree` → `main`); not merged, released or deployed. All decisions resolved by the user 2026-10-23 (§5: D0–D4 set the
 direction, D5–D7 accepted as recommended). Sim run 2026-10-23 (§3.1). Authored 2026-10-23 (user-directed: "#2", the follow-up promised
 by `docs/SPEC-ROGUE-BOSS-COST.md` D7; widened by the user from bosses to every monster).
 **Relationship to authority:** extends `docs/DESIGN.md` §4 (combat: monster techs, mitigation). No

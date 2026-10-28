@@ -1,7 +1,8 @@
 # SPEC — Tech Polarity Expansion (one new technique chain for every skill)
 
-**Status:** P0 SIM GATE PASSED (lead, 2026-07-19) — constants LOCKED below; implementation may
-begin. Decisions D0–D4 resolved (user, 2026-07-17).
+**Status:** SHIPPED in v1.8.0 "The Expanded Curriculum" (release commit `1437353`), as part of
+`docs/SPEC-V1.8-TECHS-AND-REACHABILITY.md`. P0 sim gate passed 2026-07-19 — constants LOCKED below.
+Decisions D0–D4 resolved (user, 2026-07-17).
 
 ## 0. P0 SIM RESULTS (2026-07-19) — LOCKED CONSTANTS
 

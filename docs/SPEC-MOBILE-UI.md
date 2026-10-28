@@ -1,6 +1,6 @@
 # SPEC — Mobile-Enabled UI (v1.4 candidate)
 
-Status: **planned** (spec written 2026-07-11, not started).
+Status: **SHIPPED with v1.4** (phases M0–M3, commits `42f7667`–`82a7aa2`, before v1.4.1; spec written 2026-07-11).
 Tag: **[invented]** — the 2004–2008 original was desktop-only; nothing in `reference/` describes a
 mobile interface. The mobile adaptation is designed in the original's spirit: the archived 2008
 palette and page structure (`reference/site/theme_inline.css`) stay authoritative on desktop, and

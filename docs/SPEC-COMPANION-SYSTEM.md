@@ -1,6 +1,6 @@
 # SPEC — Companion System & Summoner (Conjurer) Redesign (a persistent, targetable second combatant framework, first consumed by the Conjurer's four elementals)
 
-**Status:** DRAFT — open decisions **D0–D6 RESOLVED 2026-07-22** (see §5); ready for implementation planning. **No combat constant below is locked**; every number is a formula-derived proposal pending `/balance-sim`.
+**Status:** SHIPPED in v1.9.0 "The Conjurer Binds a Companion" (commit `121f26e`, merged to `main`, save v11, deployed live 2026-07-25), including the §7 companion UI. Decisions D0–D6 resolved 2026-07-22 (§5). The numbers below are the pre-sim proposals; the `/balance-sim` ratchet recorded in this spec set the final values, and `js/balance.js` is authoritative.
 
 **Relationship to authority:**
 - Extends `docs/DESIGN.md` §3 (Classes — the Conjurer), §4 (Combat/Fear/monster AI), §5 (Techs & Anima grades).
