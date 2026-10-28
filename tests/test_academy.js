@@ -20,7 +20,8 @@ var fs = require('fs');
 var path = require('path');
 var FakeDom = require('./fakedom.js');
 
-var base = "D:/Claude - collection folder/HeroRPG/js";
+var repoRoot = path.resolve(__dirname, '..');
+var base = path.join(repoRoot, 'js');
 
 var document = new FakeDom.FakeDocument();
 global.document = document;
