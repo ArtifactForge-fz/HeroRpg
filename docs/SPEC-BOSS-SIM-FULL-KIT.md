@@ -1,7 +1,9 @@
 # SPEC — Boss sims with the full player kit (Academy chains, shrine buffs, Limit Break, Defend) and whole-fight tool choice
 
-**Status:** READY — D0–D7 resolved by the user 2026-10-28 (§5; D1 and D2 differ from the first
-draft's recommendations). Not implemented. Authored 2026-10-28 on
+**Status:** IMPLEMENTED on branch `v1.11-hero-tree` (fixture + Test 107); not yet merged to `main`.
+D0–D7 resolved by the user 2026-10-28 (§5; D1 and D2 differ from the first draft's
+recommendations). **Sim gate run 2026-10-28 (§7): B1 and B3 pass in all 132 boss × lineage cells;
+B2 fails in 39** — the boss contract does not hold for heroes who use their Academy chains. Authored 2026-10-28 on
 branch `v1.11-hero-tree` (user-directed: "start on spec for point 1", the first item of the balance
 follow-up priority list). Test tooling and a sim gate only: **no game code, combat constant or
 contract changes.** Report only (the ratchet principle): failing cells go to follow-up specs.
@@ -141,7 +143,8 @@ fixture. Companions are now the Conjurer's alone (pacts open at T3, L60), and PR
 A hero spends on shrine buffs what they earned **since the previous boss** (D1). The fixture computes
 the budget from game data, so it follows any later change to XP or drop rates:
 
-`shardBudget(level) = floor( Σ_{l = prev .. level−1} kills(l) × chance(l) )`, where
+`shardBudget(level) = round( Σ_{l = prev .. level−1} kills(l) × chance(l) )` (to the nearest
+shard; the table below was computed that way, floor gives 1 less at six levels), where
 - `prev` is the previous boss's level (1 for the L10 boss);
 - `kills(l) = (XP_TO_LEVEL(l+1) − XP_TO_LEVEL(l)) / mean xp` of the regular monsters (non-boss,
   non-champion) within ±2 levels of `l` — the at-level hunting it takes to level up;
@@ -190,16 +193,18 @@ fights to the current fixture on the same seeds (the check `docs/SPEC-BOSS-SIM-T
 
 ## 4. Conventions & handoff checklist
 
-- [ ] `tests/boss_fixture.js`: `opts.kit` build, `kit` policy (§2.2), tool choice (§2.3), new metrics
-  (§2.4). `basic` / `techs` unchanged (seeded equality check).
-- [ ] New in-repo cell, `tests/test_p3_battle.js`: Paladin L60 with the kit, 30 trials — wins ≥ 85%,
-  B3 holds, the kept kit includes a Cleave rank. **B2 not asserted** (report only, as the Conjurer
-  cell in `docs/SPEC-BOSS-SIM-TECHS.md` §4 was); the test logs HP spent.
-- [ ] Every existing boss test keeps the default build and policy, results unchanged.
-- [ ] Drop tables / stock lists: n/a. Icons: none. Ids: none new.
-- [ ] Save impact: none (tooling only).
-- [ ] Changelog: none (no player-facing change).
-- [ ] All 16 suites green.
+- [x] `tests/boss_fixture.js`: `opts.kit` build, `kit` policy (§2.2), `chooseKit` (§2.3), `shardBudget`
+  (§2.6), new metrics (§2.4). `basic` / `techs` unchanged: 380 seeded fights (4 lineages × every valid
+  boss × both policies × 5 seeds) identical to the previous fixture.
+- [x] `tests/test_p3_battle.js` Test 107: Paladin L60 with the kit, 30 seeded trials — wins ≥ 85%, B3
+  holds, the kept kit includes a Cleave rank. B2 not asserted; it logs 36% HP spent.
+- [x] Every existing boss test keeps the default build and policy, results unchanged.
+- [x] Drop tables, icons, ids, save, changelog: none.
+- [x] All 16 suites green (2026-10-28).
+- Implementation choices the sections above leave open: tools that can never fire (a heal tech
+  weaker than the heal item) are not offered to §2.3; with `kit`, a cast the engine refuses without
+  spending Energy falls through to the next step instead of stalling; Defend needs
+  `DEFEND_ENERGY_COST` Energy.
 
 ## 5. Decisions
 
@@ -224,3 +229,98 @@ All resolved by the user on 2026-10-28.
 - PR #1's caster damage on all 88 monsters, and its missing spec (priority step 3).
 - Caster compensation (step 4), Radiant Smite on melee builds (step 6).
 - Changing the contract's numbers or the prepared-fixture definition beyond adding the kit.
+
+## 7. Sim gate results (run 2026-10-28)
+
+**Method** as §3: real game code, unpatched; seeded mulberry32 (trials from seed 7000), 300 trials
+per cell; 1,404 cells (11 bosses × 12 lineages × every class option × `basic`/`techs`/`kit`),
+421,200 trial fights plus the §2.3 choice fights; 468 Limit Break cells; 24 cliff cells. Scripts in
+the session scratchpad.
+
+**`basic` + `techs` only: 0 failures**, the same verdict as `docs/SPEC-COMPANION-BOSS-COST.md` §3.
+
+**With the kit (player's best of the three policies): B1 ✅ 132/132, B3 ✅ 132/132, B2 ❌ 39/132.**
+Cheapest option HP spent per win % / weakest option win % (**x** = fails B2; band bosses need ≥ 35%
+or ≥ 3 consumables, the finale ≥ 45%):
+
+| Boss | SK | Bers | Pal | Ward | Magus | Conj | Cleric | Seer | Gambit | Assn | Ranger | Drag |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| L10 | **x32**/100 | **x32**/100 | **x32**/100 | **x32**/100 | 61/99 | 61/99 | 61/99 | 61/99 | **x32**/100 | **x32**/100 | **x34**/100 | 41/100 |
+| L18 | 38/100 | 38/100 | 38/100 | 38/100 | 42/100 | 42/100 | 42/100 | 42/100 | 42/100 | 42/100 | 40/100 | 40/100 |
+| L25 | 38/100 | 38/100 | 38/100 | 38/100 | 47/100 | 47/100 | 47/100 | 47/100 | 44/100 | 44/100 | 43/100 | 44/100 |
+| L32 | **x33**/100 | **x33**/100 | **x32**/100 | **x32**/100 | 46/100 | 46/100 | 41/100 | 41/100 | **x33**/100 | **x33**/100 | 36/100 | 37/100 |
+| L40 | **x33**/100 | **x33**/100 | **x32**/100 | **x32**/100 | 56/100 | 56/100 | 55/100 | 55/100 | **x32**/100 | **x32**/100 | 40/100 | 43/100 |
+| L50 | 40/100 | 40/100 | 38/100 | 38/100 | 42/100 | 42/100 | 39/100 | 39/100 | 41/100 | 41/100 | 54/100 | 56/99 |
+| L60 | **x31**/100 | **x32**/100 | **x30**/100 | **x27**/100 | 41/100 | **x31**/100 | 36/100 | 40/100 | **x32**/100 | **x30**/100 | 40/100 | 44/100 |
+| L70 | **x32**/100 | **x32**/100 | **x30**/100 | **x29**/100 | 45/100 | **x33**/100 | 42/100 | 45/100 | **x34**/100 | **x32**/100 | 41/100 | 46/100 |
+| L80 | 46/100 | 45/100 | 46/100 | 44/100 | 44/100 | **x32**/100 | 41/100 | 43/100 | 39/100 | 38/100 | 61/100 | 67/100 |
+| L90 | 48/100 | 49/100 | 48/100 | 46/100 | 46/100 | **x27**/100 | 43/100 | 46/100 | 37/100 | **x35**/100 | 64/100 | 72/100 |
+| L100 | 50/100 | 51/100 | 51/100 | 50/100 | 70/100 | **x29**/100 | 67/100 | 72/100 | **x40**/100 | **x36**/100 | 70/100 | 75/100 |
+
+The kit lowers the cheapest option's HP spent in 112 of 132 cells. Median drop per boss: L10 6,
+L18 23, L25 40, L32 37, L40 16, L50 21, L60 18, L70 21, L80 5, L90 6, L100 10 points (largest:
+Dragoon and Ranger at L25, 44–45). L18, L25 and L50 drop a lot but stay above the floor.
+
+### 7.1 Finding 1 — the Academy weapon chains (31 cells)
+
+Every warrior line (Shadowknight, Berserker, Paladin, Warden) and both twinblade lines (Gambit,
+Assassin) fail at L10, L32, L40, L60 and L70; the Ranger fails at L10. The cheapest option keeps a
+single tool: the top **Cleave** rank (warriors, Ranger) or **Vital Strike** rank (twinblades) —
+rank I at L10, III–V later — with the Runeblade or Heir Legendary from L32. They land at 27–34% HP
+spent (Warden at L60 lowest). The chain is cheap in Training Points (16 of 78 TP at L40). This is
+the boss side of the hole `docs/SPEC-MELEE-CLASS-TECHS.md` F2 found at L10 against regular monsters.
+
+### 7.2 Finding 2 — the Conjurer with Attunement and the Heir (5 cells)
+
+The Conjurer fails at all five T3 bosses (L60–L100, 27–33%; the finale's 29% is 16 points under its
+45%). The cheapest option is the Earth or Fire pact with Heir of the Echo, keeping **Attunement**
+(the Evocation Academy buff) and Echoing Judgment. `docs/SPEC-COMPANION-BOSS-COST.md` passed these
+cells without Academy techs; Attunement is the new part.
+
+### 7.3 Finding 3 — twinblades at the top end with Crosscut (3 cells)
+
+Assassin at L90 (35%, just under) and L100 (36%), and Gambit at L100 (40%), fail on the **Crosscut**
+(Dual Wield) chain with a Legendary.
+
+### 7.4 Report columns
+
+- **Limit Break (D2 sensitivity):** with Fury 5 and a first-turn Limit Break, the cheapest option
+  drops by at most 4 points (median 0). **No cell tips under the floor.**
+- **Defend (D3):** the tool choice kept Defend in 0 of 468 cells. It was never worth a turn,
+  including at the three bosses that wind up.
+- **Training Points (D4):** no kept kit goes over budget (largest share: Conjurer/Wind at L60, 48 of
+  118 TP). The caster overshoot in §5 D4 only applies to learning *everything*.
+- **Companion HP lost (D5):** non-zero in 20 cells; median 3%, max 8% (Conjurer/Earth + Heir, L70).
+  Small, so it stays out of the verdict.
+- **Shrine (§2.6):** melee buys Honed Edge at L18–L32, Battle Fervor at L40, Warrior's Rage at L50,
+  Berserker's Wrath from L60, plus Bulwark Blessing from L70 and Light Footing from L80. Casters buy
+  Hardened Hide / Stoneskin early, Anima Kindling from L50, then armor and dodge buffs.
+- **Kept tools across the 468 kit cells:** Cleave 154, Attunement 80, Vital Strike 44, Starspark 36,
+  Echoing Judgment 33, Impale 32, Sidestep 32, Crosscut 24, Vault Reckoning 22, Fleetstep 22,
+  Tailwind 20, Tempo 19; 14 cells keep nothing.
+
+### 7.5 The +4 companion cliff (§2.5)
+
+Conjurer, 300 trials, win % / HP spent %:
+
+| Hero | Monster | No companion (`basic`) | No companion (`kit`) | Fire | Water | Earth | Wind |
+|---|---|---|---|---|---|---|---|
+| L60 | +4 `anima_scarred_frostwalker` (L64) | 100 / 52 | 100 / 43 | 100 / 28 | 100 / 35 | 100 / 26 | 100 / 52 |
+| L60 | +6 `ukai_cave_warden` (L66; no L65 regular) | 79 / 171 | 95 / 96 | 100 / 160 | 100 / 160 | 100 / 160 | 100 / 160 |
+| L80 | +4 `anima_horror_stalker` (L84) | 94 / 104 | 100 / 42 | 100 / 41 | 100 / 33 | 100 / 21 | 100 / 47 |
+| L80 | +6 `skyspire_upper_sentinel` (L86; no L85 regular) | 100 / 132 | 100 / 106 | 100 / 106 | 100 / 106 | 100 / 106 | 100 / 106 |
+
+- **The +4 cliff is gone as a win-rate cliff:** a prepared T3 Conjurer already wins +4 fights 94–100%
+  without a companion, so a companion only makes them cheaper (Earth: 43% → 26% HP spent at L60).
+- **Fear suppression still works:** at +6 all four pacts give identical fights, as in the v1.9 check.
+- **The 5-levels-down rule doesn't hold for this build:** the Conjurer wins +6 fights 79–100%. This
+  is the accepted known limitation in `CLAUDE.md` (Fear-spared healing sustain at high levels), not
+  something this spec changes.
+
+## 8. Follow-ups
+
+| # | Item | Notes |
+|---|---|---|
+| F1 | Melee Academy weapon chains under the boss floor (Finding 1, 31 cells) | Fix in one spec together with `docs/SPEC-MELEE-CLASS-TECHS.md` F2 (the L10 5-down hole): same tools, same root cause. Options include the chains' `powerMult` / energy cost, or boss stats; decided there under its own sim gate |
+| F2 | Conjurer + Attunement + Heir (Finding 2, 5 cells) | Check how Attunement feeds companion damage, or the Heir on a Conjurer |
+| F3 | Twinblade Crosscut at L90–L100 (Finding 3, 3 cells) | Likely the same fix family as F1 |

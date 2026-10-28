@@ -3952,6 +3952,16 @@ assert(paladinSim.avgHpSpent >= 0.35 || paladinSim.avgConsumed >= 3, 'estari_war
 assert(paladinSim.avgConsumed <= 0.5 * paladinSim.stock, 'estari_warden_prime is not ruinous for a Paladin with class techs (avg ' + paladinSim.avgConsumed.toFixed(1) + ' of ' + paladinSim.stock + ')');
 assert(paladinSim.avgCasts > 0, 'the techs policy now casts the Paladin class techs (avg ' + paladinSim.avgCasts.toFixed(1) + ' per win)');
 
+// =================== Test 107: the full kit (Academy chains, shrine, tool choice) at the L60 boss ===================
+console.log('\n=== Test 107: SPEC-BOSS-SIM-FULL-KIT — a prepared Paladin with the full kit wins at L60 and keeps a Cleave rank ===');
+// docs/SPEC-BOSS-SIM-FULL-KIT.md §4: the HP-spent floor (B2) is NOT asserted here (report only); the 300-trial grid is the gate.
+var kitSim = BossFixture.simulate(Game, 'majiku_ridge_chieftain', 60, 30, { lineage: 'paladin', policy: 'kit', seed: 12000 });
+console.log(BossFixture.describe('majiku_ridge_chieftain (Paladin, kit)', kitSim) + ', kit ' + JSON.stringify(kitSim.kit) +
+  ', HP spent ' + (kitSim.avgHpSpent * 100).toFixed(0) + '%');
+assert(kitSim.winRate >= 0.85, 'a prepared Paladin with the full kit beats majiku_ridge_chieftain (win rate ' + (kitSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(kitSim.avgConsumed <= 0.5 * kitSim.stock, 'majiku_ridge_chieftain is not ruinous for the full-kit Paladin (avg ' + kitSim.avgConsumed.toFixed(1) + ' of ' + kitSim.stock + ')');
+assert(kitSim.kit.some(function (id) { return id.indexOf('tech_cleave_') === 0; }), 'the whole-fight tool choice keeps a Cleave rank (kept: ' + JSON.stringify(kitSim.kit) + ')');
+
 // =================== Summary ===================
 console.log('\n===================================');
 if (failures === 0) {
