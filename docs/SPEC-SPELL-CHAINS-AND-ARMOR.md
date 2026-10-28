@@ -238,8 +238,8 @@ didn't fire and the boss is unchanged. But the per-policy picture moved a lot:
 | + Academy kit (`kit`) | 99%, 61% | 87%, 81% |
 
 A caster who hasn't trained a second spell chain by L10 now mostly loses this boss: half its Armor
-(6) comes off every low-rank Firebolt. The contract judges the prepared hero, so this passes; it is
-recorded as follow-up F1 below for a decision.
+(6) comes off every low-rank Firebolt. The contract judges the prepared hero, so this passes.
+**Accepted by the user 2026-10-29** (follow-up F1): the boss stays as it is.
 
 ### 8.2 Spell ranks VI–IX
 
@@ -259,7 +259,7 @@ by it. Follow-up F2.
 
 | # | Item | Notes |
 |---|---|---|
-| F1 | Casters at the L10 boss without a second spell chain (Firebolt only 12% win) | §8.1. Options: lower `estari_ruin_warden`'s Armor or Magic Armor, or accept (the contract judges the prepared hero) |
+| F1 | Casters at the L10 boss without a second spell chain (Firebolt only 12% win) | **Accepted by the user 2026-10-29**: the contract judges the prepared hero (87% win with the kit), so `estari_ruin_warden` stays unchanged. §8.1 |
 | F2 | Flat-power class damage spells fall behind Academy ranks from L60 (Anima Reckoning 84, Arcane Cataclysm 70, Echoing Judgment 92) | §8.3. Same shape as the melee class-tech problem `docs/SPEC-MELEE-CLASS-TECHS.md` fixed; needs its own spec and sims |
 | F3 | Companion automatic attacks still ignore monster Armor | `js/core/companion.js` `dealDamageToMonster`; decide whether S6 applies to them too |
 | F4 | Conjurer + Attunement + Heir (5 boss cells) | Unchanged; `docs/SPEC-BOSS-SIM-FULL-KIT.md` F2 |
