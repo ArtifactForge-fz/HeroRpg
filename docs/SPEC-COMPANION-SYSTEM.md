@@ -90,7 +90,7 @@ Classical Paracelsian elementals (public-domain names — Salamander/Undine/Gnom
 | companion | basic name | effect | grade | energyCost | power | rider | desc (shipped voice) |
 |---|---|---|---|---|---|---|---|
 | `comp_fire` | Ember Lash | damage | Fire | 4 | round(6 + 0.7·L) | applies **Burn** DoT: `dotKind:'burn'`, `dotPower: round(3 + 0.4·L)`, `dotTurns: 2` (refreshes, replace-not-stack) | "The Salamander lashes a whip of fire, leaving the wound smouldering." |
-| `comp_water` | Soothing Spray | heal | — | 4 | round(5 + 0.5·L) (heals the player) | also chips the enemy for a token `round(2 + 0.2·L)` Water damage | "The Undine mists cool water over your wounds." |
+| `comp_water` | Soothing Spray | heal | — | 4 | round(5 + 0.5·L) (heals the player); **retuned 2026-10-28 to round(5 + 0.25·L), healing only below 60% HP** (`docs/SPEC-WATER-PACT-COST.md`) | also chips the enemy for a token `round(2 + 0.2·L)` Water damage | "The Undine mists cool water over your wounds." |
 | `comp_earth` | Stone Fist | damage | Earth | 4 | round(4 + 0.5·L) | `tauntTurns: 2` — generates Taunt (see §2.3) | "The Golem hammers a stone fist down and plants itself between you and the foe." |
 | `comp_wind` | Gale Slash | damage | Wind | 6 | round(8 + 1.1·L) | — (highest direct damage) | "The Sylph carves the air into a razor gale." |
 

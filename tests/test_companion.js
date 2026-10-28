@@ -525,8 +525,8 @@ var BossFixture = require('./boss_fixture.js'); // shared prepared-hero boss sim
 
 // =================== Test 14: every Conjurer pact wins with its companion; companion lowers the cost ===================
 console.log('\n=== Test 14: SPEC-BOSS-SIM-TECHS — each Conjurer pact beats estari_warden_prime with its companion ===');
-// docs/SPEC-BOSS-SIM-TECHS.md §3.1 / §4: the B2 cost floor is NOT asserted here — the Water pact spends
-// 18–23% (needs 35%), a known gap reported for follow-up F1. Logged so it stays visible.
+// docs/SPEC-BOSS-SIM-TECHS.md §3.1 / §4: Water must meet the B2 cost floor since docs/SPEC-WATER-PACT-COST.md
+// (it spends ~56% here). The other pacts are logged, not asserted: Earth/Wind with some Legendaries sit near 35%.
 var noCompanionSim = BossFixture.simulate(Game, 'estari_warden_prime', 80, 30, { lineage: 'conjurer' });
 console.log(BossFixture.describe('estari_warden_prime (Conjurer, no companion)', noCompanionSim));
 ['comp_fire', 'comp_water', 'comp_earth', 'comp_wind'].forEach(function (pact) {
@@ -534,8 +534,41 @@ console.log(BossFixture.describe('estari_warden_prime (Conjurer, no companion)',
   console.log(BossFixture.describe('estari_warden_prime (Conjurer ' + pact + ')', pactSim));
   assert(pactSim.winRate >= 0.85, 'Conjurer ' + pact + ' beats estari_warden_prime (win rate ' + (pactSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
   assert(pactSim.avgConsumed <= 0.5 * pactSim.stock, 'Conjurer ' + pact + ' is not ruined by the boss (avg ' + pactSim.avgConsumed.toFixed(1) + ' of ' + pactSim.stock + ')');
+  if (pact === 'comp_water') assert(pactSim.avgHpSpent >= 0.35 || pactSim.avgConsumed >= 3, 'the Water pact pays at estari_warden_prime (avg HP spent ' + (pactSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables)');
   assert(pactSim.avgHpSpent < noCompanionSim.avgHpSpent, 'the ' + pact + ' companion takes part in the fight: HP spent ' + (pactSim.avgHpSpent * 100).toFixed(0) + '% < ' + (noCompanionSim.avgHpSpent * 100).toFixed(0) + '% without a companion');
 });
+
+// =================== Test 15: the Undine heals only below its healBelow line; the chip always lands ===================
+console.log('\n=== Test 15: SPEC-WATER-PACT-COST — Soothing Spray heals only below 60% HP; the chip and Energy cost apply every round ===');
+(function () {
+  var c = makeCharacter({ name: 'WaterLineTest' });
+  setLevel(c, 60);
+  Game.Companion.summon(c, 'comp_water');
+  var kind = Game.Companion.getKind('comp_water');
+  assert(kind.basic.healBelow === 0.6, 'comp_water heals below 60% HP (healBelow ' + kind.basic.healBelow + ')');
+  setRng(fixedRng(0.5));
+  var b = Game.Battle.start('plains_field_rat');
+  b.monster.hp = b.monster.hpMax = 999999;
+
+  function spray(hp) {
+    b.player.hitPoints = hp;
+    var energy = b.player.energy, monsterHp = b.monster.hp;
+    Game.Companion.act(b);
+    return { healed: b.player.hitPoints - hp, energy: energy - b.player.energy, chip: monsterHp - b.monster.hp };
+  }
+  var max = b.player.hitPointsMax;
+  var full = spray(max);
+  assert(full.healed === 0, 'at full HP the Undine does not heal (healed ' + full.healed + ')');
+  assert(full.chip > 0, 'at full HP the chip still lands (' + full.chip + ' damage)');
+  assert(full.energy === kind.basic.energyCost, 'at full HP the Energy cost is still paid (' + full.energy + ')');
+  var atLine = spray(Math.ceil(max * 0.6));
+  assert(atLine.healed === 0, 'at exactly 60% HP the Undine still holds (healed ' + atLine.healed + ')');
+  var below = spray(Math.floor(max * 0.6) - 1);
+  assert(below.healed > 0, 'below 60% HP the Undine heals (healed ' + below.healed + ')');
+  assert(below.chip > 0, 'below 60% HP the chip lands too (' + below.chip + ' damage)');
+  Game.Battle.flee();
+  Game.Battle.endBattle();
+})();
 
 console.log('\n===================================');
 if (failures === 0) {

@@ -17,6 +17,7 @@
 //   basic: { name, effect ('damage'|'heal'), grade, energyCost, powerBase, powerPerLevel,
 //            dotKind?, dotPowerBase?, dotPowerPerLevel?, dotTurns?,   // Fire: Burn DoT rider
 //            chipPowerBase?, chipPowerPerLevel?,                      // Water: token damage rider
+//            healBelow?,                                              // Water: heal only below this HP fraction
 //            tauntTurns? }                                            // Earth: threat rider
 //     The auto-action fired once per player round (js/core/companion.js act(), called from the
 //     TOP of js/core/battle.js finishRound). `power` at any given moment = round(powerBase +
@@ -76,10 +77,16 @@ Game.Data.companions = [
       name: 'Soothing Spray',
       effect: 'heal', grade: null,
       energyCost: 4, // [invented][sim-gated]
-      powerBase: 5, powerPerLevel: 0.5, // [invented][sim-gated] heals the player, Fear-exempt (archived: "Fear affects spell damage, NOT healing" — Recent_Updates.md 2007-04-06)
-      chipPowerBase: 2, chipPowerPerLevel: 0.2 // [invented][sim-gated] a token Water-grade hit on the enemy riding the same cast
+      // [invented][sim-gated] heals the player, Fear-exempt (archived: "Fear affects spell damage, NOT healing" — Recent_Updates.md 2007-04-06).
+      // powerPerLevel 0.5 -> 0.25 (user-directed, docs/SPEC-WATER-PACT-COST.md): one spray restored 36–50% of a T3 caster's HP bar; now 24–32%.
+      powerBase: 5, powerPerLevel: 0.25,
+      chipPowerBase: 2, chipPowerPerLevel: 0.2, // [invented][sim-gated] a token Water-grade hit on the enemy riding the same cast
+      // [invented][sim-gated] docs/SPEC-WATER-PACT-COST.md: the spray heals only while the player is
+      // below 60% HP (the chip still lands every round). Healing at full HP made every T3 boss cost
+      // a Water Conjurer 17–25% HP, under the 35% / 45% boss cost floor (docs/SPEC-BOSS-SIM-TECHS.md §3.1).
+      healBelow: 0.6
     },
-    desc: 'A gentle current given living shape — it mists cool water over your wounds, and what spills past you still stings the foe.',
+    desc: 'A gentle current given living shape — once your wounds run deep it mists cool water over them, and what spills past you still stings the foe.',
     icon: 'comp_water'
   },
 

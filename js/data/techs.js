@@ -3388,7 +3388,7 @@ Game.Data.techs = [
     effect: 'summon',
     classOnly: true,
     classId: 'conjurer',
-    desc: 'Bind a Tidal Undine — a healer that mends your wounds each round. Replaces any companion already bound.'
+    desc: 'Bind a Tidal Undine — a healer that mends your wounds each round once you fall below 60% health, and stings the foe every round. Replaces any companion already bound.'
   },
   {
     id: 'tech_summon_earth',

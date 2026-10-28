@@ -158,10 +158,16 @@ Game.Companion = (function () {
 
     if (basic.effect === 'heal') {
       // Water: heals the player (Fear-exempt, archived: Recent_Updates.md 2007-04-06) plus a
-      // token graded chip hit on the enemy, riding the same cast.
-      var healAmount = Game.Battle.techEffectivePower(player, { effect: 'heal', power: power });
-      player.hitPoints = Math.min(player.hitPointsMax, player.hitPoints + healAmount);
-      battle.log.push('Your ' + def.name + ' uses ' + basic.name + ' — you recover ' + healAmount + ' HP.');
+      // token graded chip hit on the enemy, riding the same cast. docs/SPEC-WATER-PACT-COST.md: with
+      // `healBelow` set, the heal only fires while the player is below that HP fraction; the chip
+      // (and the Energy cost above) still apply every round.
+      if (!basic.healBelow || player.hitPoints < player.hitPointsMax * basic.healBelow) {
+        var healAmount = Game.Battle.techEffectivePower(player, { effect: 'heal', power: power });
+        player.hitPoints = Math.min(player.hitPointsMax, player.hitPoints + healAmount);
+        battle.log.push('Your ' + def.name + ' uses ' + basic.name + ' — you recover ' + healAmount + ' HP.');
+      } else {
+        battle.log.push('Your ' + def.name + ' holds its spray — your wounds are not deep enough yet.');
+      }
       if (basic.chipPowerBase && battle.monster.hp > 0) {
         var chipPower = Math.round(basic.chipPowerBase + basic.chipPowerPerLevel * L);
         var chipDmg = dealDamageToMonster(battle, chipPower, basic.grade);

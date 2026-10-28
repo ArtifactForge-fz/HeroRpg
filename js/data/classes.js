@@ -868,7 +868,7 @@ Game.Data.classes = [
         kind: 'tech',
         techIds: ['tech_summon_water', 'tech_cmd_renewing_tide'], // [invented] docs/SPEC-COMPANION-SYSTEM.md §2.5
         classLevelCost: 3,
-        desc: 'Bind the Tidal Undine and learn its Renewing Tide — a healer that mends and cleanses you.'
+        desc: 'Bind the Tidal Undine and learn its Renewing Tide — a healer that mends you once you fall below 60% health, and cleanses you on command.'
       },
       {
         id: 'conjurer_pact_earth',

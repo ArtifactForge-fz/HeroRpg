@@ -110,6 +110,11 @@ Below L30 / L60, lineages share their T1 / T2 class, so groups show identical nu
 
 ### 3.1 Finding 1 — the Conjurer companion makes T3 bosses cheap (B2 ❌, 5 cells)
 
+> **Update 2026-10-28:** the Water pact is fixed by `docs/SPEC-WATER-PACT-COST.md`: it heals only
+> below 60% HP, and its heal grows half as fast. Water now spends 40–54% at band bosses and 52–62%
+> at the finale. The Conjurer lineage still fails B2 at all five T3 bosses, now through
+> Fire/Earth/Wind with the Heir Legendary (31–35%) and Earth/Wind at the finale (34–41%). See that
+> spec's §3.3. The tables below are the pre-fix numbers.
 
 HP spent per win, range over the four Legendary options, `techs` policy (all 100% win):
 
@@ -185,7 +190,7 @@ These are regression floors, 30 unseeded trials. The grid above is the gate.
   This shows the companion is wired into the fixture. It lives in the companion suite because
   `test_p3_battle.js` doesn't load `js/core/companion.js`. **The B2 cost floor is not asserted for
   the Conjurer** (Finding 1, report only). The test logs each pact's HP spent so the gap stays
-  visible.
+  visible. Since `docs/SPEC-WATER-PACT-COST.md`, it does assert B2 for the Water pact.
 
 Every existing boss test keeps the default build and policy and gives the same results. The new
 fixture is also loaded by `tests/test_p6b_content.js` (Part 4, unchanged).
@@ -194,7 +199,7 @@ fixture is also loaded by `tests/test_p6b_content.js` (Part 4, unchanged).
 
 | # | Item | Notes |
 |---|---|---|
-| F1 | Conjurer boss cost (Finding 1) | Water fails B2 at all five T3 bosses, and Earth/Wind/Fire miss the finale's 45%. Per the ratchet principle, tune the companion, not the bosses. Should also decide whether companion HP lost counts as boss cost |
+| F1 | Conjurer boss cost (Finding 1) | **Water: done** (`docs/SPEC-WATER-PACT-COST.md`). **Still open:** Fire/Earth/Wind + Heir at 31–35% at L60–L90, and Earth/Wind (all options) plus Fire + Heir at 34–42% at the finale. Per the ratchet principle, tune the companion, not the bosses. Should also decide whether companion HP lost counts as boss cost |
 | F2 | Melee class techs (Finding 2) | The 13 warrior/thief-line damage techs, and the Legendary techs on melee builds, do almost nothing for their owners. Spec a physical/weapon variant, then re-run this grid |
 | F3 | Seer's Ward (Finding 4) | Make it useful for a caster, or accept it as a melee-only buff |
 | F4 | Limit breaks, Defend, shrine buffs | Still not modelled by any boss grid |
