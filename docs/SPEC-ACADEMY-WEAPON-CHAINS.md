@@ -1,7 +1,9 @@
 # SPEC — Academy weapon chains: a monotonic re-taper, multipliers after armor, and Fear on armor pierce
 
-**Status:** READY — D0–D7 resolved by the user 2026-10-28 (§5; D4 and D6 differ from the first
-draft's recommendations). Not implemented. Authored 2026-10-28 on
+**Status:** IMPLEMENTED on branch `v1.11-hero-tree`; not yet merged to `main`, released or deployed.
+D0–D7 resolved by the user 2026-10-28 (§5; D4 and D6 differ from the first draft's
+recommendations). **Implementation gate run 2026-10-28 (§8): passes** — melee boss failures down
+from 49 to the 3 D4 accepted; L10 five-levels-up melee wins down from 45–95% to 0–24%. Authored 2026-10-28 on
 branch `v1.11-hero-tree` (user-directed: "start that spec", follow-up F1 of
 `docs/SPEC-BOSS-SIM-FULL-KIT.md`). Screening sims run (§3, 150 trials); the implementation gate
 (300 trials, full 12-lineage grid) is owed after the decisions.
@@ -146,20 +148,20 @@ they are re-run in the grid, not compared fight-for-fight.
 
 ## 4. Conventions & handoff checklist
 
-- [ ] `js/data/techs.js`: the §2.2 `powerMult` values, each with an `[invented]` comment citing this
+- [x] `js/data/techs.js`: the §2.2 `powerMult` values, each with an `[invented]` comment citing this
   spec (replacing the "pre-tapered ×0.55" comments).
-- [ ] `js/core/battle.js` useTech weapon branch: multiplier after armor (C1), Fear on pierce (C3).
-- [ ] `tests/boss_fixture.js`: strongest-rank slotting in the `kit` build (§2.1). Not the Firebolt
+- [x] `js/core/battle.js` useTech weapon branch: multiplier after armor (C1), Fear on pierce (C3).
+- [x] `tests/boss_fixture.js`: strongest-rank slotting in the `kit` build (§2.1). Not the Firebolt
   ordering (D6).
-- [ ] Tests: weapon-tech damage expectations in `tests/test_p3_battle.js` / `test_v18_engine.js` that
+- [x] Tests: weapon-tech damage expectations in `tests/test_p3_battle.js` / `test_v18_engine.js` that
   hard-code the old formula or values are stale constants — update them, never weaken. New
   stubbed-RNG tests: (a) a ×2 weapon tech against armor A deals `2 × (hit − A)`; (b) five levels
   down, a weapon tech's pierce is scaled by Fear; (c) every rank of the six chains is strictly
   stronger than the rank before.
-- [ ] Wiki / tech info box: they read `powerMult` live — check the "×N" text still renders.
-- [ ] Save impact: none. Icons, ids, drop tables: none.
+- [x] Wiki / tech info box: they read `powerMult` live — check the "×N" text still renders.
+- [x] Save impact: none. Icons, ids, drop tables: none.
 - [ ] Changelog entry (§2.5) in the release that ships this.
-- [ ] All 16 suites green.
+- [x] All 16 suites green.
 
 ## 5. Decisions
 
@@ -184,3 +186,77 @@ All resolved by the user on 2026-10-28.
 - Conjurer + Attunement + Heir (`docs/SPEC-BOSS-SIM-FULL-KIT.md` F2).
 - 5-levels-down from L29 up (accepted limitation).
 - Boss stats, the boss contract, the class weapon techs' own `powerMult` values.
+
+## 7. Implementation (2026-10-28)
+
+- `js/data/techs.js`: the §2.2 values on all 44 ranks of the six chains, each citing this spec.
+- `js/core/battle.js` useTech weapon branch: `powerMult` moved after armor (C1) and the tech's armor
+  pierce scaled by Fear (C3). `attack()`, Limit Breaks, physicalRoll techs, spell techs and
+  monster techs are unchanged.
+- `tests/boss_fixture.js`: the kit slots each chain's strongest rank (§2.1).
+- `tests/test_p3_battle.js`: Test 14 (Cleave I, Impale I) and the Crushing Blow check updated as
+  stale constants to the new formula (same assertions); new Test 108 — a ×2 weapon tech deals
+  `round((hit − armor) × 2)`, Fear scales a tech's pierce five levels down, and every rank of the
+  six chains is stronger than the one before.
+- All 16 suites pass.
+
+## 8. Implementation gate results (run 2026-10-28 on the implemented code)
+
+**Method** as `docs/SPEC-BOSS-SIM-FULL-KIT.md` §3: real game code, unpatched; seeded, **300 trials
+per cell**; 1,404 cells (11 bosses × 12 lineages × every class option × `basic`/`techs`/`kit`).
+Regular checks: Paladin, Gambit, Dragoon, Ranger and Magus with the kit, at-level and five
+levels up, at L10/29/46/64/91.
+
+**Verdict: passes the §3 bar.** B1 ✅ 132/132, B3 ✅ 132/132, B2 ❌ 8/132:
+- the three cells D4 accepted: Gambit and Assassin at the L10 boss (34%), Assassin at the finale
+  (43%, Vaultbreaker option);
+- the five Conjurer cells at L60–L100 (27–33%), unchanged from before this spec — follow-up F2 of
+  `docs/SPEC-BOSS-SIM-FULL-KIT.md`, out of scope here.
+
+Cheapest option HP spent per win % / weakest option win %, player's best of the three policies
+(**x** = fails B2):
+
+| Boss | SK | Bers | Pal | Ward | Magus | Conj | Cleric | Seer | Gambit | Assn | Ranger | Drag |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| L10 | 36/100 | 36/100 | 36/100 | 36/100 | 61/99 | 61/99 | 61/99 | 61/99 | **x34**/100 | **x34**/100 | 39/100 | 45/100 |
+| L18 | 52/100 | 52/100 | 52/100 | 52/100 | 42/100 | 42/100 | 42/100 | 42/100 | 55/100 | 55/100 | 56/100 | 54/100 |
+| L25 | 61/100 | 61/100 | 61/100 | 61/100 | 47/100 | 47/100 | 47/100 | 47/100 | 66/100 | 66/100 | 69/100 | 67/100 |
+| L32 | 52/100 | 52/100 | 51/100 | 51/100 | 46/100 | 46/100 | 41/100 | 41/100 | 48/100 | 48/100 | 58/100 | 56/100 |
+| L40 | 51/100 | 51/100 | 49/100 | 49/100 | 56/100 | 56/100 | 55/100 | 55/100 | 45/100 | 45/100 | 60/100 | 61/100 |
+| L50 | 62/100 | 62/100 | 58/100 | 58/100 | 42/100 | 42/100 | 39/100 | 39/100 | 56/100 | 56/100 | 81/99 | 83/99 |
+| L60 | 47/100 | 49/100 | 47/100 | 45/100 | 41/100 | **x31**/100 | 36/100 | 40/100 | 47/100 | 45/100 | 62/100 | 64/100 |
+| L70 | 48/100 | 49/100 | 49/100 | 47/100 | 45/100 | **x33**/100 | 42/100 | 45/100 | 51/100 | 48/100 | 65/100 | 67/100 |
+| L80 | 43/100 | 44/100 | 42/100 | 41/100 | 44/100 | **x32**/100 | 41/100 | 43/100 | 43/100 | 41/100 | 57/100 | 61/100 |
+| L90 | 45/100 | 46/100 | 44/100 | 42/100 | 46/100 | **x27**/100 | 43/100 | 46/100 | 45/100 | 42/100 | 60/100 | 65/100 |
+| L100 | 48/100 | 48/100 | 49/100 | 48/100 | 70/100 | **x29**/100 | 67/100 | 72/100 | 47/100 | **x43**/100 | 67/100 | 68/100 |
+
+- **Melee:** from 31 failing cells (49 with the strongest rank slotted) to the 3 accepted ones.
+- **Casters:** identical to `docs/SPEC-BOSS-SIM-FULL-KIT.md` §7 — no caster cell moved, so the
+  Channeled Strike change doesn't reach any verdict.
+- **`basic` + `techs` alone:** 0 failures. Melee costs rose with the class weapon techs now
+  multiplied after armor (e.g. Paladin L60 cheapest 56%), every cell still wins 96–100%.
+
+**Regular checks (win %, kit):**
+
+| Level | At-level (Pal / Gam / Drag / Rng / Magus) | Five levels up (Pal / Gam / Drag / Rng / Magus) |
+|---|---|---|
+| L10 | 100 / 100 / 100 / 100 / 100 | **24 / 24 / 0 / 0** / 96 |
+| L29 | 100 / 100 / 100 / 100 / 100 | 99 / 99 / 97 / 96 / 100 |
+| L46 | 100 / 100 / 100 / 100 / 100 | 100 / 100 / 100 / 99 / 100 |
+| L64 | 100 / 100 / 100 / 100 / 100 | 100 / 93 / 98 / 95 / 99 |
+| L91 | 100 / 100 / 100 / 100 / 100 | 100 / 97 / 99 / 98 / 99 |
+
+- L10 five levels up: melee down from 45–95% to 0–24% (D5 accepted 22–23%; 24% at 300 trials).
+- **New finding, not caused here:** the Magus wins **96%** of L10 fights five levels up with the kit,
+  keeping Tidal Lance I (an Evocation spell) and Defend. Spell techs don't use the weapon branch,
+  and armor barely touches them, so Fear alone doesn't stop them. Without the kit the Magus
+  already wins 40% (`techs`) / 14% (`basic`) there. Follow-up F2 below.
+- From L29 up, five levels up stays broken for everyone: the accepted Fear-sustain limitation.
+
+## 9. Follow-ups
+
+| # | Item | Notes |
+|---|---|---|
+| F1 | The spell chains' rank-6 dip, plus the fixture's Firebolt ordering (D6) | Same M2 problem for Firebolt, Starspark, Tidal Lance, Shadowlash, Lifetap |
+| F2 | Casters five levels up at L10 (Magus 96% with Tidal Lance I) | Spell damage isn't stopped by Fear the way weapon damage now is. Fits with F1 |
+| F3 | Conjurer + Attunement + Heir (5 boss cells) | Unchanged; `docs/SPEC-BOSS-SIM-FULL-KIT.md` F2 |

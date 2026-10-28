@@ -321,6 +321,6 @@ Conjurer, 300 trials, win % / HP spent %:
 
 | # | Item | Notes |
 |---|---|---|
-| F1 | Melee Academy weapon chains under the boss floor (Finding 1, 31 cells) | Fix in one spec together with `docs/SPEC-MELEE-CLASS-TECHS.md` F2 (the L10 5-down hole): same tools, same root cause. Options include the chains' `powerMult` / energy cost, or boss stats; decided there under its own sim gate |
+| F1 | Melee Academy weapon chains under the boss floor (Finding 1, 31 cells) — **done** (`docs/SPEC-ACADEMY-WEAPON-CHAINS.md`; 3 cells accepted 1–2 points under) | Fix in one spec together with `docs/SPEC-MELEE-CLASS-TECHS.md` F2 (the L10 5-down hole): same tools, same root cause. Options include the chains' `powerMult` / energy cost, or boss stats; decided there under its own sim gate |
 | F2 | Conjurer + Attunement + Heir (Finding 2, 5 cells) | Check how Attunement feeds companion damage, or the Heir on a Conjurer |
-| F3 | Twinblade Crosscut at L90–L100 (Finding 3, 3 cells) | Likely the same fix family as F1 |
+| F3 | Twinblade Crosscut at L90–L100 (Finding 3, 3 cells) — **done** (`docs/SPEC-ACADEMY-WEAPON-CHAINS.md`) | Likely the same fix family as F1 |

@@ -800,7 +800,8 @@ setRng(fixedRng(0.5)); // variance factor exactly 1.0, no dodge/glancing (both t
 var b14w = Game.Battle.start('plains_field_rat');
 var cleave1 = Game.Battle.getTech('tech_cleave_1');
 var weaponDmg14 = Game.Character.getDamage(c14w);
-var expectedCleave = Math.max(1, Math.round(weaponDmg14 * cleave1.powerMult - b14w.monster.armor));
+// SPEC-ACADEMY-WEAPON-CHAINS §2.3 (C1): powerMult applies AFTER armor: round((hit - armor) x powerMult). Was round(hit x powerMult - armor).
+var expectedCleave = Math.max(1, Math.round((weaponDmg14 - b14w.monster.armor) * cleave1.powerMult));
 var mHpBefore14 = b14w.monster.hp;
 var energyBefore14 = c14w.energy;
 Game.Battle.useTech('tech_cleave_1');
@@ -821,7 +822,8 @@ var b14p = Game.Battle.start('majiku_forest_scout');
 var impale1 = Game.Battle.getTech('tech_impale_1');
 var weaponDmg14p = Game.Character.getDamage(c14p);
 var fear14p = Game.Battle.fearMultiplier(b14p);
-var expectedImpale = Math.max(1, Math.round(weaponDmg14p * impale1.powerMult * fear14p - b14p.monster.armor * (1 - impale1.armorPierce)));
+// SPEC-ACADEMY-WEAPON-CHAINS §2.3/§2.4: round((hit x Fear - armor x (1 - pierce x Fear)) x powerMult). Was round(hit x powerMult x Fear - armor x (1 - pierce)).
+var expectedImpale = Math.max(1, Math.round((weaponDmg14p * fear14p - b14p.monster.armor * (1 - impale1.armorPierce * fear14p)) * impale1.powerMult));
 var mHpBefore14p = b14p.monster.hp;
 Game.Battle.useTech('tech_impale_1');
 var dealt14p = mHpBefore14p - b14p.monster.hp;
@@ -3893,7 +3895,9 @@ console.log('\n=== Test 104: SPEC-MELEE-CLASS-TECHS — the warrior/thief class 
   var b = Game.Battle.start('estari_loose_rubble');
   setRng(fixedRng(0.5)); // no dodge, no glancing/crit, neutral variance
   var pen = Math.min(BALANCE.ARMOR_PEN_TOTAL_CAP, Game.Character.getSecondaryStat(c, 'armorPen'));
-  var expected = Math.max(1, Math.round(Game.Character.getDamage(c) * 1.3 * Game.Battle.fearMultiplier(b) - b.monster.armor * (1 - pen)));
+  // SPEC-ACADEMY-WEAPON-CHAINS §2.3/§2.4: round((hit x Fear - armor x (1 - pen x Fear)) x 1.3). Was round(hit x 1.3 x Fear - armor x (1 - pen)).
+  var fearCB = Game.Battle.fearMultiplier(b);
+  var expected = Math.max(1, Math.round((Game.Character.getDamage(c) * fearCB - b.monster.armor * (1 - pen * fearCB)) * 1.3));
   var before = b.monster.hp;
   Game.Battle.useTech('tech_crushing_blow');
   assert(before - b.monster.hp === expected, 'Crushing Blow deals getDamage x 1.3 - Armor: dealt ' + (before - b.monster.hp) + ', expected ' + expected);
@@ -3961,6 +3965,63 @@ console.log(BossFixture.describe('majiku_ridge_chieftain (Paladin, kit)', kitSim
 assert(kitSim.winRate >= 0.85, 'a prepared Paladin with the full kit beats majiku_ridge_chieftain (win rate ' + (kitSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
 assert(kitSim.avgConsumed <= 0.5 * kitSim.stock, 'majiku_ridge_chieftain is not ruinous for the full-kit Paladin (avg ' + kitSim.avgConsumed.toFixed(1) + ' of ' + kitSim.stock + ')');
 assert(kitSim.kit.some(function (id) { return id.indexOf('tech_cleave_') === 0; }), 'the whole-fight tool choice keeps a Cleave rank (kept: ' + JSON.stringify(kitSim.kit) + ')');
+
+// =================== Test 108: SPEC-ACADEMY-WEAPON-CHAINS — multiplier after armor, Fear on pierce, monotonic chains ===================
+console.log('\n=== Test 108: SPEC-ACADEMY-WEAPON-CHAINS §2.2-2.4 — weapon-tech powerMult applies after armor; Fear scales armor pierce; every chain rank is stronger ===');
+(function () {
+  // (a) C1: a x2 weapon tech against armor A deals round((hit - A) x 2), not round(hit x 2 - A).
+  var c = makeCharacter({ name: 'AfterArmorTest' });
+  setRng(fixedRng(0.5)); // variance exactly 1.0; no dodge / glancing / crit (all thresholds < 0.5)
+  var b = Game.Battle.start('plains_field_rat');
+  var tech = Game.Battle.getTech('tech_cleave_1');
+  var oldMult = tech.powerMult, oldPierce = tech.armorPierce;
+  tech.powerMult = 2; tech.armorPierce = 0;
+  try {
+    var hit = Game.Character.getDamage(c); // fear 1 (at level), curse 1, variance 1 => hit is the pre-armor value
+    var A = 3;
+    b.monster.armor = A; b.monster.hp = b.monster.hpMax = 100000;
+    var before = b.monster.hp;
+    Game.Battle.useTech('tech_cleave_1');
+    var expected = Math.max(1, Math.round((hit - A) * 2)); // e.g. hit 7, A 3 => (7 - 3) x 2 = 8 (old formula: 7 x 2 - 3 = 11)
+    assert(before - b.monster.hp === expected, 'a x2 weapon tech deals round((hit - armor) x 2): hit ' + hit + ', armor ' + A + ', dealt ' + (before - b.monster.hp) + ', expected ' + expected);
+    assert(expected !== Math.round(hit * 2 - A), 'sanity: the new result differs from the old formula (' + Math.round(hit * 2 - A) + ')');
+  } finally { tech.powerMult = oldMult; tech.armorPierce = oldPierce; }
+  Game.Battle.endBattle();
+
+  // (b) C3: five or more levels down, the tech's armor pierce is multiplied by Fear.
+  var c2 = makeCharacter({ name: 'FearPierceTest' });
+  c2.hitPoints = c2.hitPointsMax = 100000;
+  setRng(fixedRng(0.5));
+  var b2 = Game.Battle.start('majiku_forest_scout'); // level 6 vs a level 1 hero: 5 levels down
+  var t2 = Game.Battle.getTech('tech_cleave_1');
+  var oM = t2.powerMult, oP = t2.armorPierce;
+  t2.powerMult = 3; t2.armorPierce = 0.9; // x3 makes the pierce difference visible
+  try {
+    var fear = Game.Battle.fearMultiplier(b2);
+    assert(fear < 1, 'sanity: fear multiplier is below 1 five levels down (' + fear + ')');
+    var pen = Math.min(BALANCE.ARMOR_PEN_TOTAL_CAP, 0.9 + Game.Character.getSecondaryStat(c2, 'armorPen'));
+    var hit2 = Game.Character.getDamage(c2) * fear;
+    b2.monster.armor = Math.ceil(hit2 * 1.5); b2.monster.hp = b2.monster.hpMax = 100000;
+    var scaled = Math.max(1, Math.round((hit2 - b2.monster.armor * (1 - pen * fear)) * 3));
+    var unscaled = Math.max(1, Math.round((hit2 - b2.monster.armor * (1 - pen)) * 3));
+    assert(scaled < unscaled, 'sanity: scaling the pierce by Fear changes the damage (' + scaled + ' vs ' + unscaled + ')');
+    var before2 = b2.monster.hp;
+    Game.Battle.useTech('tech_cleave_1');
+    assert(before2 - b2.monster.hp === scaled, 'five levels down the tech pierce is scaled by Fear: dealt ' + (before2 - b2.monster.hp) + ', expected ' + scaled + ' (unscaled would be ' + unscaled + ')');
+  } finally { t2.powerMult = oM; t2.armorPierce = oP; }
+  Game.Battle.endBattle();
+
+  // (c) §2.2: every rank of the six Academy chains is strictly stronger than the one before.
+  ['Cleave', 'Vital Strike', 'Impale', 'Flurry', 'Crosscut', 'Channeled Strike'].forEach(function (chain) {
+    var ranks = Object.keys(Game.Data.techs).map(function (k) { return Game.Data.techs[k]; })
+      .filter(function (t) { return t.chain === chain && t.weaponTech && !t.classOnly; })
+      .sort(function (x, y) { return x.rank - y.rank; });
+    assert(ranks.length >= 4, chain + ' has at least 4 ranks (' + ranks.length + ')');
+    var mono = true;
+    for (var i = 1; i < ranks.length; i++) { if (!(ranks[i].powerMult > ranks[i - 1].powerMult)) mono = false; }
+    assert(mono, chain + ': powerMult strictly increases with rank (' + ranks.map(function (t) { return t.powerMult; }).join(', ') + ')');
+  });
+})();
 
 // =================== Summary ===================
 console.log('\n===================================');

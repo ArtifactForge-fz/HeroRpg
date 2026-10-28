@@ -15,7 +15,7 @@
 //   the strongest affordable damage tech, else the basic action. A Conjurer enters the fight with
 //   its pact's companion bound at full HP.
 // - 'kit' (docs/SPEC-BOSS-SIM-FULL-KIT.md): the full prepared kit. The build adds every Academy chain
-//   rank the trained skills allow (opts.kit), the shrine buffs the level's shard budget buys (§2.6) and,
+//   rank (the strongest the trained skills allow, SPEC-ACADEMY-WEAPON-CHAINS §2.1) (opts.kit), the shrine buffs the level's shard budget buys (§2.6) and,
 //   for the sensitivity run only (opts.limitBreak), Fury 5. Each turn: Crystal; heal (kept heal tech,
 //   else item) below 40% HP; re-bind a fallen companion; Limit Break (opts.limitBreak, once); Defend
 //   while a boss charge is pending; a kept buff not running; a kept debuff not on the boss; the
@@ -217,7 +217,11 @@ function build(Game, level, opts) {
     allTechs.forEach(function (t) {
       if (t.monsterOnly || t.classOnly || !t.chain || t.chain === 'Firebolt' || skills.indexOf(t.skill) === -1) return;
       if ((t.skillReq || 0) > c.skills[t.skill].level) return;
-      if (!chains[t.chain] || t.rank > chains[t.chain].rank) chains[t.chain] = t;
+      // docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.1: slot the STRONGEST rank (highest powerMult, else power, else 0), ties to the
+      // higher rank — what a player keeps — not simply the highest rank.
+      var strength = function (x) { return x.powerMult || x.power || 0; };
+      var cur = chains[t.chain];
+      if (!cur || strength(t) > strength(cur) || (strength(t) === strength(cur) && t.rank > cur.rank)) chains[t.chain] = t;
     });
     Object.keys(chains).forEach(function (name) {
       var t = chains[name];

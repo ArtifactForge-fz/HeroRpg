@@ -1461,10 +1461,14 @@ Game.Battle = (function () {
             log(battle, 'The ' + battle.monster.name + ' dodges your ' + tech.name + '!');
             continue;
           }
-          base = Game.Character.getDamage(battle.player) * (tech.powerMult || 1) * fear * curseMult;
+          // docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.3 (C1) [invented]: the tech's powerMult is NOT applied here;
+          // it multiplies what gets through armor (see `dmg` below), so Fear can't be rescued by a x>1 tech.
+          base = Game.Character.getDamage(battle.player) * fear * curseMult;
           // docs/SPEC-SECONDARY-STATS.md §2.4: Armor Penetration stacks additively with the tech's
           // own armorPierce, capped in total. Never touches Magic Armor.
           var techPierce = Math.min(BALANCE.ARMOR_PEN_TOTAL_CAP, (tech.armorPierce || 0) + secondaryStat(battle.player, 'armorPen'));
+          // docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.4 (C3) [invented]: Fear scales the tech's total armor pierce.
+          techPierce *= fear;
           mitigation = battle.monster.armor * (1 - techPierce);
         } else {
           base = techEffectivePower(battle.player, tech) * fear * curseMult;
@@ -1480,7 +1484,10 @@ Game.Battle = (function () {
         var hvTech = rollHitVariance(battle.player, base);
         var raw = hvTech.raw, glancing = hvTech.glancing;
         raw = applyResistance(battle.monster, tech.grade, raw);
-        var dmg = Math.max(1, Math.round(raw - mitigation));
+        // §2.3 (C1): weapon techs multiply the post-armor remainder: round((hit - armor) x powerMult), floor 1.
+        var dmg = tech.weaponTech
+          ? Math.max(1, Math.round((raw - mitigation) * (tech.powerMult || 1)))
+          : Math.max(1, Math.round(raw - mitigation));
         // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): a pending guard halves THIS
         // action's final damage-to-monster per hit, floored at 1 (same as attack()'s main hit).
         if (guarding) dmg = Math.max(1, Math.round(dmg * (1 - BALANCE.GUARDIAN_REDUCTION)));

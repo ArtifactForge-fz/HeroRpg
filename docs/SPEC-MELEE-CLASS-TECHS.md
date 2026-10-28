@@ -315,7 +315,7 @@ at-level either (D7).
 | # | Item | Notes |
 |---|---|---|
 | F1 | Conjurer under this package | Re-run once the Water-pact change lands; no Conjurer tech changes here |
-| F2 | Academy weapon techs vs 5-down at L10 | Pre-existing hole found in §3.5 (Cleave I / Vital Strike I / Impale I: 65–91% win, 5 levels down). No grid models Academy chains |
+| F2 | Academy weapon techs vs 5-down at L10 — **done** (`docs/SPEC-ACADEMY-WEAPON-CHAINS.md`: 45–95% → 0–24%, accepted) | Pre-existing hole found in §3.5 (Cleave I / Vital Strike I / Impale I: 65–91% win, 5 levels down). No grid models Academy chains |
 | F3 | Radiant Smite on melee builds | D8 |
 | F4 | Boss grid with Academy chains | Real melee players have Cleave V (×2.9) at L60. The `techs` policy only knows class techs, so melee boss costs are optimistic. Same gap as F4 of `docs/SPEC-BOSS-SIM-TECHS.md` (limit breaks, Defend, shrine buffs) |
 

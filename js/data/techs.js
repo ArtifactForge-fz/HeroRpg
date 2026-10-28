@@ -1339,7 +1339,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 1.5, // invented (user-directed)
+    powerMult: 1.5, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 12,
     effect: 'damage',
     trainingCost: 2,
@@ -1354,7 +1354,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 1.9, // invented (user-directed)
+    powerMult: 1.62, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 16,
     effect: 'damage',
     trainingCost: 3,
@@ -1369,7 +1369,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 2.3, // invented (user-directed)
+    powerMult: 1.74, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 22,
     effect: 'damage',
     trainingCost: 5,
@@ -1384,7 +1384,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 1.4, // invented (user-directed)
+    powerMult: 1.4, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed): a driven spear-thrust ignores part of the target's Armor
     energyCost: 12,
     effect: 'damage',
@@ -1400,7 +1400,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 1.8, // invented (user-directed)
+    powerMult: 1.52, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 16,
     effect: 'damage',
@@ -1416,7 +1416,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 2.2, // invented (user-directed)
+    powerMult: 1.65, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 22,
     effect: 'damage',
@@ -1432,7 +1432,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 1.3, // invented (user-directed)
+    powerMult: 1.3, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (user-directed): a knife finds the seams in armor even more readily than a spear
     energyCost: 10,
     effect: 'damage',
@@ -1448,7 +1448,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 1.7, // invented (user-directed)
+    powerMult: 1.41, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (user-directed)
     energyCost: 14,
     effect: 'damage',
@@ -1464,7 +1464,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 2.0, // invented (user-directed)
+    powerMult: 1.53, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (user-directed)
     energyCost: 18,
     effect: 'damage',
@@ -1472,7 +1472,7 @@ Game.Data.techs = [
     skillReq: 12,
     desc: 'The master form of Vital Strike, taught only once a knife-fighter has proven the first two ranks. Requires Vital Strike II and Knives 12.'
   },
-  // ---------- Vital Strike ranks 4-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 powerMult pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  // ---------- Vital Strike ranks 4-9 (added SPEC-TECH-CHAIN-COMPLETION; powerMult re-tapered by docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2) ----------
   {
     id: 'tech_vital_strike_4',
     name: 'Vital Strike IV',
@@ -1481,7 +1481,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 2.3, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.64, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
     energyCost: 22,
     effect: 'damage',
@@ -1498,7 +1498,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 2.6, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.76, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
     energyCost: 26,
     effect: 'damage',
@@ -1515,7 +1515,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 1.6, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.87, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
     energyCost: 30,
     effect: 'damage',
@@ -1532,7 +1532,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 1.76, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.98, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
     energyCost: 34,
     effect: 'damage',
@@ -1549,7 +1549,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 1.93, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 2.1, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
     energyCost: 38,
     effect: 'damage',
@@ -1566,7 +1566,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 2.09, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 2.21, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
     energyCost: 42,
     effect: 'damage',
@@ -1583,7 +1583,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 0.9, // invented (user-directed): each of the 2 hits is individually weaker than a plain Attack
+    powerMult: 0.9, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (user-directed): resolves as two successive strikes (js/core/battle.js useTech, same mechanic as Shadowstep Strike above)
     energyCost: 14,
     effect: 'damage',
@@ -1599,7 +1599,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 1.1, // invented (user-directed)
+    powerMult: 0.96, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (user-directed)
     energyCost: 20,
     effect: 'damage',
@@ -1607,7 +1607,7 @@ Game.Data.techs = [
     skillReq: 6,
     desc: 'A stronger Flurry, requiring the first rank be learned and a proven Hand to Hand skill. Requires Flurry I and Hand to Hand 6.'
   },
-  // ---------- Flurry ranks 3-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 powerMult pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  // ---------- Flurry ranks 3-9 (added SPEC-TECH-CHAIN-COMPLETION; powerMult re-tapered by docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2) ----------
   {
     id: 'tech_flurry_3',
     name: 'Flurry III',
@@ -1616,7 +1616,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 1.3, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.02, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
     energyCost: 26,
     effect: 'damage',
@@ -1633,7 +1633,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 1.45, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.07, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
     energyCost: 30,
     effect: 'damage',
@@ -1650,7 +1650,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 1.6, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.13, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
     energyCost: 34,
     effect: 'damage',
@@ -1667,7 +1667,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 0.96, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.19, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
     energyCost: 38,
     effect: 'damage',
@@ -1684,7 +1684,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 1.05, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.25, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
     energyCost: 42,
     effect: 'damage',
@@ -1701,7 +1701,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 1.13, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.3, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
     energyCost: 46,
     effect: 'damage',
@@ -1718,7 +1718,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 1.21, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.36, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
     energyCost: 50,
     effect: 'damage',
@@ -1772,7 +1772,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 2.6, // invented (user-directed)
+    powerMult: 1.86, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 26,
     effect: 'damage',
     trainingCost: 6,
@@ -1787,7 +1787,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 2.5, // invented (user-directed)
+    powerMult: 1.77, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 26,
     effect: 'damage',
@@ -1842,7 +1842,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 2.9, // invented (user-directed)
+    powerMult: 1.98, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 30,
     effect: 'damage',
     trainingCost: 8,
@@ -1857,7 +1857,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 2.8, // invented (user-directed)
+    powerMult: 1.89, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 30,
     effect: 'damage',
@@ -1912,7 +1912,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 1.76, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.2 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 1.76 (was invented 3.2).
+    powerMult: 2.1, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 34,
     effect: 'damage',
     trainingCost: 10,
@@ -1927,7 +1927,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 1.71, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.1 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 1.705 -> 1.71 (was invented 3.1).
+    powerMult: 2.01, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 34,
     effect: 'damage',
@@ -1982,7 +1982,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 1.93, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.5 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 1.925 -> 1.93 (was invented 3.5).
+    powerMult: 2.22, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 38,
     effect: 'damage',
     trainingCost: 12,
@@ -1997,7 +1997,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 1.87, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.4 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 1.87 (was invented 3.4).
+    powerMult: 2.13, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 38,
     effect: 'damage',
@@ -2052,7 +2052,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 2.09, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.8 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 2.09 (was invented 3.8).
+    powerMult: 2.34, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 42,
     effect: 'damage',
     trainingCost: 14,
@@ -2067,7 +2067,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 2.04, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.7 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 2.035 -> 2.04 (was invented 3.7).
+    powerMult: 2.26, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 42,
     effect: 'damage',
@@ -2123,7 +2123,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 2.26, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 4.1 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 2.255 -> 2.26 (was invented 4.1).
+    powerMult: 2.47, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 46,
     effect: 'damage',
     trainingCost: 16,
@@ -2138,7 +2138,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 2.2, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 4.0 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 2.2 (was invented 4.0).
+    powerMult: 2.38, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 46,
     effect: 'damage',
@@ -3082,7 +3082,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 12,
     weaponTech: true,
-    powerMult: 1.3,
+    powerMult: 1.3, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     effect: 'damage',
     trainingCost: 2,
     skillReq: 0,
@@ -3097,7 +3097,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 16,
     weaponTech: true,
-    powerMult: 1.7,
+    powerMult: 1.52, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     effect: 'damage',
     trainingCost: 4,
     skillReq: 10,
@@ -3112,7 +3112,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 22,
     weaponTech: true,
-    powerMult: 2.0,
+    powerMult: 1.74, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     effect: 'damage',
     trainingCost: 6,
     skillReq: 25,
@@ -3127,7 +3127,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 26,
     weaponTech: true,
-    powerMult: 2.3, // D4 primary lock (SPEC-TECH-POLARITY.md §0/§2.3): rod melee stays slower than Cleave, the v1.6 halving holds
+    powerMult: 1.95, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     effect: 'damage',
     trainingCost: 8,
     skillReq: 45,
@@ -3276,7 +3276,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 14,
     weaponTech: true,
-    powerMult: 1.2,
+    powerMult: 1.2, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     requiresOffhandWeapon: true,
     offhandFollowup: true,
     effect: 'damage',
@@ -3293,7 +3293,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 18,
     weaponTech: true,
-    powerMult: 1.5,
+    powerMult: 1.4, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     requiresOffhandWeapon: true,
     offhandFollowup: true,
     effect: 'damage',
@@ -3310,7 +3310,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 24,
     weaponTech: true,
-    powerMult: 1.8,
+    powerMult: 1.59, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     requiresOffhandWeapon: true,
     offhandFollowup: true,
     effect: 'damage',
@@ -3327,7 +3327,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 30,
     weaponTech: true,
-    powerMult: 2.1, // D4 primary lock (SPEC-TECH-POLARITY.md §0/§2.3): Cleave stays the faster at-level killer
+    powerMult: 1.79, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     requiresOffhandWeapon: true,
     offhandFollowup: true,
     effect: 'damage',
