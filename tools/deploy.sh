@@ -1,6 +1,6 @@
 #!/bin/sh
 # Deploy the HeroRPG static site to an SFTP host (e.g. a Strato subdomain webspace).
-# Uploads index.html + changelog.html + wiki.html + js/ + css/ + assets/ (the whole playable
+# Uploads .htaccess + index.html + changelog.html + wiki.html + js/ + css/ + assets/ (the whole playable
 # site — on a real HTTP origin localStorage works natively, so the single-file artifact bundle
 # is NOT used here). Any new root-level page linked from the game must be added to the find list
 # below.
@@ -85,7 +85,7 @@ while IFS= read -r f; do
   printf 'url = "%s/%s"\n' "$BASE" "$rel" >> "$CFG"
   n=$((n+1))
 done <<EOF
-$(find index.html changelog.html wiki.html js css assets -type f | sed 's#^\./##')
+$(find .htaccess index.html changelog.html wiki.html js css assets -type f | sed 's#^\./##')
 EOF
 echo "deploy: uploading $n files to $BASE/ (single connection) ..."
 curl -sS -K "$CFG"
