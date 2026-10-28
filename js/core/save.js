@@ -111,6 +111,33 @@ Game.Save = (function () {
     return notes;
   }
 
+  // docs/SPEC-MELEE-CLASS-TECHS.md §2.3: a bought class ability grants every tech in its techIds
+  // (js/core/classes.js buyAbility). When an ability gains a tech after purchase (the Legendary
+  // weapon twins), a save that bought it earlier is missing that tech: add it to c.techs, unslotted.
+  // Runs on every load like sanitizeRetired (no new field, so no version bump); idempotent.
+  function grantAbilityTechs(state) {
+    var notes = [];
+    var c = state && state.character;
+    if (!c || !c.classes || !Game.Data || !Game.Data.classes) return notes;
+    if (!c.techs) c.techs = [];
+    Game.Data.classes.forEach(function (classDef) {
+      var entry = c.classes[classDef.id];
+      if (!entry || !entry.abilities || !entry.abilities.length) return;
+      (classDef.abilities || []).forEach(function (ability) {
+        if (ability.kind !== 'tech' || !Array.isArray(ability.techIds)) return;
+        if (entry.abilities.indexOf(ability.id) === -1) return;
+        ability.techIds.forEach(function (techId) {
+          if (c.techs.indexOf(techId) !== -1) return;
+          c.techs.push(techId);
+          var tech = (Game.Data.techs || []).filter(function (t) { return t.id === techId; })[0];
+          notes.push('Your ' + classDef.name + ' ability ' + ability.name + ' now also teaches ' +
+            (tech ? tech.name : techId) + '. Slot it in a technique set to use it.');
+        });
+      });
+    });
+    return notes;
+  }
+
   function migrate(payload) {
     lastLoadNotes = [];
     if (!payload || typeof payload.version !== 'number') return null;
@@ -350,7 +377,7 @@ Game.Save = (function () {
       version = 12;
     }
 
-    lastLoadNotes = sanitizeRetired(state);
+    lastLoadNotes = sanitizeRetired(state).concat(grantAbilityTechs(state));
 
     if (version === CURRENT_VERSION) return state;
     return null;

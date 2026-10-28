@@ -369,3 +369,16 @@ same courtesy is extended so no two ids render as visually-identical tiles):
 | tech_cmd_tailwind | tech_attunement_1.png | -18° | Tailwind — an existing spellpower-buff tile |
 | mon_cleaving_roar | tech_cleave_1.png | +30° | example monster tech (target 'both'), not wired to any monster |
 | mon_banish_conduit | estari_anima_conduit.png | -25° | example monster tech (target 'companion'), not wired to any monster |
+
+## Legendary weapon-twin tech icons — derived from the spell-form tiles
+
+The three Legendary weapon twins (`docs/SPEC-MELEE-CLASS-TECHS.md` §2.3) reuse their spell form's
+Dungeon Crawl tile, mirrored left-right, tinted toward steel, with a 1px steel blade line on the
+diagonal. Generated with Node's `zlib` and a hand-rolled PNG decode/encode (no dependencies); each is
+a valid 32x32 RGBA PNG, byte-hash-distinct from every other file in `assets/icons/`.
+
+| Icon | Derived from |
+|---|---|
+| tech_runic_severance_blade | tech_runic_severance.png |
+| tech_vault_reckoning_blade | tech_vault_reckoning.png |
+| tech_echoing_judgment_blade | tech_echoing_judgment.png |

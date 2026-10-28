@@ -1326,17 +1326,19 @@ Game.Battle.endBattle();
 console.log('\n=== Test 25: non-elemental (grade:null) tech damage ignores Magic Armor; graded techs still mitigated (v1.2 Phase 1 #7) ===');
 
 var c25 = makeCharacter({ name: 'NonElementalTest' });
-c25.lineage.tier1 = 'warrior'; // minimal setup: isClassTechUsable reads activeClassIds (v1.11 lineage)
-c25.techs.push('tech_crushing_blow');
-c25.techSets[0][1] = 'tech_crushing_blow'; // slot 0 already holds the Swords starter tech (Cleave I)
+// docs/SPEC-MELEE-CLASS-TECHS.md: the warrior/thief class techs are weapon techs now, so the example is
+// Vaultbreaker's Reckoning, the last grade:null non-weapon class tech (the Legendary's spell form).
+c25.legendaryClass = 'vaultbreaker'; // minimal setup: isClassTechUsable reads activeClassIds (lineage + Legendary)
+c25.techs.push('tech_vault_reckoning');
+c25.techSets[0][1] = 'tech_vault_reckoning'; // slot 0 already holds the Swords starter tech (Cleave I)
 setRng(fixedRng(0.99));
 var b25 = Game.Battle.start('estari_loose_rubble'); // magicArmor 2, nonzero -> the fix is visible
 setRng(fixedRng(0.5)); // hit-chance check passes, no glancing, neutral variance
-var tech25 = Game.Battle.getTech('tech_crushing_blow');
+var tech25 = Game.Battle.getTech('tech_vault_reckoning');
 var fear25 = Game.Battle.fearMultiplier(b25);
 var expectedDmg25 = Math.max(1, Math.round(Game.Battle.techEffectivePower(c25, tech25) * fear25)); // mitigation=0 for grade:null
 var mHpBefore25 = b25.monster.hp;
-Game.Battle.useTech('tech_crushing_blow');
+Game.Battle.useTech('tech_vault_reckoning');
 var dealt25 = mHpBefore25 - b25.monster.hp;
 assert(dealt25 === expectedDmg25,
   'grade:null non-weapon tech ignores monster.magicArmor (' + b25.monster.magicArmor + ') entirely: dealt ' + dealt25 + ', expected ' + expectedDmg25);
@@ -3868,6 +3870,86 @@ assert(magusSim.winRate >= 0.85, 'a prepared Magus with class techs beats societ
 assert(magusSim.avgHpSpent >= 0.35 || magusSim.avgConsumed >= 3, 'society_anima_horror still costs a Magus with class techs (avg HP spent ' + (magusSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables)');
 assert(magusSim.avgConsumed <= 0.5 * magusSim.stock, 'society_anima_horror is not ruinous for a Magus with class techs (avg ' + magusSim.avgConsumed.toFixed(1) + ' of ' + magusSim.stock + ')');
 assert(magusSim.avgCasts > 0, 'the techs policy actually casts the Magus class techs (avg ' + magusSim.avgCasts.toFixed(1) + ' per win)');
+
+// =================== Test 104: melee class techs strike with the weapon (SPEC-MELEE-CLASS-TECHS) ===================
+console.log('\n=== Test 104: SPEC-MELEE-CLASS-TECHS — the warrior/thief class techs are weapon techs; damage = getDamage x powerMult - Armor ===');
+(function () {
+  var MELEE = { tech_crushing_blow: 1.3, tech_quick_stab: 1.3, tech_execution_blow: 1.5, tech_shadowstep_strike: 0.65,
+    tech_efficient_strike: 1.3, tech_shadow_blade: 1.7, tech_berserker_frenzy: 1.85, tech_paladin_smite: 1.55,
+    tech_warden_bulwark: 1.34, tech_dice_throw: 1.3, tech_lethal_strike: 1.75, tech_ranger_volley: 0.88, tech_dragoon_leap: 1.67 };
+  Object.keys(MELEE).forEach(function (id) {
+    var t = Game.Battle.getTech(id);
+    assert(t.weaponTech === true && t.powerMult === MELEE[id] && t.grade === null && t.power === undefined,
+      id + ' is an ungraded weapon tech with powerMult ' + MELEE[id] + ' and no Int-scaled power');
+    assert(t.powerMult * (t.hits || 1) >= 1.3 - 1e-9, id + ': a whole cast is never under the T1 anchor x1.3 (' + t.powerMult + ' x ' + (t.hits || 1) + ' hits)');
+  });
+
+  var c = makeCharacter({ name: 'CrushingBlowTest' }); // Swords 3, a starter sword in hand
+  c.lineage.tier1 = 'warrior';
+  c.techs.push('tech_crushing_blow');
+  c.techSets[0][1] = 'tech_crushing_blow';
+  setRng(fixedRng(0.99));
+  var b = Game.Battle.start('estari_loose_rubble');
+  setRng(fixedRng(0.5)); // no dodge, no glancing/crit, neutral variance
+  var pen = Math.min(BALANCE.ARMOR_PEN_TOTAL_CAP, Game.Character.getSecondaryStat(c, 'armorPen'));
+  var expected = Math.max(1, Math.round(Game.Character.getDamage(c) * 1.3 * Game.Battle.fearMultiplier(b) - b.monster.armor * (1 - pen)));
+  var before = b.monster.hp;
+  Game.Battle.useTech('tech_crushing_blow');
+  assert(before - b.monster.hp === expected, 'Crushing Blow deals getDamage x 1.3 - Armor: dealt ' + (before - b.monster.hp) + ', expected ' + expected);
+  assert(/You strike with Crushing Blow/.test(b.log.join(' ')), 'the log reads as a weapon strike, not a cast');
+  Game.Battle.endBattle();
+
+  var c2 = makeCharacter({ name: 'NoWeaponTest' });
+  c2.lineage.tier1 = 'warrior';
+  c2.techs.push('tech_crushing_blow');
+  c2.techSets[0][1] = 'tech_crushing_blow';
+  c2.equipment.weapon = null;
+  setRng(fixedRng(0.5));
+  var b2 = Game.Battle.start('plains_field_rat');
+  var before2 = b2.monster.hp, energy2 = c2.energy;
+  Game.Battle.useTech('tech_crushing_blow');
+  assert(b2.monster.hp === before2 && c2.energy === energy2, 'with no weapon in hand Crushing Blow is refused and costs nothing');
+  Game.Battle.endBattle();
+})();
+
+// =================== Test 105: Seer's Ward adds Spell Power and refreshes instead of stacking ===================
+console.log("\n=== Test 105: SPEC-MELEE-CLASS-TECHS §2.4 — Seer's Ward is a +40 Spell Power buff that refreshes on re-cast ===");
+(function () {
+  var ward = Game.Battle.getTech('tech_seers_ward');
+  assert(ward.effect === 'buff' && ward.statKind === 'spellpower' && ward.power === 40 && ward.chain, "Seer's Ward is a typed +40 Spell Power buff with a chain");
+  var c = makeCharacter({ skills: { 'Evocation': 3 }, name: 'SeersWardTest' });
+  c.lineage.tier3 = 'seer';
+  c.techs.push('tech_seers_ward');
+  c.techSets[0][1] = 'tech_seers_ward';
+  setRng(fixedRng(0.99));
+  var b = Game.Battle.start('plains_field_rat');
+  b.monster.hp = b.monster.hpMax = 99999;
+  c.energy = c.energyMax = 500;
+  var fb = Game.Battle.getTech('tech_firebolt_1');
+  var spellBefore = Game.Battle.techEffectivePower(c, fb);
+  var weaponBefore = Game.Character.getDamage(c);
+  var expected = Game.Battle.techEffectivePower(c, { effect: 'damage', power: fb.power + 40, skill: fb.skill }); // before the Ward is up
+  setRng(fixedRng(0.5));
+  Game.Battle.useTech('tech_seers_ward');
+  var spellAfter = Game.Battle.techEffectivePower(c, fb);
+  assert(spellAfter > spellBefore && spellAfter === expected, "the Ward adds 40 Spell Power to Firebolt (" + spellBefore + ' -> ' + spellAfter + ', expected ' + expected + ')');
+  var untyped = b.playerStatuses.filter(function (st) { return st.type === 'buff' && !st.statKind; });
+  assert(untyped.length === 0 && Game.Character.getDamage(c) === weaponBefore, 'the Ward no longer adds flat weapon Damage');
+  Game.Battle.useTech('tech_seers_ward');
+  var wards = b.playerStatuses.filter(function (st) { return st.type === 'buff' && st.name === ward.name; });
+  assert(wards.length === 1, 're-casting the Ward refreshes it instead of stacking (' + wards.length + ' active)');
+  Game.Battle.flee();
+  Game.Battle.endBattle();
+})();
+
+// =================== Test 106: a melee lineage casts its class techs at a boss and still pays ===================
+console.log('\n=== Test 106: SPEC-MELEE-CLASS-TECHS — a prepared Paladin casting its class techs wins at L80 but pays ===');
+var paladinSim = BossFixture.simulate(Game, 'estari_warden_prime', 80, 30, { lineage: 'paladin', policy: 'techs' });
+console.log(BossFixture.describe('estari_warden_prime (Paladin, techs)', paladinSim) + ', avg class techs cast ' + paladinSim.avgCasts.toFixed(1));
+assert(paladinSim.winRate >= 0.85, 'a prepared Paladin with class techs beats estari_warden_prime (win rate ' + (paladinSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(paladinSim.avgHpSpent >= 0.35 || paladinSim.avgConsumed >= 3, 'estari_warden_prime still costs a Paladin with class techs (avg HP spent ' + (paladinSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables)');
+assert(paladinSim.avgConsumed <= 0.5 * paladinSim.stock, 'estari_warden_prime is not ruinous for a Paladin with class techs (avg ' + paladinSim.avgConsumed.toFixed(1) + ' of ' + paladinSim.stock + ')');
+assert(paladinSim.avgCasts > 0, 'the techs policy now casts the Paladin class techs (avg ' + paladinSim.avgCasts.toFixed(1) + ' per win)');
 
 // =================== Summary ===================
 console.log('\n===================================');

@@ -889,6 +889,12 @@ Game.Data.techs = [
   // is active in a slot — enforced in js/core/battle.js useTech() via Game.Classes.isClassTechUsable
   // (single guarded check point, see that file's comment).
   //
+  // docs/SPEC-MELEE-CLASS-TECHS.md (O6): the 13 warrior/thief-line damage techs in this file are
+  // WEAPON techs (weaponTech + powerMult, Feature C shape), not Int-scaled spells — as spells they
+  // dealt 1–11% of a melee hero's basic attack. The Legendary spell techs keep their form and gain a
+  // `_blade` weapon twin, granted by the same ability. The per-block comments below that describe
+  // these techs as non-weapon / Intelligence-rolled predate that change.
+  //
   // v1.1 revision (DESIGN.md §3 / js/data/classes.js header): base-tier (level-5) techs below are
   // deliberately modest — tech_crushing_blow and tech_anima_surge are retuned DOWN from their old
   // level-30-oriented power/energyCost now that Warrior/Magician grant them at level 5 instead
@@ -902,13 +908,14 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.3, // invented: T1 anchor (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 14,
-    power: 16, // revised: down from 34 — base-tier (level 5) power, was level-30-oriented
     effect: 'damage',
     classOnly: true,
     classId: 'warrior',
-    desc: 'A heavy, telegraphed blow that trades finesse for raw physical damage. Warrior class technique.'
+    desc: 'A heavy, telegraphed weapon blow that trades finesse for raw physical damage. Warrior class technique.'
   },
   {
     id: 'tech_anima_surge',
@@ -930,9 +937,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.3, // invented: T1 anchor x power 16/16 (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 14,
-    power: 16,
     effect: 'damage',
     classOnly: true,
     classId: 'thief',
@@ -944,9 +952,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 0.65, // invented: PER HIT (hits: 2); floor: a whole cast is never under the T1 anchor 1.3 (ratio gave 0.44) (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 18,
-    power: 16,
     hits: 2, // invented: this tech resolves as two successive strikes (see js/core/battle.js useTech)
     effect: 'damage',
     classOnly: true,
@@ -959,9 +968,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.5, // invented: T2 anchor (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 26,
-    power: 55,
     effect: 'damage',
     classOnly: true,
     classId: 'gladiator',
@@ -1015,9 +1025,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.3, // invented: floor at the T1 anchor (ratio 1.5 x 30/55 gave 0.82) (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 10,
-    power: 30,
     effect: 'damage',
     classOnly: true,
     classId: 'mercenary',
@@ -1037,6 +1048,21 @@ Game.Data.techs = [
     classId: 'runeblade_of_kuraan',
     desc: 'A hybrid Light-and-Dark strike that cleaves through both flesh and ward alike. Runeblade of Kuraan class technique.'
   },
+  {
+    id: 'tech_runic_severance_blade',
+    name: 'Severing Edge',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.3, // invented: floor at the T1 anchor (twin anchor 1.3 x power 46/66 gave 0.91) (docs/SPEC-MELEE-CLASS-TECHS.md §2.3: the weapon twin of tech_runic_severance for melee builds; granted with it by the same Legendary ability)
+    energyCost: 28, // same as the spell form
+    effect: 'damage',
+    classOnly: true,
+    classId: 'runeblade_of_kuraan',
+    desc: 'The Runeblade\'s severing rune carried down the steel of your own weapon — a weapon strike for blade-wielders. Runeblade of Kuraan class technique.'
+  },
 
   // =====================================================================
   // v1.2 Phase 2 (docs/SPEC-V1.2.md Phase 2): tier-3 + Legendary class-only techs. All five are
@@ -1054,9 +1080,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null, // invented: non-elemental, matches the Warrior-line precedent (tech_crushing_blow/tech_execution_blow) — ignores Magic Armor per Phase 1 item 7
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.7, // invented: T3 anchor (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 30,
-    power: 66, // invented: +20% over Gladiator's Execution Blow (55)
     effect: 'damage',
     classOnly: true,
     classId: 'shadowknight',
@@ -1082,9 +1109,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null, // invented: non-elemental, matches the Thief-line precedent (tech_quick_stab/tech_efficient_strike) — ignores Magic Armor per Phase 1 item 7
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.3, // invented: floor at the T1 anchor (ratio 1.7 x 45/66 gave 1.16) (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 18,
-    power: 45, // invented: +50% over Mercenary's Efficient Strike (30) — a bigger single gamble at a higher Energy cost (economy-tech niche, not a pure nuke; see js/data/classes.js gambit_dice_throw comment for the "high-variance" flavor reasoning)
     effect: 'damage',
     classOnly: true,
     classId: 'gambit',
@@ -1105,6 +1133,21 @@ Game.Data.techs = [
     desc: 'A single blow that carries the full weight of two fallen guardians at once. Vaultbreaker class technique.'
   },
   {
+    id: 'tech_vault_reckoning_blade',
+    name: 'Vault-Breaker\'s Blow',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.44, // invented: twin anchor 1.3 x power 73/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.3: the weapon twin of tech_vault_reckoning for melee builds; granted with it by the same Legendary ability)
+    energyCost: 33, // same as the spell form
+    effect: 'damage',
+    classOnly: true,
+    classId: 'vaultbreaker',
+    desc: 'The weight of two fallen guardians driven through your own weapon in a single blow. Vaultbreaker class technique.'
+  },
+  {
     id: 'tech_echoing_judgment',
     name: 'Echoing Judgment',
     chain: null,
@@ -1117,6 +1160,21 @@ Game.Data.techs = [
     classOnly: true,
     classId: 'heir_of_the_echo',
     desc: 'A judgment cast in Eidas\' own hybrid Light-and-Dark Anima, echoing a founder\'s long-silent verdict onto the battlefield. Heir of the Echo class technique.'
+  },
+  {
+    id: 'tech_echoing_judgment_blade',
+    name: 'Echo of the Blade',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.81, // invented: twin anchor 1.3 x power 92/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.3: the weapon twin of tech_echoing_judgment for melee builds; granted with it by the same Legendary ability)
+    energyCost: 44, // same as the spell form
+    effect: 'damage',
+    classOnly: true,
+    classId: 'heir_of_the_echo',
+    desc: 'Eidas\' long-silent verdict, echoed through the edge of your own weapon. Heir of the Echo class technique.'
   },
 
   // =====================================================================
@@ -1135,9 +1193,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null, // invented: non-elemental, matches the Warrior-line precedent (tech_crushing_blow/tech_execution_blow/tech_shadow_blade) — ignores Magic Armor per Phase 1 item 7
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.85, // invented: T3 anchor 1.7 x power 72/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 32, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
-    power: 72, // invented: +9% over Shadowknight's Shadow Blade (66) — Berserker's glass-cannon identity is carried mostly by its passives (Bloodlust/Frenzied Pace), not a runaway tech number
     effect: 'damage',
     classOnly: true,
     classId: 'berserker',
@@ -1149,13 +1208,14 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: 'Light', // archived: "Healing spells use the Light grade" (Recent_Updates.md) — Paladin's holy damage reuses the same grade, mitigated by Magic Armor/resistances like any elemental tech
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.55, // invented: T3 anchor 1.7 x power 60/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 30, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
-    power: 60, // invented: provisional Part B brief number, within the tier-3 elemental-damage band
     effect: 'damage',
     classOnly: true,
     classId: 'paladin',
-    desc: 'A Light-grade blow called down on an enemy with the full weight of the Crusader\'s faith behind it. Paladin class technique.'
+    desc: 'A weapon blow called down on an enemy with the full weight of the Crusader\'s faith and Light behind it. Paladin class technique.'
   },
   {
     id: 'tech_warden_bulwark',
@@ -1163,13 +1223,14 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: 'Light', // invented: same Light-grade convention as tech_radiant_smite/tech_paladin_smite (Crusader line's Light-Anima flavor) — mitigated by Magic Armor/resistances
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.34, // invented: T3 anchor 1.7 x power 52/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 28, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
-    power: 52, // invented: provisional Part B brief number, within the tier-3 elemental-damage band
     effect: 'damage',
     classOnly: true,
     classId: 'warden',
-    desc: 'A Light-grade blow driven through the Warden\'s own barrier, turning defense briefly into attack. Warden class technique.'
+    desc: 'A weapon blow driven through the Warden\'s own barrier, turning defense briefly into attack. Warden class technique.'
   },
   // v1.9 (docs/SPEC-COMPANION-SYSTEM.md D0): the Conjurer's old "Elemental Servitor"
   // (tech_summon_elemental, effect:'summon') that used to live here is RETIRED/superseded — see
@@ -1193,17 +1254,18 @@ Game.Data.techs = [
   {
     id: 'tech_seers_ward',
     name: "Seer's Ward",
-    chain: null,
+    chain: 'SeersWard', // docs/SPEC-MELEE-CLASS-TECHS.md §2.4: typed buffs re-cast-replace only with a chain (battle.js useTech), so the Ward refreshes instead of stacking
     rank: 1,
     skill: null,
     grade: 'Light', // invented: foresight/protective flavor, matches the archived Light-grade convention for support/ward effects used elsewhere (Wardskin/Crusader line)
     energyCost: 26, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
-    power: 40, // invented: provisional Part B brief number — flat +Damage buff, well above tech_warcry_2's 12 since Seer has no other damage passive to lean on (Foresight/Clairvoyant Reserves are both non-offensive)
+    power: 40, // invented: between Attunement III (40) and IV (60) — docs/SPEC-MELEE-CLASS-TECHS.md §2.4 (W1); was a flat +Damage buff a Firebolt-casting Seer could not use
+    statKind: 'spellpower', // docs/SPEC-MELEE-CLASS-TECHS.md §2.4: feeds techEffectivePower like Attunement, no longer weapon damage
     buffDuration: 4, // invented: matches tech_warcry_2/tech_focus_1's buff-duration convention (no separate `buffType` field exists in the shipped buff-tech shape — see js/core/battle.js useTech's `effect === 'buff'` branch, which reads only `power`/`buffDuration`)
     effect: 'buff',
     classOnly: true,
     classId: 'seer',
-    desc: 'A moment of foresight woven into a battle-chant, hardening resolve and adding to Damage for a few turns. Seer class technique.'
+    desc: 'A moment of foresight woven into a battle-chant, sharpening your casting and adding to Spell Power for a few turns. Seer class technique.'
   },
   {
     id: 'tech_lethal_strike',
@@ -1211,9 +1273,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null, // invented: non-elemental, matches the Thief-line precedent (tech_quick_stab/tech_efficient_strike/tech_dice_throw) — ignores Magic Armor per Phase 1 item 7
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.75, // invented: T3 anchor 1.7 x power 68/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 30, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
-    power: 68, // invented: provisional Part B brief number, within the tier-3 non-elemental band (Shadow Blade 66 / Vault Reckoning 73)
     effect: 'damage',
     classOnly: true,
     classId: 'assassin',
@@ -1225,9 +1288,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null, // invented: non-elemental physical volley — matches the Thief-line precedent, ignores Magic Armor
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 0.88, // invented: PER HIT (hits: 2); T3 anchor 1.7 x power 34/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 30, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
-    power: 34, // invented: provisional Part B brief number — PER HIT (see hits: 2 below); mirrors tech_shadowstep_strike's two-hit shape (js/core/battle.js useTech `hits` loop)
     hits: 2, // invented: this tech resolves as two successive strikes (see js/core/battle.js useTech), same mechanic as Rogue's Shadowstep Strike
     effect: 'damage',
     classOnly: true,
@@ -1240,9 +1304,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null, // invented: non-elemental physical strike — Dragoon's lineage is a heavy hybrid melee fighter, not a caster
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.67, // invented: T3 anchor 1.7 x power 65/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 30, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
-    power: 65, // invented: provisional Part B brief number, within the tier-3 non-elemental band
     effect: 'damage',
     classOnly: true,
     classId: 'dragoon',
