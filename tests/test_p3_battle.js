@@ -553,7 +553,9 @@ var b9b = Game.Battle.start('estari_loose_rubble');
 var tech9 = Game.Battle.getTech('tech_firebolt_1');
 var effPower = Game.Battle.techEffectivePower(c9, tech9); // int factor
 var fear9 = Game.Battle.fearMultiplier(b9b); // level 1 vs 4 -> 0.7
-var expected9 = Math.max(1, Math.round(effPower * fear9 * 1.25 - b9b.monster.magicArmor));
+// SPEC-SPELL-CHAINS-AND-ARMOR §2.2: a graded spell is mitigated by Magic Armor + 0.5 x Armor (was Magic Armor alone).
+// Stale-constant update: expected = round(power x fear x 1.25 - (magicArmor + 0.5 x armor)).
+var expected9 = Math.max(1, Math.round(effPower * fear9 * 1.25 - (b9b.monster.magicArmor + BALANCE.TECH_PHYSICAL_DEFENSE_SHARE * b9b.monster.armor)));
 var mHp9b = b9b.monster.hp;
 Game.Battle.useTech('tech_firebolt_1');
 var dealt9 = mHp9b - b9b.monster.hp;
@@ -1355,7 +1357,8 @@ setRng(fixedRng(0.5));
 var tech25b = Game.Battle.getTech('tech_firebolt_1');
 var fear25b = Game.Battle.fearMultiplier(b25b);
 var raw25b = Game.Battle.techEffectivePower(c25b, tech25b) * fear25b * 1.25; // Fire vulnerability (-0.25 resistance)
-var expectedDmg25b = Math.max(1, Math.round(raw25b - b25b.monster.magicArmor));
+// SPEC-SPELL-CHAINS-AND-ARMOR §2.2 stale-constant update: mitigation = magicArmor + 0.5 x armor (was magicArmor alone).
+var expectedDmg25b = Math.max(1, Math.round(raw25b - (b25b.monster.magicArmor + BALANCE.TECH_PHYSICAL_DEFENSE_SHARE * b25b.monster.armor)));
 var mHpBefore25b = b25b.monster.hp;
 Game.Battle.useTech('tech_firebolt_1');
 var dealt25b = mHpBefore25b - b25b.monster.hp;
@@ -3864,14 +3867,17 @@ console.log('\n=== Test 102: monster tech power + boss basic cut + half Armor/Br
   assert(k1.calls - k0.calls === 1, 'Block rolls one rng() when the halved chance is above 0 and none at 0 (calls ' + k0.calls + ' vs ' + k1.calls + ')');
 })();
 
-// =================== Test 103: a Magus using its class techs still pays at the L90 boss ===================
-console.log('\n=== Test 103: SPEC-BOSS-SIM-TECHS — a prepared Magus casting its class techs wins at L90 but pays ===');
+// =================== Test 103: a Magus using its class techs still pays at the L50 boss ===================
+console.log('\n=== Test 103: SPEC-BOSS-SIM-TECHS — a prepared Magus casting its class techs wins at L50 but pays ===');
 // docs/SPEC-BOSS-SIM-TECHS.md §4: regression floor for the 'techs' policy (the 300-trial grid in §3 is the gate).
-var magusSim = BossFixture.simulate(Game, 'society_anima_horror', 90, 30, { lineage: 'magus', policy: 'techs' });
-console.log(BossFixture.describe('society_anima_horror (Magus, techs)', magusSim) + ', avg class techs cast ' + magusSim.avgCasts.toFixed(1));
-assert(magusSim.winRate >= 0.85, 'a prepared Magus with class techs beats society_anima_horror (win rate ' + (magusSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
-assert(magusSim.avgHpSpent >= 0.35 || magusSim.avgConsumed >= 3, 'society_anima_horror still costs a Magus with class techs (avg HP spent ' + (magusSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables)');
-assert(magusSim.avgConsumed <= 0.5 * magusSim.stock, 'society_anima_horror is not ruinous for a Magus with class techs (avg ' + magusSim.avgConsumed.toFixed(1) + ' of ' + magusSim.stock + ')');
+// Moved from L90 (society_anima_horror) to L50 by docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §7 (user, 2026-10-29): once the
+// fixture casts the strongest Firebolt, a T3 Magus (L60+) never finds a class spell that out-damages it, so the techs
+// policy casts none there (a follow-up spec). At L50 the Wizard-tier Magus still casts Arcane Cataclysm.
+var magusSim = BossFixture.simulate(Game, 'majiku_warlord', 50, 30, { lineage: 'magus', policy: 'techs' });
+console.log(BossFixture.describe('majiku_warlord (Magus, techs)', magusSim) + ', avg class techs cast ' + magusSim.avgCasts.toFixed(1));
+assert(magusSim.winRate >= 0.85, 'a prepared Magus with class techs beats majiku_warlord (win rate ' + (magusSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(magusSim.avgHpSpent >= 0.35 || magusSim.avgConsumed >= 3, 'majiku_warlord still costs a Magus with class techs (avg HP spent ' + (magusSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables)');
+assert(magusSim.avgConsumed <= 0.5 * magusSim.stock, 'majiku_warlord is not ruinous for a Magus with class techs (avg ' + magusSim.avgConsumed.toFixed(1) + ' of ' + magusSim.stock + ')');
 assert(magusSim.avgCasts > 0, 'the techs policy actually casts the Magus class techs (avg ' + magusSim.avgCasts.toFixed(1) + ' per win)');
 
 // =================== Test 104: melee class techs strike with the weapon (SPEC-MELEE-CLASS-TECHS) ===================
@@ -4020,6 +4026,52 @@ console.log('\n=== Test 108: SPEC-ACADEMY-WEAPON-CHAINS §2.2-2.4 — weapon-tec
     var mono = true;
     for (var i = 1; i < ranks.length; i++) { if (!(ranks[i].powerMult > ranks[i - 1].powerMult)) mono = false; }
     assert(mono, chain + ': powerMult strictly increases with rank (' + ranks.map(function (t) { return t.powerMult; }).join(', ') + ')');
+  });
+})();
+
+// =================== Test 109: SPEC-SPELL-CHAINS-AND-ARMOR — graded hero spells lose Magic Armor + 0.5 x Armor; chains keep rising ===================
+console.log('\n=== Test 109: SPEC-SPELL-CHAINS-AND-ARMOR §2.1-2.2 — graded spell mitigation = Magic Armor + 0.5 x Armor; ungraded loses nothing; spell chains strictly rise ===');
+(function () {
+  var c = makeCharacter({ skills: { 'Evocation': 3 }, name: 'SpellArmorTest' });
+  c.hitPoints = c.hitPointsMax = 100000;
+  setRng(fixedRng(0.5)); // Int hit roll hits; variance exactly 1.0; no glancing / crit (thresholds < 0.5)
+  var b = Game.Battle.start('plains_field_rat');
+  var A = 10, M = 3; // mitigation = M + 0.5 x A = 8
+  b.monster.armor = A; b.monster.magicArmor = M; b.monster.hp = b.monster.hpMax = 100000;
+  var tech = Game.Battle.getTech('tech_firebolt_1');
+  var fear = Game.Battle.fearMultiplier(b), curse = Game.Battle.playerCurseMultiplier(b);
+  var pre = Game.Battle.applyResistance(b.monster, tech.grade, Game.Battle.techEffectivePower(c, tech) * fear * curse);
+  assert(!!tech.grade, 'sanity: Firebolt I is a graded spell (' + tech.grade + ')');
+
+  // (a) graded: pre-mitigation value minus (M + 0.5 x A).
+  var before = b.monster.hp;
+  Game.Battle.useTech('tech_firebolt_1');
+  var expected = Math.max(1, Math.round(pre - (M + BALANCE.TECH_PHYSICAL_DEFENSE_SHARE * A)));
+  assert(before - b.monster.hp === expected, 'graded spell loses Magic Armor + 0.5 x Armor: pre ' + pre.toFixed(2) + ', A ' + A + ', M ' + M + ', dealt ' + (before - b.monster.hp) + ', expected ' + expected);
+  assert(expected !== Math.max(1, Math.round(pre - M)), 'sanity: the new result differs from the old Magic-Armor-only rule (' + Math.max(1, Math.round(pre - M)) + ')');
+
+  // (b) ungraded: nothing lost to Armor or Magic Armor.
+  var oldGrade = tech.grade;
+  tech.grade = null;
+  try {
+    c.energy = c.energyMax;
+    var preU = Game.Battle.techEffectivePower(c, tech) * fear * curse;
+    var beforeU = b.monster.hp;
+    Game.Battle.useTech('tech_firebolt_1');
+    var expectedU = Math.max(1, Math.round(preU));
+    assert(beforeU - b.monster.hp === expectedU, 'ungraded damage spell loses nothing to Armor (' + A + ') or Magic Armor (' + M + '): dealt ' + (beforeU - b.monster.hp) + ', expected ' + expectedU);
+  } finally { tech.grade = oldGrade; }
+  Game.Battle.endBattle();
+
+  // (c) every rank of the five spell chains has strictly higher power than the rank before.
+  ['Firebolt', 'Starspark', 'Tidal Lance', 'Shadowlash', 'Lifetap'].forEach(function (chain) {
+    var ranks = Object.keys(Game.Data.techs).map(function (k) { return Game.Data.techs[k]; })
+      .filter(function (t) { return t.chain === chain && !t.classOnly && !t.monsterOnly; })
+      .sort(function (x, y) { return x.rank - y.rank; });
+    assert(ranks.length === 9, chain + ' has nine ranks (' + ranks.length + ')');
+    var mono = true;
+    for (var i = 1; i < ranks.length; i++) { if (!(ranks[i].power > ranks[i - 1].power)) mono = false; }
+    assert(mono, chain + ': power strictly increases with rank (' + ranks.map(function (t) { return t.power; }).join(', ') + ')');
   });
 })();
 

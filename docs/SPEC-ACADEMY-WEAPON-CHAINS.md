@@ -257,6 +257,6 @@ Cheapest option HP spent per win % / weakest option win %, player's best of the 
 
 | # | Item | Notes |
 |---|---|---|
-| F1 | The spell chains' rank-6 dip, plus the fixture's Firebolt ordering (D6) | Same M2 problem for Firebolt, Starspark, Tidal Lance, Shadowlash, Lifetap |
-| F2 | Casters five levels up at L10 (Magus 96% with Tidal Lance I) | Spell damage isn't stopped by Fear the way weapon damage now is. Fits with F1 |
+| F1 | The spell chains' rank-6 dip, plus the fixture's Firebolt ordering (D6) — **done** (`docs/SPEC-SPELL-CHAINS-AND-ARMOR.md`) | Same M2 problem for Firebolt, Starspark, Tidal Lance, Shadowlash, Lifetap |
+| F2 | Casters five levels up at L10 (Magus 96% with Tidal Lance I) — **done** (`docs/SPEC-SPELL-CHAINS-AND-ARMOR.md`: 96% → 0%) | Spell damage isn't stopped by Fear the way weapon damage now is. Fits with F1 |
 | F3 | Conjurer + Attunement + Heir (5 boss cells) | Unchanged; `docs/SPEC-BOSS-SIM-FULL-KIT.md` F2 |

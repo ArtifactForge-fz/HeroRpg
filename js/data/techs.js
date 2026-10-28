@@ -59,7 +59,7 @@ Game.Data.techs = [
     skillReq: 4,
     desc: 'Calls down a crackling arc of Star-grade Anima, the technique that replaced the old "lightning" spells.'
   },
-  // ---------- Starspark ranks 2-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  // ---------- Starspark ranks 2-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 powers per docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1) ----------
   {
     id: 'tech_starspark_2',
     name: 'Starspark II',
@@ -124,7 +124,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Star',
     energyCost: 44,
-    power: 52,
+    power: 84, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 10,
     skillReq: 40,
@@ -138,7 +138,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Star',
     energyCost: 50,
-    power: 63,
+    power: 91, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 12,
     skillReq: 50,
@@ -152,7 +152,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Star',
     energyCost: 56,
-    power: 74,
+    power: 99, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 14,
     skillReq: 60,
@@ -166,7 +166,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Star',
     energyCost: 62,
-    power: 85,
+    power: 106, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 16,
     skillReq: 70,
@@ -272,7 +272,7 @@ Game.Data.techs = [
     skillReq: 4,
     desc: 'Siphons a portion of the enemy\'s vitality into the caster as damage is dealt.'
   },
-  // ---------- Lifetap ranks 2-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  // ---------- Lifetap ranks 2-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 powers per docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1) ----------
   {
     id: 'tech_lifetap_2',
     name: 'Lifetap II',
@@ -337,7 +337,7 @@ Game.Data.techs = [
     skill: 'Absorption',
     grade: 'Dark',
     energyCost: 45,
-    power: 45,
+    power: 71, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'drain',
     trainingCost: 10,
     skillReq: 40,
@@ -351,7 +351,7 @@ Game.Data.techs = [
     skill: 'Absorption',
     grade: 'Dark',
     energyCost: 51,
-    power: 55,
+    power: 77, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'drain',
     trainingCost: 12,
     skillReq: 50,
@@ -365,7 +365,7 @@ Game.Data.techs = [
     skill: 'Absorption',
     grade: 'Dark',
     energyCost: 57,
-    power: 65,
+    power: 84, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'drain',
     trainingCost: 14,
     skillReq: 60,
@@ -379,7 +379,7 @@ Game.Data.techs = [
     skill: 'Absorption',
     grade: 'Dark',
     energyCost: 63,
-    power: 75,
+    power: 90, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'drain',
     trainingCost: 16,
     skillReq: 70,
@@ -509,7 +509,7 @@ Game.Data.techs = [
     skillReq: 12,
     desc: 'A third, consuming lash of shadow-stuff, taught only to Conjurers who have mastered the first two ranks. Requires Shadowlash II and Conjuration 12.'
   },
-  // ---------- Shadowlash ranks 4-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  // ---------- Shadowlash ranks 4-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 powers per docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1) ----------
   {
     id: 'tech_shadowlash_4',
     name: 'Shadowlash IV',
@@ -546,7 +546,7 @@ Game.Data.techs = [
     skill: 'Conjuration',
     grade: 'Dark',
     energyCost: 44,
-    power: 52,
+    power: 84, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 10,
     skillReq: 40,
@@ -560,7 +560,7 @@ Game.Data.techs = [
     skill: 'Conjuration',
     grade: 'Dark',
     energyCost: 50,
-    power: 63,
+    power: 91, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 12,
     skillReq: 50,
@@ -574,7 +574,7 @@ Game.Data.techs = [
     skill: 'Conjuration',
     grade: 'Dark',
     energyCost: 56,
-    power: 74,
+    power: 99, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 14,
     skillReq: 60,
@@ -588,7 +588,7 @@ Game.Data.techs = [
     skill: 'Conjuration',
     grade: 'Dark',
     energyCost: 62,
-    power: 85,
+    power: 107, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 16,
     skillReq: 70,
@@ -625,7 +625,7 @@ Game.Data.techs = [
     skillReq: 8,
     desc: 'A stronger Tidal Lance, requiring the first rank be learned and a proven Evocation skill. Requires Tidal Lance I and Evocation 8.'
   },
-  // ---------- Tidal Lance ranks 3-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  // ---------- Tidal Lance ranks 3-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 powers per docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1) ----------
   {
     id: 'tech_tidal_lance_3',
     name: 'Tidal Lance III',
@@ -676,7 +676,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Water',
     energyCost: 43,
-    power: 51,
+    power: 83, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 10,
     skillReq: 40,
@@ -690,7 +690,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Water',
     energyCost: 49,
-    power: 62,
+    power: 90, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 12,
     skillReq: 50,
@@ -704,7 +704,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Water',
     energyCost: 55,
-    power: 73,
+    power: 98, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 14,
     skillReq: 60,
@@ -718,7 +718,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Water',
     energyCost: 61,
-    power: 84,
+    power: 105, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 16,
     skillReq: 70,
@@ -1883,7 +1883,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Fire',
     energyCost: 42,
-    power: 51, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 92 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 50.6 -> 51. Cleave/Impale/Firebolt ranks 6-9 were compressing fights (killing before Fear/armor could matter); armor fix alone wasn't enough, see balance.js.
+    power: 82, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 10,
     skillReq: 40,
@@ -1953,7 +1953,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Fire',
     energyCost: 48,
-    power: 62, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 112 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 61.6 -> 62.
+    power: 89, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 12,
     skillReq: 50,
@@ -2023,7 +2023,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Fire',
     energyCost: 54,
-    power: 73, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 132 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 72.6 -> 73.
+    power: 97, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 14,
     skillReq: 60,
@@ -2094,7 +2094,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Fire',
     energyCost: 60,
-    power: 84, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 152 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 83.6 -> 84.
+    power: 104, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 16,
     skillReq: 70,

@@ -200,12 +200,13 @@ function build(Game, level, opts) {
   });
 
   // Casters learn every Firebolt rank their Evocation allows; the best affordable one is their basic action.
+  // Ordered by power descending, ties to the higher rank (docs/SPEC-SPELL-CHAINS-AND-ARMOR.md s2.3), not by rank alone.
   var firebolts = [];
   if (line.archetype === 'caster') {
     list(Game.Data.techs).forEach(function (t) {
       if (t.chain === 'Firebolt' && (t.skillReq || 0) <= c.skills.Evocation.level) firebolts.push(t);
     });
-    firebolts.sort(function (a, b) { return b.rank - a.rank; });
+    firebolts.sort(function (a, b) { return (b.power - a.power) || (b.rank - a.rank); });
     firebolts.forEach(function (t) { equipTech(c, t.id); });
   }
 

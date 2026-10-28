@@ -1476,8 +1476,11 @@ Game.Battle = (function () {
           if (tech.requiresCompanion) base *= BALANCE.COMPANION_DAMAGE_MULT;
           // v1.2 Phase 1 item 7: non-elemental damage ignores defense — RULE [archived] (DESIGN.md
           // §4 / 2005 note), adopted here: a grade:null tech's mitigation is 0 regardless of the
-          // monster's Magic Armor; a graded (elemental) tech is still mitigated by it.
-          mitigation = tech.grade ? battle.monster.magicArmor : 0;
+          // monster's Armor / Magic Armor.
+          // docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.2 [invented] (mirror of the v1.12 monster-tech rule,
+          // docs/SPEC-MONSTER-TECH-POWER.md §2.3): a graded (elemental) hero spell is mitigated by the
+          // monster's Magic Armor plus TECH_PHYSICAL_DEFENSE_SHARE of its Armor. Monster armor is not Fear-scaled.
+          mitigation = tech.grade ? battle.monster.magicArmor + BALANCE.TECH_PHYSICAL_DEFENSE_SHARE * battle.monster.armor : 0;
         }
         // docs/SPEC-SECONDARY-STATS.md §2.2 (U2): the same three-way roll, for both weapon techs
         // and damage/drain spell techs (U2 — one shared crit stat applies to both).

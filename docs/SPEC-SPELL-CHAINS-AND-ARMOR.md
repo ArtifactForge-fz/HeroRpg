@@ -1,6 +1,9 @@
 # SPEC — Spell chains that keep rising, and monster Armor against hero spells
 
-**Status:** READY — D0–D6 resolved by the user 2026-10-29, all as recommended (§5). Not implemented. Authored 2026-10-29 on
+**Status:** IMPLEMENTED on branch `v1.11-hero-tree`; not yet merged to `main`, released or deployed.
+D0–D6 resolved by the user 2026-10-29, all as recommended (§5). **Implementation gate run 2026-10-29
+(§8): passes** — casters at L10 five levels up 96% → 0%, no boss cell newly failing; the L10 boss
+for Firebolt-only casters drops to 12% (§8.1, follow-up). Test 103 moved to L50 (§7, user). Authored 2026-10-29 on
 branch `v1.11-hero-tree` (user-directed: "start on the follow-ups", F1 and F2 of
 `docs/SPEC-ACADEMY-WEAPON-CHAINS.md` §9; the user then asked why enemy Armor doesn't apply against
 magic damage, which became option S6). Screening sims run (§3, 150 trials); the implementation
@@ -131,19 +134,19 @@ known Conjurer five; casters at L10 five levels up ≤ melee's 0–24%; at-level
 
 ## 4. Conventions & handoff checklist
 
-- [ ] `js/data/techs.js`: §2.1 `power` values on ranks VI–IX of the five chains, each `[invented]`
+- [x] `js/data/techs.js`: §2.1 `power` values on ranks VI–IX of the five chains, each `[invented]`
   citing this spec (replacing the "pre-tapered ×0.55" comments).
-- [ ] `js/core/battle.js` useTech spell branch: graded mitigation = Magic Armor +
+- [x] `js/core/battle.js` useTech spell branch: graded mitigation = Magic Armor +
   `TECH_PHYSICAL_DEFENSE_SHARE` × Armor (S6); comment citing §2.2 and the v1.12 mirror.
-- [ ] `tests/boss_fixture.js`: Firebolt by power (§2.3).
-- [ ] Tests: stale constants only (spell damage expectations that assumed Magic Armor alone, the old
+- [x] `tests/boss_fixture.js`: Firebolt by power (§2.3).
+- [x] Tests: stale constants only (spell damage expectations that assumed Magic Armor alone, the old
   rank VI–IX powers) — update, never weaken. New stubbed-RNG tests: (a) a graded hero spell against
   a monster with Armor A and Magic Armor M loses `M + 0.5 × A`; (b) an ungraded spell still loses
   nothing; (c) every rank of the five chains is stronger than the one before.
-- [ ] Wiki / tech info box show the new powers.
-- [ ] Save impact: none. Icons, ids, drop tables: none.
+- [x] Wiki / tech info box show the new powers.
+- [x] Save impact: none. Icons, ids, drop tables: none.
 - [ ] Changelog entry (§2.4) in the release that ships this.
-- [ ] All 16 suites green.
+- [x] All 16 suites green.
 
 ## 5. Decisions
 
@@ -166,3 +169,97 @@ All resolved by the user on 2026-10-29, all as recommended.
 - The Conjurer + Attunement + Heir boss cells (`docs/SPEC-BOSS-SIM-FULL-KIT.md` F2).
 - Monster magic against the hero (v1.12, unchanged).
 - The class spells' own power values.
+
+## 7. Implementation (2026-10-29)
+
+- `js/data/techs.js`: the §2.1 powers on ranks VI–IX of the five spell chains, each citing this spec.
+- `js/core/battle.js` useTech spell branch: a graded hero spell is mitigated by Magic Armor +
+  `TECH_PHYSICAL_DEFENSE_SHARE` × Armor (S6). Weapon techs, `attack()`, Limit Breaks and monster
+  techs are unchanged. **Not changed (outside this spec):** the companion's own automatic attacks
+  (`js/core/companion.js` `dealDamageToMonster`, e.g. Ember Lash) still subtract Magic Armor only;
+  companion *command* spells (Conflagration) go through useTech and follow the new rule (D5).
+- `tests/boss_fixture.js`: the caster basic action casts the strongest affordable Firebolt (§2.3).
+- `tests/test_p3_battle.js`:
+  - Tests 9 and 25 (graded spell vs Magic Armor) updated as stale constants to the new mitigation
+    (12 → 11 damage), same assertions.
+  - New Test 109: a graded spell loses Magic Armor + ½ Armor, an ungraded spell loses nothing, and
+    every rank of the five chains beats the one before.
+  - **Test 103 moved from the L90 boss to the L50 boss** (user, 2026-10-29). Once the fixture casts
+    the strongest Firebolt, a T3 Magus never finds a class spell that out-damages it, so the
+    `techs` policy cast none at L90 and the "actually casts class techs" assertion failed. At L50
+    the Wizard-tier Magus still casts Arcane Cataclysm (≈ 6 casts per win, 100% win, 86–93% HP
+    spent). See finding 8.3.
+- All 16 suites pass.
+
+## 8. Implementation gate results (run 2026-10-29 on the implemented code)
+
+**Method** as `docs/SPEC-BOSS-SIM-FULL-KIT.md` §3: real game code, unpatched; seeded, **300 trials
+per cell**; 1,404 cells (11 bosses × 12 lineages × every class option × `basic`/`techs`/`kit`).
+Regular checks: Paladin, Gambit, Dragoon, Ranger, Magus, Cleric and Seer with the kit, at-level and
+five levels up, at L10/29/46/64/91.
+
+**Verdict: passes the §3 bar.** B1 ✅ 132/132, B3 ✅ 132/132, B2 ❌ 8/132 — exactly the 8 that failed
+before this spec (the 3 melee cells `docs/SPEC-ACADEMY-WEAPON-CHAINS.md` D4 accepted, and the 5
+Conjurer cells, `docs/SPEC-BOSS-SIM-FULL-KIT.md` F2). No cell newly fails.
+
+| Boss | SK | Bers | Pal | Ward | Magus | Conj | Cleric | Seer | Gambit | Assn | Ranger | Drag |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| L10 | 36/100 | 36/100 | 36/100 | 36/100 | 81/**87** | 81/**87** | 81/**87** | 81/**87** | **x34**/100 | **x34**/100 | 39/100 | 45/100 |
+| L18 | 52/100 | 52/100 | 52/100 | 52/100 | 46/100 | 46/100 | 46/100 | 46/100 | 55/100 | 55/100 | 56/100 | 54/100 |
+| L25 | 61/100 | 61/100 | 61/100 | 61/100 | 51/100 | 51/100 | 51/100 | 51/100 | 66/100 | 66/100 | 69/100 | 67/100 |
+| L32 | 52/100 | 52/100 | 51/100 | 51/100 | 46/100 | 46/100 | 41/100 | 41/100 | 48/100 | 48/100 | 58/100 | 56/100 |
+| L40 | 51/100 | 51/100 | 49/100 | 49/100 | 59/100 | 59/100 | 55/100 | 55/100 | 45/100 | 45/100 | 60/100 | 61/100 |
+| L50 | 62/100 | 62/100 | 58/100 | 58/100 | 43/100 | 43/100 | 41/100 | 41/100 | 56/100 | 56/100 | 81/99 | 83/99 |
+| L60 | 47/100 | 49/100 | 47/100 | 45/100 | 42/100 | **x32**/100 | 38/100 | 42/100 | 47/100 | 45/100 | 62/100 | 64/100 |
+| L70 | 48/100 | 49/100 | 49/100 | 47/100 | 47/100 | **x34**/100 | 44/100 | 47/100 | 51/100 | 48/100 | 65/100 | 67/100 |
+| L80 | 43/100 | 44/100 | 42/100 | 41/100 | 45/100 | **x33**/100 | 42/100 | 45/100 | 43/100 | 41/100 | 57/100 | 61/100 |
+| L90 | 45/100 | 46/100 | 44/100 | 42/100 | 47/100 | **x27**/100 | 44/100 | 47/100 | 45/100 | 42/100 | 60/100 | 65/100 |
+| L100 | 48/100 | 48/100 | 49/100 | 48/100 | 65/100 | **x28**/100 | 62/100 | 66/100 | 47/100 | **x43**/100 | 67/100 | 68/100 |
+
+**Regular checks (win %, kit):**
+
+| Level | At-level (Pal / Gam / Drag / Rng / Magus / Cleric / Seer) | Five levels up (same order) |
+|---|---|---|
+| L10 | 100 for all seven | 24 / 24 / 0 / 0 / **0 / 0 / 0** (casters were 96) |
+| L29 | 100 for all seven | 99 / 99 / 97 / 96 / 99 / 99 / 99 |
+| L46 | 100 for all seven | 100 / 100 / 100 / 99 / 100 / 100 / 100 |
+| L64 | 100 for all seven | 100 / 93 / 98 / 95 / 99 / 100 / 100 |
+| L91 | 100 for all seven | 100 / 97 / 99 / 98 / 98 / 100 / 100 |
+
+### 8.1 The L10 boss for casters (D3)
+
+The weakest caster option wins **87%** on the player's best policy, so D3's trigger (below 85%)
+didn't fire and the boss is unchanged. But the per-policy picture moved a lot:
+
+| Caster at `estari_ruin_warden` (Armor 12, Magic Armor 12) | Before | After |
+|---|---|---|
+| Firebolt only (`basic`) | 90% win, 80% HP spent | **12%** win, 108% |
+| + class spells (`techs`) | 99%, 61% | 77%, 84% |
+| + Academy kit (`kit`) | 99%, 61% | 87%, 81% |
+
+A caster who hasn't trained a second spell chain by L10 now mostly loses this boss: half its Armor
+(6) comes off every low-rank Firebolt. The contract judges the prepared hero, so this passes; it is
+recorded as follow-up F1 below for a decision.
+
+### 8.2 Spell ranks VI–IX
+
+Every chain now rises rank by rank. At the finale casters' cheapest option costs 62–66% HP (was
+67–72%), well above 45%.
+
+### 8.3 T3 Magus class spells fall behind (found by Test 103)
+
+With the fixture casting the strongest Firebolt, a Magus at L60–L100 never casts a class damage
+spell: Anima Reckoning (flat 84) and Arcane Cataclysm (flat 70) never out-damage Firebolt V–VII
+(74–89) on the opening probe. Measured on the previous commit too: at L60–L70 this was already
+true; at L80–L90 the Magus only "cast" before because the old fixture used the weak Firebolt VI (51).
+So the T3 Magus's class damage spells are dead weight from L60 — older than this spec, made visible
+by it. Follow-up F2.
+
+## 9. Follow-ups
+
+| # | Item | Notes |
+|---|---|---|
+| F1 | Casters at the L10 boss without a second spell chain (Firebolt only 12% win) | §8.1. Options: lower `estari_ruin_warden`'s Armor or Magic Armor, or accept (the contract judges the prepared hero) |
+| F2 | Flat-power class damage spells fall behind Academy ranks from L60 (Anima Reckoning 84, Arcane Cataclysm 70, Echoing Judgment 92) | §8.3. Same shape as the melee class-tech problem `docs/SPEC-MELEE-CLASS-TECHS.md` fixed; needs its own spec and sims |
+| F3 | Companion automatic attacks still ignore monster Armor | `js/core/companion.js` `dealDamageToMonster`; decide whether S6 applies to them too |
+| F4 | Conjurer + Attunement + Heir (5 boss cells) | Unchanged; `docs/SPEC-BOSS-SIM-FULL-KIT.md` F2 |
