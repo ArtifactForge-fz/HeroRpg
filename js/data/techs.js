@@ -3467,7 +3467,7 @@ Game.Data.techs = [
     effect: 'summon',
     classOnly: true,
     classId: 'conjurer',
-    desc: 'Bind a Granite Golem — a bulwark that draws blows away from you. Replaces any companion already bound.'
+    desc: 'Bind a Granite Golem — a bulwark that steps in front of you and takes half of each blow while the foe is fixed on it. Replaces any companion already bound.'
   },
   {
     id: 'tech_summon_wind',
@@ -3532,7 +3532,7 @@ Game.Data.techs = [
     effect: 'buff',
     classOnly: true,
     classId: 'conjurer',
-    desc: 'The Golem raises a wall of stone — your Armor climbs and the foe fixes on your guardian.'
+    desc: 'The Golem raises a wall of stone — your Armor climbs and the foe fixes on your guardian, which takes half of each blow.'
   },
   {
     id: 'tech_cmd_tailwind',

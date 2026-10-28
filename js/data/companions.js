@@ -56,9 +56,11 @@ Game.Data.companions = [
       name: 'Ember Lash',
       effect: 'damage', grade: 'Fire',
       energyCost: 4, // [invented][sim-gated]
-      powerBase: 6, powerPerLevel: 0.7, // [invented][sim-gated] power = round(6 + 0.7*L), fed through Game.Battle.techEffectivePower (Int-scaled, Fear-affected, like any spell tick)
+      // [invented][sim-gated] power fed through Game.Battle.techEffectivePower (Int-scaled, Fear-affected, like any spell tick).
+      // docs/SPEC-COMPANION-BOSS-COST.md (user-directed): 6 + 0.7·L -> 1.5 + 0.175·L (×0.25), offsetting the Burn now scaling with Intelligence.
+      powerBase: 1.5, powerPerLevel: 0.175,
       dotKind: 'burn',
-      dotPowerBase: 3, dotPowerPerLevel: 0.4, // [invented][sim-gated] dotPower = round(3 + 0.4*L), flat per-tick (no Int scaling — mirrors the existing 'bleed' debuff convention, js/core/battle.js tickMonsterStatuses)
+      dotPowerBase: 3, dotPowerPerLevel: 0.4, // [invented][sim-gated] raw round(3 + 0.4*L); since docs/SPEC-COMPANION-BOSS-COST.md it is Int-scaled through techEffectivePower x COMPANION_DAMAGE_MULT when applied (js/core/companion.js act), was flat per-tick (no Int scaling — mirrors the existing 'bleed' debuff convention, js/core/battle.js tickMonsterStatuses)
       dotTurns: BALANCE.BURN_TURNS // refreshed, never stacked (js/core/companion.js act())
     },
     desc: 'A patient arsonist bound from living Anima — it lashes a whip of fire that leaves the wound smouldering long after the strike lands.',
@@ -107,7 +109,7 @@ Game.Data.companions = [
       powerBase: 4, powerPerLevel: 0.5, // [invented][sim-gated] lowest direct damage of the four — it earns its keep by tanking, not hitting
       tauntTurns: BALANCE.COMPANION_TAUNT_TURNS_BASIC // refreshed, never stacked (js/core/companion.js act()/setTaunt)
     },
-    desc: 'A squat guardian of bound stone — it hammers a fist down and plants itself between you and the foe, daring the next blow to land on it instead.',
+    desc: 'A squat guardian of bound stone — it hammers a fist down and plants itself between you and the foe, taking half the force of the next blow.',
     icon: 'comp_earth'
   },
 
@@ -123,7 +125,9 @@ Game.Data.companions = [
       name: 'Gale Slash',
       effect: 'damage', grade: 'Wind',
       energyCost: 6, // [invented][sim-gated]
-      powerBase: 8, powerPerLevel: 1.1 // [invented][sim-gated] highest direct damage of the four, anchored a little above a mid player nuke — the DPS/support role
+      // [invented][sim-gated] highest direct damage of the four — the DPS/support role. docs/SPEC-COMPANION-BOSS-COST.md:
+      // 8 + 1.1·L -> 4.7 + 0.65·L (×0.59), so with COMPANION_DAMAGE_MULT 0.85 Gale Slash hits for half its old damage.
+      powerBase: 4.7, powerPerLevel: 0.65
     },
     desc: 'A near-formless eddy of wind given fitful will — it carves the air itself into a razor gale.',
     icon: 'comp_wind'

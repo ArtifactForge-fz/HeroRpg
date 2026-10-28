@@ -89,10 +89,10 @@ Classical Paracelsian elementals (public-domain names — Salamander/Undine/Gnom
 
 | companion | basic name | effect | grade | energyCost | power | rider | desc (shipped voice) |
 |---|---|---|---|---|---|---|---|
-| `comp_fire` | Ember Lash | damage | Fire | 4 | round(6 + 0.7·L) | applies **Burn** DoT: `dotKind:'burn'`, `dotPower: round(3 + 0.4·L)`, `dotTurns: 2` (refreshes, replace-not-stack) | "The Salamander lashes a whip of fire, leaving the wound smouldering." |
+| `comp_fire` | Ember Lash | damage | Fire | 4 | round(6 + 0.7·L); **retuned 2026-10-28 to 1.5 + 0.175·L, Burn now Int-scaled** (`docs/SPEC-COMPANION-BOSS-COST.md`) | applies **Burn** DoT: `dotKind:'burn'`, `dotPower: round(3 + 0.4·L)`, `dotTurns: 2` (refreshes, replace-not-stack) | "The Salamander lashes a whip of fire, leaving the wound smouldering." |
 | `comp_water` | Soothing Spray | heal | — | 4 | round(5 + 0.5·L) (heals the player); **retuned 2026-10-28 to round(5 + 0.25·L), healing only below 60% HP** (`docs/SPEC-WATER-PACT-COST.md`) | also chips the enemy for a token `round(2 + 0.2·L)` Water damage | "The Undine mists cool water over your wounds." |
-| `comp_earth` | Stone Fist | damage | Earth | 4 | round(4 + 0.5·L) | `tauntTurns: 2` — generates Taunt (see §2.3) | "The Golem hammers a stone fist down and plants itself between you and the foe." |
-| `comp_wind` | Gale Slash | damage | Wind | 6 | round(8 + 1.1·L) | — (highest direct damage) | "The Sylph carves the air into a razor gale." |
+| `comp_earth` | Stone Fist | damage | Earth | 4 | round(4 + 0.5·L) | `tauntTurns: 2` — generates Taunt (see §2.3); **since 2026-10-28 Taunt splits a basic attack 50/50** (`docs/SPEC-COMPANION-BOSS-COST.md`) | "The Golem hammers a stone fist down and plants itself between you and the foe." |
+| `comp_wind` | Gale Slash | damage | Wind | 6 | round(8 + 1.1·L); **retuned 2026-10-28 to 4.7 + 0.65·L** (`docs/SPEC-COMPANION-BOSS-COST.md`) | — (highest direct damage) | "The Sylph carves the air into a razor gale." |
 
 Energy rule (**[invented]**): the basic fires in `Game.Companion.act(battle)` (called at the top of `finishRound`, i.e. on the player's turn, before the monster acts). If the player has `< energyCost` Energy, the companion **idles** that round (log: "Your <name> is starved of Anima and holds back."). This is the ongoing Energy tax the request asks for and the tactical tension with the player's own techs.
 

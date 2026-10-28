@@ -876,7 +876,7 @@ Game.Data.classes = [
         kind: 'tech',
         techIds: ['tech_summon_earth', 'tech_cmd_bulwark'], // [invented] docs/SPEC-COMPANION-SYSTEM.md §2.5
         classLevelCost: 3,
-        desc: 'Bind the Granite Golem and learn its Bulwark — a guardian that draws blows away from you.'
+        desc: 'Bind the Granite Golem and learn its Bulwark — a guardian that takes half of the blows aimed at you.'
       },
       {
         id: 'conjurer_pact_wind',

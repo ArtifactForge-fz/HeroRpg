@@ -261,13 +261,14 @@ console.log('\n=== Test 2: spellpower buff raises techEffectivePower pre-multipl
     armor: 0, magicArmor: 0, statuses: []
   };
   var galePower = Math.round(windKind.basic.powerBase + windKind.basic.powerPerLevel * c.level);
-  var expectedTick = Math.round(Game.Battle.techEffectivePower(c, { effect: 'damage', power: galePower }));
+  // docs/SPEC-COMPANION-BOSS-COST.md: companion damage is scaled by BALANCE.COMPANION_DAMAGE_MULT.
+  var expectedTick = Math.round(Game.Battle.techEffectivePower(c, { effect: 'damage', power: galePower }) * BALANCE.COMPANION_DAMAGE_MULT);
   var hpBefore = b.monster.hp;
   setRng(fixedRng(0.5)); // variance-neutral, no glancing, no monster dodge/tech proc against the player
   Game.Battle.defend(); // any action triggers finishRound -> Game.Companion.act (companion goes FIRST)
   var tickDealt = hpBefore - b.monster.hp;
   assert(tickDealt === expectedTick, 'companion basic tick WITH the spellpower buff active dealt ' + tickDealt + ', expected ' + expectedTick + ' (buff flows into the shared techEffectivePower pipeline)');
-  var expectedTickNoBuff = Math.round(galePower * (1 + c.intelligence * 0.02));
+  var expectedTickNoBuff = Math.round(galePower * (1 + c.intelligence * 0.02) * BALANCE.COMPANION_DAMAGE_MULT);
   assert(tickDealt > expectedTickNoBuff, 'the buffed companion tick (' + tickDealt + ') is strictly larger than the no-buff baseline (' + expectedTickNoBuff + ')');
   Game.Battle.endBattle();
 })();

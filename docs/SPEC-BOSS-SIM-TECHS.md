@@ -199,7 +199,7 @@ fixture is also loaded by `tests/test_p6b_content.js` (Part 4, unchanged).
 
 | # | Item | Notes |
 |---|---|---|
-| F1 | Conjurer boss cost (Finding 1) | **Water: done** (`docs/SPEC-WATER-PACT-COST.md`). **Still open:** Fire/Earth/Wind + Heir at 31–35% at L60–L90, and Earth/Wind (all options) plus Fire + Heir at 34–42% at the finale. Per the ratchet principle, tune the companion, not the bosses. Should also decide whether companion HP lost counts as boss cost |
+| F1 | Conjurer boss cost (Finding 1) — **done** (`docs/SPEC-WATER-PACT-COST.md`, `docs/SPEC-COMPANION-BOSS-COST.md`; all 132 cells pass). | Was: Fire/Earth/Wind + Heir at 31–35% at L60–L90, and Earth/Wind (all options) plus Fire + Heir at 34–42% at the finale. Per the ratchet principle, tune the companion, not the bosses. Should also decide whether companion HP lost counts as boss cost |
 | F2 | Melee class techs (Finding 2) — **done** (`docs/SPEC-MELEE-CLASS-TECHS.md`) | The 13 warrior/thief-line damage techs, and the Legendary techs on melee builds, do almost nothing for their owners. Spec a physical/weapon variant, then re-run this grid |
 | F3 | Seer's Ward (Finding 4) — **done** (`docs/SPEC-MELEE-CLASS-TECHS.md` §2.4) | Make it useful for a caster, or accept it as a melee-only buff |
 | F4 | Limit breaks, Defend, shrine buffs | Still not modelled by any boss grid |

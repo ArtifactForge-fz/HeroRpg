@@ -1120,8 +1120,9 @@ assert(Game.Companion.tauntActive(battleF) === true, 'Taunt is active on the com
 var playerHpBeforeF = battleF.player.hitPoints;
 var companionHpBeforeF = battleF.companion.hp;
 Game.Battle.defend();
-assert(battleF.player.hitPoints === playerHpBeforeF, "the monster's basic attack did NOT hit the player while Taunt is active, hp unchanged at " + battleF.player.hitPoints);
-assert(battleF.companion.hp < companionHpBeforeF, "the monster's basic attack was redirected onto the taunting companion instead, hp " + companionHpBeforeF + ' -> ' + battleF.companion.hp);
+// docs/SPEC-COMPANION-BOSS-COST.md: Taunt SPLITS the basic attack, so the player takes a share.
+assert(battleF.player.hitPoints < playerHpBeforeF, "while Taunt is active the player still takes its share of the basic attack, hp " + playerHpBeforeF + ' -> ' + battleF.player.hitPoints);
+assert(battleF.companion.hp < companionHpBeforeF, "the taunting companion takes its share of the basic attack, hp " + companionHpBeforeF + ' -> ' + battleF.companion.hp);
 Game.Battle.flee();
 Game.Battle.endBattle();
 
@@ -1173,6 +1174,8 @@ var battleH = Game.Battle.start('plains_field_rat');
 battleH.monster.techs = [];
 battleH.monster.hp = battleH.monster.hpMax = 999999;
 battleH.monster.damage = 999999; // guaranteed one-shot on the companion once redirected
+var normalMaxH = battleH.player.hitPointsMax;
+battleH.player.hitPoints = battleH.player.hitPointsMax = 99999999; // the player survives its share of the split hit (SPEC-COMPANION-BOSS-COST)
 Game.Companion.setTaunt(battleH, 5);
 Game.Battle.defend(); // fixedRng(0.99) still active: no dodge/glancing anywhere
 
@@ -1184,6 +1187,7 @@ var conflagrationRefusalLenBefore = battleH.log.length;
 Game.Battle.useTech('tech_cmd_conflagration');
 assert(battleH.log.length === conflagrationRefusalLenBefore + 1 && /requires a bound/.test(battleH.log[battleH.log.length - 1]),
   'a command tech refuses to cast once its companion has been dispersed mid-battle: ' + battleH.log[battleH.log.length - 1]);
+battleH.player.hitPoints = battleH.player.hitPointsMax = normalMaxH;
 Game.Battle.flee();
 Game.Battle.endBattle();
 assert(cH.companion === null, 'battle end nulls character.companion once it was dispersed mid-battle — must be re-summoned');

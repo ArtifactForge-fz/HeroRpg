@@ -113,7 +113,8 @@ Game.Companion = (function () {
     var player = battle.player;
     var fear = Game.Battle.fearMultiplier(battle);
     var curseMult = Game.Battle.playerCurseMultiplier(battle);
-    var base = Game.Battle.techEffectivePower(player, { effect: 'damage', power: power }) * fear * curseMult;
+    var base = Game.Battle.techEffectivePower(player, { effect: 'damage', power: power }) * fear * curseMult *
+      BALANCE.COMPANION_DAMAGE_MULT; // docs/SPEC-COMPANION-BOSS-COST.md
     var raw = Game.Battle.rollVariance(base);
     var glancing = rng() < BALANCE.GLANCING_CHANCE;
     if (glancing) raw *= BALANCE.GLANCING_MULT;
@@ -184,8 +185,13 @@ Game.Companion = (function () {
 
     // Fire: applies/refreshes a Burn DoT on the monster (replace-not-stack — mirrors the existing
     // 'bleed' debuff convention, js/core/battle.js tickMonsterStatuses).
+    // docs/SPEC-COMPANION-BOSS-COST.md (user-directed): the Burn's per-tick power now scales with the
+    // player's Intelligence like Ember Lash itself (techEffectivePower, fixed when applied), times
+    // COMPANION_DAMAGE_MULT. Fear still applies per tick (tickMonsterStatuses).
     if (basic.dotKind && battle.monster.hp > 0) {
-      var dotPower = Math.round(basic.dotPowerBase + basic.dotPowerPerLevel * L);
+      var dotRaw = Math.round(basic.dotPowerBase + basic.dotPowerPerLevel * L);
+      var dotPower = Math.max(1, Math.round(Game.Battle.techEffectivePower(player, { effect: 'damage', power: dotRaw }) *
+        BALANCE.COMPANION_DAMAGE_MULT));
       battle.monster.statuses = (battle.monster.statuses || []).filter(function (st) {
         return !(st.type === 'debuff' && st.debuffKind === basic.dotKind);
       });

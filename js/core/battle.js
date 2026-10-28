@@ -714,12 +714,16 @@ Game.Battle = (function () {
     // `tech.target` absent) is the PLAYER — unchanged. A monster TECH may declare an explicit
     // `target` ('player'|'companion'|'both'); a plain BASIC attack (no usedTech) instead consults
     // Taunt (Game.Companion.tauntActive) — a live Taunt on the companion (the Earth Golem's Stone
-    // Fist/Bulwark) redirects the basic onto it. 'companion' falls back to 'player' if no companion
+    // Fist/Bulwark) splits the basic with it (below). 'companion' falls back to 'player' if no companion
     // is bound/alive (spec: "falls back to the player").
     var target = (usedTech && usedTech.target) ? usedTech.target : 'player';
     var companionAlive = !!(battle.companion && battle.companion.hp > 0);
+    // docs/SPEC-COMPANION-BOSS-COST.md: Taunt SPLITS the basic attack — the companion takes
+    // BALANCE.COMPANION_TAUNT_SHARE of it, the player the rest through the normal hit path below.
+    var tauntSplit = false;
     if (!usedTech && companionAlive && Game.Companion && Game.Companion.tauntActive(battle)) {
-      target = 'companion';
+      target = 'both';
+      tauntSplit = true;
     }
     if (target === 'companion' && !companionAlive) target = 'player';
     var hitsPlayer = (target === 'player' || target === 'both');
@@ -747,13 +751,15 @@ Game.Battle = (function () {
     // v1.9: resolve the companion hit (if any) BEFORE the player's own dodge roll below, so a
     // 'companion'-only target never rolls the player's Dodge at all (nothing is aimed at them).
     if (hitsCompanion) {
-      damageCompanion(battle, actionBase, usedTech ? usedTech.grade : null,
+      damageCompanion(battle, tauntSplit ? actionBase * BALANCE.COMPANION_TAUNT_SHARE : actionBase, usedTech ? usedTech.grade : null,
         releasing ? 'a charged blow' : (usedTech ? usedTech.name : null));
     }
     if (!hitsPlayer) {
       checkEnd(battle);
       return;
     }
+
+    if (tauntSplit) actionBase = actionBase * (1 - BALANCE.COMPANION_TAUNT_SHARE);
 
     // Player dodge roll (Dodge skill + Dex). v1.2 Phase 1 item 3: a successful dodge grants Dodge
     // skill XP at the proc site (use-based skill system; addSkillXp already enforces the 2L+1 cap).
@@ -1462,6 +1468,8 @@ Game.Battle = (function () {
           mitigation = battle.monster.armor * (1 - techPierce);
         } else {
           base = techEffectivePower(battle.player, tech) * fear * curseMult;
+          // docs/SPEC-COMPANION-BOSS-COST.md: a companion command's damage (Conflagration) is companion damage.
+          if (tech.requiresCompanion) base *= BALANCE.COMPANION_DAMAGE_MULT;
           // v1.2 Phase 1 item 7: non-elemental damage ignores defense — RULE [archived] (DESIGN.md
           // §4 / 2005 note), adopted here: a grade:null tech's mitigation is 0 regardless of the
           // monster's Magic Armor; a graded (elemental) tech is still mitigated by it.

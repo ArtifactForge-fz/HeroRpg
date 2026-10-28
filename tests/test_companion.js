@@ -265,14 +265,28 @@ console.log("\n=== Test 6: an active Taunt (js/core/companion.js setTaunt/tauntA
   var b = Game.Battle.start('plains_field_rat');
   b.monster.techs = []; // basic attacks only
   b.monster.hp = b.monster.hpMax = 999999;
-  b.monster.damage = 20;
+  b.monster.damage = 400; // big enough that armor doesn't flatten the split and the full hit to the same number
+  b.player.hitPoints = b.player.hitPointsMax = 5000; // ...and enough HP that neither hit is lethal
   Game.Companion.setTaunt(b, BALANCE.COMPANION_TAUNT_TURNS_BASIC);
   assert(Game.Companion.tauntActive(b) === true, 'Taunt is active on the companion');
   var playerHpBefore = b.player.hitPoints;
   var companionHpBefore = b.companion.hp;
   Game.Battle.defend();
-  assert(b.player.hitPoints === playerHpBefore, "the monster's basic attack did NOT hit the player while Taunt is active, hp unchanged at " + b.player.hitPoints);
-  assert(b.companion.hp < companionHpBefore, "the monster's basic attack was redirected onto the taunting companion instead, hp " + companionHpBefore + ' -> ' + b.companion.hp);
+  // docs/SPEC-COMPANION-BOSS-COST.md: Taunt SPLITS the basic attack (BALANCE.COMPANION_TAUNT_SHARE to the companion,
+  // the rest to the player), so the player takes a smaller hit instead of none.
+  var tauntedLoss = playerHpBefore - b.player.hitPoints;
+  Game.Battle.flee();
+  Game.Battle.endBattle();
+  // Same hit with no companion (so no Stone Fist taunt either), for comparison.
+  c.companion = null;
+  c.hitPoints = c.hitPointsMax; c.energy = c.energyMax;
+  var b2 = Game.Battle.start('plains_field_rat');
+  b2.monster.techs = []; b2.monster.hp = b2.monster.hpMax = 999999; b2.monster.damage = 400; b2.player.hitPoints = b2.player.hitPointsMax = 5000;
+  var fullLoss = b2.player.hitPoints;
+  Game.Battle.defend();
+  fullLoss -= b2.player.hitPoints;
+  assert(tauntedLoss > 0 && tauntedLoss < fullLoss, "while Taunt is active the player takes only part of the basic attack: lost " + tauntedLoss + ' (vs ' + fullLoss + ' untaunted)');
+  assert(b.companion.hp < companionHpBefore, "the taunting companion takes its share of the basic attack, hp " + companionHpBefore + ' -> ' + b.companion.hp);
   Game.Battle.flee();
   Game.Battle.endBattle();
 })();
@@ -326,6 +340,8 @@ console.log('\n=== Test 8: a companion driven to 0 HP mid-battle is dispersed â€
   b.monster.techs = [];
   b.monster.hp = b.monster.hpMax = 999999;
   b.monster.damage = 999999; // guaranteed one-shot on the companion once redirected
+  var normalMax = b.player.hitPointsMax;
+  b.player.hitPoints = b.player.hitPointsMax = 99999999; // the player survives its share of the split hit (SPEC-COMPANION-BOSS-COST)
   Game.Companion.setTaunt(b, 5);
   Game.Battle.defend();
   assert(b.companion.hp === 0, "the companion's HP is driven to exactly 0 by the redirected hit");
@@ -335,6 +351,7 @@ console.log('\n=== Test 8: a companion driven to 0 HP mid-battle is dispersed â€
   Game.Battle.useTech('tech_cmd_conflagration');
   assert(b.log.length === logLenBefore + 1 && /requires a bound/.test(b.log[b.log.length - 1]),
     'a command tech refuses to cast once its companion has been dispersed mid-battle: ' + b.log[b.log.length - 1]);
+  b.player.hitPoints = b.player.hitPointsMax = normalMax;
   Game.Battle.flee();
   Game.Battle.endBattle();
   assert(c.companion === null, 'battle end nulls character.companion once it was dispersed mid-battle â€” must be re-summoned');

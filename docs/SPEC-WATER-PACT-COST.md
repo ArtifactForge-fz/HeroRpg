@@ -82,6 +82,8 @@ HP spent per win %. Every cell wins 100%, uses ≤ 0.04 of 12 consumables, and l
 
 ### 3.3 Still open (not this spec): the other three pacts
 
+> **Resolved 2026-10-28** by `docs/SPEC-COMPANION-BOSS-COST.md`: every pact now passes at every T3 boss.
+
 With Water fixed, the Conjurer lineage still fails B2 at all five T3 bosses, on its cheapest
 options:
 
