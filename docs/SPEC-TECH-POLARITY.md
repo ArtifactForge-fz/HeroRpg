@@ -69,6 +69,8 @@ knife/dex chassis underperforms vs armored at-level monsters with ALL rotations 
 ones (melee floor-1 vs construct armor) — content observation for a later pass, not a v1.8
 regression; (d) the spellpower buff flows through `techEffectivePower` and therefore also
 boosts Conjurer servitor ticks — kept (single pipeline, no special case), noted for P1 tests.
+**Superseded for companions (2026-10-29):** `docs/SPEC-COMPANION-SPELLPOWER.md` D1 — companion attacks no
+longer draw on the spellpower buff (it more than doubled their small hits).
 **Relationship to authority:** extends `docs/DESIGN.md` §5 (Techniques) and §3 (Skills). Adds new
 engine mechanisms (§2.0) but overrides no archived rule — **no [revised] tags in this spec**.
 Tech chain/gating model follows the archived May-2007 trainer/skill-gate design

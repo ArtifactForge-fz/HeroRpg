@@ -1,7 +1,8 @@
 # SPEC — Companion attacks stop drawing on Attunement and Spell Power (and the armor question)
 
-**Status:** READY — D0–D4 resolved by the user 2026-10-29 (§5; D1 and D2 differ from the first
-draft, D1 after a share sweep, §3.1). Not implemented. Authored 2026-10-29 on
+**Status:** IMPLEMENTED on branch `v1.11-hero-tree`; not yet merged to `main`, released or deployed.
+D0–D4 resolved by the user 2026-10-29 (§5). **Implementation gate run 2026-10-29 (§7): partial** —
+L70–L90 pass, L60 is the accepted near-miss, **the finale still fails (38% vs 45%)**; open (§8). Authored 2026-10-29 on
 branch `v1.11-hero-tree` (user-directed: "pick up the last two follow-up points together, as
 companion attacks ignoring armor has an effect on the conjurer boss cells" — F3 and F4 of
 `docs/SPEC-SPELL-CHAINS-AND-ARMOR.md` §9). Screened at 300 trials (§3); the implementation gate is
@@ -54,10 +55,12 @@ to `techEffectivePower`; `techEffectivePower` skips the two flat terms when it's
 
 ### 2.2 Half Armor on companion attacks (A1) — D2
 
-Part of the package (D2): graded companion damage attacks (Ember Lash, Stone Fist, Gale Slash,
-Water's chip) pay the monster's Magic Armor + `TECH_PHYSICAL_DEFENSE_SHARE` × Armor, mirroring the
-hero-spell rule of `docs/SPEC-SPELL-CHAINS-AND-ARMOR.md` §2.2. [invented] Fire's Burn ticks are
-status damage and unchanged.
+Part of the package (D2): graded companion damage attacks (Ember Lash, Stone Fist, Gale Slash) pay
+the monster's Magic Armor + `TECH_PHYSICAL_DEFENSE_SHARE` × Armor, mirroring the hero-spell rule of
+`docs/SPEC-SPELL-CHAINS-AND-ARMOR.md` §2.2. [invented] Fire's Burn ticks are status damage and
+unchanged. **Correction (found in implementation):** Water's chip is ungraded in the data
+(`comp_water` `grade: null`), so it keeps today's Magic-Armor-only rule; it's a token hit
+(2 + 0.2 × level), so no data change was made.
 
 ### 2.3 Player-facing
 
@@ -119,22 +122,22 @@ bar: the Conjurer cells at L70–L100 pass and L60 stays within ~1 point of 35% 
 
 ## 4. Conventions & handoff checklist
 
-- [ ] `js/core/companion.js`: the `companion: true` flag on the synthetic damage techs (basic attack,
+- [x] `js/core/companion.js`: the `companion: true` flag on the synthetic damage techs (basic attack,
   Water chip, Fire Burn). Not the Water heal.
-- [ ] `js/core/battle.js` `techEffectivePower`: skip the `spellpower` buff and the Spell Power stat
+- [x] `js/core/battle.js` `techEffectivePower`: skip the `spellpower` buff and the Spell Power stat
   when `tech.companion`; comment citing §2.1 and the two decisions it reverses.
-- [ ] A1 (D2): `js/core/companion.js` `dealDamageToMonster` — a graded companion attack is mitigated by
+- [x] A1 (D2): `js/core/companion.js` `dealDamageToMonster` — a graded companion attack is mitigated by
   Magic Armor + `TECH_PHYSICAL_DEFENSE_SHARE` × Armor (mirror of `docs/SPEC-SPELL-CHAINS-AND-ARMOR.md` §2.2).
-- [ ] Tests: `tests/test_v18_engine.js` Test 2 asserts the buff *does* boost a companion tick — that is
+- [x] Tests: `tests/test_v18_engine.js` Test 2 asserts the buff *does* boost a companion tick — that is
   the behavior this spec reverses, so the assertion changes to "does not" (a design change recorded
   here, not a weakened test). Other expectations built on companion damage with Attunement/Spell
   Power are stale constants. New stubbed-RNG test: a companion attack deals the same damage with and
   without Attunement running, while a hero spell still gains from it.
-- [ ] `docs/SPEC-TECH-POLARITY.md` §0 finding d and `docs/SPEC-SECONDARY-STATS.md` D7: add a line
+- [x] `docs/SPEC-TECH-POLARITY.md` §0 finding d and `docs/SPEC-SECONDARY-STATS.md` D7: add a line
   noting they are superseded for companions by this spec.
-- [ ] Save impact: none. Ids, icons, drop tables: none.
+- [x] Save impact: none. Ids, icons, drop tables: none.
 - [ ] Changelog line (§2.3) in the release that ships this.
-- [ ] All 16 suites green.
+- [x] All 16 suites green.
 
 ## 5. Decisions
 
@@ -155,3 +158,37 @@ All resolved by the user on 2026-10-29.
   fights.
 - Companion HP lost as a boss cost (still a report column, `docs/SPEC-BOSS-SIM-FULL-KIT.md` D5).
 - Companion command spells and Water's heal.
+
+## 7. Implementation and gate (2026-10-29)
+
+- `js/core/companion.js`: companion damage (basic attack, Water chip, Fire Burn power) passes
+  `companion: true` to `techEffectivePower`; a graded companion hit is mitigated by Magic Armor +
+  `TECH_PHYSICAL_DEFENSE_SHARE` × Armor. Water's chip is ungraded in the data and keeps Magic Armor only (§2.2).
+- `js/core/battle.js` `techEffectivePower`: the `spellpower` buff and the Spell Power stat are 0 for
+  `tech.companion`.
+- Tests: `tests/test_v18_engine.js` Test 2 reversed by design (a companion tick deals the same damage
+  with and without the spellpower buff; a hero spell still gains); new `tests/test_companion.js` Test 16
+  (half Armor on a graded companion hit; no gain from Attunement or Spell Power). All 16 suites pass.
+- `docs/SPEC-TECH-POLARITY.md` finding d and `docs/SPEC-SECONDARY-STATS.md` D7 marked superseded for companions.
+
+**Gate** (real code, 300 trials, 1,404 cells, with the amended kit tool choice of
+`docs/SPEC-BOSS-SIM-FULL-KIT.md` D6):
+
+| Conjurer, cheapest HP spent % | L60 | L70 | L80 | L90 | L100 (needs 45) |
+|---|---|---|---|---|---|
+| Before | x32 | x34 | x33 | x27 | x28 |
+| **After** | **x35** (accepted, D1) | **37** | **36** | **36** | **x38** |
+
+- Every Conjurer cell improved; no other lineage's cheapest cost moved. B1/B3 pass everywhere. B2 fails:
+  the 3 accepted melee near-misses, the accepted L60 cell, and the Conjurer finale.
+- **Why the finale differs from the screening (48.9%):** the screening ran on the old, stuck tool choice.
+  The amended choice finds Earth Golem + Heir keeping only Attunement IV (which now only boosts the
+  hero's Firebolt), with the Golem's Taunt taking half of each boss hit: 38%.
+- Conjurer regular fights (best policy): at-level 100%, four and five levels up 99–100%.
+
+## 8. Open after the gate
+
+| # | Item | Notes |
+|---|---|---|
+| O1 | The Conjurer finale at 38% (needs 45%) | Cheapest play: Earth + Heir + Attunement IV. Candidate levers: the Golem's Taunt share (`COMPANION_TAUNT_SHARE` 0.5), the Earth pact at the finale, or accept |
+| O2 | Casters at L10 five levels up: 27% win (Magus, Cleric, Seer) | Not caused by this spec: the amended kit tool choice found "Attunement I alone", which the old choice never tried. `docs/SPEC-SPELL-CHAINS-AND-ARMOR.md` §8 reported 0% |

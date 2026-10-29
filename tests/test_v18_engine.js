@@ -227,8 +227,8 @@ console.log('\n=== Test 1: typed dodge/double_attack buffs raise chance; DODGE_C
   assert(Game.Battle.playerDodgeChance(makeCharacter({ name: 'Outside' })) >= 0, 'playerDodgeChance stays callable with Game.state.battle=null (out-of-battle screens.js display path)');
 })();
 
-// =================== Test 2: spellpower buff (pre-multiplier) + P0 finding (d): also boosts a servitor-shaped tick ===================
-console.log('\n=== Test 2: spellpower buff raises techEffectivePower pre-multiplier; ALSO boosts a servitor-shaped tick (P0 finding d, intentional) ===');
+// =================== Test 2: spellpower buff (pre-multiplier); does NOT boost a companion tick (docs/SPEC-COMPANION-SPELLPOWER.md §2.1) ===================
+console.log('\n=== Test 2: spellpower buff raises hero techEffectivePower pre-multiplier; companion tick is UNCHANGED by it (SPEC-COMPANION-SPELLPOWER §2.1, reverses P0 finding d) ===');
 (function () {
   var c = makeCharacter({ name: 'SpellpowerTest' });
   var plainTech = Game.Battle.getTech('tech_test_plain_damage');
@@ -244,15 +244,13 @@ console.log('\n=== Test 2: spellpower buff raises techEffectivePower pre-multipl
   assert(after === expectedAfter, 'techEffectivePower WITH +20 spellpower buff = ' + expectedAfter + ' (power+buff, then Int factor), got ' + after);
   assert(after > before, 'spellpower buff strictly raised the offensive tech\'s effective power');
 
-  // P0 finding (d), v1.9 successor: the buff flows through the SAME techEffectivePower pipeline a
-  // COMPANION's own basic damage tick calls (js/core/companion.js dealDamageToMonster passes a
-  // synthetic {effect:'damage', power} tech through it, exactly like the retired Conjurer
-  // "Elemental Servitor" tick used to before the companion system superseded it,
-  // docs/SPEC-COMPANION-SYSTEM.md D0) — so it also boosts a companion's damage output. Documented
-  // here via a real Gale Sylph (comp_wind — plain graded damage, no DoT/taunt rider to contaminate
-  // the hp delta), magicArmor/resistances zeroed so the tick damage is EXACTLY
-  // round(techEffectivePower(...)) at fixedRng(0.5) (variance-neutral, no glancing).
+  // docs/SPEC-COMPANION-SPELLPOWER.md §2.1 (D1) — recorded design change, NOT a weakened test: this
+  // used to assert the buff boosted a companion tick (P0 finding d). Companion attacks now get neither
+  // Attunement nor Spell Power, so the tick must be IDENTICAL with the buff running; the hero-spell
+  // assertions above still show the buff boosting a hero spell. Real Gale Sylph (comp_wind), magicArmor,
+  // armor and resistances zeroed so the tick is EXACTLY the pipeline value at fixedRng(0.5).
   b.monster.magicArmor = 0;
+  b.monster.armor = 0;
   b.monster.resistances = {};
   Game.Companion.summon(c, 'comp_wind');
   var windKind = Game.Companion.getKind('comp_wind');
@@ -263,14 +261,15 @@ console.log('\n=== Test 2: spellpower buff raises techEffectivePower pre-multipl
   };
   var galePower = Math.round(windKind.basic.powerBase + windKind.basic.powerPerLevel * c.level);
   // docs/SPEC-COMPANION-BOSS-COST.md: companion damage is scaled by BALANCE.COMPANION_DAMAGE_MULT.
-  var expectedTick = Math.round(Game.Battle.techEffectivePower(c, { effect: 'damage', power: galePower }) * BALANCE.COMPANION_DAMAGE_MULT);
+  // No-buff value = power x Int factor x COMPANION_DAMAGE_MULT (SPEC-COMPANION-BOSS-COST.md).
+  var expectedTick = Math.round(Math.round(galePower * (1 + c.intelligence * 0.02)) * BALANCE.COMPANION_DAMAGE_MULT);
+  assert(Game.Battle.techEffectivePower(c, { effect: 'damage', power: galePower, companion: true }) === Math.round(galePower * (1 + c.intelligence * 0.02)), 'companion-flagged techEffectivePower ignores the active +20 spellpower buff');
   var hpBefore = b.monster.hp;
   setRng(fixedRng(0.5)); // variance-neutral, no glancing, no monster dodge/tech proc against the player
   Game.Battle.defend(); // any action triggers finishRound -> Game.Companion.act (companion goes FIRST)
   var tickDealt = hpBefore - b.monster.hp;
-  assert(tickDealt === expectedTick, 'companion basic tick WITH the spellpower buff active dealt ' + tickDealt + ', expected ' + expectedTick + ' (buff flows into the shared techEffectivePower pipeline)');
-  var expectedTickNoBuff = Math.round(galePower * (1 + c.intelligence * 0.02) * BALANCE.COMPANION_DAMAGE_MULT);
-  assert(tickDealt > expectedTickNoBuff, 'the buffed companion tick (' + tickDealt + ') is strictly larger than the no-buff baseline (' + expectedTickNoBuff + ')');
+  assert(tickDealt === expectedTick, 'companion basic tick WITH the spellpower buff active dealt ' + tickDealt + ', expected the no-buff value ' + expectedTick + ' (SPEC-COMPANION-SPELLPOWER §2.1)');
+  assert(after > before && after === expectedAfter, 'hero spell still gains from the buff (after=' + after + ' > before=' + before + ')');
   Game.Battle.endBattle();
 })();
 

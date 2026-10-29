@@ -1157,12 +1157,17 @@ Game.Battle = (function () {
     // synthetic {effect:'damage', power} tech through this exact function), so Attunement also
     // boosts servitor ticks — no special case, single pipeline (see SPEC-TECH-POLARITY.md §0
     // finding d; test_v18_engine.js documents this explicitly).
-    var spellpowerBuff = playerStatKindBuff('spellpower');
+    // docs/SPEC-COMPANION-SPELLPOWER.md §2.1 [invented]: a companion's own damage (tech.companion, set by
+    // js/core/companion.js) draws on NEITHER the Attunement buff NOR the Spell Power stat (D1, 0%). This
+    // reverses SPEC-TECH-POLARITY.md finding d and SPEC-SECONDARY-STATS.md D7 for companions only; hero
+    // spells, companion command techs cast via useTech, and heals are unaffected.
+    var spellpowerBuff = tech.companion ? 0 : playerStatKindBuff('spellpower');
+    var spellpowerStat = tech.companion ? 0 : secondaryStat(c, 'spellPower');
     // docs/SPEC-SECONDARY-STATS.md §2.6: Spell Power adds flat power in the same slot as the
     // Attunement typed buff above (both BEFORE the Int/magic-skill/Rod multipliers) — this is the
     // SAME pipeline the Conjurer servitor tick calls (tickMonsterStatuses), so Spell Power boosts
     // servitor ticks too (D7), with no special case.
-    return Math.round((tech.power + spellpowerBuff + secondaryStat(c, 'spellPower')) * (1 + c.intelligence * 0.02) * magicSkillMult * rodMult); // invented: Int spell-damage factor
+    return Math.round((tech.power + spellpowerBuff + spellpowerStat) * (1 + c.intelligence * 0.02) * magicSkillMult * rodMult); // invented: Int spell-damage factor
   }
 
   function useTech(techId) {

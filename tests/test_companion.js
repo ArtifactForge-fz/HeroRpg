@@ -588,6 +588,58 @@ console.log('\n=== Test 15: SPEC-WATER-PACT-COST — Soothing Spray heals only b
   Game.Battle.endBattle();
 })();
 
+// =================== Test 16: SPEC-COMPANION-SPELLPOWER — half Armor on graded hits; no Attunement / Spell Power ===================
+console.log('\n=== Test 16: graded companion attacks pay Magic Armor + 0.5 x Armor; Attunement and Spell Power never feed them ===');
+(function () {
+  var c = makeCharacter({ name: 'CompSpellPowerTest' });
+  setLevel(c, 60);
+  Game.Companion.summon(c, 'comp_wind'); // Gale Slash: plain graded damage, no DoT/taunt rider
+  var kind = Game.Companion.getKind('comp_wind');
+  assert(kind.basic.grade, 'comp_wind attack is graded (grade ' + kind.basic.grade + ')');
+  setRng(fixedRng(0.5)); // variance-neutral, no glancing
+  var b = Game.Battle.start('plains_field_rat');
+  b.monster.hp = b.monster.hpMax = 999999;
+  b.monster.resistances = {};
+  b.monster.statuses = [];
+
+  function tick(armor, magicArmor) {
+    b.monster.armor = armor; b.monster.magicArmor = magicArmor;
+    b.monster.hp = b.monster.hpMax;
+    b.player.energy = b.player.energyMax; b.player.hitPoints = b.player.hitPointsMax;
+    setRng(fixedRng(0.5));
+    Game.Companion.act(b);
+    return b.monster.hpMax - b.monster.hp;
+  }
+
+  // (a) mitigation = M + TECH_PHYSICAL_DEFENSE_SHARE x A. raw is independent of armor and the armor
+  // terms here are integers (M=4, 0.5 x 10 = 5), so the loss is exactly 9 vs a naked monster.
+  var A = 10, M = 4;
+  assert(BALANCE.TECH_PHYSICAL_DEFENSE_SHARE === 0.5, 'TECH_PHYSICAL_DEFENSE_SHARE is 0.5 (arithmetic below assumes it)');
+  var naked = tick(0, 0);
+  var armored = tick(A, M);
+  var expectedLoss = M + BALANCE.TECH_PHYSICAL_DEFENSE_SHARE * A;
+  assert(naked - armored === expectedLoss, 'graded companion hit loses Magic Armor + 0.5 x Armor = ' + expectedLoss + ' (naked ' + naked + ', armored ' + armored + ')');
+  var magicOnly = tick(0, M);
+  assert(naked - magicOnly === M, 'Magic Armor alone still subtracts M=' + M + ' (naked ' + naked + ', got ' + magicOnly + ')');
+
+  // (b) the same hit with Attunement running and Spell Power on the hero is identical.
+  var plain = tick(A, M);
+  var savedStatuses = b.playerStatuses;
+  var savedShrine = c.shrineBuffs;
+  b.playerStatuses = (b.playerStatuses || []).concat([{ type: 'buff', statKind: 'spellpower', power: 40, turnsLeft: 5, name: 'Attunement' }]);
+  c.shrineBuffs = [{ id: 'shrine_anima_kindling', battlesLeft: 5 }];
+  var sp = Game.Character.getSecondaryStat(c, 'spellPower');
+  assert(sp > 0, 'the Anima Kindling shrine gives the hero Spell Power (' + sp + ')');
+  assert(Game.Battle.techEffectivePower(c, { effect: 'damage', power: 20 }) > Game.Battle.techEffectivePower(c, { effect: 'damage', power: 20, companion: true }), 'a hero spell gains from Attunement + Spell Power; a companion-flagged one does not');
+  var boosted = tick(A, M);
+  b.playerStatuses = savedStatuses;
+  c.shrineBuffs = savedShrine;
+  assert(boosted === plain, 'companion hit with Attunement + Spell Power (' + boosted + ') equals the hit without (' + plain + ')');
+  assert(tick(A, M) === plain, 'state restored: the hit is back to ' + plain);
+  Game.Battle.flee();
+  Game.Battle.endBattle();
+})();
+
 console.log('\n===================================');
 if (failures === 0) {
   console.log('ALL TESTS PASSED');

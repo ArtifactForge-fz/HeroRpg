@@ -109,17 +109,23 @@ Game.Companion = (function () {
   // an independent glancing-blow roll, the monster's grade resistance (applyResistance), and
   // finally its flat Magic Armor — floored at 1. Every roll here goes through Game.Battle._rng via
   // the exported helpers (single RNG surface).
+  // docs/SPEC-COMPANION-SPELLPOWER.md §2.1 [invented]: the synthetic tech carries companion:true, so
+  // Attunement and Spell Power do NOT boost companion attacks (reverses SPEC-TECH-POLARITY.md finding d /
+  // SPEC-SECONDARY-STATS.md D7 for companions); §2.2: graded hits also pay half monster Armor.
   function dealDamageToMonster(battle, power, grade) {
     var player = battle.player;
     var fear = Game.Battle.fearMultiplier(battle);
     var curseMult = Game.Battle.playerCurseMultiplier(battle);
-    var base = Game.Battle.techEffectivePower(player, { effect: 'damage', power: power }) * fear * curseMult *
+    var base = Game.Battle.techEffectivePower(player, { effect: 'damage', power: power, companion: true }) * fear * curseMult *
       BALANCE.COMPANION_DAMAGE_MULT; // docs/SPEC-COMPANION-BOSS-COST.md
     var raw = Game.Battle.rollVariance(base);
     var glancing = rng() < BALANCE.GLANCING_CHANCE;
     if (glancing) raw *= BALANCE.GLANCING_MULT;
     raw = Game.Battle.applyResistance(battle.monster, grade, raw);
-    var dmg = Math.max(1, Math.round(raw - battle.monster.magicArmor));
+    // docs/SPEC-COMPANION-SPELLPOWER.md §2.2 (D2) [invented]: a graded companion attack pays Magic Armor +
+    // TECH_PHYSICAL_DEFENSE_SHARE x Armor, like a graded hero spell. Ungraded keeps Magic Armor only.
+    var mitigation = battle.monster.magicArmor + (grade ? BALANCE.TECH_PHYSICAL_DEFENSE_SHARE * battle.monster.armor : 0);
+    var dmg = Math.max(1, Math.round(raw - mitigation));
     battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
     return dmg;
   }
@@ -190,7 +196,7 @@ Game.Companion = (function () {
     // COMPANION_DAMAGE_MULT. Fear still applies per tick (tickMonsterStatuses).
     if (basic.dotKind && battle.monster.hp > 0) {
       var dotRaw = Math.round(basic.dotPowerBase + basic.dotPowerPerLevel * L);
-      var dotPower = Math.max(1, Math.round(Game.Battle.techEffectivePower(player, { effect: 'damage', power: dotRaw }) *
+      var dotPower = Math.max(1, Math.round(Game.Battle.techEffectivePower(player, { effect: 'damage', power: dotRaw, companion: true }) *
         BALANCE.COMPANION_DAMAGE_MULT));
       battle.monster.statuses = (battle.monster.statuses || []).filter(function (st) {
         return !(st.type === 'debuff' && st.debuffKind === basic.dotKind);

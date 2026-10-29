@@ -470,7 +470,7 @@ band is not in the contract and was not simmed.
 | D4 | Can Limit Breaks crit? | **No** |
 | D5 | Do primary stats feed secondary stats? | **No feeds** in this batch. Revisit after the sim |
 | D6 | *(superseded by D3)* Gambit's *Lucky Coin* | Keeps +12% Gold and adds +10 Luck |
-| D7 | Does Spell Power boost Conjurer servitor ticks? | **Yes**: same pipeline as the Attunement buff |
+| D7 | Does Spell Power boost Conjurer servitor ticks? | **Yes**: same pipeline as the Attunement buff. **Superseded for companions (user, 2026-10-29):** `docs/SPEC-COMPANION-SPELLPOWER.md` D1 — companion attacks no longer draw on Spell Power |
 | D8 | How do new stats interact with **Fear**? (opened by the P0 sim) | **Scaled by Fear at 1–4 levels below, suppressed at 5+ levels below** (§2.1). Keeps 5-down at shipped levels |
 | D9 | Fully shrine-stacked Rogue vs the L32 boss at 81–85% HP left (rule ≤80%; shipped already 80%) | **Accepted as an edge case.** It needs about 400 shards of tier-3 buffs at once. No value change |
 

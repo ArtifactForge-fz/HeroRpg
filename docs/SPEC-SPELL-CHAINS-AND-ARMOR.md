@@ -221,6 +221,11 @@ Conjurer cells, `docs/SPEC-BOSS-SIM-FULL-KIT.md` F2). No cell newly fails.
 | Level | At-level (Pal / Gam / Drag / Rng / Magus / Cleric / Seer) | Five levels up (same order) |
 |---|---|---|
 | L10 | 100 for all seven | 24 / 24 / 0 / 0 / **0 / 0 / 0** (casters were 96) |
+
+> **Update 2026-10-29:** with the amended kit tool choice (`docs/SPEC-BOSS-SIM-FULL-KIT.md` D6) the
+> casters' L10 five-levels-up result is **27%** (Attunement I alone), not 0%. Recorded as O2 in
+> `docs/SPEC-COMPANION-SPELLPOWER.md` §8.
+
 | L29 | 100 for all seven | 99 / 99 / 97 / 96 / 99 / 99 / 99 |
 | L46 | 100 for all seven | 100 / 100 / 100 / 99 / 100 / 100 / 100 |
 | L64 | 100 for all seven | 100 / 93 / 98 / 95 / 99 / 100 / 100 |
