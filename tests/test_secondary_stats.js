@@ -424,7 +424,7 @@ console.log('\n=== Test 9: Game.Character.getSecondaryStat clamps every capped k
 // =================== Test 10: item bonus counts per weapon family ===================
 console.log('\n=== Test 10: item `bonuses` counts per weapon family match docs/SPEC-SECONDARY-STATS.md §2.8 ===');
 (function () {
-  var FAMILY_EXPECTED = { 'Swords': 20, 'Knives': 17, 'Polearms': 13, 'Hand to Hand': 18, 'Rods': 20, 'Shields': 10 };
+  var FAMILY_EXPECTED = { 'Swords': 20, 'Knives': 18, 'Polearms': 14, 'Hand to Hand': 18, 'Rods': 20, 'Shields': 10 };
   var counts = {};
   Game.Data.items.forEach(function (it) {
     if (!it.bonuses) return;

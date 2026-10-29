@@ -2545,7 +2545,7 @@ Game.Screens = (function () {
       var compNote;
       if (comp.hp <= 0) {
         compNote = 'Destroyed — bind a new elemental to summon one again.';
-      } else if (Game.Battle.fearLevels(battle) >= BALANCE.COMPANION_FEAR_SUPPRESS_LEVELS) {
+      } else if (Game.Companion && Game.Companion.isSuppressed && Game.Companion.isSuppressed(battle)) {
         compNote = 'Overwhelmed — it cannot act while you are this outmatched.';
       } else if (Game.Companion && Game.Companion.tauntActive(battle)) {
         compNote = "Guarding you — drawing the enemy's attacks onto itself.";

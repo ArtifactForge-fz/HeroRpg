@@ -18,7 +18,10 @@ sustain — DESIGN §4), and boss-telegraph integration is deferred (a boss char
 past heal+death in one blow; 3 low bosses carry behaviors, the other 8 keep their v1.4 scripts —
 DESIGN §4 / SPEC-V1.5-MONSTER-AI §6). **v1.9 carries four KNOWN-ACCEPTED review items** (the user
 merged over them on 2026-07-25) — see "Recently completed" below; item 4 (legacy Conjurer ghosts)
-was fixed by PR #4 (v1.11); PR #1's missing spec is the top of the next cycle's queue.
+was fixed by PR #4 (v1.11); items 1–3 and PR #2's open notes are closed in v1.15.0
+(`docs/REVIEW-2026-10-29-V19-QUEUE.md`).
+**In review:** PR #5 = **v1.15.0 "The Severed Bond"** on top of v1.14.0 "Every Rank Counts" (save 12) — see
+"In review" below. Changelog, README and `?v=` are bumped; not merged or deployed yet.
 
 ## Cardinal rules
 
@@ -116,8 +119,10 @@ was fixed by PR #4 (v1.11); PR #1's missing spec is the top of the next cycle's 
 
 ## Testing
 
-`tests/` (fakedom.js + 16 suites) is the source of truth; suites reference the game by absolute
-path so they run from anywhere. When a change breaks a hardcoded expectation (monster counts,
+`tests/` (fakedom.js + 16 suites) is the source of truth; every suite (and
+`tools/build_artifact.js`) resolves the repo from `__dirname`, so they run in place on any checkout
+and from any working directory — never hard-code an absolute path (they used to hard-code
+`D:/Claude - collection folder/HeroRPG`, fixed 2026-10-28). When a change breaks a hardcoded expectation (monster counts,
 save version), update the stale constant — never weaken a behavioral assertion. New mechanics
 need stubbed-RNG tests. fakedom quirk: dynamically created elements lack `.style` unless the
 harness wraps createElement (see tools/build_artifact.js smoke-test pattern).
@@ -131,7 +136,7 @@ Git repo on branch `main`; remote `origin` = `github.com/ArtifactForge-fz/HeroRp
 - **Commit each completed unit of work.** A commit's scope is one session's deliverable, not one
   file change: it may be a single feature/mechanic/fix, OR several related features produced in
   one session (e.g. a multi-agent run spawned from a single user prompt with sub-tasks). Commit
-  when that work is complete AND all ten suites pass (`cd tests && for t in test_*.js; do node $t;
+  when that work is complete AND all suites pass (`cd tests && for t in test_*.js; do node $t;
   done`). Keep unrelated, separately-motivated work in separate commits.
 - **Never commit with red suites.** A failing suite means the work isn't done; fix it first.
   (Exception: an explicitly-labeled WIP checkpoint the user asked for.)
@@ -172,7 +177,55 @@ localStorage fallback — and syntax-checks its 3 script blocks as it writes. A 
 `post-commit` hook (`tools/git-hooks/`, wired via `git config core.hooksPath tools/git-hooks`)
 rebuilds it after every commit so a deployable single-file build always matches HEAD. The hooks
 path lives in local `.git/config` (untracked) — re-run that `git config` after a fresh clone to
-re-enable it. Never build/ship from a tree with red suites.
+re-enable it. If the artifact goes stale, check `git config core.hooksPath` first: it was unset in
+this clone until 2026-10-28, which is why the hook "didn't fire" on the v1.9 merges. Never
+build/ship from a tree with red suites.
+
+## In review (2026-10-29) — v1.15.0 "The Severed Bond" + v1.14.0 "Every Rank Counts", PR #5, branch `v1.11-hero-tree`
+
+**v1.15.0** (folded into PR #5 on 2026-10-29, user-directed; v1.14.0 below was never deployed on its own):
+- **v1.9 review queue** re-measured (`docs/REVIEW-2026-10-29-V19-QUEUE.md`); PR #1's missing spec written and its
+  owed 88-monster caster sim run (`docs/SPEC-TECH-CHAIN-COMPLETION.md`).
+- **Three contract fixes** (`docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md`): Shadowlash II skillReq 5 → 8; Scout's Dirk +
+  Watchman's Spear (L5); command techs refused while `Game.Companion.isSuppressed(battle)`.
+- **Companion-targeting specials** (`docs/SPEC-COMPANION-TARGET-SPECIALS.md`): `vsCompanion` tech field; Cleaving
+  Roar on 8 / Banish Conduit on 6 L60+ regulars + all five T3 bosses; a boss's Banish backlashes
+  `COMPANION_BACKLASH_BOSS_FRAC` (0.30) of the summoner's max HP. Conjurer cheapest T3 boss cost 40.0–44.2%
+  (was 34.9–37.8); finale 0.8 under its 45%.
+- Real DCSS elemental portraits for `comp_*`. All gates re-run on the implemented code: identical to P0.
+- Follow-ups (same day): companion command techs and kinds marked sim-locked (no value change); the boss fixture's
+  `kit` tool choice runs on 60 fights (`KIT_FIGHTS`, `docs/SPEC-BOSS-SIM-FULL-KIT.md` D6; no verdict crossed a floor); companion
+  HP carry-over and champion carriers simmed (`docs/SPEC-COMPANION-TARGET-SPECIALS.md` §9).
+- Open: some L9–L20 monsters lose 5-levels-down fights to melee basic attacks (spec §6 of the contract fixes);
+  Firebolt-only casters win some 5-down fights at L21–L28.
+
+**v1.14.0:**
+
+PR #5 (`Nayan-cl:v1.11-hero-tree` → `main`); no CI on the repo (the suites are the only check). Save
+version stays 12 (no migration; Legendary twins reach old saves via `save.js` `grantAbilityTechs()`).
+Changelog entries (v1.15.0 and v1.14.0), README status and every `?v=` cache-buster are at v1.15.0. **Not merged or deployed.**
+The boss grid now models the prepared hero's full kit; each spec below was gated by it at 300 trials.
+- **Boss sims:** class techs + the Conjurer companion (`docs/SPEC-BOSS-SIM-TECHS.md`); the full kit —
+  Academy chains, a shard-budget shrine package, Defend, whole-fight tool choice that also scores no
+  tools and every single tool (`docs/SPEC-BOSS-SIM-FULL-KIT.md`, D6 amended).
+- **Melee class techs** strike with the weapon; Legendary weapon twins; Seer's Ward = Spell Power
+  (`docs/SPEC-MELEE-CLASS-TECHS.md`). **Water/Fire/Earth/Wind** companion retunes
+  (`docs/SPEC-WATER-PACT-COST.md`, `docs/SPEC-COMPANION-BOSS-COST.md`).
+- **Academy weapon chains** re-tapered monotonic (peak 0.85 × old rank V), weapon-tech `powerMult`
+  after armor, Fear scales a tech's pierce (`docs/SPEC-ACADEMY-WEAPON-CHAINS.md`).
+- **Spell chains** ranks VI–IX keep rising; graded hero spells meet Magic Armor + ½ Armor
+  (`docs/SPEC-SPELL-CHAINS-AND-ARMOR.md`). **Anima Reckoning** non-elemental, power 95
+  (`docs/SPEC-ANIMA-RECKONING.md`).
+- **Companion attacks** no longer draw on Attunement / Spell Power and meet ½ Armor
+  (`docs/SPEC-COMPANION-SPELLPOWER.md`; supersedes SPEC-TECH-POLARITY finding d and
+  SPEC-SECONDARY-STATS D7 for companions).
+- **Gate verdict:** B1/B3 pass in all 132 boss × lineage cells. B2 fails only where the user accepted
+  it: twinblades at the L10 boss (34%), Assassin at the finale (44%), the Conjurer at L60 (34.9%) and
+  at the finale (38%) — both raised in v1.15.0 to 40.0% / 44.2%. Five levels down at L10: melee 0–24%, casters 27% (accepted); L29+ is the old
+  accepted Fear-sustain limitation.
+- **Before deploying:** browser-check the Legendary twin load notice and the changed techs, the L5 weapons in the
+  Ju`Mak shop, a refused command tech at 5 levels down and a boss Banish backlash, then
+  `sh tools/deploy.sh` (user-gated).
 
 ## Recently completed (2026-10-28) — v1.13.0 (per-town Academy curricula + boss cost retune)
 
@@ -216,8 +269,8 @@ school flavour**, tier being the hard gate.
 - Verified beyond the suites: the Academy panel was rendered through fakedom at Eldor / Saratus /
   Skyspire (Skyspire correctly shows no "Taught elsewhere" section), and the wiki column resolves
   Starspark III → Saratus (L14+), Starspark IX → Skyspire Landing (L85+).
-- Residual: a human browser pass over the new Academy sections (fakedom can't see layout), and the
-  four v1.9 review items below are still open and unchanged.
+- Residual: a human browser pass over the new Academy sections (fakedom can't see layout), and
+  v1.9 review items 1–3 below are still open (item 4 was fixed in v1.11).
 
 ## Recently completed (2026-10-23) — boss cost retune (shipped in v1.13.0)
 
@@ -237,10 +290,11 @@ Specs `docs/SPEC-BOSS-COST-BAND.md` (the measurable boss contract) and
   the uniform buff makes warrior/caster lines pay most of the increase (a boss-accuracy-vs-dodge
   spec could target the rogue line instead). Boss Dexterity only decides initiative, not dodge.
 
-## Recently completed (2026-10-23) — v1.12.0 "The Whole Arsenal" (release candidate)
+## Recently completed (2026-10-23) — v1.12.0 "The Whole Arsenal" (live since 2026-10-28)
 
-`docs/SPEC-MONSTER-TECH-POWER.md` (sim-locked, §3.1), on branch `v1.11-hero-tree` as its own release
-after v1.11.0. **No save change** (save version stays 12). **Not pushed, merged, or deployed.**
+`docs/SPEC-MONSTER-TECH-POWER.md` (sim-locked, §3.1), its own release after v1.11.0. **No save
+change** (save version stays 12). Merged to `main` with PR #4 (`dbc83a8`) and deployed with v1.13.0
+on 2026-10-28.
 - Monster tech power = `max(tech.power, round(F × monster.damage))`, F 1.00 regular / 0.70 boss;
   `signature: true` (Red Moon's Judgment only) ×1.3. Boss basic attacks = `round(0.55 × damage)`.
 - Graded techs hitting the player: Magic Armor + 0.5 × Armor (× Fear), Bracing × 0.5, Block at half
@@ -249,12 +303,13 @@ after v1.11.0. **No save change** (save version stays 12). **Not pushed, merged,
   `BOSS_BASIC_ATTACK_MULT`, `SIGNATURE_TECH_MULT`, `TECH_PHYSICAL_DEFENSE_SHARE`. Helpers
   `Game.Battle.monsterTechPower` / `monsterBasicPower` (wiki.html now loads battle.js for the latter).
 
-## Recently completed (2026-10-23) — v1.11.0 "The Hero Tree" (release candidate)
+## Recently completed (2026-10-23) — v1.11.0 "The Hero Tree" (live since 2026-10-28)
 
 Three user-directed specs in one release, stacked on v1.10.0. Built in the `HeroRpg-playable`
 working copy (not a git checkout), then **committed on branch `v1.11-hero-tree`** in a fresh clone
 (`HeroRpg-git`, branched from `main` `e06c63d`): one commit for v1.10.0, one for v1.11.0.
-**Not pushed, merged, or deployed — all user-gated.** **Save version 11 → 12.**
+Merged to `main` with PR #4 (`dbc83a8`) and deployed with v1.13.0 on 2026-10-28. **Save version
+11 → 12.**
 - **Working-copy drift (found while committing):** `HeroRpg-playable` predated part of `main` —
   PR #1's six tech chains (42 ranks), the Conjurer techs' `skill: 'Conjuration'` link, and its
   `test_companion.js` Test 12 + changelog lines. The commits keep `main`'s content; Test 12 was
@@ -276,8 +331,8 @@ working copy (not a git checkout), then **committed on branch `v1.11-hero-tree`*
   0.50, ×Fear); Estari Ruin Warden damage 33 → 28.
 - **Review re-sim** (lineage spec §3.2): Heavy/Medium lineages win the L100 boss 99–100% (was
   88–96%); Gambit/Assassin now pay at every boss (≤ 78% HP left); casters slip as accepted (L10
-  boss 86.3%, L90–100 95.7–98.3%). **Open follow-ups:** caster compensation spec; boss tech power
-  scaling spec.
+  boss 86.3%, L90–100 95.7–98.3%). **Follow-ups:** caster compensation spec (still open); boss
+  tech power scaling spec (done: v1.12.0, `docs/SPEC-MONSTER-TECH-POWER.md`).
 - **Sim-harness gotcha:** `Game.Classes.activate` (v1.10 and earlier) took `(c, classId, slot)`.
   The v1.10 P0 script passed `(c, slot, classId)`, so its fixtures never had a class active and
   `docs/SPEC-SECONDARY-STATS.md` §3.1 was measured without class bonuses.
@@ -286,13 +341,13 @@ working copy (not a git checkout), then **committed on branch `v1.11-hero-tree`*
   migration/balance/battle diffs, re-simmed the shipped code and checked the Hero Tree UI in a
   real browser (served over http — the browser pane renders `file://` pages as static snapshots).
 
-## Recently completed (2026-10-21) — v1.10.0 "Keen Edges & Lucky Coins" (release candidate)
+## Recently completed (2026-10-21) — v1.10.0 "Keen Edges & Lucky Coins" (live since 2026-10-28)
 
 **Secondary stats** + a player-facing text cleanup. Spec `docs/SPEC-SECONDARY-STATS.md` (all
 decisions D1–D9 user-resolved; §3.1 = P0 sim results). Save version unchanged (11) — no new
 persisted field. Prepared in the `HeroRpg-playable` working copy, which is **not a git checkout**:
-delivered as `Pathc/release-v1.10.0.patch` (one level up). **Not committed, merged, or deployed —
-all user-gated.**
+delivered as `Pathc/release-v1.10.0.patch` (one level up), then committed on `v1.11-hero-tree`
+(`6147946`). Merged to `main` with PR #4 (`dbc83a8`) and deployed with v1.13.0 on 2026-10-28.
 - **Mechanics:** seven secondary stats on one aggregator (`Game.Character.getSecondaryStat`:
   base + gear `bonuses` + class passives + shrine, capped): crit chance/damage (5% base ×1.5,
   resolved on the SAME single rng() roll as glancing — glancing keeps the low band, so RNG
@@ -315,10 +370,6 @@ all user-gated.**
 - Process: lead spec + P0 sim; one Sonnet agent implemented; lead review fixed one hard-coded
   constant duplicate. Real-browser check done (Status "Combat Stats" panel, item info lines,
   wiki column, crit battle log, Version Log/footer).
-- **Ops note — the `D:/Claude - collection folder/HeroRPG` base path doesn't exist on every
-  machine.** Without editing tracked files, run the suites from a scratch copy of `tests/` with
-  that string rewritten to the checkout path (`__dirname` suites like `test_reachability.js` and
-  `test_secondary_stats.js` run in place). Same trick for `tools/build_artifact.js` (`ROOT`).
 
 ## Recently completed (2026-07-25) — v1.9.0 (merged from two EXTERNAL PRs; live)
 
@@ -352,7 +403,9 @@ final roster 211 techs, no duplicate ids). Save version **10 → 11**.
      coin flip into **99.7% (Water) / 91.3% (Earth) / 76.0% (Fire)**, then 0% at +5 — a hard
      cliff. At-level also gets cheaper (HP left 62% → 87–91%, consumables 0.7 → 0.0). The **true
      5-down contract is intact** — independently verified, all five companion states identical at
-     +6, so the Fear-suppress ratchet genuinely works.
+     +6, so the Fear-suppress ratchet genuinely works. PR #5's companion retunes (Water heal
+     threshold, damage ×0.85, split Taunt) were simmed against bosses only; this +4 cell has not
+     been re-measured.
   4. **Legacy Conjurer saves keep ghosts** (verified by probe — no crash, screens render, the dead
      tech reports "Unknown technique"): the retired tech id stays in `c.techs`, the retired
      ability id in the class entry, and the **5 class levels spent on it are burned unrefunded**
@@ -361,8 +414,8 @@ final roster 211 techs, no duplicate ids). Save version **10 → 11**.
 - Also open from PR #2's own notes: companion icons are adapted copies (bespoke art wanted), no
   shipped monster carries the new `target` specials yet, command-tech powers are provisional.
 - Ops note: the tracked `post-commit` hook did NOT fire on the merge commits — the single-file
-  artifact was left stale and had to be rebuilt by hand (`node tools/build_artifact.js`). Check
-  `tools/herorpg_artifact.html`'s timestamp after any merge.
+  artifact was left stale and had to be rebuilt by hand (`node tools/build_artifact.js`). Cause
+  (found 2026-10-28): `core.hooksPath` wasn't set in the clone; see Deployment.
 
 ## Recently completed (2026-07-19) — v1.8.0 (branch `v1.8-techs-reachability`)
 
@@ -372,8 +425,7 @@ hard-depended on the audit's T1-a fix (no offhand weapon was obtainable in the s
 Specs: `docs/SPEC-V1.8-TECHS-AND-REACHABILITY.md` (release plan, D-A/D-B/D-C decisions taken on
 pre-registered recommendations), `docs/SPEC-TECH-POLARITY.md` (§0 = P0-locked constants),
 `docs/AUDIT-ITEM-REACHABILITY.md`. Save version unchanged (10) — all new state battle-transient.
-**Branch NOT merged to `main`, NOT deployed — both user-gated.** (v1.7 is also still unmerged;
-v1.8 stacks on it.) Five phases, each committed green on all 13 suites:
+Since merged to `main` (release commit `1437353`) and live. Five phases, each committed green on all 13 suites:
 - **P0** (`ec80ad6`): sim gate — real engine + prototype source patches, 300 trials/cell,
   L5/12/22/40 × at-level/true-5-down/boss. Contract passed every row; no 5-down widening.
   Ratchet retunes: stat-buff durations 3→5 (action economy), Attunement 12/24/40/60,
@@ -408,7 +460,7 @@ v1.8 stacks on it.) Five phases, each committed green on all 13 suites:
 Content & UX cycle from user requests (post-v1.6): quest front-loading, the backlogged Arkan
 feedback, a clearer destinations UI, and a reference wiki. Spec `docs/SPEC-V1.7-CONTENT-UX.md`;
 Arkan design authority `docs/SPEC-ARKAN-DIFFERENTIATION.md` (now committed). Save version
-unchanged (10). **Branch NOT yet merged to `main` and NOT deployed — both user-gated.** Four
+unchanged (10). Since merged to `main` (release commit `91c8ec1`) and live. Four
 phases + release, each green on all 11 suites:
 - **P-U/P-Q** (`16fd6b0`): the Explore "Destinations" list is now a **card grid with recommended
   level ranges** + the home-town travel-UI fix (closes the backlogged Arkan/Saratus bug — an Arkan
@@ -438,8 +490,7 @@ findings (code-cited, tagged) in `docs/REVIEW-2026-07-16.md`; spec + locked cons
 sim results in `docs/SPEC-V1.6-REBALANCE.md`. Save version unchanged (10, no migration).
 Three user-gated decisions (2026-07-16): full scope · defense = penetration floor + constant
 tuning · keep the 5-down limitation accepted (don't chase it). Five phases, each committed
-green; P0 was the mandatory sim gate. **Branch not yet merged to `main`; not deployed — both
-user-gated.**
+green; P0 was the mandatory sim gate. Since merged to `main` (`bee1ff1`) and live.
 - **P0 sim gate** (`3768a8c`..): locked every combat + progression constant vs the difficulty
   contract before any game code (battle grid + progression calc, real engine via node vm).
 - **P1 combat & stats** (`3768a8c`): defensive-only **penetration floor** (0.30 — a monster hit

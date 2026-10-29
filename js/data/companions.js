@@ -17,6 +17,7 @@
 //   basic: { name, effect ('damage'|'heal'), grade, energyCost, powerBase, powerPerLevel,
 //            dotKind?, dotPowerBase?, dotPowerPerLevel?, dotTurns?,   // Fire: Burn DoT rider
 //            chipPowerBase?, chipPowerPerLevel?,                      // Water: token damage rider
+//            healBelow?,                                              // Water: heal only below this HP fraction
 //            tauntTurns? }                                            // Earth: threat rider
 //     The auto-action fired once per player round (js/core/companion.js act(), called from the
 //     TOP of js/core/battle.js finishRound). `power` at any given moment = round(powerBase +
@@ -30,9 +31,10 @@
 //
 // ALL numbers below are [invented] — no archive precedent for a persistent companion survives;
 // the nearest archived concept, the v3.0 "Eidolon" (reference/manual/Version_3.0.md), was
-// explicitly passive/non-combatant and informs flavor only. Every number is PROVISIONAL pending
-// the lead's /balance-sim (docs/SPEC-COMPANION-SYSTEM.md §3, sim gate S1-S7) — nothing here is
-// locked yet. Public-domain Paracelsian elemental names (Salamander/Undine/Sylph) plus folklore
+// explicitly passive/non-combatant and informs flavor only. Every number is sim-locked (user,
+// 2026-10-29): first gated by docs/SPEC-COMPANION-SYSTEM.md §3 (S1-S7), retuned and re-gated by
+// docs/SPEC-WATER-PACT-COST.md, docs/SPEC-COMPANION-BOSS-COST.md and docs/SPEC-COMPANION-SPELLPOWER.md,
+// and confirmed by the v1.15 grids (docs/SPEC-COMPANION-TARGET-SPECIALS.md §4). Public-domain Paracelsian elemental names (Salamander/Undine/Sylph) plus folklore
 // "Golem" for Earth — no copyrighted creatures.
 
 var Game = window.Game || {};
@@ -55,9 +57,11 @@ Game.Data.companions = [
       name: 'Ember Lash',
       effect: 'damage', grade: 'Fire',
       energyCost: 4, // [invented][sim-gated]
-      powerBase: 6, powerPerLevel: 0.7, // [invented][sim-gated] power = round(6 + 0.7*L), fed through Game.Battle.techEffectivePower (Int-scaled, Fear-affected, like any spell tick)
+      // [invented][sim-gated] power fed through Game.Battle.techEffectivePower (Int-scaled, Fear-affected, like any spell tick).
+      // docs/SPEC-COMPANION-BOSS-COST.md (user-directed): 6 + 0.7·L -> 1.5 + 0.175·L (×0.25), offsetting the Burn now scaling with Intelligence.
+      powerBase: 1.5, powerPerLevel: 0.175,
       dotKind: 'burn',
-      dotPowerBase: 3, dotPowerPerLevel: 0.4, // [invented][sim-gated] dotPower = round(3 + 0.4*L), flat per-tick (no Int scaling — mirrors the existing 'bleed' debuff convention, js/core/battle.js tickMonsterStatuses)
+      dotPowerBase: 3, dotPowerPerLevel: 0.4, // [invented][sim-gated] raw round(3 + 0.4*L); since docs/SPEC-COMPANION-BOSS-COST.md it is Int-scaled through techEffectivePower x COMPANION_DAMAGE_MULT when applied (js/core/companion.js act), was flat per-tick (no Int scaling — mirrors the existing 'bleed' debuff convention, js/core/battle.js tickMonsterStatuses)
       dotTurns: BALANCE.BURN_TURNS // refreshed, never stacked (js/core/companion.js act())
     },
     desc: 'A patient arsonist bound from living Anima — it lashes a whip of fire that leaves the wound smouldering long after the strike lands.',
@@ -76,10 +80,16 @@ Game.Data.companions = [
       name: 'Soothing Spray',
       effect: 'heal', grade: null,
       energyCost: 4, // [invented][sim-gated]
-      powerBase: 5, powerPerLevel: 0.5, // [invented][sim-gated] heals the player, Fear-exempt (archived: "Fear affects spell damage, NOT healing" — Recent_Updates.md 2007-04-06)
-      chipPowerBase: 2, chipPowerPerLevel: 0.2 // [invented][sim-gated] a token Water-grade hit on the enemy riding the same cast
+      // [invented][sim-gated] heals the player, Fear-exempt (archived: "Fear affects spell damage, NOT healing" — Recent_Updates.md 2007-04-06).
+      // powerPerLevel 0.5 -> 0.25 (user-directed, docs/SPEC-WATER-PACT-COST.md): one spray restored 36–50% of a T3 caster's HP bar; now 24–32%.
+      powerBase: 5, powerPerLevel: 0.25,
+      chipPowerBase: 2, chipPowerPerLevel: 0.2, // [invented][sim-gated] a token Water-grade hit on the enemy riding the same cast
+      // [invented][sim-gated] docs/SPEC-WATER-PACT-COST.md: the spray heals only while the player is
+      // below 60% HP (the chip still lands every round). Healing at full HP made every T3 boss cost
+      // a Water Conjurer 17–25% HP, under the 35% / 45% boss cost floor (docs/SPEC-BOSS-SIM-TECHS.md §3.1).
+      healBelow: 0.6
     },
-    desc: 'A gentle current given living shape — it mists cool water over your wounds, and what spills past you still stings the foe.',
+    desc: 'A gentle current given living shape — once your wounds run deep it mists cool water over them, and what spills past you still stings the foe.',
     icon: 'comp_water'
   },
 
@@ -100,7 +110,7 @@ Game.Data.companions = [
       powerBase: 4, powerPerLevel: 0.5, // [invented][sim-gated] lowest direct damage of the four — it earns its keep by tanking, not hitting
       tauntTurns: BALANCE.COMPANION_TAUNT_TURNS_BASIC // refreshed, never stacked (js/core/companion.js act()/setTaunt)
     },
-    desc: 'A squat guardian of bound stone — it hammers a fist down and plants itself between you and the foe, daring the next blow to land on it instead.',
+    desc: 'A squat guardian of bound stone — it hammers a fist down and plants itself between you and the foe, taking half the force of the next blow.',
     icon: 'comp_earth'
   },
 
@@ -116,7 +126,9 @@ Game.Data.companions = [
       name: 'Gale Slash',
       effect: 'damage', grade: 'Wind',
       energyCost: 6, // [invented][sim-gated]
-      powerBase: 8, powerPerLevel: 1.1 // [invented][sim-gated] highest direct damage of the four, anchored a little above a mid player nuke — the DPS/support role
+      // [invented][sim-gated] highest direct damage of the four — the DPS/support role. docs/SPEC-COMPANION-BOSS-COST.md:
+      // 8 + 1.1·L -> 4.7 + 0.65·L (×0.59), so with COMPANION_DAMAGE_MULT 0.85 Gale Slash hits for half its old damage.
+      powerBase: 4.7, powerPerLevel: 0.65
     },
     desc: 'A near-formless eddy of wind given fitful will — it carves the air itself into a razor gale.',
     icon: 'comp_wind'

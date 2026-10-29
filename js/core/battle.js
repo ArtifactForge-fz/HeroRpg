@@ -697,6 +697,10 @@ Game.Battle = (function () {
       var list = monster.techs || [];
       for (var i = 0; i < list.length; i++) {
         var t = getTech(list[i]);
+        // [invented] docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.1: a companion-targeting special is only
+        // in the pool while a live, un-suppressed companion is bound (no rng() call added/removed).
+        if (t && t.vsCompanion && !(battle.companion && battle.companion.hp > 0 &&
+          !(Game.Companion && Game.Companion.isSuppressed && Game.Companion.isSuppressed(battle)))) continue;
         if (t && t.energyCost <= monster.energy) affordable.push(t);
       }
       if (affordable.length > 0 && rng() < techChance) {
@@ -714,12 +718,16 @@ Game.Battle = (function () {
     // `tech.target` absent) is the PLAYER — unchanged. A monster TECH may declare an explicit
     // `target` ('player'|'companion'|'both'); a plain BASIC attack (no usedTech) instead consults
     // Taunt (Game.Companion.tauntActive) — a live Taunt on the companion (the Earth Golem's Stone
-    // Fist/Bulwark) redirects the basic onto it. 'companion' falls back to 'player' if no companion
+    // Fist/Bulwark) splits the basic with it (below). 'companion' falls back to 'player' if no companion
     // is bound/alive (spec: "falls back to the player").
     var target = (usedTech && usedTech.target) ? usedTech.target : 'player';
     var companionAlive = !!(battle.companion && battle.companion.hp > 0);
+    // docs/SPEC-COMPANION-BOSS-COST.md: Taunt SPLITS the basic attack — the companion takes
+    // BALANCE.COMPANION_TAUNT_SHARE of it, the player the rest through the normal hit path below.
+    var tauntSplit = false;
     if (!usedTech && companionAlive && Game.Companion && Game.Companion.tauntActive(battle)) {
-      target = 'companion';
+      target = 'both';
+      tauntSplit = true;
     }
     if (target === 'companion' && !companionAlive) target = 'player';
     var hitsPlayer = (target === 'player' || target === 'both');
@@ -747,13 +755,24 @@ Game.Battle = (function () {
     // v1.9: resolve the companion hit (if any) BEFORE the player's own dodge roll below, so a
     // 'companion'-only target never rolls the player's Dodge at all (nothing is aimed at them).
     if (hitsCompanion) {
-      damageCompanion(battle, actionBase, usedTech ? usedTech.grade : null,
+      var companionDmg = damageCompanion(battle, tauntSplit ? actionBase * BALANCE.COMPANION_TAUNT_SHARE : actionBase, usedTech ? usedTech.grade : null,
         releasing ? 'a charged blow' : (usedTech ? usedTech.name : null));
+      // docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.2: a BOSS's backlash tech that lands on the companion
+      // also costs the summoner a flat share of max HP — unmitigated (no dodge/Armor/Fear/Block/
+      // Bracing/Defend; `defending` is NOT consumed here). Never from a Taunt-split basic or a
+      // regular monster.
+      if (usedTech && usedTech.backlash && monster.boss && companionDmg > 0) {
+        var lash = Math.round(BALANCE.COMPANION_BACKLASH_BOSS_FRAC * battle.player.hitPointsMax);
+        battle.player.hitPoints = Math.max(0, battle.player.hitPoints - lash);
+        log(battle, 'The severed bond lashes back at you for ' + lash + ' damage.');
+      }
     }
     if (!hitsPlayer) {
       checkEnd(battle);
       return;
     }
+
+    if (tauntSplit) actionBase = actionBase * (1 - BALANCE.COMPANION_TAUNT_SHARE);
 
     // Player dodge roll (Dodge skill + Dex). v1.2 Phase 1 item 3: a successful dodge grants Dodge
     // skill XP at the proc site (use-based skill system; addSkillXp already enforces the 2L+1 cap).
@@ -1151,12 +1170,17 @@ Game.Battle = (function () {
     // synthetic {effect:'damage', power} tech through this exact function), so Attunement also
     // boosts servitor ticks — no special case, single pipeline (see SPEC-TECH-POLARITY.md §0
     // finding d; test_v18_engine.js documents this explicitly).
-    var spellpowerBuff = playerStatKindBuff('spellpower');
+    // docs/SPEC-COMPANION-SPELLPOWER.md §2.1 [invented]: a companion's own damage (tech.companion, set by
+    // js/core/companion.js) draws on NEITHER the Attunement buff NOR the Spell Power stat (D1, 0%). This
+    // reverses SPEC-TECH-POLARITY.md finding d and SPEC-SECONDARY-STATS.md D7 for companions only; hero
+    // spells, companion command techs cast via useTech, and heals are unaffected.
+    var spellpowerBuff = tech.companion ? 0 : playerStatKindBuff('spellpower');
+    var spellpowerStat = tech.companion ? 0 : secondaryStat(c, 'spellPower');
     // docs/SPEC-SECONDARY-STATS.md §2.6: Spell Power adds flat power in the same slot as the
     // Attunement typed buff above (both BEFORE the Int/magic-skill/Rod multipliers) — this is the
     // SAME pipeline the Conjurer servitor tick calls (tickMonsterStatuses), so Spell Power boosts
     // servitor ticks too (D7), with no special case.
-    return Math.round((tech.power + spellpowerBuff + secondaryStat(c, 'spellPower')) * (1 + c.intelligence * 0.02) * magicSkillMult * rodMult); // invented: Int spell-damage factor
+    return Math.round((tech.power + spellpowerBuff + spellpowerStat) * (1 + c.intelligence * 0.02) * magicSkillMult * rodMult); // invented: Int spell-damage factor
   }
 
   function useTech(techId) {
@@ -1199,6 +1223,13 @@ Game.Battle = (function () {
       if (!companionMatches) {
         var reqKindDef = Game.Companion ? Game.Companion.getKind(tech.requiresCompanion) : null;
         log(battle, tech.name + ' requires a bound ' + (reqKindDef ? reqKindDef.element : tech.requiresCompanion) + ' companion.');
+        return battle;
+      }
+      // [invented] docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md §3 — Fear-suppressed companion refuses commands
+      // (before any Energy/shard cost).
+      if (Game.Companion && Game.Companion.isSuppressed && Game.Companion.isSuppressed(battle)) {
+        var supKind = Game.Companion.getKind(battle.companion.kindId);
+        log(battle, 'Your ' + (supKind && supKind.name ? supKind.name : 'companion') + ' is overwhelmed and cannot answer your command.');
         return battle;
       }
     }
@@ -1455,24 +1486,36 @@ Game.Battle = (function () {
             log(battle, 'The ' + battle.monster.name + ' dodges your ' + tech.name + '!');
             continue;
           }
-          base = Game.Character.getDamage(battle.player) * (tech.powerMult || 1) * fear * curseMult;
+          // docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.3 (C1) [invented]: the tech's powerMult is NOT applied here;
+          // it multiplies what gets through armor (see `dmg` below), so Fear can't be rescued by a x>1 tech.
+          base = Game.Character.getDamage(battle.player) * fear * curseMult;
           // docs/SPEC-SECONDARY-STATS.md §2.4: Armor Penetration stacks additively with the tech's
           // own armorPierce, capped in total. Never touches Magic Armor.
           var techPierce = Math.min(BALANCE.ARMOR_PEN_TOTAL_CAP, (tech.armorPierce || 0) + secondaryStat(battle.player, 'armorPen'));
+          // docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.4 (C3) [invented]: Fear scales the tech's total armor pierce.
+          techPierce *= fear;
           mitigation = battle.monster.armor * (1 - techPierce);
         } else {
           base = techEffectivePower(battle.player, tech) * fear * curseMult;
+          // docs/SPEC-COMPANION-BOSS-COST.md: a companion command's damage (Conflagration) is companion damage.
+          if (tech.requiresCompanion) base *= BALANCE.COMPANION_DAMAGE_MULT;
           // v1.2 Phase 1 item 7: non-elemental damage ignores defense — RULE [archived] (DESIGN.md
           // §4 / 2005 note), adopted here: a grade:null tech's mitigation is 0 regardless of the
-          // monster's Magic Armor; a graded (elemental) tech is still mitigated by it.
-          mitigation = tech.grade ? battle.monster.magicArmor : 0;
+          // monster's Armor / Magic Armor.
+          // docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.2 [invented] (mirror of the v1.12 monster-tech rule,
+          // docs/SPEC-MONSTER-TECH-POWER.md §2.3): a graded (elemental) hero spell is mitigated by the
+          // monster's Magic Armor plus TECH_PHYSICAL_DEFENSE_SHARE of its Armor. Monster armor is not Fear-scaled.
+          mitigation = tech.grade ? battle.monster.magicArmor + BALANCE.TECH_PHYSICAL_DEFENSE_SHARE * battle.monster.armor : 0;
         }
         // docs/SPEC-SECONDARY-STATS.md §2.2 (U2): the same three-way roll, for both weapon techs
         // and damage/drain spell techs (U2 — one shared crit stat applies to both).
         var hvTech = rollHitVariance(battle.player, base);
         var raw = hvTech.raw, glancing = hvTech.glancing;
         raw = applyResistance(battle.monster, tech.grade, raw);
-        var dmg = Math.max(1, Math.round(raw - mitigation));
+        // §2.3 (C1): weapon techs multiply the post-armor remainder: round((hit - armor) x powerMult), floor 1.
+        var dmg = tech.weaponTech
+          ? Math.max(1, Math.round((raw - mitigation) * (tech.powerMult || 1)))
+          : Math.max(1, Math.round(raw - mitigation));
         // v1.5 P3 (docs/SPEC-V1.5-MONSTER-AI.md §3 'guardian'): a pending guard halves THIS
         // action's final damage-to-monster per hit, floored at 1 (same as attack()'s main hit).
         if (guarding) dmg = Math.max(1, Math.round(dmg * (1 - BALANCE.GUARDIAN_REDUCTION)));

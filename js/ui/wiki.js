@@ -509,6 +509,8 @@ Game.Wiki = (function () {
     if (tech.goldSteal) parts.push('Steals ' + tech.goldSteal + ' gold on hit');
     // SPEC-MONSTER-TECH-POWER §2.1: monster techs scale with the monster's attack damage.
     if (tech.monsterOnly && tech.effect === 'damage') parts.push('Scales with the monster: at least its attack damage (bosses: 70%)' + (tech.signature ? '; signature, x1.3' : ''));
+    if (tech.vsCompanion) parts.push('Only used against a bound companion');
+    if (tech.backlash && typeof BALANCE !== 'undefined') parts.push('From a boss, the summoner also loses ' + Math.round(BALANCE.COMPANION_BACKLASH_BOSS_FRAC * 100) + '% of max HP');
     return parts.join('; ') || '—';
   }
 

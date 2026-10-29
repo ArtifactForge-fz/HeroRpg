@@ -20,7 +20,8 @@ var fs = require('fs');
 var path = require('path');
 var FakeDom = require('./fakedom.js');
 
-var base = "D:/Claude - collection folder/HeroRPG/js";
+var repoRoot = path.resolve(__dirname, '..');
+var base = path.join(repoRoot, 'js');
 
 function freshDom() {
   var document = new FakeDom.FakeDocument();
@@ -171,6 +172,8 @@ var CLASS_TECH_IDS = [
   'tech_crushing_blow', 'tech_anima_surge', 'tech_quick_stab', 'tech_shadowstep_strike',
   'tech_execution_blow', 'tech_radiant_smite', 'tech_arcane_cataclysm', 'tech_greater_mending',
   'tech_efficient_strike', 'tech_runic_severance',
+  // docs/SPEC-MELEE-CLASS-TECHS.md §2.3: the Legendary weapon twins, granted with their spell form.
+  'tech_runic_severance_blade', 'tech_vault_reckoning_blade', 'tech_echoing_judgment_blade',
   'tech_shadow_blade', 'tech_anima_reckoning', 'tech_dice_throw', 'tech_vault_reckoning', 'tech_echoing_judgment',
   // v1.5 P4: the 9 new Tier-3 classOnly signature techs (docs/SPEC-TIER3-EXPANSION.md Part B).
   // tech_summon_elemental RETIRED v1.9 (docs/SPEC-COMPANION-SYSTEM.md D0) — replaced below by the
@@ -1118,8 +1121,9 @@ assert(Game.Companion.tauntActive(battleF) === true, 'Taunt is active on the com
 var playerHpBeforeF = battleF.player.hitPoints;
 var companionHpBeforeF = battleF.companion.hp;
 Game.Battle.defend();
-assert(battleF.player.hitPoints === playerHpBeforeF, "the monster's basic attack did NOT hit the player while Taunt is active, hp unchanged at " + battleF.player.hitPoints);
-assert(battleF.companion.hp < companionHpBeforeF, "the monster's basic attack was redirected onto the taunting companion instead, hp " + companionHpBeforeF + ' -> ' + battleF.companion.hp);
+// docs/SPEC-COMPANION-BOSS-COST.md: Taunt SPLITS the basic attack, so the player takes a share.
+assert(battleF.player.hitPoints < playerHpBeforeF, "while Taunt is active the player still takes its share of the basic attack, hp " + playerHpBeforeF + ' -> ' + battleF.player.hitPoints);
+assert(battleF.companion.hp < companionHpBeforeF, "the taunting companion takes its share of the basic attack, hp " + companionHpBeforeF + ' -> ' + battleF.companion.hp);
 Game.Battle.flee();
 Game.Battle.endBattle();
 
@@ -1171,6 +1175,8 @@ var battleH = Game.Battle.start('plains_field_rat');
 battleH.monster.techs = [];
 battleH.monster.hp = battleH.monster.hpMax = 999999;
 battleH.monster.damage = 999999; // guaranteed one-shot on the companion once redirected
+var normalMaxH = battleH.player.hitPointsMax;
+battleH.player.hitPoints = battleH.player.hitPointsMax = 99999999; // the player survives its share of the split hit (SPEC-COMPANION-BOSS-COST)
 Game.Companion.setTaunt(battleH, 5);
 Game.Battle.defend(); // fixedRng(0.99) still active: no dodge/glancing anywhere
 
@@ -1182,6 +1188,7 @@ var conflagrationRefusalLenBefore = battleH.log.length;
 Game.Battle.useTech('tech_cmd_conflagration');
 assert(battleH.log.length === conflagrationRefusalLenBefore + 1 && /requires a bound/.test(battleH.log[battleH.log.length - 1]),
   'a command tech refuses to cast once its companion has been dispersed mid-battle: ' + battleH.log[battleH.log.length - 1]);
+battleH.player.hitPoints = battleH.player.hitPointsMax = normalMaxH;
 Game.Battle.flee();
 Game.Battle.endBattle();
 assert(cH.companion === null, 'battle end nulls character.companion once it was dispersed mid-battle — must be re-summoned');
@@ -1238,6 +1245,8 @@ legacyC.currentLocation = 'eldor';
 var legacyBonus = Game.Classes.classBonus(legacyC, 'damage_pct');
 assert(legacyBonus > 0, "the legacy Shadowknight's already-purchased Inner Fire passive still contributes to classBonus while active (damage_pct=" + legacyBonus + ')');
 
+// docs/SPEC-MELEE-CLASS-TECHS.md: Shadow Blade is a weapon tech now, so the hero needs a weapon in hand.
+legacyC.equipment.weapon = 'sword_rusty_shortblade';
 legacyC.hitPoints = legacyC.hitPointsMax;
 legacyC.energy = legacyC.energyMax;
 setRng(fixedRng(0.5));
@@ -1631,6 +1640,47 @@ try {
   failures++;
   console.error('FAIL: Hero Tree UI test threw: ' + e36.stack);
 }
+
+
+// =================== Test 37: a Legendary tech ability grants its spell form AND its weapon twin ===================
+console.log('\n=== Test 37: SPEC-MELEE-CLASS-TECHS §2.3 — Legendary tech abilities grant both forms; old saves get the twin on load ===');
+[['runeblade_of_kuraan', 'runeblade_runic_severance', 'tech_runic_severance', 'tech_runic_severance_blade'],
+  ['vaultbreaker', 'vaultbreaker_reckoning', 'tech_vault_reckoning', 'tech_vault_reckoning_blade'],
+  ['heir_of_the_echo', 'heir_echoing_judgment', 'tech_echoing_judgment', 'tech_echoing_judgment_blade']].forEach(function (row) {
+  var twin = Game.Battle.getTech(row[3]);
+  assert(!!twin && twin.weaponTech === true && twin.grade === null && twin.classOnly === true && twin.classId === row[0],
+    row[3] + ' is a classOnly, ungraded weapon tech of ' + row[0]);
+  assert(twin.energyCost === Game.Battle.getTech(row[2]).energyCost, row[3] + ' costs the same Energy as its spell form');
+  var c37 = makeCharacter({ name: 'TwinBuyer' });
+  setLevel(c37, 60);
+  Game.Classes.obtainClass(c37, row[0]);
+  c37.currentLocation = 'eldor';
+  c37.classes[row[0]].classLevelsEarned = 10;
+  var res37 = Game.Classes.buyAbility(c37, row[0], row[1]);
+  assert(res37.ok === true, row[1] + ' purchased: ' + res37.message);
+  assert(c37.techs.indexOf(row[2]) !== -1 && c37.techs.indexOf(row[3]) !== -1, row[1] + ' teaches both ' + row[2] + ' and ' + row[3]);
+});
+
+// A save that bought Echoing Judgment before the twin existed gets the twin on load, once, with a notice.
+var c37s = makeCharacter({ name: 'TwinMigrator' });
+setLevel(c37s, 60);
+Game.Classes.obtainClass(c37s, 'heir_of_the_echo');
+c37s.classes['heir_of_the_echo'].abilities.push('heir_echoing_judgment');
+c37s.techs.push('tech_echoing_judgment');
+localStorageStore['herorpg_save'] = JSON.stringify({ version: 12, state: { character: JSON.parse(JSON.stringify(c37s)) } });
+var loaded37 = Game.Save.load();
+assert(loaded37 !== null && loaded37.character.techs.indexOf('tech_echoing_judgment_blade') !== -1, 'load adds the twin to a save that owns the Legendary tech ability');
+assert(loaded37.character.techSets.every(function (set) { return set.indexOf('tech_echoing_judgment_blade') === -1; }), 'the twin is learned but not slotted');
+var notes37 = Game.Save.getLastLoadNotes();
+assert(notes37.length === 1 && /Echo of the Blade/.test(notes37[0]), 'one load notice names the new twin, got ' + JSON.stringify(notes37));
+localStorageStore['herorpg_save'] = JSON.stringify({ version: 12, state: { character: loaded37.character } });
+var reloaded37 = Game.Save.load();
+assert(reloaded37.character.techs.filter(function (t) { return t === 'tech_echoing_judgment_blade'; }).length === 1 && Game.Save.getLastLoadNotes().length === 0,
+  'loading again adds nothing and shows no notice (idempotent)');
+var c37n = makeCharacter({ name: 'NoLegendary' });
+localStorageStore['herorpg_save'] = JSON.stringify({ version: 12, state: { character: JSON.parse(JSON.stringify(c37n)) } });
+var loaded37n = Game.Save.load();
+assert(loaded37n.character.techs.indexOf('tech_echoing_judgment_blade') === -1 && Game.Save.getLastLoadNotes().length === 0, 'a save without the ability gets no twin and no notice');
 
 
 // =================== Summary ===================

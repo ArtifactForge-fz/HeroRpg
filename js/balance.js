@@ -686,6 +686,20 @@ var BALANCE = {
   // branch. [invented], [sim-gated].
   COMPANION_TAUNT_TURNS_BULWARK: 3,
 
+  // docs/SPEC-COMPANION-BOSS-COST.md (user-directed 2026-10-28): every bit of companion damage —
+  // the basic attacks, Water's chip, Fire's Burn and the Conflagration command — is multiplied by
+  // this (js/core/companion.js dealDamageToMonster + Burn; js/core/battle.js useTech for
+  // `requiresCompanion` damage techs). [invented][sim-gated]: with the old 1.0 the Conjurer's
+  // Fire/Wind pacts spent under the boss cost floor at the T3 bosses.
+  COMPANION_DAMAGE_MULT: 0.85,
+
+  // docs/SPEC-COMPANION-BOSS-COST.md (user-directed 2026-10-28): a taunted monster basic attack is
+  // SPLIT — the companion takes this share, the player takes the rest through the normal hit path
+  // (dodge, armor, Bracing) — instead of landing wholly on the companion (js/core/battle.js
+  // monsterAct). [invented][sim-gated]: a full redirect made T3 bosses cost an Earth Conjurer
+  // 32–35% HP, under the 35% / 45% floor.
+  COMPANION_TAUNT_SHARE: 0.5,
+
   // §2.2: duration of the Fire Salamander's Burn DoT (Ember Lash's rider, refreshed not stacked --
   // js/core/companion.js act()); also the duration any future Burn source should use, so every
   // Burn in the game shares one lever. [invented], [sim-gated] (spec §3 S3: "no one-shot; DoT +
@@ -698,6 +712,11 @@ var BALANCE = {
   // act()). WITHOUT this gate the Wind companion won 87% of +6 fights in sim, blowing straight
   // through the 5-down=certain-death contract; with it, every companion returns to ~0% there.
   COMPANION_FEAR_SUPPRESS_LEVELS: 5,
+
+  // invented, docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.2 (sim-locked §4.3): a BOSS's backlash tech
+  // (Banish Conduit) that lands on a bound companion also costs the summoner this share of max HP,
+  // unmitigated. Flat (not a share of the companion's damage) so every pact pays the same.
+  COMPANION_BACKLASH_BOSS_FRAC: 0.30,
 
   BURN_TURNS: 2,
 

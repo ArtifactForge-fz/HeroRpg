@@ -355,10 +355,6 @@ same courtesy is extended so no two ids render as visually-identical tiles):
 
 | new game id | copied from (existing file) | hue tweak | why |
 |---|---|---|---|
-| comp_fire | tech_firebolt_5.png | +18° | Ember Salamander — fire tile |
-| comp_water | juneros_tidewalker.png | -15° | Tidal Undine — watery creature tile |
-| comp_earth | estari_construct_sentinel.png | +20° | Granite Golem — stone guardian tile |
-| comp_wind | kuraan_wind_spirit.png | -20° | Gale Sylph — a literal wind-spirit tile |
 | tech_summon_fire | tech_firebolt_3.png | +10° | Bind Salamander |
 | tech_summon_water | tech_tidal_lance_1.png | -10° | Bind Undine |
 | tech_summon_earth | tech_stoneshear_1.png | +12° | Bind Golem |
@@ -369,3 +365,41 @@ same courtesy is extended so no two ids render as visually-identical tiles):
 | tech_cmd_tailwind | tech_attunement_1.png | -18° | Tailwind — an existing spellpower-buff tile |
 | mon_cleaving_roar | tech_cleave_1.png | +30° | example monster tech (target 'both'), not wired to any monster |
 | mon_banish_conduit | estari_anima_conduit.png | -25° | example monster tech (target 'companion'), not wired to any monster |
+
+## Legendary weapon-twin tech icons — derived from the spell-form tiles
+
+The three Legendary weapon twins (`docs/SPEC-MELEE-CLASS-TECHS.md` §2.3) reuse their spell form's
+Dungeon Crawl tile, mirrored left-right, tinted toward steel, with a 1px steel blade line on the
+diagonal. Generated with Node's `zlib` and a hand-rolled PNG decode/encode (no dependencies); each is
+a valid 32x32 RGBA PNG, byte-hash-distinct from every other file in `assets/icons/`.
+
+| Icon | Derived from |
+|---|---|
+| tech_runic_severance_blade | tech_runic_severance.png |
+| tech_vault_reckoning_blade | tech_vault_reckoning.png |
+| tech_echoing_judgment_blade | tech_echoing_judgment.png |
+
+## v1.15 icons — the level-5 knife and polearm (docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md §2)
+
+Pulled by the lead from the DCSS repo (same CC0 source/pipeline as above), verified 32x32 PNGs and
+byte-hash-distinct from every existing icon:
+
+| game id | rltiles source |
+|---|---|
+| knife_scouts_dirk | item/weapon/short_sword1 |
+| polearm_watchmans_spear | item/weapon/spear3 |
+
+## v1.15 companion portraits — real tiles replace the v1.9 copies
+
+The four companion kinds (`comp_fire`, `comp_water`, `comp_earth`, `comp_wind`) were hue-shifted copies
+of other ids' tiles (v1.9 section above). They now use real Dungeon Crawl elemental tiles pulled by
+the lead from the DCSS repo, verified 32x32 PNGs and byte-hash-distinct from every other icon. DCSS's
+`air_elemental` was not used: it is already `skyspire_lower_warden`'s icon, so a Wind companion would
+look identical to that monster in battle.
+
+| game id | rltiles source |
+|---|---|
+| comp_fire | mon/nonliving/fire_elemental |
+| comp_water | mon/nonliving/water_elemental |
+| comp_earth | mon/nonliving/earth_elemental |
+| comp_wind | mon/nonliving/twister1 |

@@ -80,6 +80,14 @@ Game.Companion = (function () {
 
   // ---------------- Taunt (Earth's threat mechanic, §2.3) ----------------
 
+  // [invented] docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md §3 — extends the SPEC-COMPANION-SYSTEM §3 S4
+  // ratchet: true while a live companion is in this battle and Fear (>= COMPANION_FEAR_SUPPRESS_LEVELS
+  // levels below the enemy) overwhelms it. act() idles on it, and useTech refuses command techs.
+  function isSuppressed(battle) {
+    return !!(battle && battle.companion && battle.companion.hp > 0 &&
+      Game.Battle.fearLevels(battle) >= BALANCE.COMPANION_FEAR_SUPPRESS_LEVELS);
+  }
+
   function tauntActive(battle) {
     if (!battle || !battle.companion || battle.companion.hp <= 0) return false;
     var statuses = battle.companion.statuses || [];
@@ -109,16 +117,23 @@ Game.Companion = (function () {
   // an independent glancing-blow roll, the monster's grade resistance (applyResistance), and
   // finally its flat Magic Armor — floored at 1. Every roll here goes through Game.Battle._rng via
   // the exported helpers (single RNG surface).
+  // docs/SPEC-COMPANION-SPELLPOWER.md §2.1 [invented]: the synthetic tech carries companion:true, so
+  // Attunement and Spell Power do NOT boost companion attacks (reverses SPEC-TECH-POLARITY.md finding d /
+  // SPEC-SECONDARY-STATS.md D7 for companions); §2.2: graded hits also pay half monster Armor.
   function dealDamageToMonster(battle, power, grade) {
     var player = battle.player;
     var fear = Game.Battle.fearMultiplier(battle);
     var curseMult = Game.Battle.playerCurseMultiplier(battle);
-    var base = Game.Battle.techEffectivePower(player, { effect: 'damage', power: power }) * fear * curseMult;
+    var base = Game.Battle.techEffectivePower(player, { effect: 'damage', power: power, companion: true }) * fear * curseMult *
+      BALANCE.COMPANION_DAMAGE_MULT; // docs/SPEC-COMPANION-BOSS-COST.md
     var raw = Game.Battle.rollVariance(base);
     var glancing = rng() < BALANCE.GLANCING_CHANCE;
     if (glancing) raw *= BALANCE.GLANCING_MULT;
     raw = Game.Battle.applyResistance(battle.monster, grade, raw);
-    var dmg = Math.max(1, Math.round(raw - battle.monster.magicArmor));
+    // docs/SPEC-COMPANION-SPELLPOWER.md §2.2 (D2) [invented]: a graded companion attack pays Magic Armor +
+    // TECH_PHYSICAL_DEFENSE_SHARE x Armor, like a graded hero spell. Ungraded keeps Magic Armor only.
+    var mitigation = battle.monster.magicArmor + (grade ? BALANCE.TECH_PHYSICAL_DEFENSE_SHARE * battle.monster.armor : 0);
+    var dmg = Math.max(1, Math.round(raw - mitigation));
     battle.monster.hp = Math.max(0, battle.monster.hp - dmg);
     return dmg;
   }
@@ -139,7 +154,7 @@ Game.Companion = (function () {
     // cutoff below the enemy's level the companion idles — without this a Wind companion beat +6
     // enemies 87% of the time, breaking the 5-down contract; with it, all four return to ~0% there.
     // Triggers ONLY in the certain-death zone, so at/near-level play is completely unaffected.
-    if (Game.Battle.fearLevels(battle) >= BALANCE.COMPANION_FEAR_SUPPRESS_LEVELS) {
+    if (isSuppressed(battle)) {
       battle.log.push('Your ' + def.name + ' is overwhelmed by the enemy\'s presence and cannot act.');
       return;
     }
@@ -158,10 +173,16 @@ Game.Companion = (function () {
 
     if (basic.effect === 'heal') {
       // Water: heals the player (Fear-exempt, archived: Recent_Updates.md 2007-04-06) plus a
-      // token graded chip hit on the enemy, riding the same cast.
-      var healAmount = Game.Battle.techEffectivePower(player, { effect: 'heal', power: power });
-      player.hitPoints = Math.min(player.hitPointsMax, player.hitPoints + healAmount);
-      battle.log.push('Your ' + def.name + ' uses ' + basic.name + ' — you recover ' + healAmount + ' HP.');
+      // token graded chip hit on the enemy, riding the same cast. docs/SPEC-WATER-PACT-COST.md: with
+      // `healBelow` set, the heal only fires while the player is below that HP fraction; the chip
+      // (and the Energy cost above) still apply every round.
+      if (!basic.healBelow || player.hitPoints < player.hitPointsMax * basic.healBelow) {
+        var healAmount = Game.Battle.techEffectivePower(player, { effect: 'heal', power: power });
+        player.hitPoints = Math.min(player.hitPointsMax, player.hitPoints + healAmount);
+        battle.log.push('Your ' + def.name + ' uses ' + basic.name + ' — you recover ' + healAmount + ' HP.');
+      } else {
+        battle.log.push('Your ' + def.name + ' holds its spray — your wounds are not deep enough yet.');
+      }
       if (basic.chipPowerBase && battle.monster.hp > 0) {
         var chipPower = Math.round(basic.chipPowerBase + basic.chipPowerPerLevel * L);
         var chipDmg = dealDamageToMonster(battle, chipPower, basic.grade);
@@ -178,8 +199,13 @@ Game.Companion = (function () {
 
     // Fire: applies/refreshes a Burn DoT on the monster (replace-not-stack — mirrors the existing
     // 'bleed' debuff convention, js/core/battle.js tickMonsterStatuses).
+    // docs/SPEC-COMPANION-BOSS-COST.md (user-directed): the Burn's per-tick power now scales with the
+    // player's Intelligence like Ember Lash itself (techEffectivePower, fixed when applied), times
+    // COMPANION_DAMAGE_MULT. Fear still applies per tick (tickMonsterStatuses).
     if (basic.dotKind && battle.monster.hp > 0) {
-      var dotPower = Math.round(basic.dotPowerBase + basic.dotPowerPerLevel * L);
+      var dotRaw = Math.round(basic.dotPowerBase + basic.dotPowerPerLevel * L);
+      var dotPower = Math.max(1, Math.round(Game.Battle.techEffectivePower(player, { effect: 'damage', power: dotRaw, companion: true }) *
+        BALANCE.COMPANION_DAMAGE_MULT));
       battle.monster.statuses = (battle.monster.statuses || []).filter(function (st) {
         return !(st.type === 'debuff' && st.debuffKind === basic.dotKind);
       });
@@ -205,6 +231,7 @@ Game.Companion = (function () {
     magicArmorFor: magicArmorFor,
     summon: summon,
     act: act,
+    isSuppressed: isSuppressed,
     tauntActive: tauntActive,
     setTaunt: setTaunt
   };

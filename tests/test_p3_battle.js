@@ -7,7 +7,8 @@ var path = require('path');
 var FakeDom = require('./fakedom.js');
 var BossFixture = require('./boss_fixture.js'); // shared prepared-warrior boss sim (docs/SPEC-BOSS-COST-RETUNE.md §4)
 
-var base = "D:/Claude - collection folder/HeroRPG/js";
+var repoRoot = path.resolve(__dirname, '..');
+var base = path.join(repoRoot, 'js');
 
 function freshDom() {
   var document = new FakeDom.FakeDocument();
@@ -552,7 +553,9 @@ var b9b = Game.Battle.start('estari_loose_rubble');
 var tech9 = Game.Battle.getTech('tech_firebolt_1');
 var effPower = Game.Battle.techEffectivePower(c9, tech9); // int factor
 var fear9 = Game.Battle.fearMultiplier(b9b); // level 1 vs 4 -> 0.7
-var expected9 = Math.max(1, Math.round(effPower * fear9 * 1.25 - b9b.monster.magicArmor));
+// SPEC-SPELL-CHAINS-AND-ARMOR §2.2: a graded spell is mitigated by Magic Armor + 0.5 x Armor (was Magic Armor alone).
+// Stale-constant update: expected = round(power x fear x 1.25 - (magicArmor + 0.5 x armor)).
+var expected9 = Math.max(1, Math.round(effPower * fear9 * 1.25 - (b9b.monster.magicArmor + BALANCE.TECH_PHYSICAL_DEFENSE_SHARE * b9b.monster.armor)));
 var mHp9b = b9b.monster.hp;
 Game.Battle.useTech('tech_firebolt_1');
 var dealt9 = mHp9b - b9b.monster.hp;
@@ -799,7 +802,8 @@ setRng(fixedRng(0.5)); // variance factor exactly 1.0, no dodge/glancing (both t
 var b14w = Game.Battle.start('plains_field_rat');
 var cleave1 = Game.Battle.getTech('tech_cleave_1');
 var weaponDmg14 = Game.Character.getDamage(c14w);
-var expectedCleave = Math.max(1, Math.round(weaponDmg14 * cleave1.powerMult - b14w.monster.armor));
+// SPEC-ACADEMY-WEAPON-CHAINS §2.3 (C1): powerMult applies AFTER armor: round((hit - armor) x powerMult). Was round(hit x powerMult - armor).
+var expectedCleave = Math.max(1, Math.round((weaponDmg14 - b14w.monster.armor) * cleave1.powerMult));
 var mHpBefore14 = b14w.monster.hp;
 var energyBefore14 = c14w.energy;
 Game.Battle.useTech('tech_cleave_1');
@@ -820,7 +824,8 @@ var b14p = Game.Battle.start('majiku_forest_scout');
 var impale1 = Game.Battle.getTech('tech_impale_1');
 var weaponDmg14p = Game.Character.getDamage(c14p);
 var fear14p = Game.Battle.fearMultiplier(b14p);
-var expectedImpale = Math.max(1, Math.round(weaponDmg14p * impale1.powerMult * fear14p - b14p.monster.armor * (1 - impale1.armorPierce)));
+// SPEC-ACADEMY-WEAPON-CHAINS §2.3/§2.4: round((hit x Fear - armor x (1 - pierce x Fear)) x powerMult). Was round(hit x powerMult x Fear - armor x (1 - pierce)).
+var expectedImpale = Math.max(1, Math.round((weaponDmg14p * fear14p - b14p.monster.armor * (1 - impale1.armorPierce * fear14p)) * impale1.powerMult));
 var mHpBefore14p = b14p.monster.hp;
 Game.Battle.useTech('tech_impale_1');
 var dealt14p = mHpBefore14p - b14p.monster.hp;
@@ -1326,17 +1331,19 @@ Game.Battle.endBattle();
 console.log('\n=== Test 25: non-elemental (grade:null) tech damage ignores Magic Armor; graded techs still mitigated (v1.2 Phase 1 #7) ===');
 
 var c25 = makeCharacter({ name: 'NonElementalTest' });
-c25.lineage.tier1 = 'warrior'; // minimal setup: isClassTechUsable reads activeClassIds (v1.11 lineage)
-c25.techs.push('tech_crushing_blow');
-c25.techSets[0][1] = 'tech_crushing_blow'; // slot 0 already holds the Swords starter tech (Cleave I)
+// docs/SPEC-MELEE-CLASS-TECHS.md: the warrior/thief class techs are weapon techs now, so the example is
+// Vaultbreaker's Reckoning, the last grade:null non-weapon class tech (the Legendary's spell form).
+c25.legendaryClass = 'vaultbreaker'; // minimal setup: isClassTechUsable reads activeClassIds (lineage + Legendary)
+c25.techs.push('tech_vault_reckoning');
+c25.techSets[0][1] = 'tech_vault_reckoning'; // slot 0 already holds the Swords starter tech (Cleave I)
 setRng(fixedRng(0.99));
 var b25 = Game.Battle.start('estari_loose_rubble'); // magicArmor 2, nonzero -> the fix is visible
 setRng(fixedRng(0.5)); // hit-chance check passes, no glancing, neutral variance
-var tech25 = Game.Battle.getTech('tech_crushing_blow');
+var tech25 = Game.Battle.getTech('tech_vault_reckoning');
 var fear25 = Game.Battle.fearMultiplier(b25);
 var expectedDmg25 = Math.max(1, Math.round(Game.Battle.techEffectivePower(c25, tech25) * fear25)); // mitigation=0 for grade:null
 var mHpBefore25 = b25.monster.hp;
-Game.Battle.useTech('tech_crushing_blow');
+Game.Battle.useTech('tech_vault_reckoning');
 var dealt25 = mHpBefore25 - b25.monster.hp;
 assert(dealt25 === expectedDmg25,
   'grade:null non-weapon tech ignores monster.magicArmor (' + b25.monster.magicArmor + ') entirely: dealt ' + dealt25 + ', expected ' + expectedDmg25);
@@ -1350,7 +1357,8 @@ setRng(fixedRng(0.5));
 var tech25b = Game.Battle.getTech('tech_firebolt_1');
 var fear25b = Game.Battle.fearMultiplier(b25b);
 var raw25b = Game.Battle.techEffectivePower(c25b, tech25b) * fear25b * 1.25; // Fire vulnerability (-0.25 resistance)
-var expectedDmg25b = Math.max(1, Math.round(raw25b - b25b.monster.magicArmor));
+// SPEC-SPELL-CHAINS-AND-ARMOR §2.2 stale-constant update: mitigation = magicArmor + 0.5 x armor (was magicArmor alone).
+var expectedDmg25b = Math.max(1, Math.round(raw25b - (b25b.monster.magicArmor + BALANCE.TECH_PHYSICAL_DEFENSE_SHARE * b25b.monster.armor)));
 var mHpBefore25b = b25b.monster.hp;
 Game.Battle.useTech('tech_firebolt_1');
 var dealt25b = mHpBefore25b - b25b.monster.hp;
@@ -3857,6 +3865,241 @@ console.log('\n=== Test 102: monster tech power + boss basic cut + half Armor/Br
   var k0 = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', block: 0 });
   var k1 = reply('vault_forsaken_archivist', { techId: 'mon_anima_lance', block: 0.0002 });
   assert(k1.calls - k0.calls === 1, 'Block rolls one rng() when the halved chance is above 0 and none at 0 (calls ' + k0.calls + ' vs ' + k1.calls + ')');
+})();
+
+// =================== Test 103: a Magus using its class techs still pays at the L90 boss ===================
+console.log('\n=== Test 103: SPEC-BOSS-SIM-TECHS — a prepared Magus casting its class techs wins at L90 but pays ===');
+// docs/SPEC-BOSS-SIM-TECHS.md §4: regression floor for the 'techs' policy (the 300-trial grid in §3 is the gate).
+// Round trip: moved from L90 (society_anima_horror) to L50 by docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §7 when the T3 Magus
+// stopped casting its class spell (Firebolt out-damaged it), and back to L90 by docs/SPEC-ANIMA-RECKONING.md D2 now
+// that the untyped Anima Reckoning (power 95) is cast again.
+var magusSim = BossFixture.simulate(Game, 'society_anima_horror', 90, 30, { lineage: 'magus', policy: 'techs' });
+console.log(BossFixture.describe('society_anima_horror (Magus, techs)', magusSim) + ', avg class techs cast ' + magusSim.avgCasts.toFixed(1));
+assert(magusSim.winRate >= 0.85, 'a prepared Magus with class techs beats society_anima_horror (win rate ' + (magusSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(magusSim.avgHpSpent >= 0.35 || magusSim.avgConsumed >= 3, 'society_anima_horror still costs a Magus with class techs (avg HP spent ' + (magusSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables)');
+assert(magusSim.avgConsumed <= 0.5 * magusSim.stock, 'society_anima_horror is not ruinous for a Magus with class techs (avg ' + magusSim.avgConsumed.toFixed(1) + ' of ' + magusSim.stock + ')');
+assert(magusSim.avgCasts > 0, 'the techs policy actually casts the Magus class techs (avg ' + magusSim.avgCasts.toFixed(1) + ' per win)');
+
+// =================== Test 104: melee class techs strike with the weapon (SPEC-MELEE-CLASS-TECHS) ===================
+console.log('\n=== Test 104: SPEC-MELEE-CLASS-TECHS — the warrior/thief class techs are weapon techs; damage = getDamage x powerMult - Armor ===');
+(function () {
+  var MELEE = { tech_crushing_blow: 1.3, tech_quick_stab: 1.3, tech_execution_blow: 1.5, tech_shadowstep_strike: 0.65,
+    tech_efficient_strike: 1.3, tech_shadow_blade: 1.7, tech_berserker_frenzy: 1.85, tech_paladin_smite: 1.55,
+    tech_warden_bulwark: 1.34, tech_dice_throw: 1.3, tech_lethal_strike: 1.75, tech_ranger_volley: 0.88, tech_dragoon_leap: 1.67 };
+  Object.keys(MELEE).forEach(function (id) {
+    var t = Game.Battle.getTech(id);
+    assert(t.weaponTech === true && t.powerMult === MELEE[id] && t.grade === null && t.power === undefined,
+      id + ' is an ungraded weapon tech with powerMult ' + MELEE[id] + ' and no Int-scaled power');
+    assert(t.powerMult * (t.hits || 1) >= 1.3 - 1e-9, id + ': a whole cast is never under the T1 anchor x1.3 (' + t.powerMult + ' x ' + (t.hits || 1) + ' hits)');
+  });
+
+  var c = makeCharacter({ name: 'CrushingBlowTest' }); // Swords 3, a starter sword in hand
+  c.lineage.tier1 = 'warrior';
+  c.techs.push('tech_crushing_blow');
+  c.techSets[0][1] = 'tech_crushing_blow';
+  setRng(fixedRng(0.99));
+  var b = Game.Battle.start('estari_loose_rubble');
+  setRng(fixedRng(0.5)); // no dodge, no glancing/crit, neutral variance
+  var pen = Math.min(BALANCE.ARMOR_PEN_TOTAL_CAP, Game.Character.getSecondaryStat(c, 'armorPen'));
+  // SPEC-ACADEMY-WEAPON-CHAINS §2.3/§2.4: round((hit x Fear - armor x (1 - pen x Fear)) x 1.3). Was round(hit x 1.3 x Fear - armor x (1 - pen)).
+  var fearCB = Game.Battle.fearMultiplier(b);
+  var expected = Math.max(1, Math.round((Game.Character.getDamage(c) * fearCB - b.monster.armor * (1 - pen * fearCB)) * 1.3));
+  var before = b.monster.hp;
+  Game.Battle.useTech('tech_crushing_blow');
+  assert(before - b.monster.hp === expected, 'Crushing Blow deals getDamage x 1.3 - Armor: dealt ' + (before - b.monster.hp) + ', expected ' + expected);
+  assert(/You strike with Crushing Blow/.test(b.log.join(' ')), 'the log reads as a weapon strike, not a cast');
+  Game.Battle.endBattle();
+
+  var c2 = makeCharacter({ name: 'NoWeaponTest' });
+  c2.lineage.tier1 = 'warrior';
+  c2.techs.push('tech_crushing_blow');
+  c2.techSets[0][1] = 'tech_crushing_blow';
+  c2.equipment.weapon = null;
+  setRng(fixedRng(0.5));
+  var b2 = Game.Battle.start('plains_field_rat');
+  var before2 = b2.monster.hp, energy2 = c2.energy;
+  Game.Battle.useTech('tech_crushing_blow');
+  assert(b2.monster.hp === before2 && c2.energy === energy2, 'with no weapon in hand Crushing Blow is refused and costs nothing');
+  Game.Battle.endBattle();
+})();
+
+// =================== Test 105: Seer's Ward adds Spell Power and refreshes instead of stacking ===================
+console.log("\n=== Test 105: SPEC-MELEE-CLASS-TECHS §2.4 — Seer's Ward is a +40 Spell Power buff that refreshes on re-cast ===");
+(function () {
+  var ward = Game.Battle.getTech('tech_seers_ward');
+  assert(ward.effect === 'buff' && ward.statKind === 'spellpower' && ward.power === 40 && ward.chain, "Seer's Ward is a typed +40 Spell Power buff with a chain");
+  var c = makeCharacter({ skills: { 'Evocation': 3 }, name: 'SeersWardTest' });
+  c.lineage.tier3 = 'seer';
+  c.techs.push('tech_seers_ward');
+  c.techSets[0][1] = 'tech_seers_ward';
+  setRng(fixedRng(0.99));
+  var b = Game.Battle.start('plains_field_rat');
+  b.monster.hp = b.monster.hpMax = 99999;
+  c.energy = c.energyMax = 500;
+  var fb = Game.Battle.getTech('tech_firebolt_1');
+  var spellBefore = Game.Battle.techEffectivePower(c, fb);
+  var weaponBefore = Game.Character.getDamage(c);
+  var expected = Game.Battle.techEffectivePower(c, { effect: 'damage', power: fb.power + 40, skill: fb.skill }); // before the Ward is up
+  setRng(fixedRng(0.5));
+  Game.Battle.useTech('tech_seers_ward');
+  var spellAfter = Game.Battle.techEffectivePower(c, fb);
+  assert(spellAfter > spellBefore && spellAfter === expected, "the Ward adds 40 Spell Power to Firebolt (" + spellBefore + ' -> ' + spellAfter + ', expected ' + expected + ')');
+  var untyped = b.playerStatuses.filter(function (st) { return st.type === 'buff' && !st.statKind; });
+  assert(untyped.length === 0 && Game.Character.getDamage(c) === weaponBefore, 'the Ward no longer adds flat weapon Damage');
+  Game.Battle.useTech('tech_seers_ward');
+  var wards = b.playerStatuses.filter(function (st) { return st.type === 'buff' && st.name === ward.name; });
+  assert(wards.length === 1, 're-casting the Ward refreshes it instead of stacking (' + wards.length + ' active)');
+  Game.Battle.flee();
+  Game.Battle.endBattle();
+})();
+
+// =================== Test 106: a melee lineage casts its class techs at a boss and still pays ===================
+console.log('\n=== Test 106: SPEC-MELEE-CLASS-TECHS — a prepared Paladin casting its class techs wins at L80 but pays ===');
+var paladinSim = BossFixture.simulate(Game, 'estari_warden_prime', 80, 30, { lineage: 'paladin', policy: 'techs' });
+console.log(BossFixture.describe('estari_warden_prime (Paladin, techs)', paladinSim) + ', avg class techs cast ' + paladinSim.avgCasts.toFixed(1));
+assert(paladinSim.winRate >= 0.85, 'a prepared Paladin with class techs beats estari_warden_prime (win rate ' + (paladinSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(paladinSim.avgHpSpent >= 0.35 || paladinSim.avgConsumed >= 3, 'estari_warden_prime still costs a Paladin with class techs (avg HP spent ' + (paladinSim.avgHpSpent * 100).toFixed(0) + '%, want >= 35%, or >= 3 consumables)');
+assert(paladinSim.avgConsumed <= 0.5 * paladinSim.stock, 'estari_warden_prime is not ruinous for a Paladin with class techs (avg ' + paladinSim.avgConsumed.toFixed(1) + ' of ' + paladinSim.stock + ')');
+assert(paladinSim.avgCasts > 0, 'the techs policy now casts the Paladin class techs (avg ' + paladinSim.avgCasts.toFixed(1) + ' per win)');
+
+// =================== Test 107: the full kit (Academy chains, shrine, tool choice) at the L60 boss ===================
+console.log('\n=== Test 107: SPEC-BOSS-SIM-FULL-KIT — a prepared Paladin with the full kit wins at L60 and keeps a Cleave rank ===');
+// docs/SPEC-BOSS-SIM-FULL-KIT.md §4: the HP-spent floor (B2) is NOT asserted here (report only); the 300-trial grid is the gate.
+var kitSim = BossFixture.simulate(Game, 'majiku_ridge_chieftain', 60, 30, { lineage: 'paladin', policy: 'kit', seed: 12000 });
+console.log(BossFixture.describe('majiku_ridge_chieftain (Paladin, kit)', kitSim) + ', kit ' + JSON.stringify(kitSim.kit) +
+  ', HP spent ' + (kitSim.avgHpSpent * 100).toFixed(0) + '%');
+assert(kitSim.winRate >= 0.85, 'a prepared Paladin with the full kit beats majiku_ridge_chieftain (win rate ' + (kitSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
+assert(kitSim.avgConsumed <= 0.5 * kitSim.stock, 'majiku_ridge_chieftain is not ruinous for the full-kit Paladin (avg ' + kitSim.avgConsumed.toFixed(1) + ' of ' + kitSim.stock + ')');
+assert(kitSim.kit.some(function (id) { return id.indexOf('tech_cleave_') === 0; }), 'the whole-fight tool choice keeps a Cleave rank (kept: ' + JSON.stringify(kitSim.kit) + ')');
+
+// =================== Test 108: SPEC-ACADEMY-WEAPON-CHAINS — multiplier after armor, Fear on pierce, monotonic chains ===================
+console.log('\n=== Test 108: SPEC-ACADEMY-WEAPON-CHAINS §2.2-2.4 — weapon-tech powerMult applies after armor; Fear scales armor pierce; every chain rank is stronger ===');
+(function () {
+  // (a) C1: a x2 weapon tech against armor A deals round((hit - A) x 2), not round(hit x 2 - A).
+  var c = makeCharacter({ name: 'AfterArmorTest' });
+  setRng(fixedRng(0.5)); // variance exactly 1.0; no dodge / glancing / crit (all thresholds < 0.5)
+  var b = Game.Battle.start('plains_field_rat');
+  var tech = Game.Battle.getTech('tech_cleave_1');
+  var oldMult = tech.powerMult, oldPierce = tech.armorPierce;
+  tech.powerMult = 2; tech.armorPierce = 0;
+  try {
+    var hit = Game.Character.getDamage(c); // fear 1 (at level), curse 1, variance 1 => hit is the pre-armor value
+    var A = 3;
+    b.monster.armor = A; b.monster.hp = b.monster.hpMax = 100000;
+    var before = b.monster.hp;
+    Game.Battle.useTech('tech_cleave_1');
+    var expected = Math.max(1, Math.round((hit - A) * 2)); // e.g. hit 7, A 3 => (7 - 3) x 2 = 8 (old formula: 7 x 2 - 3 = 11)
+    assert(before - b.monster.hp === expected, 'a x2 weapon tech deals round((hit - armor) x 2): hit ' + hit + ', armor ' + A + ', dealt ' + (before - b.monster.hp) + ', expected ' + expected);
+    assert(expected !== Math.round(hit * 2 - A), 'sanity: the new result differs from the old formula (' + Math.round(hit * 2 - A) + ')');
+  } finally { tech.powerMult = oldMult; tech.armorPierce = oldPierce; }
+  Game.Battle.endBattle();
+
+  // (b) C3: five or more levels down, the tech's armor pierce is multiplied by Fear.
+  var c2 = makeCharacter({ name: 'FearPierceTest' });
+  c2.hitPoints = c2.hitPointsMax = 100000;
+  setRng(fixedRng(0.5));
+  var b2 = Game.Battle.start('majiku_forest_scout'); // level 6 vs a level 1 hero: 5 levels down
+  var t2 = Game.Battle.getTech('tech_cleave_1');
+  var oM = t2.powerMult, oP = t2.armorPierce;
+  t2.powerMult = 3; t2.armorPierce = 0.9; // x3 makes the pierce difference visible
+  try {
+    var fear = Game.Battle.fearMultiplier(b2);
+    assert(fear < 1, 'sanity: fear multiplier is below 1 five levels down (' + fear + ')');
+    var pen = Math.min(BALANCE.ARMOR_PEN_TOTAL_CAP, 0.9 + Game.Character.getSecondaryStat(c2, 'armorPen'));
+    var hit2 = Game.Character.getDamage(c2) * fear;
+    b2.monster.armor = Math.ceil(hit2 * 1.5); b2.monster.hp = b2.monster.hpMax = 100000;
+    var scaled = Math.max(1, Math.round((hit2 - b2.monster.armor * (1 - pen * fear)) * 3));
+    var unscaled = Math.max(1, Math.round((hit2 - b2.monster.armor * (1 - pen)) * 3));
+    assert(scaled < unscaled, 'sanity: scaling the pierce by Fear changes the damage (' + scaled + ' vs ' + unscaled + ')');
+    var before2 = b2.monster.hp;
+    Game.Battle.useTech('tech_cleave_1');
+    assert(before2 - b2.monster.hp === scaled, 'five levels down the tech pierce is scaled by Fear: dealt ' + (before2 - b2.monster.hp) + ', expected ' + scaled + ' (unscaled would be ' + unscaled + ')');
+  } finally { t2.powerMult = oM; t2.armorPierce = oP; }
+  Game.Battle.endBattle();
+
+  // (c) §2.2: every rank of the six Academy chains is strictly stronger than the one before.
+  ['Cleave', 'Vital Strike', 'Impale', 'Flurry', 'Crosscut', 'Channeled Strike'].forEach(function (chain) {
+    var ranks = Object.keys(Game.Data.techs).map(function (k) { return Game.Data.techs[k]; })
+      .filter(function (t) { return t.chain === chain && t.weaponTech && !t.classOnly; })
+      .sort(function (x, y) { return x.rank - y.rank; });
+    assert(ranks.length >= 4, chain + ' has at least 4 ranks (' + ranks.length + ')');
+    var mono = true;
+    for (var i = 1; i < ranks.length; i++) { if (!(ranks[i].powerMult > ranks[i - 1].powerMult)) mono = false; }
+    assert(mono, chain + ': powerMult strictly increases with rank (' + ranks.map(function (t) { return t.powerMult; }).join(', ') + ')');
+  });
+})();
+
+// =================== Test 109: SPEC-SPELL-CHAINS-AND-ARMOR — graded hero spells lose Magic Armor + 0.5 x Armor; chains keep rising ===================
+console.log('\n=== Test 109: SPEC-SPELL-CHAINS-AND-ARMOR §2.1-2.2 — graded spell mitigation = Magic Armor + 0.5 x Armor; ungraded loses nothing; spell chains strictly rise ===');
+(function () {
+  var c = makeCharacter({ skills: { 'Evocation': 3 }, name: 'SpellArmorTest' });
+  c.hitPoints = c.hitPointsMax = 100000;
+  setRng(fixedRng(0.5)); // Int hit roll hits; variance exactly 1.0; no glancing / crit (thresholds < 0.5)
+  var b = Game.Battle.start('plains_field_rat');
+  var A = 10, M = 3; // mitigation = M + 0.5 x A = 8
+  b.monster.armor = A; b.monster.magicArmor = M; b.monster.hp = b.monster.hpMax = 100000;
+  var tech = Game.Battle.getTech('tech_firebolt_1');
+  var fear = Game.Battle.fearMultiplier(b), curse = Game.Battle.playerCurseMultiplier(b);
+  var pre = Game.Battle.applyResistance(b.monster, tech.grade, Game.Battle.techEffectivePower(c, tech) * fear * curse);
+  assert(!!tech.grade, 'sanity: Firebolt I is a graded spell (' + tech.grade + ')');
+
+  // (a) graded: pre-mitigation value minus (M + 0.5 x A).
+  var before = b.monster.hp;
+  Game.Battle.useTech('tech_firebolt_1');
+  var expected = Math.max(1, Math.round(pre - (M + BALANCE.TECH_PHYSICAL_DEFENSE_SHARE * A)));
+  assert(before - b.monster.hp === expected, 'graded spell loses Magic Armor + 0.5 x Armor: pre ' + pre.toFixed(2) + ', A ' + A + ', M ' + M + ', dealt ' + (before - b.monster.hp) + ', expected ' + expected);
+  assert(expected !== Math.max(1, Math.round(pre - M)), 'sanity: the new result differs from the old Magic-Armor-only rule (' + Math.max(1, Math.round(pre - M)) + ')');
+
+  // (b) ungraded: nothing lost to Armor or Magic Armor.
+  var oldGrade = tech.grade;
+  tech.grade = null;
+  try {
+    c.energy = c.energyMax;
+    var preU = Game.Battle.techEffectivePower(c, tech) * fear * curse;
+    var beforeU = b.monster.hp;
+    Game.Battle.useTech('tech_firebolt_1');
+    var expectedU = Math.max(1, Math.round(preU));
+    assert(beforeU - b.monster.hp === expectedU, 'ungraded damage spell loses nothing to Armor (' + A + ') or Magic Armor (' + M + '): dealt ' + (beforeU - b.monster.hp) + ', expected ' + expectedU);
+  } finally { tech.grade = oldGrade; }
+  Game.Battle.endBattle();
+
+  // (c) every rank of the five spell chains has strictly higher power than the rank before.
+  ['Firebolt', 'Starspark', 'Tidal Lance', 'Shadowlash', 'Lifetap'].forEach(function (chain) {
+    var ranks = Object.keys(Game.Data.techs).map(function (k) { return Game.Data.techs[k]; })
+      .filter(function (t) { return t.chain === chain && !t.classOnly && !t.monsterOnly; })
+      .sort(function (x, y) { return x.rank - y.rank; });
+    assert(ranks.length === 9, chain + ' has nine ranks (' + ranks.length + ')');
+    var mono = true;
+    for (var i = 1; i < ranks.length; i++) { if (!(ranks[i].power > ranks[i - 1].power)) mono = false; }
+    assert(mono, chain + ': power strictly increases with rank (' + ranks.map(function (t) { return t.power; }).join(', ') + ')');
+  });
+})();
+
+// =================== Test 110: SPEC-ANIMA-RECKONING — Anima Reckoning is ungraded: Armor and Magic Armor do not reduce it ===================
+console.log('\n=== Test 110: SPEC-ANIMA-RECKONING §2 — tech_anima_reckoning is non-elemental (grade null, power 95); a monster\'s Armor and Magic Armor do not reduce it ===');
+(function () {
+  var tech = Game.Battle.getTech('tech_anima_reckoning');
+  assert(tech.grade === null, 'Anima Reckoning is ungraded (non-elemental), got ' + tech.grade);
+  assert(tech.power === 95, 'Anima Reckoning power is 95, got ' + tech.power);
+
+  var c = makeCharacter({ skills: { 'Evocation': 3 }, name: 'AnimaReckoningTest' });
+  c.lineage.tier3 = 'magus'; // classOnly tech: its class must be active (Game.Classes.isClassTechUsable)
+  c.techs.push('tech_anima_reckoning');
+  c.techSets[0][0] = 'tech_anima_reckoning';
+  c.hitPoints = c.hitPointsMax = 100000;
+  c.energy = c.energyMax = 1000;
+  setRng(fixedRng(0.5)); // Int hit roll hits; variance exactly 1.0; no glancing / crit (thresholds < 0.5)
+  var b = Game.Battle.start('plains_field_rat');
+  var A = 10, M = 3;
+  b.monster.armor = A; b.monster.magicArmor = M; b.monster.hp = b.monster.hpMax = 100000;
+  var fear = Game.Battle.fearMultiplier(b), curse = Game.Battle.playerCurseMultiplier(b);
+  var expected = Math.max(1, Math.round(Game.Battle.techEffectivePower(c, tech) * fear * curse));
+  var before = b.monster.hp;
+  Game.Battle.useTech('tech_anima_reckoning');
+  var dealt = before - b.monster.hp;
+  assert(dealt === expected, 'Anima Reckoning loses nothing to Armor (' + A + ') or Magic Armor (' + M + '): dealt ' + dealt + ', expected ' + expected);
+  assert(dealt > 0, 'sanity: the cast actually landed (dealt ' + dealt + ')');
+  Game.Battle.endBattle();
 })();
 
 // =================== Summary ===================

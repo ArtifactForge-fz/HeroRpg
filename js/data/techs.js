@@ -59,7 +59,7 @@ Game.Data.techs = [
     skillReq: 4,
     desc: 'Calls down a crackling arc of Star-grade Anima, the technique that replaced the old "lightning" spells.'
   },
-  // ---------- Starspark ranks 2-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  // ---------- Starspark ranks 2-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 powers per docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1) ----------
   {
     id: 'tech_starspark_2',
     name: 'Starspark II',
@@ -124,7 +124,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Star',
     energyCost: 44,
-    power: 52,
+    power: 84, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 10,
     skillReq: 40,
@@ -138,7 +138,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Star',
     energyCost: 50,
-    power: 63,
+    power: 91, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 12,
     skillReq: 50,
@@ -152,7 +152,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Star',
     energyCost: 56,
-    power: 74,
+    power: 99, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 14,
     skillReq: 60,
@@ -166,7 +166,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Star',
     energyCost: 62,
-    power: 85,
+    power: 106, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 16,
     skillReq: 70,
@@ -272,7 +272,7 @@ Game.Data.techs = [
     skillReq: 4,
     desc: 'Siphons a portion of the enemy\'s vitality into the caster as damage is dealt.'
   },
-  // ---------- Lifetap ranks 2-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  // ---------- Lifetap ranks 2-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 powers per docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1) ----------
   {
     id: 'tech_lifetap_2',
     name: 'Lifetap II',
@@ -337,7 +337,7 @@ Game.Data.techs = [
     skill: 'Absorption',
     grade: 'Dark',
     energyCost: 45,
-    power: 45,
+    power: 71, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'drain',
     trainingCost: 10,
     skillReq: 40,
@@ -351,7 +351,7 @@ Game.Data.techs = [
     skill: 'Absorption',
     grade: 'Dark',
     energyCost: 51,
-    power: 55,
+    power: 77, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'drain',
     trainingCost: 12,
     skillReq: 50,
@@ -365,7 +365,7 @@ Game.Data.techs = [
     skill: 'Absorption',
     grade: 'Dark',
     energyCost: 57,
-    power: 65,
+    power: 84, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'drain',
     trainingCost: 14,
     skillReq: 60,
@@ -379,7 +379,7 @@ Game.Data.techs = [
     skill: 'Absorption',
     grade: 'Dark',
     energyCost: 63,
-    power: 75,
+    power: 90, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'drain',
     trainingCost: 16,
     skillReq: 70,
@@ -435,8 +435,8 @@ Game.Data.techs = [
     power: 27,
     effect: 'damage',
     trainingCost: 4,
-    skillReq: 5,
-    desc: 'A second, crueler lash of clinging shadow-stuff. Requires Shadowlash I and Conjuration 5.'
+    skillReq: 8, // invented, docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md §1 (the rank-II step of every spell chain, SPEC-TECH-CHAIN-COMPLETION §2.3)
+    desc: 'A second, crueler lash of clinging shadow-stuff. Requires Shadowlash I and Conjuration 8.'
   },
 
   // ---------- Weapon-adjacent Alteration debuff-flavored second buff (kept simple: another +damage buff on a different chain) ----------
@@ -509,7 +509,7 @@ Game.Data.techs = [
     skillReq: 12,
     desc: 'A third, consuming lash of shadow-stuff, taught only to Conjurers who have mastered the first two ranks. Requires Shadowlash II and Conjuration 12.'
   },
-  // ---------- Shadowlash ranks 4-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  // ---------- Shadowlash ranks 4-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 powers per docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1) ----------
   {
     id: 'tech_shadowlash_4',
     name: 'Shadowlash IV',
@@ -546,7 +546,7 @@ Game.Data.techs = [
     skill: 'Conjuration',
     grade: 'Dark',
     energyCost: 44,
-    power: 52,
+    power: 84, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 10,
     skillReq: 40,
@@ -560,7 +560,7 @@ Game.Data.techs = [
     skill: 'Conjuration',
     grade: 'Dark',
     energyCost: 50,
-    power: 63,
+    power: 91, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 12,
     skillReq: 50,
@@ -574,7 +574,7 @@ Game.Data.techs = [
     skill: 'Conjuration',
     grade: 'Dark',
     energyCost: 56,
-    power: 74,
+    power: 99, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 14,
     skillReq: 60,
@@ -588,7 +588,7 @@ Game.Data.techs = [
     skill: 'Conjuration',
     grade: 'Dark',
     energyCost: 62,
-    power: 85,
+    power: 107, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 16,
     skillReq: 70,
@@ -625,7 +625,7 @@ Game.Data.techs = [
     skillReq: 8,
     desc: 'A stronger Tidal Lance, requiring the first rank be learned and a proven Evocation skill. Requires Tidal Lance I and Evocation 8.'
   },
-  // ---------- Tidal Lance ranks 3-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  // ---------- Tidal Lance ranks 3-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 powers per docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1) ----------
   {
     id: 'tech_tidal_lance_3',
     name: 'Tidal Lance III',
@@ -676,7 +676,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Water',
     energyCost: 43,
-    power: 51,
+    power: 83, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 10,
     skillReq: 40,
@@ -690,7 +690,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Water',
     energyCost: 49,
-    power: 62,
+    power: 90, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 12,
     skillReq: 50,
@@ -704,7 +704,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Water',
     energyCost: 55,
-    power: 73,
+    power: 98, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 14,
     skillReq: 60,
@@ -718,7 +718,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Water',
     energyCost: 61,
-    power: 84,
+    power: 105, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 16,
     skillReq: 70,
@@ -889,6 +889,12 @@ Game.Data.techs = [
   // is active in a slot — enforced in js/core/battle.js useTech() via Game.Classes.isClassTechUsable
   // (single guarded check point, see that file's comment).
   //
+  // docs/SPEC-MELEE-CLASS-TECHS.md (O6): the 13 warrior/thief-line damage techs in this file are
+  // WEAPON techs (weaponTech + powerMult, Feature C shape), not Int-scaled spells — as spells they
+  // dealt 1–11% of a melee hero's basic attack. The Legendary spell techs keep their form and gain a
+  // `_blade` weapon twin, granted by the same ability. The per-block comments below that describe
+  // these techs as non-weapon / Intelligence-rolled predate that change.
+  //
   // v1.1 revision (DESIGN.md §3 / js/data/classes.js header): base-tier (level-5) techs below are
   // deliberately modest — tech_crushing_blow and tech_anima_surge are retuned DOWN from their old
   // level-30-oriented power/energyCost now that Warrior/Magician grant them at level 5 instead
@@ -902,13 +908,14 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.3, // invented: T1 anchor (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 14,
-    power: 16, // revised: down from 34 — base-tier (level 5) power, was level-30-oriented
     effect: 'damage',
     classOnly: true,
     classId: 'warrior',
-    desc: 'A heavy, telegraphed blow that trades finesse for raw physical damage. Warrior class technique.'
+    desc: 'A heavy, telegraphed weapon blow that trades finesse for raw physical damage. Warrior class technique.'
   },
   {
     id: 'tech_anima_surge',
@@ -930,9 +937,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.3, // invented: T1 anchor x power 16/16 (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 14,
-    power: 16,
     effect: 'damage',
     classOnly: true,
     classId: 'thief',
@@ -944,9 +952,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 0.65, // invented: PER HIT (hits: 2); floor: a whole cast is never under the T1 anchor 1.3 (ratio gave 0.44) (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 18,
-    power: 16,
     hits: 2, // invented: this tech resolves as two successive strikes (see js/core/battle.js useTech)
     effect: 'damage',
     classOnly: true,
@@ -959,9 +968,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.5, // invented: T2 anchor (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 26,
-    power: 55,
     effect: 'damage',
     classOnly: true,
     classId: 'gladiator',
@@ -1015,9 +1025,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.3, // invented: floor at the T1 anchor (ratio 1.5 x 30/55 gave 0.82) (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 10,
-    power: 30,
     effect: 'damage',
     classOnly: true,
     classId: 'mercenary',
@@ -1037,6 +1048,21 @@ Game.Data.techs = [
     classId: 'runeblade_of_kuraan',
     desc: 'A hybrid Light-and-Dark strike that cleaves through both flesh and ward alike. Runeblade of Kuraan class technique.'
   },
+  {
+    id: 'tech_runic_severance_blade',
+    name: 'Severing Edge',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.3, // invented: floor at the T1 anchor (twin anchor 1.3 x power 46/66 gave 0.91) (docs/SPEC-MELEE-CLASS-TECHS.md §2.3: the weapon twin of tech_runic_severance for melee builds; granted with it by the same Legendary ability)
+    energyCost: 28, // same as the spell form
+    effect: 'damage',
+    classOnly: true,
+    classId: 'runeblade_of_kuraan',
+    desc: 'The Runeblade\'s severing rune carried down the steel of your own weapon — a weapon strike for blade-wielders. Runeblade of Kuraan class technique.'
+  },
 
   // =====================================================================
   // v1.2 Phase 2 (docs/SPEC-V1.2.md Phase 2): tier-3 + Legendary class-only techs. All five are
@@ -1054,9 +1080,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null, // invented: non-elemental, matches the Warrior-line precedent (tech_crushing_blow/tech_execution_blow) — ignores Magic Armor per Phase 1 item 7
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.7, // invented: T3 anchor (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 30,
-    power: 66, // invented: +20% over Gladiator's Execution Blow (55)
     effect: 'damage',
     classOnly: true,
     classId: 'shadowknight',
@@ -1068,9 +1095,9 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: 'Star', // invented: elemental, matches the Magician-line precedent (tech_arcane_cataclysm) — mitigated by Magic Armor/resistances
+    grade: null, // invented, docs/SPEC-ANIMA-RECKONING.md §2: non-elemental ("pure Anima"), ignores Armor/Magic Armor per the archived non-elemental rule; precedent tech_vault_reckoning
     energyCost: 40,
-    power: 84, // invented: +20% over Wizard's Arcane Cataclysm (70)
+    power: 95, // invented, docs/SPEC-ANIMA-RECKONING.md §2/§3 (sim-gated: smallest tested power the Magus casts at the L100 boss; 90 was not)
     effect: 'damage',
     classOnly: true,
     classId: 'magus',
@@ -1082,9 +1109,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null, // invented: non-elemental, matches the Thief-line precedent (tech_quick_stab/tech_efficient_strike) — ignores Magic Armor per Phase 1 item 7
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.3, // invented: floor at the T1 anchor (ratio 1.7 x 45/66 gave 1.16) (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 18,
-    power: 45, // invented: +50% over Mercenary's Efficient Strike (30) — a bigger single gamble at a higher Energy cost (economy-tech niche, not a pure nuke; see js/data/classes.js gambit_dice_throw comment for the "high-variance" flavor reasoning)
     effect: 'damage',
     classOnly: true,
     classId: 'gambit',
@@ -1105,6 +1133,21 @@ Game.Data.techs = [
     desc: 'A single blow that carries the full weight of two fallen guardians at once. Vaultbreaker class technique.'
   },
   {
+    id: 'tech_vault_reckoning_blade',
+    name: 'Vault-Breaker\'s Blow',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.44, // invented: twin anchor 1.3 x power 73/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.3: the weapon twin of tech_vault_reckoning for melee builds; granted with it by the same Legendary ability)
+    energyCost: 33, // same as the spell form
+    effect: 'damage',
+    classOnly: true,
+    classId: 'vaultbreaker',
+    desc: 'The weight of two fallen guardians driven through your own weapon in a single blow. Vaultbreaker class technique.'
+  },
+  {
     id: 'tech_echoing_judgment',
     name: 'Echoing Judgment',
     chain: null,
@@ -1117,6 +1160,21 @@ Game.Data.techs = [
     classOnly: true,
     classId: 'heir_of_the_echo',
     desc: 'A judgment cast in Eidas\' own hybrid Light-and-Dark Anima, echoing a founder\'s long-silent verdict onto the battlefield. Heir of the Echo class technique.'
+  },
+  {
+    id: 'tech_echoing_judgment_blade',
+    name: 'Echo of the Blade',
+    chain: null,
+    rank: 1,
+    skill: null,
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.81, // invented: twin anchor 1.3 x power 92/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.3: the weapon twin of tech_echoing_judgment for melee builds; granted with it by the same Legendary ability)
+    energyCost: 44, // same as the spell form
+    effect: 'damage',
+    classOnly: true,
+    classId: 'heir_of_the_echo',
+    desc: 'Eidas\' long-silent verdict, echoed through the edge of your own weapon. Heir of the Echo class technique.'
   },
 
   // =====================================================================
@@ -1135,9 +1193,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null, // invented: non-elemental, matches the Warrior-line precedent (tech_crushing_blow/tech_execution_blow/tech_shadow_blade) — ignores Magic Armor per Phase 1 item 7
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.85, // invented: T3 anchor 1.7 x power 72/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 32, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
-    power: 72, // invented: +9% over Shadowknight's Shadow Blade (66) — Berserker's glass-cannon identity is carried mostly by its passives (Bloodlust/Frenzied Pace), not a runaway tech number
     effect: 'damage',
     classOnly: true,
     classId: 'berserker',
@@ -1149,13 +1208,14 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: 'Light', // archived: "Healing spells use the Light grade" (Recent_Updates.md) — Paladin's holy damage reuses the same grade, mitigated by Magic Armor/resistances like any elemental tech
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.55, // invented: T3 anchor 1.7 x power 60/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 30, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
-    power: 60, // invented: provisional Part B brief number, within the tier-3 elemental-damage band
     effect: 'damage',
     classOnly: true,
     classId: 'paladin',
-    desc: 'A Light-grade blow called down on an enemy with the full weight of the Crusader\'s faith behind it. Paladin class technique.'
+    desc: 'A weapon blow called down on an enemy with the full weight of the Crusader\'s faith and Light behind it. Paladin class technique.'
   },
   {
     id: 'tech_warden_bulwark',
@@ -1163,13 +1223,14 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: 'Light', // invented: same Light-grade convention as tech_radiant_smite/tech_paladin_smite (Crusader line's Light-Anima flavor) — mitigated by Magic Armor/resistances
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.34, // invented: T3 anchor 1.7 x power 52/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 28, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
-    power: 52, // invented: provisional Part B brief number, within the tier-3 elemental-damage band
     effect: 'damage',
     classOnly: true,
     classId: 'warden',
-    desc: 'A Light-grade blow driven through the Warden\'s own barrier, turning defense briefly into attack. Warden class technique.'
+    desc: 'A weapon blow driven through the Warden\'s own barrier, turning defense briefly into attack. Warden class technique.'
   },
   // v1.9 (docs/SPEC-COMPANION-SYSTEM.md D0): the Conjurer's old "Elemental Servitor"
   // (tech_summon_elemental, effect:'summon') that used to live here is RETIRED/superseded — see
@@ -1193,17 +1254,18 @@ Game.Data.techs = [
   {
     id: 'tech_seers_ward',
     name: "Seer's Ward",
-    chain: null,
+    chain: 'SeersWard', // docs/SPEC-MELEE-CLASS-TECHS.md §2.4: typed buffs re-cast-replace only with a chain (battle.js useTech), so the Ward refreshes instead of stacking
     rank: 1,
     skill: null,
     grade: 'Light', // invented: foresight/protective flavor, matches the archived Light-grade convention for support/ward effects used elsewhere (Wardskin/Crusader line)
     energyCost: 26, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
-    power: 40, // invented: provisional Part B brief number — flat +Damage buff, well above tech_warcry_2's 12 since Seer has no other damage passive to lean on (Foresight/Clairvoyant Reserves are both non-offensive)
+    power: 40, // invented: between Attunement III (40) and IV (60) — docs/SPEC-MELEE-CLASS-TECHS.md §2.4 (W1); was a flat +Damage buff a Firebolt-casting Seer could not use
+    statKind: 'spellpower', // docs/SPEC-MELEE-CLASS-TECHS.md §2.4: feeds techEffectivePower like Attunement, no longer weapon damage
     buffDuration: 4, // invented: matches tech_warcry_2/tech_focus_1's buff-duration convention (no separate `buffType` field exists in the shipped buff-tech shape — see js/core/battle.js useTech's `effect === 'buff'` branch, which reads only `power`/`buffDuration`)
     effect: 'buff',
     classOnly: true,
     classId: 'seer',
-    desc: 'A moment of foresight woven into a battle-chant, hardening resolve and adding to Damage for a few turns. Seer class technique.'
+    desc: 'A moment of foresight woven into a battle-chant, sharpening your casting and adding to Spell Power for a few turns. Seer class technique.'
   },
   {
     id: 'tech_lethal_strike',
@@ -1211,9 +1273,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null, // invented: non-elemental, matches the Thief-line precedent (tech_quick_stab/tech_efficient_strike/tech_dice_throw) — ignores Magic Armor per Phase 1 item 7
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.75, // invented: T3 anchor 1.7 x power 68/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 30, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
-    power: 68, // invented: provisional Part B brief number, within the tier-3 non-elemental band (Shadow Blade 66 / Vault Reckoning 73)
     effect: 'damage',
     classOnly: true,
     classId: 'assassin',
@@ -1225,9 +1288,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null, // invented: non-elemental physical volley — matches the Thief-line precedent, ignores Magic Armor
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 0.88, // invented: PER HIT (hits: 2); T3 anchor 1.7 x power 34/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 30, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
-    power: 34, // invented: provisional Part B brief number — PER HIT (see hits: 2 below); mirrors tech_shadowstep_strike's two-hit shape (js/core/battle.js useTech `hits` loop)
     hits: 2, // invented: this tech resolves as two successive strikes (see js/core/battle.js useTech), same mechanic as Rogue's Shadowstep Strike
     effect: 'damage',
     classOnly: true,
@@ -1240,9 +1304,10 @@ Game.Data.techs = [
     chain: null,
     rank: 1,
     skill: null,
-    grade: null, // invented: non-elemental physical strike — Dragoon's lineage is a heavy hybrid melee fighter, not a caster
+    grade: null, // physical weapon tech: Armor mitigates, never Magic Armor (Feature C convention)
+    weaponTech: true,
+    powerMult: 1.67, // invented: T3 anchor 1.7 x power 65/66 (docs/SPEC-MELEE-CLASS-TECHS.md §2.2: caster-band anchors T1 1.3 / T2 1.5 / T3 1.7 x shipped power ratio; was a non-weapon Int-scaled tech)
     energyCost: 30, // invented: provisional Part B brief number, pending lead's P5 balance-sanity sim
-    power: 65, // invented: provisional Part B brief number, within the tier-3 non-elemental band
     effect: 'damage',
     classOnly: true,
     classId: 'dragoon',
@@ -1274,7 +1339,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 1.5, // invented (user-directed)
+    powerMult: 1.5, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 12,
     effect: 'damage',
     trainingCost: 2,
@@ -1289,7 +1354,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 1.9, // invented (user-directed)
+    powerMult: 1.62, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 16,
     effect: 'damage',
     trainingCost: 3,
@@ -1304,7 +1369,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 2.3, // invented (user-directed)
+    powerMult: 1.74, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 22,
     effect: 'damage',
     trainingCost: 5,
@@ -1319,7 +1384,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 1.4, // invented (user-directed)
+    powerMult: 1.4, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed): a driven spear-thrust ignores part of the target's Armor
     energyCost: 12,
     effect: 'damage',
@@ -1335,7 +1400,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 1.8, // invented (user-directed)
+    powerMult: 1.52, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 16,
     effect: 'damage',
@@ -1351,7 +1416,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 2.2, // invented (user-directed)
+    powerMult: 1.65, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 22,
     effect: 'damage',
@@ -1367,7 +1432,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 1.3, // invented (user-directed)
+    powerMult: 1.3, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (user-directed): a knife finds the seams in armor even more readily than a spear
     energyCost: 10,
     effect: 'damage',
@@ -1383,7 +1448,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 1.7, // invented (user-directed)
+    powerMult: 1.41, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (user-directed)
     energyCost: 14,
     effect: 'damage',
@@ -1399,7 +1464,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 2.0, // invented (user-directed)
+    powerMult: 1.53, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (user-directed)
     energyCost: 18,
     effect: 'damage',
@@ -1407,7 +1472,7 @@ Game.Data.techs = [
     skillReq: 12,
     desc: 'The master form of Vital Strike, taught only once a knife-fighter has proven the first two ranks. Requires Vital Strike II and Knives 12.'
   },
-  // ---------- Vital Strike ranks 4-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 powerMult pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  // ---------- Vital Strike ranks 4-9 (added SPEC-TECH-CHAIN-COMPLETION; powerMult re-tapered by docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2) ----------
   {
     id: 'tech_vital_strike_4',
     name: 'Vital Strike IV',
@@ -1416,7 +1481,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 2.3, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.64, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
     energyCost: 22,
     effect: 'damage',
@@ -1433,7 +1498,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 2.6, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.76, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
     energyCost: 26,
     effect: 'damage',
@@ -1450,7 +1515,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 1.6, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.87, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
     energyCost: 30,
     effect: 'damage',
@@ -1467,7 +1532,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 1.76, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.98, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
     energyCost: 34,
     effect: 'damage',
@@ -1484,7 +1549,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 1.93, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 2.1, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
     energyCost: 38,
     effect: 'damage',
@@ -1501,7 +1566,7 @@ Game.Data.techs = [
     skill: 'Knives',
     grade: null,
     weaponTech: true,
-    powerMult: 2.09, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 2.21, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.5, // invented (SPEC-TECH-CHAIN-COMPLETION §2.7; unchanged from lower ranks)
     energyCost: 42,
     effect: 'damage',
@@ -1518,7 +1583,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 0.9, // invented (user-directed): each of the 2 hits is individually weaker than a plain Attack
+    powerMult: 0.9, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (user-directed): resolves as two successive strikes (js/core/battle.js useTech, same mechanic as Shadowstep Strike above)
     energyCost: 14,
     effect: 'damage',
@@ -1534,7 +1599,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 1.1, // invented (user-directed)
+    powerMult: 0.96, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (user-directed)
     energyCost: 20,
     effect: 'damage',
@@ -1542,7 +1607,7 @@ Game.Data.techs = [
     skillReq: 6,
     desc: 'A stronger Flurry, requiring the first rank be learned and a proven Hand to Hand skill. Requires Flurry I and Hand to Hand 6.'
   },
-  // ---------- Flurry ranks 3-9 (added SPEC-TECH-CHAIN-COMPLETION; ranks 6-9 powerMult pre-tapered x0.55 per OFFENSE_TECH_TAPER) ----------
+  // ---------- Flurry ranks 3-9 (added SPEC-TECH-CHAIN-COMPLETION; powerMult re-tapered by docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2) ----------
   {
     id: 'tech_flurry_3',
     name: 'Flurry III',
@@ -1551,7 +1616,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 1.3, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.02, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
     energyCost: 26,
     effect: 'damage',
@@ -1568,7 +1633,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 1.45, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.07, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
     energyCost: 30,
     effect: 'damage',
@@ -1585,7 +1650,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 1.6, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.13, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
     energyCost: 34,
     effect: 'damage',
@@ -1602,7 +1667,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 0.96, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.19, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
     energyCost: 38,
     effect: 'damage',
@@ -1619,7 +1684,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 1.05, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.25, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
     energyCost: 42,
     effect: 'damage',
@@ -1636,7 +1701,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 1.13, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.3, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
     energyCost: 46,
     effect: 'damage',
@@ -1653,7 +1718,7 @@ Game.Data.techs = [
     skill: 'Hand to Hand',
     grade: null,
     weaponTech: true,
-    powerMult: 1.21, // invented (spec SPEC-TECH-CHAIN-COMPLETION §2; ranks 6-9 pre-tapered x0.55 per OFFENSE_TECH_TAPER)
+    powerMult: 1.36, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     hits: 2, // invented (SPEC-TECH-CHAIN-COMPLETION §2.8; unchanged from lower ranks)
     energyCost: 50,
     effect: 'damage',
@@ -1707,7 +1772,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 2.6, // invented (user-directed)
+    powerMult: 1.86, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 26,
     effect: 'damage',
     trainingCost: 6,
@@ -1722,7 +1787,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 2.5, // invented (user-directed)
+    powerMult: 1.77, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 26,
     effect: 'damage',
@@ -1777,7 +1842,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 2.9, // invented (user-directed)
+    powerMult: 1.98, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 30,
     effect: 'damage',
     trainingCost: 8,
@@ -1792,7 +1857,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 2.8, // invented (user-directed)
+    powerMult: 1.89, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 30,
     effect: 'damage',
@@ -1818,7 +1883,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Fire',
     energyCost: 42,
-    power: 51, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 92 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 50.6 -> 51. Cleave/Impale/Firebolt ranks 6-9 were compressing fights (killing before Fear/armor could matter); armor fix alone wasn't enough, see balance.js.
+    power: 82, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 10,
     skillReq: 40,
@@ -1847,7 +1912,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 1.76, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.2 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 1.76 (was invented 3.2).
+    powerMult: 2.1, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 34,
     effect: 'damage',
     trainingCost: 10,
@@ -1862,7 +1927,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 1.71, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.1 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 1.705 -> 1.71 (was invented 3.1).
+    powerMult: 2.01, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 34,
     effect: 'damage',
@@ -1888,7 +1953,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Fire',
     energyCost: 48,
-    power: 62, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 112 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 61.6 -> 62.
+    power: 89, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 12,
     skillReq: 50,
@@ -1917,7 +1982,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 1.93, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.5 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 1.925 -> 1.93 (was invented 3.5).
+    powerMult: 2.22, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 38,
     effect: 'damage',
     trainingCost: 12,
@@ -1932,7 +1997,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 1.87, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.4 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 1.87 (was invented 3.4).
+    powerMult: 2.13, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 38,
     effect: 'damage',
@@ -1958,7 +2023,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Fire',
     energyCost: 54,
-    power: 73, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 132 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 72.6 -> 73.
+    power: 97, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 14,
     skillReq: 60,
@@ -1987,7 +2052,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 2.09, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.8 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 2.09 (was invented 3.8).
+    powerMult: 2.34, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 42,
     effect: 'damage',
     trainingCost: 14,
@@ -2002,7 +2067,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 2.04, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 3.7 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 2.035 -> 2.04 (was invented 3.7).
+    powerMult: 2.26, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 42,
     effect: 'damage',
@@ -2029,7 +2094,7 @@ Game.Data.techs = [
     skill: 'Evocation',
     grade: 'Fire',
     energyCost: 60,
-    power: 84, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 152 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 83.6 -> 84.
+    power: 104, // invented, docs/SPEC-SPELL-CHAINS-AND-ARMOR.md §2.1 (ranks VI-IX keep rising at half the rank I-V step, D1)
     effect: 'damage',
     trainingCost: 16,
     skillReq: 70,
@@ -2058,7 +2123,7 @@ Game.Data.techs = [
     skill: 'Swords',
     grade: null,
     weaponTech: true,
-    powerMult: 2.26, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 4.1 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 2.255 -> 2.26 (was invented 4.1).
+    powerMult: 2.47, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     energyCost: 46,
     effect: 'damage',
     trainingCost: 16,
@@ -2073,7 +2138,7 @@ Game.Data.techs = [
     skill: 'Polearms',
     grade: null,
     weaponTech: true,
-    powerMult: 2.2, // ARMOR-STACK CORRECTION companion tap (re-sim finding, js/balance.js F1 CONVENTION NOTES): 4.0 * 0.55 (OFFENSE_TECH_TAPER, ranks 6-9 only) = 2.2 (was invented 4.0).
+    powerMult: 2.38, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     armorPierce: 0.35, // invented (user-directed)
     energyCost: 46,
     effect: 'damage',
@@ -3017,7 +3082,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 12,
     weaponTech: true,
-    powerMult: 1.3,
+    powerMult: 1.3, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     effect: 'damage',
     trainingCost: 2,
     skillReq: 0,
@@ -3032,7 +3097,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 16,
     weaponTech: true,
-    powerMult: 1.7,
+    powerMult: 1.52, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     effect: 'damage',
     trainingCost: 4,
     skillReq: 10,
@@ -3047,7 +3112,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 22,
     weaponTech: true,
-    powerMult: 2.0,
+    powerMult: 1.74, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     effect: 'damage',
     trainingCost: 6,
     skillReq: 25,
@@ -3062,7 +3127,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 26,
     weaponTech: true,
-    powerMult: 2.3, // D4 primary lock (SPEC-TECH-POLARITY.md §0/§2.3): rod melee stays slower than Cleave, the v1.6 halving holds
+    powerMult: 1.95, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     effect: 'damage',
     trainingCost: 8,
     skillReq: 45,
@@ -3211,7 +3276,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 14,
     weaponTech: true,
-    powerMult: 1.2,
+    powerMult: 1.2, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     requiresOffhandWeapon: true,
     offhandFollowup: true,
     effect: 'damage',
@@ -3228,7 +3293,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 18,
     weaponTech: true,
-    powerMult: 1.5,
+    powerMult: 1.4, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     requiresOffhandWeapon: true,
     offhandFollowup: true,
     effect: 'damage',
@@ -3245,7 +3310,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 24,
     weaponTech: true,
-    powerMult: 1.8,
+    powerMult: 1.59, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     requiresOffhandWeapon: true,
     offhandFollowup: true,
     effect: 'damage',
@@ -3262,7 +3327,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 30,
     weaponTech: true,
-    powerMult: 2.1, // D4 primary lock (SPEC-TECH-POLARITY.md §0/§2.3): Cleave stays the faster at-level killer
+    powerMult: 1.79, // invented, docs/SPEC-ACADEMY-WEAPON-CHAINS.md §2.2 (monotonic re-taper, D1 peak 0.85 x old rank V)
     requiresOffhandWeapon: true,
     offhandFollowup: true,
     effect: 'damage',
@@ -3354,10 +3419,9 @@ Game.Data.techs = [
   //
   // IMPORTANT (as with every tech in this file): `power` is a FLAT number that
   // Game.Battle.techEffectivePower scales by Intelligence/magic-skill/Rod at cast time — it is
-  // NOT written as a formula-of-level. The command techs' flat `power` values below are
-  // PROVISIONAL placeholders picked to sit in the same ballpark as other classOnly Tier-3
-  // signature techs (e.g. tech_anima_reckoning/tech_shadow_blade), sim-gated pending the lead's
-  // /balance-sim — none are locked. (Companion BASIC powers, by contrast, DO scale with
+  // NOT written as a formula-of-level. The command techs' flat `power` values below started in the
+  // ballpark of other classOnly Tier-3 signature techs (e.g. tech_anima_reckoning/tech_shadow_blade)
+  // and are now sim-locked (user, 2026-10-29): gated in docs/SPEC-COMPANION-SYSTEM.md §3, re-gated by the v1.14 boss grids (docs/SPEC-BOSS-SIM-FULL-KIT.md, docs/SPEC-COMPANION-SPELLPOWER.md) and the v1.15 grids (docs/SPEC-COMPANION-TARGET-SPECIALS.md §4). (Companion BASIC powers, by contrast, DO scale with
   // character level — js/data/companions.js coefficients, computed per-battle in
   // js/core/companion.js — that is intentional, not an inconsistency.)
   // =====================================================================
@@ -3388,7 +3452,7 @@ Game.Data.techs = [
     effect: 'summon',
     classOnly: true,
     classId: 'conjurer',
-    desc: 'Bind a Tidal Undine — a healer that mends your wounds each round. Replaces any companion already bound.'
+    desc: 'Bind a Tidal Undine — a healer that mends your wounds each round once you fall below 60% health, and stings the foe every round. Replaces any companion already bound.'
   },
   {
     id: 'tech_summon_earth',
@@ -3402,7 +3466,7 @@ Game.Data.techs = [
     effect: 'summon',
     classOnly: true,
     classId: 'conjurer',
-    desc: 'Bind a Granite Golem — a bulwark that draws blows away from you. Replaces any companion already bound.'
+    desc: 'Bind a Granite Golem — a bulwark that steps in front of you and takes half of each blow while the foe is fixed on it. Replaces any companion already bound.'
   },
   {
     id: 'tech_summon_wind',
@@ -3427,7 +3491,7 @@ Game.Data.techs = [
     skill: 'Conjuration',
     grade: 'Fire',
     energyCost: 24,
-    power: 70, // [invented][sim-gated] PROVISIONAL flat value — same order of magnitude as other classOnly Tier-3 damage signatures; pending the lead's sim (spec §3 S3: DoT+detonate must not exceed a Magus burst of equal investment)
+    power: 70, // [invented] sim-locked (user, 2026-10-29): gated in docs/SPEC-COMPANION-SYSTEM.md §3, re-gated by the v1.14 boss grids (docs/SPEC-BOSS-SIM-FULL-KIT.md, docs/SPEC-COMPANION-SPELLPOWER.md) and the v1.15 grids (docs/SPEC-COMPANION-TARGET-SPECIALS.md §4) (spec §3 S3: DoT+detonate must not exceed a Magus burst of equal investment)
     detonatesBurn: true, // js/core/battle.js useTech: detonates the Fire companion's active Burn (remaining dotPower*turnsLeft, Fire-resisted) then removes it
     requiresCompanion: 'comp_fire',
     effect: 'damage',
@@ -3443,7 +3507,7 @@ Game.Data.techs = [
     skill: 'Conjuration',
     grade: null,
     energyCost: 22,
-    power: 90, // [invented][sim-gated] PROVISIONAL flat value, pending the lead's sim
+    power: 90, // [invented] sim-locked (user, 2026-10-29): gated in docs/SPEC-COMPANION-SYSTEM.md §3, re-gated by the v1.14 boss grids (docs/SPEC-BOSS-SIM-FULL-KIT.md, docs/SPEC-COMPANION-SPELLPOWER.md) and the v1.15 grids (docs/SPEC-COMPANION-TARGET-SPECIALS.md §4)
     clearsStatus: true, // reuses the existing clearsStatus handler (cleanses Poison/Curse)
     requiresCompanion: 'comp_water',
     effect: 'heal',
@@ -3460,14 +3524,14 @@ Game.Data.techs = [
     grade: null,
     energyCost: 20,
     statKind: 'armor',
-    power: 30, // [invented][sim-gated] PROVISIONAL flat value, pending the lead's sim
+    power: 30, // [invented] sim-locked (user, 2026-10-29): gated in docs/SPEC-COMPANION-SYSTEM.md §3, re-gated by the v1.14 boss grids (docs/SPEC-BOSS-SIM-FULL-KIT.md, docs/SPEC-COMPANION-SPELLPOWER.md) and the v1.15 grids (docs/SPEC-COMPANION-TARGET-SPECIALS.md §4)
     buffDuration: 5,
     refreshesCompanionTaunt: true, // js/core/battle.js useTech: also refreshes the Golem's Taunt to BALANCE.COMPANION_TAUNT_TURNS_BULWARK
     requiresCompanion: 'comp_earth',
     effect: 'buff',
     classOnly: true,
     classId: 'conjurer',
-    desc: 'The Golem raises a wall of stone — your Armor climbs and the foe fixes on your guardian.'
+    desc: 'The Golem raises a wall of stone — your Armor climbs and the foe fixes on your guardian, which takes half of each blow.'
   },
   {
     id: 'tech_cmd_tailwind',
@@ -3478,7 +3542,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 20,
     statKind: 'spellpower',
-    power: 25, // [invented][sim-gated] PROVISIONAL flat value, pending the lead's sim
+    power: 25, // [invented] sim-locked (user, 2026-10-29): gated in docs/SPEC-COMPANION-SYSTEM.md §3, re-gated by the v1.14 boss grids (docs/SPEC-BOSS-SIM-FULL-KIT.md, docs/SPEC-COMPANION-SPELLPOWER.md) and the v1.15 grids (docs/SPEC-COMPANION-TARGET-SPECIALS.md §4)
     buffDuration: 5,
     requiresCompanion: 'comp_wind',
     effect: 'buff',
@@ -3490,9 +3554,8 @@ Game.Data.techs = [
   // =====================================================================
   // v1.9: monster-example techs demonstrating the new optional `target` field on monster techs
   // (docs/SPEC-COMPANION-SYSTEM.md §2.3) — `target: 'player'|'companion'|'both'`, ABSENT ⇒
-  // 'player' (every existing monster tech is unaffected). These two are SPEC EXAMPLES ONLY and are
-  // NOT wired to any monster's `techs` list — which monsters/bosses receive them is deferred to a
-  // future monster-AI pass (out of scope here, per spec §6). PROVISIONAL/[invented][sim-gated].
+  // 'player' (every existing monster tech is unaffected). Since v1.15 both are wired to monsters and
+  // bosses, gated by `vsCompanion` (docs/SPEC-COMPANION-TARGET-SPECIALS.md §2). [invented], sim-locked.
   // =====================================================================
   {
     id: 'mon_cleaving_roar',
@@ -3502,8 +3565,9 @@ Game.Data.techs = [
     skill: null,
     grade: null,
     energyCost: 10,
-    power: 40, // [invented][sim-gated] PROVISIONAL — a cleave/AoE special hitting player AND companion
+    power: 40, // [invented] floor only — monsterTechPower uses max(power, round(F x damage)); docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.3
     target: 'both',
+    vsCompanion: true,
     effect: 'damage',
     monsterOnly: true,
     desc: 'A roar of raw force that buffets everything before it.'
@@ -3516,8 +3580,10 @@ Game.Data.techs = [
     skill: null,
     grade: null,
     energyCost: 10,
-    power: 55, // [invented][sim-gated] PROVISIONAL — a focused special aimed squarely at a bound companion
+    power: 55, // [invented] floor only — monsterTechPower uses max(power, round(F x damage)); docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.3
     target: 'companion',
+    vsCompanion: true,
+    backlash: true,
     effect: 'damage',
     monsterOnly: true,
     desc: "A focused blow meant to shatter a summoner's bound servant."

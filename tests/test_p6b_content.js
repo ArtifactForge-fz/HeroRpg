@@ -15,7 +15,8 @@ var path = require('path');
 var FakeDom = require('./fakedom.js');
 var BossFixture = require('./boss_fixture.js'); // shared prepared-warrior boss sim (docs/SPEC-BOSS-COST-RETUNE.md §4)
 
-var base = "D:/Claude - collection folder/HeroRPG/js";
+var repoRoot = path.resolve(__dirname, '..');
+var base = path.join(repoRoot, 'js');
 
 function freshDom() {
   var document = new FakeDom.FakeDocument();
@@ -379,7 +380,7 @@ newVarietyTechIds.forEach(function (tid) {
 // ---- every new monster has an icon (fs-level check; test_icons.js is the authoritative sweep
 // over ALL monsters — this just confirms the 15 new ones specifically didn't get missed) ----
 (function () {
-  var iconsDir = "D:/Claude - collection folder/HeroRPG/assets/icons";
+  var iconsDir = path.join(repoRoot, 'assets', 'icons');
   var missing = newVarietyIds.filter(function (id) { return !fs.existsSync(path.join(iconsDir, id + '.png')); });
   assert(missing.length === 0, 'every enemy-variety-pass monster has an icon' + (missing.length ? (': missing ' + missing.join(', ')) : ''));
 })();
@@ -506,7 +507,7 @@ assert(uniqueItems.length === 30, 'sanity: 30 unique items defined in items.js (
 // ---- every unique item has an icon (fs-level; test_icons.js is the authoritative sweep over ALL
 // items — this just confirms the 12 new ones specifically weren't missed) ----
 (function () {
-  var iconsDir = "D:/Claude - collection folder/HeroRPG/assets/icons";
+  var iconsDir = path.join(repoRoot, 'assets', 'icons');
   var missing = uniqueItems.filter(function (it) { return !fs.existsSync(path.join(iconsDir, it.id + '.png')); });
   assert(missing.length === 0, 'every unique item has an icon' + (missing.length ? (': missing ' + missing.map(function (it) { return it.id; }).join(', ')) : ''));
 })();
@@ -647,6 +648,42 @@ Game.Battle.attack();
 assert(battleSword.phase === 'won', 'eidas_echo killed (sword test)');
 assert(battleSword.pendingLoot === 'sword_skyspire_ember_blade', 'v1.3.1 fix 3: sword_skyspire_ember_blade can drop, got pendingLoot=' + battleSword.pendingLoot);
 Game.Battle.endBattle();
+
+// =====================================================================
+// SPEC-CONTRACT-FIXES-V19-QUEUE §2: Scout's Dirk + Watchman's Spear (level-5 knife / polearm)
+// =====================================================================
+console.log("\n=== Contract fixes §2: Scout's Dirk and Watchman's Spear ===");
+(function () {
+  var dirk = Game.Inventory.getItem('knife_scouts_dirk');
+  var spear = Game.Inventory.getItem('polearm_watchmans_spear');
+  assert(!!dirk && dirk.skill === 'Knives' && dirk.levelReq === 5 && dirk.damage === 13 && dirk.bonuses.critChance === 0.02,
+    "Scout's Dirk: Knives, levelReq 5, damage 13, critChance 0.02");
+  assert(!!spear && spear.skill === 'Polearms' && spear.levelReq === 5 && spear.damage === 13 && spear.bonuses.armorPen === 0.05,
+    "Watchman's Spear: Polearms, levelReq 5, damage 13, armorPen 0.05");
+  ['jumak_village', 'laik'].forEach(function (town) {
+    var stock = Game.World.getArea(town).facilities.filter(function (f) { return f.type === 'shop'; })[0].stock;
+    assert(stock.indexOf('knife_scouts_dirk') !== -1 && stock.indexOf('polearm_watchmans_spear') !== -1,
+      'both new weapons are sold in ' + town);
+  });
+  var sd = Game.Battle.getMonsterDef('estari_construct_sentinel').drops.map(function (d) { return d.itemId; });
+  assert(sd.indexOf('knife_scouts_dirk') > 1 && sd.indexOf('polearm_watchmans_spear') > 1, 'the sentinel drops both, appended after the original entries');
+
+  var recipe = Game.Data.recipes.filter(function (r) { return r.id === 'synth_watchmans_spear'; })[0];
+  assert(!!recipe && recipe.gold === 40 && recipe.output === 'polearm_watchmans_spear' &&
+    recipe.inputs.length === 2 && recipe.inputs[0] === 'polearm_ashwood_spear' && recipe.inputs[1] === 'polearm_ashwood_spear',
+    "synth_watchmans_spear = 2x Ashwood Spear + 40 gold -> Watchman's Spear");
+  var c = makeCharacter({ name: 'SpearSynth' });
+  c.currentLocation = 'eldor';
+  Game.Character.addGold(c, 100);
+  Game.Inventory.addItem(c, 'polearm_ashwood_spear');
+  Game.Inventory.addItem(c, 'polearm_ashwood_spear');
+  var goldBefore = Game.Character.goldTotalAsGold(c);
+  var res = Game.World.synthesize('synth_watchmans_spear');
+  assert(res.ok === true, 'synthesis succeeds: ' + res.message);
+  assert(c.inventory.indexOf('polearm_watchmans_spear') !== -1, "Watchman's Spear granted");
+  assert(c.inventory.indexOf('polearm_ashwood_spear') === -1, 'both Ashwood Spears consumed');
+  assert(Game.Character.goldTotalAsGold(c) === goldBefore - 40, '40 gold deducted');
+})();
 
 // =====================================================================
 console.log('\n===================================');

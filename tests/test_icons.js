@@ -8,7 +8,7 @@ var vm = require('vm');
 var fs = require('fs');
 var path = require('path');
 
-var root = "D:/Claude - collection folder/HeroRPG";
+var root = path.resolve(__dirname, '..');
 var base = root + "/js";
 var iconsDir = root + "/assets/icons";
 

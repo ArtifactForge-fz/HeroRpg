@@ -762,7 +762,7 @@ Game.Data.classes = [
         kind: 'tech',
         techId: 'tech_paladin_smite',
         classLevelCost: 5,
-        desc: 'A Light-grade blow called down on an enemy with the full weight of the Crusader\'s faith behind it. Paladin class technique.'
+        desc: 'A weapon blow called down on an enemy with the full weight of the Crusader\'s faith and Light behind it. Paladin class technique.'
       }
     ]
   },
@@ -807,7 +807,7 @@ Game.Data.classes = [
         kind: 'tech',
         techId: 'tech_warden_bulwark',
         classLevelCost: 5,
-        desc: 'A Light-grade blow driven through the Warden\'s own barrier, turning defense briefly into attack. Warden class technique.'
+        desc: 'A weapon blow driven through the Warden\'s own barrier, turning defense briefly into attack. Warden class technique.'
       }
     ]
   },
@@ -868,7 +868,7 @@ Game.Data.classes = [
         kind: 'tech',
         techIds: ['tech_summon_water', 'tech_cmd_renewing_tide'], // [invented] docs/SPEC-COMPANION-SYSTEM.md §2.5
         classLevelCost: 3,
-        desc: 'Bind the Tidal Undine and learn its Renewing Tide — a healer that mends and cleanses you.'
+        desc: 'Bind the Tidal Undine and learn its Renewing Tide — a healer that mends you once you fall below 60% health, and cleanses you on command.'
       },
       {
         id: 'conjurer_pact_earth',
@@ -876,7 +876,7 @@ Game.Data.classes = [
         kind: 'tech',
         techIds: ['tech_summon_earth', 'tech_cmd_bulwark'], // [invented] docs/SPEC-COMPANION-SYSTEM.md §2.5
         classLevelCost: 3,
-        desc: 'Bind the Granite Golem and learn its Bulwark — a guardian that draws blows away from you.'
+        desc: 'Bind the Granite Golem and learn its Bulwark — a guardian that takes half of the blows aimed at you.'
       },
       {
         id: 'conjurer_pact_wind',
@@ -968,7 +968,7 @@ Game.Data.classes = [
         kind: 'tech',
         techId: 'tech_seers_ward',
         classLevelCost: 5,
-        desc: 'A moment of foresight woven into a battle-chant, hardening resolve and adding to Damage for a few turns. Seer class technique.'
+        desc: 'A moment of foresight woven into a battle-chant, sharpening your casting and adding to Spell Power for a few turns. Seer class technique.'
       }
     ]
   },
@@ -1155,9 +1155,10 @@ Game.Data.classes = [
         id: 'runeblade_runic_severance',
         name: 'Runic Severance',
         kind: 'tech',
-        techId: 'tech_runic_severance',
+        techIds: ['tech_runic_severance', 'tech_runic_severance_blade'], // docs/SPEC-MELEE-CLASS-TECHS.md §2.3: spell form + weapon twin (Severing Edge)
         classLevelCost: 5,
-        desc: 'A hybrid Light-and-Dark strike that cleaves through both flesh and ward alike.'
+        desc: 'A hybrid Light-and-Dark strike that cleaves through both flesh and ward alike. Grants two forms: the spell, ' +
+          'and Severing Edge, the same rune carried down the steel of your weapon.'
       }
     ]
   },
@@ -1213,9 +1214,10 @@ Game.Data.classes = [
         id: 'vaultbreaker_reckoning',
         name: "Vaultbreaker's Reckoning",
         kind: 'tech',
-        techId: 'tech_vault_reckoning',
+        techIds: ['tech_vault_reckoning', 'tech_vault_reckoning_blade'], // docs/SPEC-MELEE-CLASS-TECHS.md §2.3: spell form + weapon twin (Vault-Breaker's Blow)
         classLevelCost: 5,
-        desc: 'A single blow that carries the full weight of two fallen guardians at once.'
+        desc: 'A single blow that carries the full weight of two fallen guardians at once. Grants two forms: the spell, ' +
+          'and Vault-Breaker\'s Blow, struck through your weapon.'
       }
     ]
   },
@@ -1268,10 +1270,10 @@ Game.Data.classes = [
         id: 'heir_echoing_judgment',
         name: 'Echoing Judgment',
         kind: 'tech',
-        techId: 'tech_echoing_judgment',
+        techIds: ['tech_echoing_judgment', 'tech_echoing_judgment_blade'], // docs/SPEC-MELEE-CLASS-TECHS.md §2.3: spell form + weapon twin (Echo of the Blade)
         classLevelCost: 5,
         desc: 'A judgment cast in Eidas\' own hybrid Light-and-Dark Anima, echoing a founder\'s ' +
-          'long-silent verdict onto the battlefield.'
+          'long-silent verdict onto the battlefield. Grants two forms: the spell, and Echo of the Blade, struck through your weapon.'
       }
     ]
   }

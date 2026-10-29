@@ -100,6 +100,21 @@ Game.Data.items = [
     bonuses: { armorPen: 0.05 },
     desc: 'A heavy polearm issued to Eldor militia levies.'
   },
+  // invented, docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md §2 (weapon-tier formula 3+2*levelReq; band-0 signature stat, SPEC-SECONDARY-STATS §2.8)
+  {
+    id: 'polearm_watchmans_spear',
+    name: "Watchman's Spear",
+    slot: 'weapon',
+    skill: 'Polearms',
+    damage: 13,
+    weight: 6,
+    levelReq: 5,
+    statReqs: { strength: 12 },
+    value: 90,
+    tags: [],
+    bonuses: { armorPen: 0.05 },
+    desc: 'A sturdy ash-and-iron spear carried by the watchmen on Eldor\'s walls.'
+  },
 
   // ---------- Weapons: Knives (Dex, invented-parallel to Damage.md ratio) ----------
   {
@@ -128,6 +143,21 @@ Game.Data.items = [
     tags: [],
     bonuses: { critChance: 0.02 },
     desc: 'A slender blade balanced for a quick, precise strike.'
+  },
+  // invented, docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md §2 (weapon-tier formula 3+2*levelReq; band-0 signature stat, SPEC-SECONDARY-STATS §2.8)
+  {
+    id: 'knife_scouts_dirk',
+    name: "Scout's Dirk",
+    slot: 'weapon',
+    skill: 'Knives',
+    damage: 13,
+    weight: 3,
+    levelReq: 5,
+    statReqs: { dexterity: 12 },
+    value: 90,
+    tags: [],
+    bonuses: { critChance: 0.02 },
+    desc: 'A scout\'s double-edged dirk, light enough to draw and strike in one motion.'
   },
 
   // ---------- Weapons: Rods (Int, invented-parallel to Damage.md ratio) ----------
