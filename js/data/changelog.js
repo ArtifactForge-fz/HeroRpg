@@ -12,6 +12,36 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.14.0',
+    date: '2026-10-29',
+    title: 'Every Rank Counts',
+    saveVersion: 12,
+    highlights: [
+      'Every rank of a technique is now worth learning. Cleave, Impale, Vital Strike, Flurry, Crosscut ' +
+        'and Channeled Strike grow stronger with each rank instead of peaking at the fifth, and the ' +
+        'advanced ranks of Firebolt, Starspark, Tidal Lance, Shadowlash and Lifetap now hit harder ' +
+        'than the ones before them. The middle weapon ranks strike a little softer to make room.',
+      'Armor works both ways. Weapon techniques now multiply what gets past a monster\'s armor, and ' +
+        'just as your armor blunts enemy magic, a monster\'s armor now blunts your elemental spells ' +
+        'at half strength. A technique or spell cast in fear against a much stronger foe no longer ' +
+        'slips past its guard.',
+      'Warrior and Thief class techniques now strike with your weapon, so they grow with your blade ' +
+        'instead of your Intelligence. Smite and Bulwark Strike become plain weapon strikes. The ' +
+        'Legendary classes teach a weapon form of their technique — Severing Edge, Vault-Breaker\'s ' +
+        'Blow and Echo of the Blade — and heroes who already hold the Legendary receive it at once.',
+      'Seer\'s Ward now adds Spell Power, and casting it again refreshes it rather than stacking.',
+      'Anima Reckoning, the Magus\'s verdict of pure Anima, is no longer an elemental spell: it now ' +
+        'ignores a monster\'s armor and magic armor, and hits harder.',
+      'Companions have been rebalanced. The Tidal Undine only heals once you fall below 60% health, ' +
+        'and its healing grows more slowly. Companion attacks hit a little lighter overall; the ' +
+        'Granite Golem shares each taunted blow with you instead of taking all of it; the Ember ' +
+        'Salamander\'s Burn grows with your Intelligence while Ember Lash hits lighter; and Gale Slash ' +
+        'hits about half as hard. Your companion no longer draws on Attunement or Spell Power, and ' +
+        'its elemental attacks now meet half a monster\'s armor, like your own spells.'
+    ]
+  },
+
+  {
     version: 'v1.13.0',
     date: '2026-10-28',
     title: 'Every Academy Teaches Its Own',
