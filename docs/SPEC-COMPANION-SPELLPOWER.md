@@ -1,6 +1,7 @@
 # SPEC — Companion attacks stop drawing on Attunement and Spell Power (and the armor question)
 
-**Status:** DRAFT — open decisions D0–D4 unresolved (§5). Not implemented. Authored 2026-10-29 on
+**Status:** READY — D0–D4 resolved by the user 2026-10-29 (§5; D1 and D2 differ from the first
+draft, D1 after a share sweep, §3.1). Not implemented. Authored 2026-10-29 on
 branch `v1.11-hero-tree` (user-directed: "pick up the last two follow-up points together, as
 companion attacks ignoring armor has an effect on the conjurer boss cells" — F3 and F4 of
 `docs/SPEC-SPELL-CHAINS-AND-ARMOR.md` §9). Screened at 300 trials (§3); the implementation gate is
@@ -13,7 +14,7 @@ retired Conjurer servitor whose damage pipeline the companions inherited:
 Conjurer servitor ticks? Yes"). No archived rule involved; no [revised] tag. The boss contract
 (`docs/SPEC-BOSS-COST-BAND.md` §2) is unchanged.
 
-**Interpretation of the request (confirm — D0):** fix the five Conjurer boss cells by changing the
+**Interpretation of the request (D0, confirmed by the user):** fix the five Conjurer boss cells by changing the
 companion's damage, not the bosses, and settle whether companion attacks should pay monster Armor like
 hero spells do.
 
@@ -53,14 +54,15 @@ to `techEffectivePower`; `techEffectivePower` skips the two flat terms when it's
 
 ### 2.2 Half Armor on companion attacks (A1) — D2
 
-Optional: companion damage attacks pay the monster's Magic Armor + `TECH_PHYSICAL_DEFENSE_SHARE` × Armor
-when graded, mirroring the hero-spell rule. Screened; see §3 for why it's a decision, not part of
-the package.
+Part of the package (D2): graded companion damage attacks (Ember Lash, Stone Fist, Gale Slash,
+Water's chip) pay the monster's Magic Armor + `TECH_PHYSICAL_DEFENSE_SHARE` × Armor, mirroring the
+hero-spell rule of `docs/SPEC-SPELL-CHAINS-AND-ARMOR.md` §2.2. [invented] Fire's Burn ticks are
+status damage and unchanged.
 
 ### 2.3 Player-facing
 
-Changelog draft: "Attunement and Spell Power now strengthen your own spells only. A Conjurer's
-companion still grows with your Intelligence, but no longer draws on those bonuses."
+Changelog line (D4): "Your companion no longer draws on Attunement or Spell Power, and elemental
+companion attacks now meet half a monster's armor, like your own spells."
 
 ## 3. Sim gate (screening run 2026-10-29, 300 trials)
 
@@ -93,8 +95,27 @@ while `basic` and `techs` won 99–100%. The `kit` tool choice is made on 30 fig
 a set that plays badly over 300. The boss verdict takes the player's best policy, so it isn't
 affected; it's a follow-up for the fixture (§6).
 
+### 3.1 Share sweep (user D1: "keep both, scale down"), half Armor on
+
+Companion attacks keep a share of Attunement and Spell Power (cheapest HP spent %, all 100% win):
+
+| Share | L60 | L70 | L80 | L90 | L100 (needs 45) |
+|---|---|---|---|---|---|
+| 100% (today) | x31.9 | x32.5 | x33.1 | x27.5 | x28.6 |
+| 75% | x32.4 | x33.4 | x34.5 | x31.3 | x32.1 |
+| 50% | x33.1 | x33.9 | x34.6 | x34.3 | x32.3 |
+| 25% | x34.5 | 36.4 | 35.2 | 35.8 | **x34.6** |
+| **0%** | **x34.9** | **43.8** | **42.3** | **43.2** | **48.9** |
+
+- No partial share clears the finale; only 0% does. Regular checks (best policy) at every share:
+  at-level 100%, four and five levels up 99–100%.
+- **Correction to §3's A2 row:** its L60 40% came from a `kit` tool-choice failure — the Earth + Heir
+  option kept five buffs and spent 169% HP, so a different option looked cheapest. With half Armor on,
+  the same option chose Echoing Judgment only and reached 34.9%, the real cheapest play. So L60 sits at
+  the floor with or without half Armor.
+
 **Implementation gate (owed, 300 trials):** the full 12-lineage kit grid plus regular checks. Pass
-bar: the five Conjurer cells pass; no other cell newly fails; Conjurer at-level 100% (best policy).
+bar: the Conjurer cells at L70–L100 pass and L60 stays within ~1 point of 35% (accepted, D1); no other cell newly fails; Conjurer at-level 100% (best policy).
 
 ## 4. Conventions & handoff checklist
 
@@ -102,7 +123,8 @@ bar: the five Conjurer cells pass; no other cell newly fails; Conjurer at-level 
   Water chip, Fire Burn). Not the Water heal.
 - [ ] `js/core/battle.js` `techEffectivePower`: skip the `spellpower` buff and the Spell Power stat
   when `tech.companion`; comment citing §2.1 and the two decisions it reverses.
-- [ ] A1 only if D2 says so.
+- [ ] A1 (D2): `js/core/companion.js` `dealDamageToMonster` — a graded companion attack is mitigated by
+  Magic Armor + `TECH_PHYSICAL_DEFENSE_SHARE` × Armor (mirror of `docs/SPEC-SPELL-CHAINS-AND-ARMOR.md` §2.2).
 - [ ] Tests: `tests/test_v18_engine.js` Test 2 asserts the buff *does* boost a companion tick — that is
   the behavior this spec reverses, so the assertion changes to "does not" (a design change recorded
   here, not a weakened test). Other expectations built on companion damage with Attunement/Spell
@@ -114,15 +136,17 @@ bar: the five Conjurer cells pass; no other cell newly fails; Conjurer at-level 
 - [ ] Changelog line (§2.3) in the release that ships this.
 - [ ] All 16 suites green.
 
-## 5. Open decisions
+## 5. Decisions
 
-| # | Decision | Recommendation |
+All resolved by the user on 2026-10-29.
+
+| # | Question | Decision |
 |---|---|---|
-| **D0** | Fix the Conjurer cells through companion damage (tools, not bosses) | **Yes** |
-| **D1** | A2: take Attunement and Spell Power out of companion damage — reversing `docs/SPEC-SECONDARY-STATS.md` D7 (your "Yes") and `docs/SPEC-TECH-POLARITY.md` finding d | **Yes.** Those were decided for the retired servitor; flat bonuses sized for hero spells more than double a companion's small hits. A2 alone fixes all five cells |
-| **D2** | A1: companion attacks also pay half monster Armor | **Leave it out for now.** It's consistent with hero spells but changes almost nothing (±1 point), and with A2 it put L60 at 34.9%. Revisit if a later grid shows companions too strong against armored targets |
-| **D3** | Water's heal keeps Spell Power (heals aren't the problem) | **Keep** |
-| **D4** | Player-facing wording | §2.3 draft |
+| **D0** | Fix the Conjurer cells through companion damage (tools, not bosses) | **Yes** (as recommended) |
+| **D1** | Attunement and Spell Power in companion damage | The user first chose "keep both, scale down"; the sweep (§3.1) found no partial share that clears the finale, so the user chose **0%: companion attacks get neither** (reversing `docs/SPEC-SECONDARY-STATS.md` D7 and `docs/SPEC-TECH-POLARITY.md` finding d for companions), and **accepted L60 at 34.9%** as a near-miss |
+| **D2** | Companion attacks also pay half monster Armor (A1) | **Include it** (the first draft recommended leaving it out): one rule for all elemental damage. It changes the Conjurer cells by about a point |
+| **D3** | The Water companion's heal keeps Spell Power | **Keep** (as recommended) |
+| **D4** | Player-facing wording | "Your companion no longer draws on Attunement or Spell Power, and elemental companion attacks now meet half a monster's armor, like your own spells." (the user approved the scale-down wording; reworded for 0%) |
 
 ## 6. Out of scope / follow-ups
 
