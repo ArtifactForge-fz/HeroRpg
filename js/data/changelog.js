@@ -12,6 +12,28 @@ Game.Data = Game.Data || {};
 Game.Data.changelog = [
 
   {
+    version: 'v1.15.0',
+    date: '2026-10-29',
+    title: 'The Severed Bond',
+    saveVersion: 12,
+    highlights: [
+      'The strongest foes past level 60 now turn on a summoner\'s bound elemental. Wardens and ' +
+        'constructs use Cleaving Roar to strike you both, Anima-casters use Banish Conduit to strike ' +
+        'your companion directly, and every great boss from level 60 on can Banish it too. When a boss ' +
+        'tears at the bond, you feel it: the summoner loses 30% of their health. Foes never waste these ' +
+        'on a hero who has no companion.',
+      'An elemental overwhelmed by a much stronger foe can no longer be commanded either: Conflagration, ' +
+        'Renewing Tide, Bulwark and Tailwind wait until you face a foe within five levels.',
+      'The four elementals have new portraits.',
+      'Knife and polearm fighters get a level-5 weapon at last: the Scout\'s Dirk and the Watchman\'s ' +
+        'Spear, sold in Ju`Mak and Laik and dropped by the Estari Construct. Two Ashwood Spears can also ' +
+        'be reforged into a Watchman\'s Spear in Eldor.',
+      'Shadowlash II now needs Conjuration 8, like the second rank of every other spell, and is taught ' +
+        'in Ju`Mak. Heroes who already know it keep it.'
+    ]
+  },
+
+  {
     version: 'v1.14.0',
     date: '2026-10-29',
     title: 'Every Rank Counts',

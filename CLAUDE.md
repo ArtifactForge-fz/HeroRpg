@@ -18,9 +18,10 @@ sustain — DESIGN §4), and boss-telegraph integration is deferred (a boss char
 past heal+death in one blow; 3 low bosses carry behaviors, the other 8 keep their v1.4 scripts —
 DESIGN §4 / SPEC-V1.5-MONSTER-AI §6). **v1.9 carries four KNOWN-ACCEPTED review items** (the user
 merged over them on 2026-07-25) — see "Recently completed" below; item 4 (legacy Conjurer ghosts)
-was fixed by PR #4 (v1.11); PR #1's missing spec is the top of the next cycle's queue.
-**In review:** PR #5 = **v1.14.0 "Every Rank Counts"** (save 12) — see "In review" below. Changelog,
-README and `?v=` are bumped; not merged or deployed yet.
+was fixed by PR #4 (v1.11); items 1–3 and PR #2's open notes are closed in v1.15.0
+(`docs/REVIEW-2026-10-29-V19-QUEUE.md`).
+**In review:** PR #5 = **v1.15.0 "The Severed Bond"** on top of v1.14.0 "Every Rank Counts" (save 12) — see
+"In review" below. Changelog, README and `?v=` are bumped; not merged or deployed yet.
 
 ## Cardinal rules
 
@@ -180,11 +181,26 @@ re-enable it. If the artifact goes stale, check `git config core.hooksPath` firs
 this clone until 2026-10-28, which is why the hook "didn't fire" on the v1.9 merges. Never
 build/ship from a tree with red suites.
 
-## In review (2026-10-29) — v1.14.0 "Every Rank Counts", PR #5, branch `v1.11-hero-tree`
+## In review (2026-10-29) — v1.15.0 "The Severed Bond" + v1.14.0 "Every Rank Counts", PR #5, branch `v1.11-hero-tree`
+
+**v1.15.0** (folded into PR #5 on 2026-10-29, user-directed; v1.14.0 below was never deployed on its own):
+- **v1.9 review queue** re-measured (`docs/REVIEW-2026-10-29-V19-QUEUE.md`); PR #1's missing spec written and its
+  owed 88-monster caster sim run (`docs/SPEC-TECH-CHAIN-COMPLETION.md`).
+- **Three contract fixes** (`docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md`): Shadowlash II skillReq 5 → 8; Scout's Dirk +
+  Watchman's Spear (L5); command techs refused while `Game.Companion.isSuppressed(battle)`.
+- **Companion-targeting specials** (`docs/SPEC-COMPANION-TARGET-SPECIALS.md`): `vsCompanion` tech field; Cleaving
+  Roar on 8 / Banish Conduit on 6 L60+ regulars + all five T3 bosses; a boss's Banish backlashes
+  `COMPANION_BACKLASH_BOSS_FRAC` (0.30) of the summoner's max HP. Conjurer cheapest T3 boss cost 40.0–44.2%
+  (was 34.9–37.8); finale 0.8 under its 45%.
+- Real DCSS elemental portraits for `comp_*`. All gates re-run on the implemented code: identical to P0.
+- Open: some L9–L20 monsters lose 5-levels-down fights to melee basic attacks (spec §6 of the contract fixes);
+  Firebolt-only casters win some 5-down fights at L21–L28.
+
+**v1.14.0:**
 
 PR #5 (`Nayan-cl:v1.11-hero-tree` → `main`); no CI on the repo (the suites are the only check). Save
 version stays 12 (no migration; Legendary twins reach old saves via `save.js` `grantAbilityTechs()`).
-Changelog entry, README status and every `?v=` cache-buster are at v1.14.0. **Not merged or deployed.**
+Changelog entries (v1.15.0 and v1.14.0), README status and every `?v=` cache-buster are at v1.15.0. **Not merged or deployed.**
 The boss grid now models the prepared hero's full kit; each spec below was gated by it at 300 trials.
 - **Boss sims:** class techs + the Conjurer companion (`docs/SPEC-BOSS-SIM-TECHS.md`); the full kit —
   Academy chains, a shard-budget shrine package, Defend, whole-fight tool choice that also scores no
@@ -202,9 +218,10 @@ The boss grid now models the prepared hero's full kit; each spec below was gated
   SPEC-SECONDARY-STATS D7 for companions).
 - **Gate verdict:** B1/B3 pass in all 132 boss × lineage cells. B2 fails only where the user accepted
   it: twinblades at the L10 boss (34%), Assassin at the finale (44%), the Conjurer at L60 (34.9%) and
-  at the finale (38%). Five levels down at L10: melee 0–24%, casters 27% (accepted); L29+ is the old
+  at the finale (38%) — both raised in v1.15.0 to 40.0% / 44.2%. Five levels down at L10: melee 0–24%, casters 27% (accepted); L29+ is the old
   accepted Fear-sustain limitation.
-- **Before deploying:** browser-check the Legendary twin load notice and the changed techs, then
+- **Before deploying:** browser-check the Legendary twin load notice and the changed techs, the L5 weapons in the
+  Ju`Mak shop, a refused command tech at 5 levels down and a boss Banish backlash, then
   `sh tools/deploy.sh` (user-gated).
 
 ## Recently completed (2026-10-28) — v1.13.0 (per-town Academy curricula + boss cost retune)
