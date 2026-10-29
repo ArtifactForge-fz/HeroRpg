@@ -713,6 +713,11 @@ var BALANCE = {
   // through the 5-down=certain-death contract; with it, every companion returns to ~0% there.
   COMPANION_FEAR_SUPPRESS_LEVELS: 5,
 
+  // invented, docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.2 (sim-locked §4.3): a BOSS's backlash tech
+  // (Banish Conduit) that lands on a bound companion also costs the summoner this share of max HP,
+  // unmitigated. Flat (not a share of the companion's damage) so every pact pays the same.
+  COMPANION_BACKLASH_BOSS_FRAC: 0.30,
+
   BURN_TURNS: 2,
 
   // ---------------- v1.13: per-town Academy curricula ----------------

@@ -697,6 +697,10 @@ Game.Battle = (function () {
       var list = monster.techs || [];
       for (var i = 0; i < list.length; i++) {
         var t = getTech(list[i]);
+        // [invented] docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.1: a companion-targeting special is only
+        // in the pool while a live, un-suppressed companion is bound (no rng() call added/removed).
+        if (t && t.vsCompanion && !(battle.companion && battle.companion.hp > 0 &&
+          !(Game.Companion && Game.Companion.isSuppressed && Game.Companion.isSuppressed(battle)))) continue;
         if (t && t.energyCost <= monster.energy) affordable.push(t);
       }
       if (affordable.length > 0 && rng() < techChance) {
@@ -751,8 +755,17 @@ Game.Battle = (function () {
     // v1.9: resolve the companion hit (if any) BEFORE the player's own dodge roll below, so a
     // 'companion'-only target never rolls the player's Dodge at all (nothing is aimed at them).
     if (hitsCompanion) {
-      damageCompanion(battle, tauntSplit ? actionBase * BALANCE.COMPANION_TAUNT_SHARE : actionBase, usedTech ? usedTech.grade : null,
+      var companionDmg = damageCompanion(battle, tauntSplit ? actionBase * BALANCE.COMPANION_TAUNT_SHARE : actionBase, usedTech ? usedTech.grade : null,
         releasing ? 'a charged blow' : (usedTech ? usedTech.name : null));
+      // docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.2: a BOSS's backlash tech that lands on the companion
+      // also costs the summoner a flat share of max HP — unmitigated (no dodge/Armor/Fear/Block/
+      // Bracing/Defend; `defending` is NOT consumed here). Never from a Taunt-split basic or a
+      // regular monster.
+      if (usedTech && usedTech.backlash && monster.boss && companionDmg > 0) {
+        var lash = Math.round(BALANCE.COMPANION_BACKLASH_BOSS_FRAC * battle.player.hitPointsMax);
+        battle.player.hitPoints = Math.max(0, battle.player.hitPoints - lash);
+        log(battle, 'The severed bond lashes back at you for ' + lash + ' damage.');
+      }
     }
     if (!hitsPlayer) {
       checkEnd(battle);

@@ -3567,8 +3567,9 @@ Game.Data.techs = [
     skill: null,
     grade: null,
     energyCost: 10,
-    power: 40, // [invented][sim-gated] PROVISIONAL — a cleave/AoE special hitting player AND companion
+    power: 40, // [invented] floor only — monsterTechPower uses max(power, round(F x damage)); docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.3
     target: 'both',
+    vsCompanion: true,
     effect: 'damage',
     monsterOnly: true,
     desc: 'A roar of raw force that buffets everything before it.'
@@ -3581,8 +3582,10 @@ Game.Data.techs = [
     skill: null,
     grade: null,
     energyCost: 10,
-    power: 55, // [invented][sim-gated] PROVISIONAL — a focused special aimed squarely at a bound companion
+    power: 55, // [invented] floor only — monsterTechPower uses max(power, round(F x damage)); docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.3
     target: 'companion',
+    vsCompanion: true,
+    backlash: true,
     effect: 'damage',
     monsterOnly: true,
     desc: "A focused blow meant to shatter a summoner's bound servant."

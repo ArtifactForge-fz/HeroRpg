@@ -1,8 +1,8 @@
 # SPEC — Companion-targeting monster specials (Cleaving Roar and Banish Conduit go live; Banish backlashes at bosses)
 
-**Status:** DRAFT — D2 resolved by the user 2026-10-29 (Banish Conduit with a flat 30% backlash at all five
-T3 bosses); D0, D1, D3, D4 open. P0 sim gate re-run 2026-10-29 on branch `v1.15-contract-fixes` with a
-prototype source patch (§4): **passes**.
+**Status:** IMPLEMENTED on branch `v1.15-contract-fixes` (§8); not released or deployed. D0–D4 approved by
+the user 2026-10-29 (D2: Banish Conduit with a flat 30% backlash at all five T3 bosses). P0 sim gate
+(§4) passed on a prototype source patch; the implementation re-sim (§8) matches it.
 **Relationship to authority:** finishes the deferred half of `docs/SPEC-COMPANION-SYSTEM.md` §2.3 and §6
 ("which monsters/bosses gain `target:'companion'`/`'both'` specials … a separate monster-AI pass"). Extends
 `docs/DESIGN.md` §4 (monster AI: one interpreter, no per-monster branches —
@@ -204,12 +204,12 @@ for the Conjurer now above 35% (the finale 0.8 under 45%, improved from an accep
 - [x] Ids: no new ids; two new optional tech fields (`vsCompanion`, `backlash`); one balance constant
   (`COMPANION_BACKLASH_BOSS_FRAC`).
 - [x] Save impact: none (battle-transient; save stays 12).
-- [ ] Engine (`js/core/battle.js` `monsterAct`, ONE interpreter, no per-monster branch): the affordable-loop
+- [x] Engine (`js/core/battle.js` `monsterAct`, ONE interpreter, no per-monster branch): the affordable-loop
   gate (§2.1), guarded `Game.Companion && Game.Companion.isSuppressed`; the backlash after the companion hit
   (§2.2), then `checkEnd`. Comments cite this spec.
-- [ ] Wiki (`js/ui/wiki.js` ~line 511, the monster-tech note): "Only used against a bound companion." for
+- [x] Wiki (`js/ui/wiki.js` ~line 511, the monster-tech note): "Only used against a bound companion." for
   `vsCompanion` techs; for `backlash` techs also "From a boss, the summoner also loses 30% of max HP."
-- [ ] Tests (`tests/test_companion.js`, stubbed RNG):
+- [x] Tests (`tests/test_companion.js`, stubbed RNG):
   - a carrier never picks a `vsCompanion` tech with no companion, a dead companion, or at 5 levels down; does
     pick it with a live companion at-level;
   - a boss's Banish Conduit damages the companion and costs the hero exactly
@@ -226,11 +226,11 @@ for the Conjurer now above 35% (the finale 0.8 under 45%, improved from an accep
 
 | # | Question | Recommendation |
 |---|---|---|
-| D0 | Interpretation: the specials apply only while a companion is bound; nothing changes for heroes without one | Yes |
-| D1 | `vsCompanion` gate (vs letting every class face the two techs) | Yes: without it, eleven lineages get two new ungraded techs and every L60+ grid needs re-gating |
+| D0 | Interpretation: the specials apply only while a companion is bound; nothing changes for heroes without one | **Approved (user, 2026-10-29)** |
+| D1 | `vsCompanion` gate (vs letting every class face the two techs) | **Approved (user, 2026-10-29)**: without it, eleven lineages get two new ungraded techs and every L60+ grid needs re-gating |
 | D2 | Bosses | **Resolved (user, 2026-10-29):** Banish Conduit on all five T3 bosses with a flat backlash of 30% of the hero's max HP; regulars keep plain Banish |
-| D3 | The 14 regular carriers of §2.4 (8 Roar, 6 Banish) | As listed; any swap within the L60+ regulars needs only the §4.2 re-run |
-| D4 | Ship with the contract fixes in v1.15.0 or later | With v1.15.0 (same branch, no save change) |
+| D3 | The 14 regular carriers of §2.4 (8 Roar, 6 Banish) | **Approved (user, 2026-10-29)**, as listed |
+| D4 | Ship with the contract fixes in v1.15.0 or later | **Approved (user, 2026-10-29)**: with v1.15.0 |
 
 ## 7. Out of scope
 
@@ -239,3 +239,21 @@ for the Conjurer now above 35% (the finale 0.8 under 45%, improved from an accep
 - Champion variants of the 14 regular carriers were not simmed separately (the gate is in the shared
   tech-choice loop, so it applies to them too).
 - Cleaving Roar at bosses (it lowered every boss cost by 0.2–0.5 points, §4.3).
+
+## 8. Implementation and gate (2026-10-29)
+
+- `js/balance.js`: `COMPANION_BACKLASH_BOSS_FRAC: 0.30`.
+- `js/data/techs.js`: `vsCompanion` on both specials, `backlash` on Banish Conduit; PROVISIONAL comments
+  replaced. `js/data/monsters.js`: §2.4's 19 appends (8 Roar, 11 Banish).
+- `js/core/battle.js` `monsterAct`: the §2.1 pool gate (a `continue`, no `rng()` change) and the §2.2
+  backlash after the companion hit (unmitigated, `defending` untouched, then the existing `checkEnd`).
+- `js/ui/wiki.js`: monster-tech notes "Only used against a bound companion" and "From a boss, the summoner
+  also loses 30% of max HP".
+- Tests: `tests/test_companion.js` Test 18 (pool gate with no / dead / suppressed / live companion; boss Banish
+  costs exactly 30% of max HP while Defending, with the log line; a regular Banish costs nothing; a
+  Taunt-split boss basic causes no backlash). Test 14 now seeds its five `simulate` calls (`seed: 7000`):
+  its unseeded 30-fight "every pact beats no companion" check at `estari_warden_prime` turned flaky (about 1
+  run in 7) once the boss carries Banish; assertion unchanged (seeded: none 68%, pacts 57–62%). All 16
+  suites pass; no dead items.
+- **Re-sim on the implemented code** (same scripts and seeds as §4, no patches): identical to the gate in
+  every cell: §4.1 (95 cells), §4.2 (both policies), §4.3 (all 240 boss cells).

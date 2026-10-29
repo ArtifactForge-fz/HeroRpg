@@ -16,7 +16,7 @@ scratchpad (not committed). **No game code changed.**
 | 3 | Shadowlash II needs Conjuration 5 (found by item 2) | **Fixed** on `v1.15-contract-fixes` (skillReq 8) | Release | — |
 | 4 | Knives and Polearms have no L5 weapon (SPEC-TECH-POLARITY finding c) | **Fixed** on `v1.15-contract-fixes` (Scout's Dirk, Watchman's Spear) | Release | — |
 | 5 | The +4 companion cliff (v1.9 item 3) | **Gone** (§3); the command-tech leak it uncovered is **fixed** on `v1.15-contract-fixes` | Release | — |
-| 6 | No monster carries the `target` specials | **Open**, content design (§4) | Its own spec + sim | M |
+| 6 | No monster carries the `target` specials | **Fixed** on `v1.15-contract-fixes` (`docs/SPEC-COMPANION-TARGET-SPECIALS.md`) | Release | — |
 | 7 | Companion icons are adapted copies | **Fixed** on `v1.15-contract-fixes` (real DCSS elemental tiles, §5) | Release | — |
 
 **Fix spec for items 3, 4 and the item-5 leak:** `docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md` (P0 sim

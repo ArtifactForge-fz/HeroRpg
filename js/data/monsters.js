@@ -1861,7 +1861,7 @@ Game.Data.monsters = [
     magicArmor: 50,
     element: 'Dark',
     resistances: { Dark: 0.5, Light: -0.25 },
-    techs: ['mon_dark_hex', 'mon_hunters_mark', 'mon_earthen_crush', 'mon_anima_lance'],
+    techs: ['mon_dark_hex', 'mon_hunters_mark', 'mon_earthen_crush', 'mon_anima_lance', 'mon_banish_conduit'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(60) * 3, // invented: boss XP premium
     goldMin: 260,
     goldMax: 440,
@@ -1900,7 +1900,7 @@ Game.Data.monsters = [
     magicArmor: 14,
     element: null,
     resistances: {},
-    techs: ['mon_hunters_mark'],
+    techs: ['mon_hunters_mark', 'mon_cleaving_roar'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(61),
     goldMin: 68,
     goldMax: 135,
@@ -1956,7 +1956,7 @@ Game.Data.monsters = [
     // v1.2 Curse mechanic (BALANCE.CURSE_APPLY_CHANCE), continuing Band A/B's anima-scarred
     // lineage one band further north.
     curseChance: BALANCE.CURSE_APPLY_CHANCE,
-    techs: ['mon_dark_hex', 'mon_anima_lance'],
+    techs: ['mon_dark_hex', 'mon_anima_lance', 'mon_banish_conduit'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(64),
     goldMin: 72,
     goldMax: 144,
@@ -2038,7 +2038,7 @@ Game.Data.monsters = [
     magicArmor: 22,
     element: null,
     resistances: {},
-    techs: ['mon_hunters_mark', 'mon_earthen_crush'],
+    techs: ['mon_hunters_mark', 'mon_earthen_crush', 'mon_cleaving_roar'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(69),
     goldMin: 80,
     goldMax: 159,
@@ -2080,7 +2080,7 @@ Game.Data.monsters = [
     magicArmor: 56,
     element: 'Dark',
     resistances: { Dark: 0.5, Light: -0.25 },
-    techs: ['mon_dark_hex', 'mon_hunters_mark', 'mon_earthen_crush', 'mon_anima_lance'],
+    techs: ['mon_dark_hex', 'mon_hunters_mark', 'mon_earthen_crush', 'mon_anima_lance', 'mon_banish_conduit'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(70) * 3, // invented: boss XP premium
     goldMin: 300,
     goldMax: 500,
@@ -2124,7 +2124,7 @@ Game.Data.monsters = [
     magicArmor: 16,
     element: null,
     resistances: {},
-    techs: ['mon_stone_slam'],
+    techs: ['mon_stone_slam', 'mon_cleaving_roar'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(71),
     goldMin: 83,
     goldMax: 165,
@@ -2153,7 +2153,7 @@ Game.Data.monsters = [
     magicArmor: 8,
     element: 'Star',
     resistances: { Star: 0.5, Earth: -0.3 },
-    techs: ['mon_static_arc'],
+    techs: ['mon_static_arc', 'mon_banish_conduit'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(72),
     goldMin: 84,
     goldMax: 168,
@@ -2266,7 +2266,7 @@ Game.Data.monsters = [
     magicArmor: 24,
     element: null,
     resistances: {},
-    techs: ['mon_hunters_mark', 'mon_earthen_crush'],
+    techs: ['mon_hunters_mark', 'mon_earthen_crush', 'mon_cleaving_roar'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(79),
     goldMin: 95,
     goldMax: 189,
@@ -2308,7 +2308,7 @@ Game.Data.monsters = [
     magicArmor: 58,
     element: 'Dark',
     resistances: { Dark: 0.5, Light: -0.25 },
-    techs: ['mon_dark_hex', 'mon_hunters_mark', 'mon_earthen_crush', 'mon_anima_lance'],
+    techs: ['mon_dark_hex', 'mon_hunters_mark', 'mon_earthen_crush', 'mon_anima_lance', 'mon_banish_conduit'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(80) * 3, // invented: boss XP premium
     goldMin: 340,
     goldMax: 560,
@@ -2355,7 +2355,7 @@ Game.Data.monsters = [
     magicArmor: 18,
     element: null,
     resistances: {},
-    techs: ['mon_stone_slam'],
+    techs: ['mon_stone_slam', 'mon_cleaving_roar'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(81),
     goldMin: 98,
     goldMax: 195,
@@ -2383,7 +2383,7 @@ Game.Data.monsters = [
     magicArmor: 10,
     element: 'Dark',
     resistances: { Dark: 0.5, Light: -0.3 },
-    techs: ['mon_dark_hex'],
+    techs: ['mon_dark_hex', 'mon_banish_conduit'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(82),
     goldMin: 99,
     goldMax: 198,
@@ -2440,7 +2440,7 @@ Game.Data.monsters = [
     magicArmor: 26,
     element: null,
     resistances: {},
-    techs: ['mon_hunters_mark', 'mon_earthen_crush'],
+    techs: ['mon_hunters_mark', 'mon_earthen_crush', 'mon_cleaving_roar'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(86),
     goldMin: 105,
     goldMax: 210,
@@ -2467,7 +2467,7 @@ Game.Data.monsters = [
     magicArmor: 12,
     element: 'Star',
     resistances: { Star: 0.5, Earth: -0.3 },
-    techs: ['mon_static_arc'],
+    techs: ['mon_static_arc', 'mon_banish_conduit'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(87),
     goldMin: 107,
     goldMax: 213,
@@ -2542,7 +2542,7 @@ Game.Data.monsters = [
     magicArmor: 60,
     element: 'Dark',
     resistances: { Dark: 0.5, Light: -0.25 },
-    techs: ['mon_dark_hex', 'mon_hunters_mark', 'mon_earthen_crush', 'mon_anima_lance'],
+    techs: ['mon_dark_hex', 'mon_hunters_mark', 'mon_earthen_crush', 'mon_anima_lance', 'mon_banish_conduit'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(90) * 3, // invented: boss XP premium
     goldMin: 380,
     goldMax: 620,
@@ -2603,7 +2603,7 @@ Game.Data.monsters = [
     magicArmor: 20,
     element: null,
     resistances: {},
-    techs: ['mon_stone_slam'],
+    techs: ['mon_stone_slam', 'mon_cleaving_roar'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(91),
     goldMin: 113,
     goldMax: 225,
@@ -2631,7 +2631,7 @@ Game.Data.monsters = [
     magicArmor: 13,
     element: 'Light',
     resistances: { Light: 0.5, Dark: -0.3 },
-    techs: ['mon_radiant_smite'],
+    techs: ['mon_radiant_smite', 'mon_banish_conduit'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(92),
     goldMin: 114,
     goldMax: 228,
@@ -2687,7 +2687,7 @@ Game.Data.monsters = [
     magicArmor: 28,
     element: null,
     resistances: {},
-    techs: ['mon_hunters_mark', 'mon_earthen_crush'],
+    techs: ['mon_hunters_mark', 'mon_earthen_crush', 'mon_cleaving_roar'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(96),
     goldMin: 120,
     goldMax: 240,
@@ -2715,7 +2715,7 @@ Game.Data.monsters = [
     magicArmor: 15,
     element: 'Light',
     resistances: { Light: 0.5, Dark: -0.3 },
-    techs: ['mon_radiant_smite'],
+    techs: ['mon_radiant_smite', 'mon_banish_conduit'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(97),
     goldMin: 122,
     goldMax: 243,
@@ -2803,7 +2803,7 @@ Game.Data.monsters = [
     // v1.2 Curse mechanic — the ascended Eidas carries it too, matching his moon-anima-horror
     // creations and making the fight costlier still.
     curseChance: BALANCE.CURSE_APPLY_CHANCE,
-    techs: ['mon_radiant_smite', 'mon_dark_hex', 'mon_earthen_crush', 'mon_red_moons_judgment'],
+    techs: ['mon_radiant_smite', 'mon_dark_hex', 'mon_earthen_crush', 'mon_red_moons_judgment', 'mon_banish_conduit'], // + docs/SPEC-COMPANION-TARGET-SPECIALS.md §2.4 (appended)
     xp: BALANCE.MONSTER_XP(100) * 3, // invented: boss XP premium
     goldMin: 420,
     goldMax: 660,

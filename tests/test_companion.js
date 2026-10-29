@@ -545,10 +545,10 @@ var BossFixture = require('./boss_fixture.js'); // shared prepared-hero boss sim
 console.log('\n=== Test 14: SPEC-BOSS-SIM-TECHS — each Conjurer pact beats estari_warden_prime with its companion ===');
 // docs/SPEC-BOSS-SIM-TECHS.md §3.1 / §4: Water must meet the B2 cost floor since docs/SPEC-WATER-PACT-COST.md
 // (it spends ~56% here). The other pacts are logged, not asserted: Earth/Wind with some Legendaries sit near 35%.
-var noCompanionSim = BossFixture.simulate(Game, 'estari_warden_prime', 80, 30, { lineage: 'conjurer' });
+var noCompanionSim = BossFixture.simulate(Game, 'estari_warden_prime', 80, 30, { lineage: 'conjurer', seed: 7000 });
 console.log(BossFixture.describe('estari_warden_prime (Conjurer, no companion)', noCompanionSim));
 ['comp_fire', 'comp_water', 'comp_earth', 'comp_wind'].forEach(function (pact) {
-  var pactSim = BossFixture.simulate(Game, 'estari_warden_prime', 80, 30, { lineage: 'conjurer', pact: pact, policy: 'techs' });
+  var pactSim = BossFixture.simulate(Game, 'estari_warden_prime', 80, 30, { lineage: 'conjurer', pact: pact, policy: 'techs', seed: 7000 });
   console.log(BossFixture.describe('estari_warden_prime (Conjurer ' + pact + ')', pactSim));
   assert(pactSim.winRate >= 0.85, 'Conjurer ' + pact + ' beats estari_warden_prime (win rate ' + (pactSim.winRate * 100).toFixed(1) + '%, want >= 85%)');
   assert(pactSim.avgConsumed <= 0.5 * pactSim.stock, 'Conjurer ' + pact + ' is not ruined by the boss (avg ' + pactSim.avgConsumed.toFixed(1) + ' of ' + pactSim.stock + ')');
@@ -686,6 +686,90 @@ console.log('\n=== Test 17: a command tech is refused at >= COMPANION_FEAR_SUPPR
   b2.monster.level = c2.level + 9;
   assert(Game.Companion.isSuppressed(b2) === false, 'isSuppressed is false with no companion bound, even at 9 levels below');
   Game.Battle.flee(); Game.Battle.endBattle();
+})();
+
+// =================== Test 18: SPEC-COMPANION-TARGET-SPECIALS — vsCompanion gating + boss Banish backlash ===================
+console.log('\n=== Test 18: companion-only specials are pooled only with a live un-suppressed companion; a BOSS Banish Conduit lashes the summoner for 30% max HP, unmitigated ===');
+(function () {
+  assert(BALANCE.COMPANION_BACKLASH_BOSS_FRAC === 0.30, 'COMPANION_BACKLASH_BOSS_FRAC is 0.30 (the cells below assume it)');
+  var banish = Game.Battle.getTech('mon_banish_conduit');
+  assert(banish && banish.vsCompanion === true && banish.backlash === true, 'mon_banish_conduit is vsCompanion + backlash');
+  var roar = Game.Battle.getTech('mon_cleaving_roar');
+  assert(roar && roar.vsCompanion === true && !roar.backlash, 'mon_cleaving_roar is vsCompanion, no backlash');
+  var arcanist = Game.Battle.getMonsterDef('society_arcanist_prime');
+  assert(arcanist.techs.indexOf('mon_banish_conduit') === arcanist.techs.length - 1 && arcanist.techs[0] === 'mon_static_arc',
+    'society_arcanist_prime keeps mon_static_arc first, Banish appended last');
+
+  // Tech roll passes (0.1), index pick lands on the LAST pooled entry (0.99); the rest stay clear
+  // of every proc threshold.
+  function drive(monsterId, mode) {
+    var c = makeCharacter({ name: 'BacklashTest' });
+    setLevel(c, 60);
+    if (mode.companion) Game.Companion.summon(c, 'comp_water');
+    c.hitPoints = c.hitPointsMax = 5000; c.energy = c.energyMax;
+    setRng(fixedRng(0.99)); // any opening strike is a plain, harmless basic attack
+    var b = Game.Battle.start(monsterId);
+    b.monster.level = c.level + (mode.levelsAbove || 0);
+    b.monster.behavior = undefined;
+    b.monster.energy = 999999;
+    b.monster.hp = b.monster.hpMax = 999999;
+    if (mode.deadCompanion) b.companion.hp = 0;
+    b._starve = !!mode.starve;
+    if (mode.starve) c.energy = 2; // < the Undine's basic energyCost -> it idles, isolating the monster's own action (as Test 7)
+    return b;
+  }
+  function turn(b, defend) {
+    b.monster.energy = 999999;
+    if (!b._starve) b.player.energy = b.player.energyMax; // keep the hero from running dry
+    setRng(seqRng([0.1, 0.99, 0.9, 0.5, 0.9, 0.9, 0.5]));
+    if (defend) Game.Battle.defend(); else Game.Battle.attack();
+  }
+  function usedBanish(b) {
+    return b.log.some(function (l) { return /Banish Conduit/.test(l); });
+  }
+
+  // Regular carrier: never pooled without a live, un-suppressed companion.
+  [
+    { name: 'no companion', mode: {} },
+    { name: 'dead companion', mode: { companion: true, deadCompanion: true } },
+    { name: 'companion suppressed (monster 5 levels above)', mode: { companion: true, levelsAbove: 5 } }
+  ].forEach(function (cell) {
+    var b = drive('society_arcanist_prime', cell.mode);
+    for (var k = 0; k < 6 && !Game.Battle.getBattle().over; k++) { turn(b, true); }
+    assert(!usedBanish(b), 'Banish Conduit is never chosen with ' + cell.name + ': ' + b.log.slice(-3).join(' | '));
+    Game.Battle.flee(); Game.Battle.endBattle();
+  });
+  var bLive = drive('society_arcanist_prime', { companion: true, starve: true });
+  var hpBeforeReg = bLive.player.hitPoints, compBeforeReg = bLive.companion.hp;
+  turn(bLive, true);
+  assert(usedBanish(bLive) && bLive.companion.hp < compBeforeReg, 'with a live at-level companion Banish Conduit CAN be chosen and hits it: ' + bLive.log.slice(-2).join(' | '));
+  assert(bLive.player.hitPoints === hpBeforeReg, 'a regular monster\'s Banish costs the hero no HP (' + hpBeforeReg + ' -> ' + bLive.player.hitPoints + ')');
+  assert(!bLive.log.some(function (l) { return /severed bond/.test(l); }), 'no backlash line from a regular monster');
+  Game.Battle.flee(); Game.Battle.endBattle();
+
+  // Boss: companion hit + flat unmitigated lash, Defending or not.
+  [true].forEach(function (defending) { // Defending: the case the spec calls out (a plain attack() burns extra rng draws, so is not driven here)
+    var b = drive('society_anima_horror', { companion: true, starve: true });
+    var max = b.player.hitPointsMax, before = b.player.hitPoints, compBefore = b.companion.hp;
+    var lash = Math.round(0.30 * max);
+    turn(b, defending);
+    assert(usedBanish(b) && b.companion.hp < compBefore, 'boss Banish hit the companion (' + (defending ? 'Defending' : 'not defending') + '): hp ' + compBefore + ' -> ' + b.companion.hp);
+    assert(b.player.hitPoints === before - lash, 'hero lost exactly round(0.30 x max HP) = ' + lash + ' (' + (defending ? 'Defend does not reduce it' : 'plain') + '): ' + before + ' -> ' + b.player.hitPoints);
+    assert(b.log.some(function (l) { return /severed bond lashes back at you for /.test(l); }), 'the "severed bond" line is logged');
+    Game.Battle.flee(); Game.Battle.endBattle();
+  });
+
+  // Boss Taunt-split basic attack (no tech): never a backlash.
+  (function () {
+    var b = drive('society_anima_horror', { companion: true });
+    Game.Companion.setTaunt(b, BALANCE.COMPANION_TAUNT_TURNS_BASIC);
+    var compBefore = b.companion.hp;
+    setRng(fixedRng(0.99)); // tech roll fails -> basic attack, taunt-split
+    Game.Battle.defend();
+    assert(b.companion.hp < compBefore, 'the Taunt-split basic attack still hit the companion');
+    assert(!usedBanish(b) && !b.log.some(function (l) { return /severed bond/.test(l); }), 'a Taunt-split basic from a boss causes no backlash');
+    Game.Battle.flee(); Game.Battle.endBattle();
+  })();
 })();
 
 console.log('\n===================================');
