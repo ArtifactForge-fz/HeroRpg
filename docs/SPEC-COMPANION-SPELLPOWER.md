@@ -2,7 +2,7 @@
 
 **Status:** IMPLEMENTED on branch `v1.11-hero-tree`; not yet merged to `main`, released or deployed.
 D0–D4 resolved by the user 2026-10-29 (§5). **Implementation gate run 2026-10-29 (§7): partial** —
-L70–L90 pass, L60 is the accepted near-miss, **the finale still fails (38% vs 45%)**; open (§8). Authored 2026-10-29 on
+L70–L90 pass; L60 (near-miss) and the finale (38% vs 45%) are accepted by the user (§8). Authored 2026-10-29 on
 branch `v1.11-hero-tree` (user-directed: "pick up the last two follow-up points together, as
 companion attacks ignoring armor has an effect on the conjurer boss cells" — F3 and F4 of
 `docs/SPEC-SPELL-CHAINS-AND-ARMOR.md` §9). Screened at 300 trials (§3); the implementation gate is
@@ -190,5 +190,5 @@ All resolved by the user on 2026-10-29.
 
 | # | Item | Notes |
 |---|---|---|
-| O1 | The Conjurer finale at 38% (needs 45%) | Cheapest play: Earth + Heir + Attunement IV. Candidate levers: the Golem's Taunt share (`COMPANION_TAUNT_SHARE` 0.5), the Earth pact at the finale, or accept |
-| O2 | Casters at L10 five levels up: 27% win (Magus, Cleric, Seer) | Not caused by this spec: the amended kit tool choice found "Attunement I alone", which the old choice never tried. `docs/SPEC-SPELL-CHAINS-AND-ARMOR.md` §8 reported 0% |
+| O1 | The Conjurer finale at 38% (needs 45%) | **Accepted by the user 2026-10-29.** Cheapest play: Earth + Heir + Attunement IV. If it's revisited, the candidate levers are the Golem's Taunt share (`COMPANION_TAUNT_SHARE` 0.5) or the Earth pact at the finale |
+| O2 | Casters at L10 five levels up: 27% win (Magus, Cleric, Seer) | **Accepted by the user 2026-10-29**, alongside melee's 22–24% (`docs/SPEC-ACADEMY-WEAPON-CHAINS.md` D5). Not caused by this spec: the amended kit tool choice found "Attunement I alone", which the old choice never tried. `docs/SPEC-SPELL-CHAINS-AND-ARMOR.md` §8 reported 0% |
