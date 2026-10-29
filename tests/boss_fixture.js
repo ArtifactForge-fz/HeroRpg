@@ -375,13 +375,25 @@ function chooseKit(Game, bossId, level, opts) {
     }
     return { win: wins / KIT_FIGHTS, spent: wins ? spent / wins : Infinity };
   }
+  function notWorse(a, b) { return a.win > b.win || (a.win === b.win && a.spent <= b.spent); }
   var cur = score(keptList());
   tools.forEach(function (id) {
     kept[id] = false;
     var trial = score(keptList());
-    if (trial.win > cur.win || (trial.win === cur.win && trial.spent <= cur.spent)) cur = trial; else kept[id] = true;
+    if (notWorse(trial, cur)) cur = trial; else kept[id] = true;
   });
-  return keptList();
+  // docs/SPEC-BOSS-SIM-FULL-KIT.md D6 (amended 2026-10-29): one-pass removal can get stuck keeping a set of
+  // tools that only pays off together (5 buffs at 165% HP where one damage tech alone spends 33%). So also
+  // score no tools and every tool on its own on the same fights, and keep the best; ties keep the smaller set.
+  var best = keptList();
+  [[]].concat(tools.map(function (id) { return [id]; })).forEach(function (set) {
+    if (set.join(',') === best.join(',')) return; // already scored as the removal result
+    var s = score(set);
+    if (s.win > cur.win || (s.win === cur.win && (s.spent < cur.spent || (s.spent === cur.spent && set.length < best.length)))) {
+      cur = s; best = set;
+    }
+  });
+  return best;
 }
 
 function fightOnce(Game, bossId, level, opts) {

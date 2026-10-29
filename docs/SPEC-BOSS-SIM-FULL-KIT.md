@@ -104,6 +104,15 @@ Before a cell's trials, choose the tools once, by **backward elimination on whol
    value up, heal techs, Defend. Keep a removal if the score doesn't get worse
    (equal win rate and HP spent ≤ current counts as not worse, so ties favour the smaller kit).
 4. One pass. The kept set feeds §2.2; `simulate` returns it as `kit` for the report.
+5. **Amended 2026-10-29 (D6):** then also score *no tools* and *every tool on its own* on the same 30
+   fights, and keep the best of those and the removal result (ties keep the smaller set). The
+   one-pass removal can get stuck: at the L60 boss a Conjurer (Earth + Heir) kept Bulwark and four
+   buffs at 165% HP spent, where Echoing Judgment alone spends 33%. Cost: about one more 30-fight
+   score per tool per cell.
+   **Re-run with the amended choice (2026-10-29, 1,404 cells, 300 trials, code at `2a52d8e`):** the same
+   8 cells fail B2 and B1/B3 pass everywhere; 26 cells moved, most of them cheaper (largest: casters at
+   the L10 boss 81 → 54% HP spent with Attunement I alone, weakest option 87 → 100% win), a few up by
+   1–4 points (30-fight choices that do slightly worse over 300). None crossed a floor.
 
 Why this shape: it asks the player's question, "does this tool make *this* fight cheaper?", and
 needs no per-tool heuristics. The prototype (§1, techs only; it kept shrine and Limit Break fixed)
@@ -218,7 +227,7 @@ All resolved by the user on 2026-10-28.
 | **D3** | Defend only against a telegraphed charge, or also below a fixed HP line | **Charge only** (as recommended). Matters at L18/L25/L32 only |
 | **D4** | Training Points: learn every rank the skills allow, or enforce 2 × (level − 1) TP. Melee fits (warrior 84 of 118 TP at L60, 146 of 198 at L100); casters don't (137 of 118, 243 of 198) | **Learn every rank, report `tpSpent`** (as recommended); flag cells where the kept kit goes over budget |
 | **D5** | Companion HP lost: not counted, counted into HP spent with a weight, or a separate column | **Separate column, not in the verdict** (as recommended). Revisit if it's large |
-| **D6** | Tool choice: one-pass backward elimination on 30 fights, forward greedy, or exhaustive subsets | **One-pass backward elimination, 30 fights** (as recommended; not changed by the other decisions) |
+| **D6** | Tool choice: one-pass backward elimination on 30 fights, forward greedy, or exhaustive subsets | **One-pass backward elimination, 30 fights** (as recommended). **Amended by the user 2026-10-29:** also score no tools and each single tool, keep the best (§2.3 step 5), after the removal pass was found stuck on a five-tool set (`docs/SPEC-COMPANION-SPELLPOWER.md` §3.1). Grids before this date may over-report boss cost where that happened |
 | **D7** | Academy chains only for the skills the fixture trains, or also side skills (Alteration, Abjuration, Absorption, Hand to Hand, Thievery) | **Trained skills only** (as recommended). Casters still gain Starspark and Tidal Lance, which answers the boss half of the owed PR #1 caster-damage sim (priority step 3) |
 
 ## 6. Out of scope
