@@ -31,9 +31,10 @@
 //
 // ALL numbers below are [invented] — no archive precedent for a persistent companion survives;
 // the nearest archived concept, the v3.0 "Eidolon" (reference/manual/Version_3.0.md), was
-// explicitly passive/non-combatant and informs flavor only. Every number is PROVISIONAL pending
-// the lead's /balance-sim (docs/SPEC-COMPANION-SYSTEM.md §3, sim gate S1-S7) — nothing here is
-// locked yet. Public-domain Paracelsian elemental names (Salamander/Undine/Sylph) plus folklore
+// explicitly passive/non-combatant and informs flavor only. Every number is sim-locked (user,
+// 2026-10-29): first gated by docs/SPEC-COMPANION-SYSTEM.md §3 (S1-S7), retuned and re-gated by
+// docs/SPEC-WATER-PACT-COST.md, docs/SPEC-COMPANION-BOSS-COST.md and docs/SPEC-COMPANION-SPELLPOWER.md,
+// and confirmed by the v1.15 grids (docs/SPEC-COMPANION-TARGET-SPECIALS.md §4). Public-domain Paracelsian elemental names (Salamander/Undine/Sylph) plus folklore
 // "Golem" for Earth — no copyrighted creatures.
 
 var Game = window.Game || {};

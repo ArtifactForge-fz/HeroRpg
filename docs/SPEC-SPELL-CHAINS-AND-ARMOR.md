@@ -266,5 +266,5 @@ by it. Follow-up F2.
 |---|---|---|
 | F1 | Casters at the L10 boss without a second spell chain (Firebolt only 12% win) | **Accepted by the user 2026-10-29**: the contract judges the prepared hero (87% win with the kit), so `estari_ruin_warden` stays unchanged. §8.1 |
 | F2 | Flat-power class damage spells fall behind Academy ranks from L60 (Anima Reckoning 84, Arcane Cataclysm 70, Echoing Judgment 92) — **done for the T3 spell** (`docs/SPEC-ANIMA-RECKONING.md`: untyped, power 95; the other class spells unchanged by choice) | §8.3. Same shape as the melee class-tech problem `docs/SPEC-MELEE-CLASS-TECHS.md` fixed; needs its own spec and sims |
-| F3 | Companion automatic attacks still ignore monster Armor | `js/core/companion.js` `dealDamageToMonster`; decide whether S6 applies to them too |
-| F4 | Conjurer + Attunement + Heir (5 boss cells) | Unchanged; `docs/SPEC-BOSS-SIM-FULL-KIT.md` F2 |
+| F3 | Companion automatic attacks still ignore monster Armor — **done** (`docs/SPEC-COMPANION-SPELLPOWER.md` §2.2, §7) | Graded companion hits (Ember Lash, Stone Fist, Gale Slash, Fire's Burn) now meet Magic Armor + ½ Armor, as S6 does for hero spells. Water's chip is ungraded in the data and keeps Magic Armor only |
+| F4 | Conjurer + Attunement + Heir (5 boss cells) — **done**: `docs/SPEC-COMPANION-SPELLPOWER.md` (companion attacks no longer draw on Attunement/Spell Power; L60–L100 rose to 34.9–38%) and `docs/SPEC-COMPANION-TARGET-SPECIALS.md` (boss Banish backlash; 40.0–44.2%, the finale 0.8 under 45%) | `docs/SPEC-BOSS-SIM-FULL-KIT.md` F2 |

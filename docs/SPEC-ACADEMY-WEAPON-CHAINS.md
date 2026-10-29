@@ -259,4 +259,4 @@ Cheapest option HP spent per win % / weakest option win %, player's best of the 
 |---|---|---|
 | F1 | The spell chains' rank-6 dip, plus the fixture's Firebolt ordering (D6) — **done** (`docs/SPEC-SPELL-CHAINS-AND-ARMOR.md`) | Same M2 problem for Firebolt, Starspark, Tidal Lance, Shadowlash, Lifetap |
 | F2 | Casters five levels up at L10 (Magus 96% with Tidal Lance I) — **done** (`docs/SPEC-SPELL-CHAINS-AND-ARMOR.md`: 96% → 0%) | Spell damage isn't stopped by Fear the way weapon damage now is. Fits with F1 |
-| F3 | Conjurer + Attunement + Heir (5 boss cells) | Unchanged; `docs/SPEC-BOSS-SIM-FULL-KIT.md` F2 |
+| F3 | Conjurer + Attunement + Heir (5 boss cells) — **done**: `docs/SPEC-COMPANION-SPELLPOWER.md` (companion attacks no longer draw on Attunement/Spell Power; L60–L100 rose to 34.9–38%) and `docs/SPEC-COMPANION-TARGET-SPECIALS.md` (boss Banish backlash; 40.0–44.2%, the finale 0.8 under 45%) | `docs/SPEC-BOSS-SIM-FULL-KIT.md` F2 |

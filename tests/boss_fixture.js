@@ -340,7 +340,9 @@ function rankDamageTechs(Game, bossId, level, opts) {
 // Tools = every candidate heal/buff/debuff/damage tech id plus the pseudo-tool 'defend'. Tools that can
 // never fire (a heal tech weaker than the heal item, a shard-cost buff with no shards) are not offered:
 // removing them cannot change a fight. opts.ranking (the kit probe order) is reused when given.
-var KIT_FIGHTS = 30;
+// 60, not 30 (2026-10-29, docs/SPEC-BOSS-SIM-FULL-KIT.md D6): on 30 fights the choice kept a weaker set in 7 of 468
+// grid cells (casters keeping Attunement alone); on 60 it keeps none, and no boss verdict moves past its floor.
+var KIT_FIGHTS = 60;
 function candidateTools(Game, fx) {
   var c = fx.character;
   var known = classTechs(Game, c, true);

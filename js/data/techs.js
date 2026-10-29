@@ -3419,10 +3419,9 @@ Game.Data.techs = [
   //
   // IMPORTANT (as with every tech in this file): `power` is a FLAT number that
   // Game.Battle.techEffectivePower scales by Intelligence/magic-skill/Rod at cast time — it is
-  // NOT written as a formula-of-level. The command techs' flat `power` values below are
-  // PROVISIONAL placeholders picked to sit in the same ballpark as other classOnly Tier-3
-  // signature techs (e.g. tech_anima_reckoning/tech_shadow_blade), sim-gated pending the lead's
-  // /balance-sim — none are locked. (Companion BASIC powers, by contrast, DO scale with
+  // NOT written as a formula-of-level. The command techs' flat `power` values below started in the
+  // ballpark of other classOnly Tier-3 signature techs (e.g. tech_anima_reckoning/tech_shadow_blade)
+  // and are now sim-locked (user, 2026-10-29): gated in docs/SPEC-COMPANION-SYSTEM.md §3, re-gated by the v1.14 boss grids (docs/SPEC-BOSS-SIM-FULL-KIT.md, docs/SPEC-COMPANION-SPELLPOWER.md) and the v1.15 grids (docs/SPEC-COMPANION-TARGET-SPECIALS.md §4). (Companion BASIC powers, by contrast, DO scale with
   // character level — js/data/companions.js coefficients, computed per-battle in
   // js/core/companion.js — that is intentional, not an inconsistency.)
   // =====================================================================
@@ -3492,7 +3491,7 @@ Game.Data.techs = [
     skill: 'Conjuration',
     grade: 'Fire',
     energyCost: 24,
-    power: 70, // [invented][sim-gated] PROVISIONAL flat value — same order of magnitude as other classOnly Tier-3 damage signatures; pending the lead's sim (spec §3 S3: DoT+detonate must not exceed a Magus burst of equal investment)
+    power: 70, // [invented] sim-locked (user, 2026-10-29): gated in docs/SPEC-COMPANION-SYSTEM.md §3, re-gated by the v1.14 boss grids (docs/SPEC-BOSS-SIM-FULL-KIT.md, docs/SPEC-COMPANION-SPELLPOWER.md) and the v1.15 grids (docs/SPEC-COMPANION-TARGET-SPECIALS.md §4) (spec §3 S3: DoT+detonate must not exceed a Magus burst of equal investment)
     detonatesBurn: true, // js/core/battle.js useTech: detonates the Fire companion's active Burn (remaining dotPower*turnsLeft, Fire-resisted) then removes it
     requiresCompanion: 'comp_fire',
     effect: 'damage',
@@ -3508,7 +3507,7 @@ Game.Data.techs = [
     skill: 'Conjuration',
     grade: null,
     energyCost: 22,
-    power: 90, // [invented][sim-gated] PROVISIONAL flat value, pending the lead's sim
+    power: 90, // [invented] sim-locked (user, 2026-10-29): gated in docs/SPEC-COMPANION-SYSTEM.md §3, re-gated by the v1.14 boss grids (docs/SPEC-BOSS-SIM-FULL-KIT.md, docs/SPEC-COMPANION-SPELLPOWER.md) and the v1.15 grids (docs/SPEC-COMPANION-TARGET-SPECIALS.md §4)
     clearsStatus: true, // reuses the existing clearsStatus handler (cleanses Poison/Curse)
     requiresCompanion: 'comp_water',
     effect: 'heal',
@@ -3525,7 +3524,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 20,
     statKind: 'armor',
-    power: 30, // [invented][sim-gated] PROVISIONAL flat value, pending the lead's sim
+    power: 30, // [invented] sim-locked (user, 2026-10-29): gated in docs/SPEC-COMPANION-SYSTEM.md §3, re-gated by the v1.14 boss grids (docs/SPEC-BOSS-SIM-FULL-KIT.md, docs/SPEC-COMPANION-SPELLPOWER.md) and the v1.15 grids (docs/SPEC-COMPANION-TARGET-SPECIALS.md §4)
     buffDuration: 5,
     refreshesCompanionTaunt: true, // js/core/battle.js useTech: also refreshes the Golem's Taunt to BALANCE.COMPANION_TAUNT_TURNS_BULWARK
     requiresCompanion: 'comp_earth',
@@ -3543,7 +3542,7 @@ Game.Data.techs = [
     grade: null,
     energyCost: 20,
     statKind: 'spellpower',
-    power: 25, // [invented][sim-gated] PROVISIONAL flat value, pending the lead's sim
+    power: 25, // [invented] sim-locked (user, 2026-10-29): gated in docs/SPEC-COMPANION-SYSTEM.md §3, re-gated by the v1.14 boss grids (docs/SPEC-BOSS-SIM-FULL-KIT.md, docs/SPEC-COMPANION-SPELLPOWER.md) and the v1.15 grids (docs/SPEC-COMPANION-TARGET-SPECIALS.md §4)
     buffDuration: 5,
     requiresCompanion: 'comp_wind',
     effect: 'buff',
@@ -3555,9 +3554,8 @@ Game.Data.techs = [
   // =====================================================================
   // v1.9: monster-example techs demonstrating the new optional `target` field on monster techs
   // (docs/SPEC-COMPANION-SYSTEM.md §2.3) — `target: 'player'|'companion'|'both'`, ABSENT ⇒
-  // 'player' (every existing monster tech is unaffected). These two are SPEC EXAMPLES ONLY and are
-  // NOT wired to any monster's `techs` list — which monsters/bosses receive them is deferred to a
-  // future monster-AI pass (out of scope here, per spec §6). PROVISIONAL/[invented][sim-gated].
+  // 'player' (every existing monster tech is unaffected). Since v1.15 both are wired to monsters and
+  // bosses, gated by `vsCompanion` (docs/SPEC-COMPANION-TARGET-SPECIALS.md §2). [invented], sim-locked.
   // =====================================================================
   {
     id: 'mon_cleaving_roar',

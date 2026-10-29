@@ -153,7 +153,7 @@ All resolved by the user on 2026-10-29.
 
 ## 6. Out of scope / follow-ups
 
-- **Fixture:** the `kit` policy's 30-fight tool choice sometimes keeps a bad set (§3). Options: compare
+- **Fixture — done 2026-10-29:** the choice now runs on 60 fights (`docs/SPEC-BOSS-SIM-FULL-KIT.md` D6). Was: the `kit` policy's 30-fight tool choice sometimes keeps a bad set (§3). Options: compare
   the chosen set against `techs` on the same 30 fights and fall back when it's worse, or use more
   fights.
 - Companion HP lost as a boss cost (still a report column, `docs/SPEC-BOSS-SIM-FULL-KIT.md` D5).

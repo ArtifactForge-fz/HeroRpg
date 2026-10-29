@@ -193,6 +193,9 @@ build/ship from a tree with red suites.
   `COMPANION_BACKLASH_BOSS_FRAC` (0.30) of the summoner's max HP. Conjurer cheapest T3 boss cost 40.0–44.2%
   (was 34.9–37.8); finale 0.8 under its 45%.
 - Real DCSS elemental portraits for `comp_*`. All gates re-run on the implemented code: identical to P0.
+- Follow-ups (same day): companion command techs and kinds marked sim-locked (no value change); the boss fixture's
+  `kit` tool choice runs on 60 fights (`KIT_FIGHTS`, `docs/SPEC-BOSS-SIM-FULL-KIT.md` D6; no verdict crossed a floor); companion
+  HP carry-over and champion carriers simmed (`docs/SPEC-COMPANION-TARGET-SPECIALS.md` §9).
 - Open: some L9–L20 monsters lose 5-levels-down fights to melee basic attacks (spec §6 of the contract fixes);
   Firebolt-only casters win some 5-down fights at L21–L28.
 

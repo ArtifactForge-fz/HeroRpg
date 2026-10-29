@@ -235,9 +235,8 @@ for the Conjurer now above 35% (the finale 0.8 under 45%, improved from an accep
 ## 7. Out of scope
 
 - The finale's last 0.8 points to 45% (a backlash of about 32% would likely close it; not simmed).
-- Modelling companion HP carried over between fights in the sims (the fixture binds at full HP each fight).
-- Champion variants of the 14 regular carriers were not simmed separately (the gate is in the shared
-  tech-choice loop, so it applies to them too).
+- Companion HP carried between fights, and champion variants of the 14 regular carriers: measured
+  after implementation, §9.
 - Cleaving Roar at bosses (it lowered every boss cost by 0.2–0.5 points, §4.3).
 
 ## 8. Implementation and gate (2026-10-29)
@@ -257,3 +256,40 @@ for the Conjurer now above 35% (the finale 0.8 under 45%, improved from an accep
   suites pass; no dead items.
 - **Re-sim on the implemented code** (same scripts and seeds as §4, no patches): identical to the gate in
   every cell: §4.1 (95 cells), §4.2 (both policies), §4.3 (all 240 boss cells).
+
+## 9. Follow-up sims (2026-10-29, user-directed)
+
+Same rules as §4 (real code, seeded, prepared fixture). "Before" = commit `002007c` (v1.14.0 + the contract
+fixes, no specials); "now" = the implemented code.
+
+### 9.1 Companion HP carried between fights
+
+A prepared Conjurer hunts 50 regular monsters in a row, drawn from the regulars within ±2 levels of its
+level; 40 such campaigns per cell. The companion keeps its HP between fights (inns and camps don't heal it);
+the hero is restored and restocked before each hunt, as after an inn visit. In-fight policy: Crystal before
+Energy runs out, heal item under 40% HP, rebind a missing or fallen companion, else the strongest class damage
+tech, else Firebolt. Each pool mixes a Roar carrier, a Banish carrier and an untouched monster (L64 has no
+Roar carrier in range).
+
+| Level | Pool | Win % | HP spent per win % | Rebinds per 10 hunts: Fire / Water / Earth / Wind |
+|---|---|---|---|---|
+| L64 | frost stalker, frostwalker (Banish), cave warden | 100 → 100 | 23–29 → 21–27 | 0 / 0 / 0.1 / 0 → **1.2 / 1.3 / 0.6 / 1.3** |
+| L72 | sublevel warden (Roar), anima conduit (Banish), excavator | 100 → 100 | 26–34 → 24–32 | 0 / 0 / 0.1 / 0 → **3.1 / 2.9 / 1.0 / 2.8** |
+| L82 | lower warden (Roar), battlemage (Banish), horror stalker | 100 → 100 | 18–23 → 16–22 | 0 / 0 / 0.1 / 0 → **2.3 / 2.0 / 0.8 / 2.2** |
+| L92 | ward sentinel (Roar), divine initiate (Banish), moon stalker | 100 → 100 | 21–26 → 19–25 | 0 / 0 / 0.1 / 0 → **2.5 / 2.2 / 0.9 / 2.4** |
+
+- The attrition the specials were meant to add is real: a Fire, Water or Wind companion now needs a rebind
+  (30 Energy and a turn, back to full HP) about every 3–8 hunts in these pools; the Earth Golem every 10–17.
+- The hero still pays slightly less per win (1–2 points) and wins every hunt, so regular fights stay inside
+  the contract (a floor, no ceiling).
+
+### 9.2 Champion variants of the 14 regular carriers
+
+Every fight a champion (`Game.Battle.start(id, { champion: true })`, the affix rolled on the seeded RNG), Conjurer
+at-level, `techs` policy, 300 trials, no pact and each pact:
+
+- **Win:** 99–100% in every cell, before and now.
+- **Roar carriers:** the hero's HP spent moves by 0–2 points; the companion loses 15–45% of its HP per fight.
+- **Banish carriers:** the hero's HP spent drops 8–17 points with a companion bound (e.g. `society_arcanist_prime`
+  Fire 29 → 19%), the same free-turn effect as §4.2; the companion loses 22–45% per fight.
+- No-pact cells are identical before and now (the gate keeps champions' pools unchanged without a companion).
