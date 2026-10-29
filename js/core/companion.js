@@ -80,6 +80,14 @@ Game.Companion = (function () {
 
   // ---------------- Taunt (Earth's threat mechanic, §2.3) ----------------
 
+  // [invented] docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md §3 — extends the SPEC-COMPANION-SYSTEM §3 S4
+  // ratchet: true while a live companion is in this battle and Fear (>= COMPANION_FEAR_SUPPRESS_LEVELS
+  // levels below the enemy) overwhelms it. act() idles on it, and useTech refuses command techs.
+  function isSuppressed(battle) {
+    return !!(battle && battle.companion && battle.companion.hp > 0 &&
+      Game.Battle.fearLevels(battle) >= BALANCE.COMPANION_FEAR_SUPPRESS_LEVELS);
+  }
+
   function tauntActive(battle) {
     if (!battle || !battle.companion || battle.companion.hp <= 0) return false;
     var statuses = battle.companion.statuses || [];
@@ -146,7 +154,7 @@ Game.Companion = (function () {
     // cutoff below the enemy's level the companion idles — without this a Wind companion beat +6
     // enemies 87% of the time, breaking the 5-down contract; with it, all four return to ~0% there.
     // Triggers ONLY in the certain-death zone, so at/near-level play is completely unaffected.
-    if (Game.Battle.fearLevels(battle) >= BALANCE.COMPANION_FEAR_SUPPRESS_LEVELS) {
+    if (isSuppressed(battle)) {
       battle.log.push('Your ' + def.name + ' is overwhelmed by the enemy\'s presence and cannot act.');
       return;
     }
@@ -223,6 +231,7 @@ Game.Companion = (function () {
     magicArmorFor: magicArmorFor,
     summon: summon,
     act: act,
+    isSuppressed: isSuppressed,
     tauntActive: tauntActive,
     setTaunt: setTaunt
   };

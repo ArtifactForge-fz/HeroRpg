@@ -650,6 +650,42 @@ assert(battleSword.pendingLoot === 'sword_skyspire_ember_blade', 'v1.3.1 fix 3: 
 Game.Battle.endBattle();
 
 // =====================================================================
+// SPEC-CONTRACT-FIXES-V19-QUEUE §2: Scout's Dirk + Watchman's Spear (level-5 knife / polearm)
+// =====================================================================
+console.log("\n=== Contract fixes §2: Scout's Dirk and Watchman's Spear ===");
+(function () {
+  var dirk = Game.Inventory.getItem('knife_scouts_dirk');
+  var spear = Game.Inventory.getItem('polearm_watchmans_spear');
+  assert(!!dirk && dirk.skill === 'Knives' && dirk.levelReq === 5 && dirk.damage === 13 && dirk.bonuses.critChance === 0.02,
+    "Scout's Dirk: Knives, levelReq 5, damage 13, critChance 0.02");
+  assert(!!spear && spear.skill === 'Polearms' && spear.levelReq === 5 && spear.damage === 13 && spear.bonuses.armorPen === 0.05,
+    "Watchman's Spear: Polearms, levelReq 5, damage 13, armorPen 0.05");
+  ['jumak_village', 'laik'].forEach(function (town) {
+    var stock = Game.World.getArea(town).facilities.filter(function (f) { return f.type === 'shop'; })[0].stock;
+    assert(stock.indexOf('knife_scouts_dirk') !== -1 && stock.indexOf('polearm_watchmans_spear') !== -1,
+      'both new weapons are sold in ' + town);
+  });
+  var sd = Game.Battle.getMonsterDef('estari_construct_sentinel').drops.map(function (d) { return d.itemId; });
+  assert(sd.indexOf('knife_scouts_dirk') > 1 && sd.indexOf('polearm_watchmans_spear') > 1, 'the sentinel drops both, appended after the original entries');
+
+  var recipe = Game.Data.recipes.filter(function (r) { return r.id === 'synth_watchmans_spear'; })[0];
+  assert(!!recipe && recipe.gold === 40 && recipe.output === 'polearm_watchmans_spear' &&
+    recipe.inputs.length === 2 && recipe.inputs[0] === 'polearm_ashwood_spear' && recipe.inputs[1] === 'polearm_ashwood_spear',
+    "synth_watchmans_spear = 2x Ashwood Spear + 40 gold -> Watchman's Spear");
+  var c = makeCharacter({ name: 'SpearSynth' });
+  c.currentLocation = 'eldor';
+  Game.Character.addGold(c, 100);
+  Game.Inventory.addItem(c, 'polearm_ashwood_spear');
+  Game.Inventory.addItem(c, 'polearm_ashwood_spear');
+  var goldBefore = Game.Character.goldTotalAsGold(c);
+  var res = Game.World.synthesize('synth_watchmans_spear');
+  assert(res.ok === true, 'synthesis succeeds: ' + res.message);
+  assert(c.inventory.indexOf('polearm_watchmans_spear') !== -1, "Watchman's Spear granted");
+  assert(c.inventory.indexOf('polearm_ashwood_spear') === -1, 'both Ashwood Spears consumed');
+  assert(Game.Character.goldTotalAsGold(c) === goldBefore - 40, '40 gold deducted');
+})();
+
+// =====================================================================
 console.log('\n===================================');
 if (failures === 0) {
   console.log('ALL TESTS PASSED (' + passes + ' assertions)');

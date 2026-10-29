@@ -203,5 +203,23 @@ assert(typeof Game.Battle.useTech === 'function', 'battle still exposes useTech'
 assert(Game.World.teachesTech('eldor', techById('tech_starspark_3')) === false,
   'sanity: Eldor still does not TEACH it — the character simply keeps what they own');
 
+// ---------------------------------------------------------------------------
+// 6) SPEC-CONTRACT-FIXES-V19-QUEUE §1: every spell chain's rank II needs skill 8
+// ---------------------------------------------------------------------------
+console.log('\n=== Test 6: Shadowlash II / rank-II ladder ===');
+
+var sl2 = techById('tech_shadowlash_2');
+assert(!!sl2 && sl2.skillReq === 8, 'Shadowlash II needs Conjuration 8, got ' + (sl2 && sl2.skillReq));
+assert(/Conjuration 8\./.test(sl2.desc), 'Shadowlash II desc states Conjuration 8');
+assert(Game.World.teachesTech('jumak_village', sl2) === true, 'Shadowlash II IS taught in Ju`Mak');
+assert(Game.World.teachesTech('eldor', sl2) === false, 'Shadowlash II is NOT taught in Eldor');
+var sl2host = Game.World.academyForTech(sl2);
+assert(sl2host && sl2host.id === 'jumak_village', 'Shadowlash II resolves to Ju`Mak as its earliest Academy, got ' + (sl2host && sl2host.id));
+['Firebolt', 'Starspark', 'Tidal Lance', 'Shadowlash', 'Lifetap'].forEach(function (chain) {
+  var rank2 = Game.Data.techs.filter(function (t) { return t.chain === chain && t.rank === 2; });
+  assert(rank2.length === 1, chain + ' has exactly one rank II');
+  assert(rank2.length === 1 && rank2[0].skillReq === 8, chain + ' II needs skill 8, got ' + (rank2[0] && rank2[0].skillReq));
+});
+
 console.log('\n' + passes + ' passed, ' + failures + ' failed');
 process.exit(failures === 0 ? 0 : 1);

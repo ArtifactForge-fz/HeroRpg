@@ -382,3 +382,13 @@ a valid 32x32 RGBA PNG, byte-hash-distinct from every other file in `assets/icon
 | tech_runic_severance_blade | tech_runic_severance.png |
 | tech_vault_reckoning_blade | tech_vault_reckoning.png |
 | tech_echoing_judgment_blade | tech_echoing_judgment.png |
+
+## v1.15 icons — the level-5 knife and polearm (docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md §2)
+
+Pulled by the lead from the DCSS repo (same CC0 source/pipeline as above), verified 32x32 PNGs and
+byte-hash-distinct from every existing icon:
+
+| game id | rltiles source |
+|---|---|
+| knife_scouts_dirk | item/weapon/short_sword1 |
+| polearm_watchmans_spear | item/weapon/spear3 |

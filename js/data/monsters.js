@@ -222,7 +222,10 @@ Game.Data.monsters = [
     shardChance: 0.05,
     drops: [
       { itemId: 'sword_soldiers_blade', chance: 0.04 },
-      { itemId: 'medium_body_studded_jerkin', chance: 0.04 }
+      { itemId: 'medium_body_studded_jerkin', chance: 0.04 },
+      // invented, docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md §2 (append-only; same 0.04 as the Soldier's Blade)
+      { itemId: 'knife_scouts_dirk', chance: 0.04 },
+      { itemId: 'polearm_watchmans_spear', chance: 0.04 }
     ],
     desc: 'A squat guardian of carved Estari stone, still standing watch over ruins long since buried in the plains.'
   },

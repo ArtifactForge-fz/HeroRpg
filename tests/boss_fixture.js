@@ -438,7 +438,8 @@ function fightOnce(Game, bossId, level, opts) {
     return Game.Classes.isClassTechUsable(c, t) && c.energy > Game.Battle.effectiveTechEnergyCost(c, t);
   }
   function companionUp(kindId) { return battle.companion && battle.companion.hp > 0 && battle.companion.kindId === kindId; }
-  function usableNow(t) { return affordable(t) && (!t.requiresCompanion || companionUp(t.requiresCompanion)); }
+  // requiresCompanion techs are also refused while Fear suppresses the companion (SPEC-CONTRACT-FIXES-V19-QUEUE §3 item 3)
+  function usableNow(t) { return affordable(t) && (!t.requiresCompanion || (companionUp(t.requiresCompanion) && !(Game.Companion && Game.Companion.isSuppressed && Game.Companion.isSuppressed(battle)))); }
   function buffRunning(t) {
     return battle.playerStatuses.some(function (st) { return st.type === 'buff' && st.name === t.name && st.turnsLeft > 0; });
   }

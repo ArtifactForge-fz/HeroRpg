@@ -124,6 +124,7 @@ Game.Data.areas = [
           'sword_soldiers_blade', 'sword_arkan_runeblade', 'sword_riverguard_falchion',
           'polearm_militia_halberd',
           'knife_thieves_edge', 'knife_gares_fang',
+          'knife_scouts_dirk', 'polearm_watchmans_spear',
           'rod_saratus_conduit', 'rod_anima_touched_branch',
           'hth_monks_wraps',
           'shield_ironbound_kite',
@@ -192,6 +193,7 @@ Game.Data.areas = [
         stock: [
           'sword_soldiers_blade', 'sword_riverguard_falchion',
           'polearm_militia_halberd', 'knife_thieves_edge',
+          'knife_scouts_dirk', 'polearm_watchmans_spear',
           'rod_saratus_conduit', 'hth_monks_wraps',
           'shield_ironbound_kite',
           'light_legs_supple_leggings', 'light_feet_soft_boots',

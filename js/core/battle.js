@@ -1212,6 +1212,13 @@ Game.Battle = (function () {
         log(battle, tech.name + ' requires a bound ' + (reqKindDef ? reqKindDef.element : tech.requiresCompanion) + ' companion.');
         return battle;
       }
+      // [invented] docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md §3 — Fear-suppressed companion refuses commands
+      // (before any Energy/shard cost).
+      if (Game.Companion && Game.Companion.isSuppressed && Game.Companion.isSuppressed(battle)) {
+        var supKind = Game.Companion.getKind(battle.companion.kindId);
+        log(battle, 'Your ' + (supKind && supKind.name ? supKind.name : 'companion') + ' is overwhelmed and cannot answer your command.');
+        return battle;
+      }
     }
     // Feature C: weapon techniques (js/data/techs.js `weaponTech: true`) need a weapon equipped,
 

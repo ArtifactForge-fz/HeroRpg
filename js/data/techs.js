@@ -435,8 +435,8 @@ Game.Data.techs = [
     power: 27,
     effect: 'damage',
     trainingCost: 4,
-    skillReq: 5,
-    desc: 'A second, crueler lash of clinging shadow-stuff. Requires Shadowlash I and Conjuration 5.'
+    skillReq: 8, // invented, docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md §1 (the rank-II step of every spell chain, SPEC-TECH-CHAIN-COMPLETION §2.3)
+    desc: 'A second, crueler lash of clinging shadow-stuff. Requires Shadowlash I and Conjuration 8.'
   },
 
   // ---------- Weapon-adjacent Alteration debuff-flavored second buff (kept simple: another +damage buff on a different chain) ----------

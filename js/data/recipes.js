@@ -26,6 +26,14 @@ Game.Data.recipes = [
     desc: 'Grind down two worn daggers and reforge them into a slender Thieves\' Edge.'
   },
   {
+    // invented, docs/SPEC-CONTRACT-FIXES-V19-QUEUE.md §2 (mirrors synth_soldiers_blade)
+    id: 'synth_watchmans_spear',
+    inputs: ['polearm_ashwood_spear', 'polearm_ashwood_spear'],
+    gold: 40,
+    output: 'polearm_watchmans_spear',
+    desc: 'Rebind two ashwood spears around a single iron-shod haft into a sturdy Watchman\'s Spear.'
+  },
+  {
     id: 'synth_ironbound_kite',
     inputs: ['shield_wooden_buckler', 'shield_wooden_buckler'],
     gold: 70,

@@ -640,6 +640,54 @@ console.log('\n=== Test 16: graded companion attacks pay Magic Armor + 0.5 x Arm
   Game.Battle.endBattle();
 })();
 
+// =================== Test 17: SPEC-CONTRACT-FIXES-V19-QUEUE §3 — command techs refused while Fear overwhelms the companion ===================
+console.log('\n=== Test 17: a command tech is refused at >= COMPANION_FEAR_SUPPRESS_LEVELS below the enemy (no cost, no buff), works 4 below ===');
+(function () {
+  function setup(levelsAbove) {
+    var c = makeCharacter({ name: 'CmdFearTest' });
+    setLevel(c, 60);
+    Game.Classes.obtainClass(c, 'wizard');
+    Game.Classes.obtainClass(c, 'conjurer');
+    Game.Classes.addClassXp(c, 2 * Game.Classes.classXpForLevel(20) / BALANCE.CLASS_XP_POOL_FRACTION);
+    c.techSets[0][0] = 'tech_cmd_tailwind';
+    Game.Companion.summon(c, 'comp_wind');
+    c.hitPoints = c.hitPointsMax; c.energy = c.energyMax;
+    setRng(fixedRng(0.5));
+    var b = Game.Battle.start('plains_field_rat');
+    b.monster.level = c.level + levelsAbove;
+    b.monster.techs = [];
+    return b;
+  }
+  function hasTailwind(b) {
+    return b.playerStatuses.some(function (st) { return st.type === 'buff' && st.name === 'Tailwind' && st.turnsLeft > 0; });
+  }
+  assert(BALANCE.COMPANION_FEAR_SUPPRESS_LEVELS === 5, 'COMPANION_FEAR_SUPPRESS_LEVELS is 5 (the cells below assume it)');
+
+  var b = setup(5);
+  assert(Game.Companion.isSuppressed(b) === true, 'isSuppressed is true 5 levels below the enemy');
+  var e0 = b.player.energy;
+  Game.Battle.useTech('tech_cmd_tailwind');
+  assert(b.player.energy === e0, 'refused cast spends no Energy (' + e0 + ' -> ' + b.player.energy + ')');
+  assert(!hasTailwind(b), 'no Tailwind buff is applied');
+  assert(b.log.some(function (l) { return /overwhelmed and cannot answer your command/.test(l); }), 'the refusal is logged: ' + b.log.join(' | '));
+  Game.Battle.flee(); Game.Battle.endBattle();
+
+  b = setup(4);
+  assert(Game.Companion.isSuppressed(b) === false, 'isSuppressed is false 4 levels below the enemy');
+  e0 = b.player.energy;
+  Game.Battle.useTech('tech_cmd_tailwind');
+  assert(b.player.energy < e0, 'the cast at 4 levels below spends Energy (' + e0 + ' -> ' + b.player.energy + ')');
+  assert(hasTailwind(b), 'the Tailwind buff is applied at 4 levels below');
+  Game.Battle.flee(); Game.Battle.endBattle();
+
+  var c2 = makeCharacter({ name: 'NoCompFear' });
+  setLevel(c2, 60);
+  var b2 = Game.Battle.start('plains_field_rat');
+  b2.monster.level = c2.level + 9;
+  assert(Game.Companion.isSuppressed(b2) === false, 'isSuppressed is false with no companion bound, even at 9 levels below');
+  Game.Battle.flee(); Game.Battle.endBattle();
+})();
+
 console.log('\n===================================');
 if (failures === 0) {
   console.log('ALL TESTS PASSED');
